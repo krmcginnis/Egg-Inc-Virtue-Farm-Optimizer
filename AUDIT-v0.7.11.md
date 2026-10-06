@@ -1,9 +1,9 @@
-# Egg Inc. Virtue Farm Optimizer v0.7.10 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.7.11 — Release Audit
 
-v0.7.10 fixes existing-screen usability: short-window sidebar access, compact
-fleet controls, checkbox alignment, and planning-bar layout. Its focused
-validation is recorded at the end of this audit. The solver and game data
-remain unchanged; earlier asset, import, updater, and model evidence follows.
+v0.7.11 adds original habitat, vehicle, and Hyperloop car artwork to the farm
+controls and purchase timeline. Its focused validation is recorded at the end
+of this audit. Solver and game data remain unchanged; earlier UI, asset,
+import, updater, and model evidence follows.
 
 The solver evidence below is the unchanged v1.6.1 baseline.
 
@@ -436,3 +436,34 @@ presentation and interaction changes only; solver/game data and generated
 worker bytes are unchanged. The standard Windows release workflow requires
 installation, restart, rollback, and anonymous public-feed checksum verification
 before the release is handed over. Native screen-reader testing is not claimed.
+
+
+## Habitat and vehicle artwork — v0.7.11
+
+All 19 habs, 12 vehicles, and the Hyperloop car use their original game images
+from the same pinned asset mirror as the research artwork. The existing catalog's
+iconPath fields supply the hab/vehicle mapping. All 32 downloaded sources were
+checked against the pinned repository Git blob IDs and recorded SHA256 hashes.
+Their original RGBA pixels are packed unchanged into one 132,630-byte PNG sheet.
+Source/pixel checksums, geometry, attribution, and a developer regeneration
+script accompany the sheet in the existing managed artwork directory.
+
+The selected item's icon appears beside its farm-control label and updates
+immediately on selection. Wide artwork receives a wider inline viewport; square
+and tall artwork uses the existing compact icon size. Empty slots retain their
+text without an empty-image box, and control rows remain aligned. Native selects,
+accessible names, values, import/manual locks, and the two-panel layout are
+retained. Select tooltips show the full item name when a narrow field truncates it.
+Summary chips, quick-guide purchases, and lazy full-breakdown actions receive
+matching hab/vehicle/car artwork. Raw actions and PDF content remain unchanged.
+
+Targeted Chromium checks cover all mappings and original pixels, selection
+changes, empty slots, labels and edit locks, saved-farm round trips, replayed
+plans through all three timeline layers, Hyperloop car icons, layout widths
+from 1440 to 320 pixels, offline file loading, and text/control fallback when
+artwork cannot load. The previous sidebar, focus, fleet, and planning-bar
+checks are repeated. No solver, game catalog, purchase, or routing source changed.
+The generated worker SHA256 remains
+`2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.
+The unchanged release workflow requires native Windows installation, restart,
+rollback, and public-feed/download checksum verification before handover.

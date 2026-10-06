@@ -290,3 +290,12 @@ aside>*{flex-shrink:0}
 .fleet-slot>small{font-weight:600;color:#c5d2e3}
 @media(max-width:1100px){.run-bar{flex-wrap:wrap;gap:9px}.run-bar>div:first-child{flex-basis:100%;margin-right:0}.run-bar #optimize{margin-left:auto}}
 @media(max-width:800px){aside{overflow:visible}.check{min-height:44px}}
+
+/* Selected habs and vehicles share the existing compact inline artwork style. */
+.farm-icon{display:inline-block;flex:0 0 24px;width:24px;height:24px;background-repeat:no-repeat;pointer-events:none}
+.farm-icon[data-wide="true"]{width:48px;height:28px;flex-basis:48px}
+.farm-icon:not([data-farm-icon]){display:none}
+.farm-caption,.farm-picker-caption{display:inline-flex;align-items:center;gap:6px;min-width:0;vertical-align:middle;line-height:1.4}
+.farm-picker-caption{min-height:28px}
+.farm-caption>span:last-child,.farm-picker-caption>span:last-child{min-width:0;overflow-wrap:anywhere}
+@media(forced-colors:active){.farm-icon{display:none}}

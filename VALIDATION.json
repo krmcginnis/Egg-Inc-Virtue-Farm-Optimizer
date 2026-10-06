@@ -205,7 +205,7 @@
     "noNewAPIRequest": true,
     "newLiveAccountRequest": false,
     "nativeWindowsTested": false,
-    "currentAudit": "AUDIT-v0.7.10.md",
+    "currentAudit": "AUDIT-v0.7.11.md",
     "olderAuditFilesIncluded": false,
     "responsiveWidths": [
       1440,
@@ -316,7 +316,7 @@
       "publicFeedDownloadAndChecksums": "passed"
     }
   },
-  "currentVersion": "0.7.10",
+  "currentVersion": "0.7.11",
   "releaseRenumbering": {
     "version": "0.7.0",
     "previousVersion": "1.7.0",
@@ -472,6 +472,34 @@
     "solverChanges": false,
     "workerSHA256": "2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320",
     "existingUIRegressions": "passed: planning-clarity, loadout-artwork, research-artwork",
+    "nativeWindowsAndPublicFeed": "Required automatic release checks"
+  },
+  "farmArtwork": {
+    "version": "0.7.11",
+    "sourceRepository": "carpetsage/EggIncAssets",
+    "sourceCommit": "e821c7c9d5b39a9aee3eed0144a732c39489de1e",
+    "originalImages": 32,
+    "habs": 19,
+    "vehicles": 12,
+    "hyperloopCar": 1,
+    "sourceGitBlobVerification": "passed",
+    "originalPixelIntegrity": "passed",
+    "test": "tests/farm-artwork-browser.cjs",
+    "targetedBrowserChecks": "passed",
+    "uiRegressionChecks": "passed: ui-polish-browser and research-artwork-browser",
+    "layouts": [
+      1440,
+      1280,
+      1050,
+      800,
+      500,
+      390,
+      320
+    ],
+    "offlineAndMissingArtwork": "passed",
+    "savedValuesAndActionsUnchanged": true,
+    "solverChanges": false,
+    "workerSHA256": "2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320",
     "nativeWindowsAndPublicFeed": "Required automatic release checks"
   }
 }

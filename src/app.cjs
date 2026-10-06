@@ -12,6 +12,7 @@ const ArtifactSets = require("./artifact-optimizer.cjs");
 const LoadoutCard = require("./loadout-card.cjs");
 const EggIcons = require("./egg-icons.cjs");
 const ResearchIcons = require("./research-icons.cjs");
+const FarmIcons = require("./farm-icons.cjs");
 const AppUpdates = require("./app-updates.cjs");
 const $ = (id) => document.getElementById(id), D = S.D;
 let config = blankFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
@@ -398,10 +399,10 @@ function renderForm() {
     $("goal-fields").append(goal);
     body.append(tr);
   }
-  $("hab-fields").replaceChildren(...f.habs.map((v, i) => selectField("Habitat " + (i + 1), "hab-" + i, [["", "Empty"], ...D.habs.map((x) => [x.id, x.name])], v)));
+  $("hab-fields").replaceChildren(...f.habs.map((v, i) => FarmIcons.decoratePicker(selectField("Habitat " + (i + 1), "hab-" + i, [["", "Empty"], ...D.habs.map((x) => [x.id, x.name])], v), "hab")));
   $("vehicle-fields").replaceChildren(...f.vehicles.map((v, i) => {
     const div = el("div", void 0, "fleet-slot");
-    div.append(el("small", "Fleet Slot " + (i + 1)), selectField("Vehicle", "vehicle-" + i, [["", "Empty"], ...D.vehicles.map((x) => [x.id, x.name])], v.id), field("Train cars", "cars-" + i, v.cars, "number", { min: 1, max: 10, className: "car" }));
+    div.append(el("small", "Fleet Slot " + (i + 1)), FarmIcons.decoratePicker(selectField("Vehicle", "vehicle-" + i, [["", "Empty"], ...D.vehicles.map((x) => [x.id, x.name])], v.id), "vehicle"), field("Train cars", "cars-" + i, v.cars, "number", { min: 1, max: 10, className: "car" }));
     div.querySelector("select").setAttribute("aria-label", "Fleet Slot " + (i + 1) + " Vehicle");
     div.querySelector("input").setAttribute("aria-label", "Fleet Slot " + (i + 1) + " Train Cars");
     return div;
@@ -791,6 +792,7 @@ function stat(label, value, sub, egg) {
   return div;
 }
 function refresh() {
+  document.querySelectorAll("[data-farm-picker] select").forEach(FarmIcons.updatePicker);
   clearFieldError();
   updateAccountSummaries();
   EggIcons.decorateLabel($("virtue").closest("label"), $("virtue").value);
@@ -1067,7 +1069,7 @@ function renderResult() {
     const chips = el("div", void 0, "activity-chips");
     for (const activity of shift.activities) {
       const chip = el("span", void 0, "activity-chip " + activity.kind);
-      chip.append(activity.kind === "research" ? ResearchIcons.captionName(activity.label) : el("span", activity.label));
+      chip.append(activity.kind === "research" ? ResearchIcons.captionName(activity.label) : FarmIcons.activityCaption(activity));
       if (activity.value) chip.append(el("b", activity.value));
       chips.append(chip);
     }
@@ -1088,7 +1090,7 @@ function renderResult() {
         for (const activity of tier.items) {
           const row = el("li", void 0, "guide-item " + activity.kind);
           if (activity.kind === "research") row.dataset.researchIndex = activity.i;
-          row.append(activity.kind === "research" ? ResearchIcons.caption(D.research[activity.i].id, activity.label) : el("span", activity.label));
+          row.append(activity.kind === "research" ? ResearchIcons.caption(D.research[activity.i].id, activity.label) : FarmIcons.activityCaption(activity));
           if (activity.value) row.append(el("b", activity.value));
           list.append(row);
         }
@@ -1153,7 +1155,7 @@ function renderResult() {
       time.dateTime = new Date(a.t * 1e3).toISOString();
       const detail = el("div");
       const actionHeading = el("h4");
-      actionHeading.append(a.type === "research" ? ResearchIcons.caption(D.research[a.i].id, titleCase(actionLabel(a))) : document.createTextNode(titleCase(actionLabel(a))));
+      actionHeading.append(a.type === "research" ? ResearchIcons.caption(D.research[a.i].id, titleCase(actionLabel(a))) : FarmIcons.actionCaption(a, titleCase(actionLabel(a))));
       detail.append(actionHeading);
       if (a.type === "wait") {
         detail.append(el("p", a.reason + " \xB7 " + num(a.eggsGained) + " eggs delivered"));
@@ -1597,6 +1599,7 @@ window.addEventListener("resize", sizeRunBar);
 document.addEventListener("focusin", ({target}) => { NumericInput.focus(target); keepFocusedControlVisible(target); });
 document.addEventListener("focusout", ({target}) => NumericInput.blur(target));
 document.addEventListener("change", (e) => {
+  FarmIcons.updatePicker(e.target);
   const id = e.target.id;
   const editingKey = Object.keys(editingGroups).find(key => editingGroups[key].toggles.includes(id));
   if (editingKey) {

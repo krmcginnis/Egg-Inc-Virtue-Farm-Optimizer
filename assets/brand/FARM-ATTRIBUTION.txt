@@ -1,0 +1,13 @@
+EGG INC. HABITAT AND VEHICLE ARTWORK
+
+Original Egg, Inc. game artwork belongs to Auxbrain, Inc.
+This optimizer is an unofficial fan planning tool.
+The original 64-pixel icons are packed into one lossless PNG sheet without
+resizing or changing source pixels, for efficient offline display.
+
+Source: https://github.com/carpetsage/EggIncAssets/tree/e821c7c9d5b39a9aee3eed0144a732c39489de1e/64/egginc
+Hab/vehicle mapping: iconPath fields in the existing Wasmegg game catalog,
+bundled in src/game-data.json. Hyperloop cars use ei_vehicle_icon_hyperloop_car.png.
+Retrieved: 2026-10-06
+Source checksums, original pixel checksums, positions and sheet checksum: farm-icons.json
+Developer regeneration: scripts/bundle-farm-icons.py

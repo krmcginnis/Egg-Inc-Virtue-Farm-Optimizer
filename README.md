@@ -8,7 +8,7 @@ Download [the latest app ZIP](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-
 
 ## Updates
 
-The current version is **v0.7.10**, renumbered from v1.7.0 with the same features. If you already installed a 1.x version, download and extract the current ZIP once; the updater does not install lower version numbers. Future 0.7.x releases update normally.
+The current version is **v0.7.11**, renumbered from v1.7.0 with the same features. If you already installed a 1.x version, download and extract the current ZIP once; the updater does not install lower version numbers. Future 0.7.x releases update normally.
 
 Use **Update App → Update & Restart** in the sidebar. Published ZIPs already point to this repository. Updates verify downloads, preserve your current inputs and timeline, and restore the previous app if installation or startup fails. Finish your search or import before updating.
 
