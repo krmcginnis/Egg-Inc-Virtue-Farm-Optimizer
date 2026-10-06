@@ -2,12 +2,13 @@
 const S = require('./simulator.cjs'), F = require('./number-format.cjs');
 // Rounding is presentation only. Untouched imports, save files and recovery
 // drafts retain the original number, including values close to a TE threshold.
-const sources = new WeakMap(), fields = new WeakSet();
+const sources = new WeakMap(), formats = new WeakMap(), fields = new WeakSet();
 function source(node) {
   const stored = sources.get(node);
   return stored && (node.value === stored.display || node.value === String(stored.value)) ? stored : null;
 }
-function write(node, value) {
+function write(node, value, format) {
+  if (typeof format === 'function') formats.set(node, format);
   let numeric = value;
   if (typeof numeric !== 'number' && node.tagName === 'INPUT') {
     try { numeric = S.number(value); } catch { numeric = null; }
@@ -15,7 +16,7 @@ function write(node, value) {
   if (node.tagName !== 'INPUT' || !Number.isFinite(numeric)) {
     sources.delete(node); node.value = String(value ?? 0); return;
   }
-  node.value = node.type === 'number' ? F.decimal(numeric, false) : F.format(numeric);
+  node.value = node.type === 'number' ? F.decimal(numeric, false) : (formats.get(node) || F.format)(numeric);
   fields.add(node);
   sources.set(node, {value:numeric, display:node.value});
 }
