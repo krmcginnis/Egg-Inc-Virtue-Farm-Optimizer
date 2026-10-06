@@ -1,6 +1,24 @@
 param([switch]$NoBrowser, [int]$Port = 0)
 # Local app host, read-only Egg Inc proxy and user-requested app updater.
 $ErrorActionPreference = 'Stop'
+if ($env:OS -eq 'Windows_NT' -and -not ('VirtueOptimizerSocketHandles' -as [type])) {
+    Add-Type @'
+using System;
+using System.Runtime.InteropServices;
+public static class VirtueOptimizerSocketHandles {
+    [DllImport("kernel32.dll", SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetHandleInformation(IntPtr handle, uint mask, uint flags);
+}
+'@
+}
+function Protect-SocketHandle($Socket) {
+    # Windows PowerShell/.NET Framework sockets can otherwise remain open in
+    # a detached updater after the hosting process has exited.
+    if ($env:OS -eq 'Windows_NT' -and -not [VirtueOptimizerSocketHandles]::SetHandleInformation($Socket.Handle, 1, 0)) {
+        throw [ComponentModel.Win32Exception]::new([Runtime.InteropServices.Marshal]::GetLastWin32Error())
+    }
+}
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $rootPath = $PSScriptRoot
 . (Join-Path $rootPath 'Update-Core.ps1')
@@ -27,30 +45,19 @@ if (Test-Path -LiteralPath $assetRoot -PathType Container) {
 }
 try { $Host.UI.RawUI.WindowTitle = $appTitle } catch { }
 $listener = $null
-$portMutex = $null
 $requestedPort = $Port
 if ($requestedPort -ne 0 -and ($requestedPort -lt 8765 -or $requestedPort -gt 8790)) { throw 'Invalid app port.' }
 $firstPort = 8765; $lastPort = 8790
 if ($requestedPort) { $firstPort = $requestedPort; $lastPort = $requestedPort }
 for ($candidate = $firstPort; $candidate -le $lastPort; $candidate++) {
     try {
-        # Reuse closed TCP connections on Windows without letting two app
-        # helpers share a live port. Keep the mutex until the listener stops.
-        $candidateMutex = [Threading.Mutex]::new($false, "Local\EggIncVirtueOptimizer-Port-$candidate")
-        $ownsPort = $false
-        try { $ownsPort = $candidateMutex.WaitOne(0) }
-        catch [Threading.AbandonedMutexException] { $ownsPort = $true }
-        if (-not $ownsPort) { $candidateMutex.Dispose(); continue }
-        $portMutex = $candidateMutex
         $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $candidate)
-        $listener.ExclusiveAddressUse = $false
-        $listener.Server.SetSocketOption([Net.Sockets.SocketOptionLevel]::Socket, [Net.Sockets.SocketOptionName]::ReuseAddress, $true)
+        Protect-SocketHandle $listener.Server
         $listener.Start()
         $port = $candidate
         break
     } catch {
         if ($listener) { $listener.Stop() }; $listener = $null
-        if ($portMutex) { $portMutex.ReleaseMutex(); $portMutex.Dispose(); $portMutex = $null }
     }
 }
 if ($null -eq $listener) { throw 'Cannot open a local app port. Close another instance and retry.' }
@@ -96,6 +103,7 @@ if (-not $NoBrowser) { Start-Process $baseUrl }
 try {
     while ($true) {
         $client = $listener.AcceptTcpClient()
+        Protect-SocketHandle $client.Client
         # Browsers may pre-open an idle connection. Do not let it block the
         # single local request loop or the updater's restart health checks.
         if (-not $client.Client.Poll(200000, [Net.Sockets.SelectMode]::SelectRead)) { $client.Close(); continue }
@@ -210,5 +218,4 @@ try {
     }
 } finally {
     $listener.Stop()
-    if ($portMutex) { $portMutex.ReleaseMutex(); $portMutex.Dispose() }
 }
