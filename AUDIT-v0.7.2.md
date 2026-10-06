@@ -243,13 +243,21 @@ worker is byte-identical to v0.7.0. The full UI batch review remains deferred. T
 ## Windows updater restart and persistent errors — v0.7.2
 
 A native Windows PowerShell 5.1 helper/worker test reproduced the previous
-restart failure: the closed exclusive TCP port could not be bound by either
-the new helper or the restored helper. The local listener now reuses closed
-connections and holds a named per-port mutex, so another app instance cannot
-share its live port. Loopback binding and session/origin checks remain in place.
-Restart errors are captured in job logs. Failed update results reopen the update
-dialog, and a separate persistent error region survives farm notices, refreshes
-and reopening. Copy Error preserves the message; an explicit Check Again clears
-it. Browser checks for rollback display, copying, reload, reopening and retry
-passed. The release workflow now exercises actual Windows helper/worker restart
-and startup-failure rollback before publishing. No solver changes were made.
+restart failure: the updater inherited the server socket, keeping it alive
+after the parent exited. A replacement listener either could not bind or could
+not receive requests when socket reuse was attempted. The local host now marks
+listening and accepted sockets non-inheritable before starting child processes.
+The existing exclusive loopback listener and session/origin checks are retained.
+Idle pre-opened connections have a short first-byte deadline so they cannot block
+the local request loop. Restart errors are captured in job logs. Failed update
+results reopen the update dialog, and a separate persistent error region survives
+farm notices, refreshes and reopening. Copy Error preserves the message; an
+explicit Check Again clears it. Browser checks for rollback display, copying,
+reload, reopening, retry and blocked storage passed. The release workflow now
+exercises actual Windows helper/worker restart and startup-failure rollback before
+publishing. No solver changes were made.
+
+Native Windows verification run 37405606247, job 112082381907 passed the actual
+helper/worker successful update and injected startup-failure rollback. It also
+rejected a second app helper on the live port and retained private test farm JSON
+and the configured update source. The published workflow repeats these checks.
