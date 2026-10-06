@@ -299,3 +299,32 @@ aside>*{flex-shrink:0}
 .farm-picker-caption{min-height:28px}
 .farm-caption>span:last-child,.farm-picker-caption>span:last-child{min-width:0;overflow-wrap:anywhere}
 @media(forced-colors:active){.farm-icon{display:none}}
+
+/* Wrapped selections appear only where the native field cannot fit its name. */
+.selected-value{display:block;width:100%;font-size:12px;line-height:18px;color:#dce5f2;white-space:normal;overflow-wrap:anywhere}
+#hab-fields{align-items:start}
+.loadout-item-name{display:block;width:100%;text-align:center;overflow-wrap:anywhere;line-height:20px}
+
+/* Purchases, timed breaks and the end of a shift each have a distinct place. */
+.shift-summary>summary{background:#1a2738}
+.shift-summary[open]>summary{border-bottom:1px solid #41526b}
+.shift-title{font-size:15px;font-weight:650}
+.guide-step{border-top:0;padding:0;margin:16px 0 0}
+.guide-step:has(.guide-items),.guide-step:has(.ship-run-details){padding:12px;border:1px solid #35435a;border-radius:8px;background:#17212f}
+.guide-step-heading{gap:8px 16px;flex-wrap:wrap}
+.guide-items{margin-top:12px}
+.guide-item{align-items:center}
+.guide-break{margin-top:12px;border-radius:6px}
+.guide-step>.guide-break:first-child{margin-top:0}
+.guide-break-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px 16px;flex-wrap:wrap}
+.guide-break-duration{font-size:16px;line-height:22px;font-variant-numeric:tabular-nums;color:#eef4ff}
+.guide-break .guide-resume{font-size:13px;font-weight:600;line-height:20px}
+.guide-break>span,.guide-break>small{font-size:11px;line-height:17px;color:#b5c3d6}
+.guide-break.fuel{background:#332d1e;border-left-color:#dab466}
+.guide-break.fuel .guide-resume{color:#f2dca8}
+.guide-complete{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:6px 16px;margin:18px 0 0;padding:12px;border:1px solid #48695a;border-radius:6px;background:#1b3028;color:#bee9cf;line-height:20px}
+.guide-complete>b{font-size:13px}
+.guide-complete>time{font-size:12px}
+.action.wait.offline{border-left:3px solid #68c79a;background:#1c332f}
+.action.wait.online{border-left:3px solid #78aee4;background:#1d2c3f}
+@media(forced-colors:active){.guide-break,.guide-complete,.guide-step:has(.guide-items),.guide-step:has(.ship-run-details),.action.wait{color:CanvasText;background:Canvas;border-color:CanvasText}.guide-break-duration,.guide-break .guide-resume,.guide-break>span,.guide-break>small{color:CanvasText}}

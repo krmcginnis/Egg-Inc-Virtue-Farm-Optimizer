@@ -1,9 +1,10 @@
-# Egg Inc. Virtue Farm Optimizer v0.7.11 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.7.12 — Release Audit
 
-v0.7.11 adds original habitat, vehicle, and Hyperloop car artwork to the farm
-controls and purchase timeline. Its focused validation is recorded at the end
-of this audit. Solver and game data remain unchanged; earlier UI, asset,
-import, updater, and model evidence follows.
+v0.7.12 improves long selected names, the purchase/break/completion hierarchy
+and nearby helper text. Native controls and the compact two-panel desktop
+layout are retained. Its focused validation is recorded at the end of this
+audit. Solver and game data remain unchanged; earlier UI, asset, import,
+updater and model evidence follows.
 
 The solver evidence below is the unchanged v1.6.1 baseline.
 
@@ -467,3 +468,47 @@ The generated worker SHA256 remains
 `2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.
 The unchanged release workflow requires native Windows installation, restart,
 rollback, and public-feed/download checksum verification before handover.
+
+
+## Selected names and timeline clarity — v0.7.12
+
+Native hab, vehicle, artifact and stone selects gain a wrapped selected-name
+readout only when the closed field would clip it. A shared, debounced animation
+frame measures actual rendered text and updates on selection, resizing, tab
+changes and disclosures. The readout is decorative to assistive technology;
+native names, options, values, keyboard behavior and manual-edit locks remain.
+Short or empty selections add no height. Hab controls stay aligned when one
+selection wraps. Artifact titles wrap inside their cards; selectors omit the
+repeated effect text while the selected artifact and stone effects stay visible
+beneath the artwork.
+
+Shift headers retain duration, gained TE, Soul Egg cost and the end timestamp.
+Quick guides distinguish purchase groups, labeled online/offline/fuel breaks,
+and one final Shift Complete strip. Break duration and the exact resume date
+are prominent. A shift ending in a break, including a wait-only shift, now
+receives its completion strip. Research tiers, in-game order and level ranges
+are retained, with levels vertically aligned beside their names. Wait coloring
+also carries through to the lazy full breakdown. Mode labels provide meaning
+without color. Shared guide instructions appear once; repeated hints elsewhere
+are shortened while input constraints, precision, timing, inventory and model
+rules remain available near controls or in Assumptions.
+
+Targeted browser checks verify clipped, short and empty selections, keyboard
+labels and editing locks, resizing and tab changes, artifact effects, saved
+values, exact break modes/durations/resume timestamps, one completion strip per
+shift, ordered research and adjacent levels, folded brief online waits, lazy
+full details, unchanged replay actions and layouts from 1440 to 320 pixels.
+The existing planning-clarity, sidebar/fleet UI polish, loadout, research and
+farm-artwork suites also pass, including offline operation and missing-art
+fallbacks. The two-panel desktop layout is retained. Screenshots were inspected
+for the selected-name and purchase/break/completion views.
+
+No solver, shared action grouping, game data, ship, routing or PDF code changes.
+The rebuilt worker SHA256 remains
+`2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.
+The unchanged release workflow requires native Windows installation, restart,
+rollback and anonymous public-feed/download checksum verification before
+handover. Native screen-reader testing is not claimed.
+
+Local npm install/build, release-state and publish-plan guards pass. The local
+verified package contains 164 runtime files and only the current audit.

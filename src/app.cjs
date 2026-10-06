@@ -13,6 +13,7 @@ const LoadoutCard = require("./loadout-card.cjs");
 const EggIcons = require("./egg-icons.cjs");
 const ResearchIcons = require("./research-icons.cjs");
 const FarmIcons = require("./farm-icons.cjs");
+const SelectionReadout = require("./selection-readout.cjs");
 const AppUpdates = require("./app-updates.cjs");
 const $ = (id) => document.getElementById(id), D = S.D;
 let config = blankFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
@@ -46,13 +47,13 @@ function updateSequenceVisibility() {
   $("sequence").required = !automatic;
   $("wasmegg-sequence-description").hidden = strategy === "user";
   $("strategy-description").textContent = {
-    auto: "Compares Wasmegg optimized plans, then searches other routes and purchase strategies. Keeps the fastest feasible plan found within your limits.",
-    wasmegg: "Optimizes purchases and waits within the Wasmegg stage order below, comparing C1/K1 time budgets and research sales. I1 moves before K1 if Chicken Universes can finish in under one hour.",
+    auto: "Compares Wasmegg optimized plans with free routing; keeps the fastest feasible result found within your limits.",
+    wasmegg: "Uses the stage order below, comparing opening budgets and research sales. I1 precedes K1 when Chicken Universes can finish in under one hour.",
     user: "Enter your truth egg switch sequence below."
   }[strategy] || "Select a planning strategy.";
-  $("routing-help").textContent = automatic ? "Automatic visits are set by this strategy. Choose User Selected Sequence to enter your own order." : "Automatic visits are off. Your truth egg sequence controls the visit order.";
+  $("routing-help").textContent = automatic ? "Choose User Selected Sequence to enter your own order." : "Your truth egg sequence controls the visit order.";
   $("effort").disabled = strategy === "wasmegg";
-  $("effort-help").textContent = strategy === "wasmegg" ? "This strategy runs every eligible opening comparison. The additional search budget is unused." : "Opening comparisons run first. Total processing time includes those comparisons plus this additional search budget.";
+  $("effort-help").textContent = strategy === "wasmegg" ? "All eligible openings are compared; this extra budget is unused." : "Extra search runs after all opening comparisons.";
 }
 const num = NumberFormat.format;
 const fuelNumber = require('./fuel-format.cjs');
@@ -92,6 +93,7 @@ function tab(name, focusHeading = false) {
   document.querySelectorAll("[data-page]").forEach((x) => x.hidden = x.dataset.page !== name);
   $("page-title").textContent = titleCase(labels[name]);
   window.scrollTo({ top: 0 });
+  SelectionReadout.refresh();
   if (focusHeading) $("page-title").focus({ preventScroll: true });
 }
 function readNumber(id, name, min = 0, max = Infinity, integer = false) {
@@ -266,6 +268,7 @@ function selectField(label, id, opts, value) {
   s.append(...opts.map(([v, t]) => option(v, t)));
   s.value = value === null ? "" : String(value);
   l.append(s);
+  SelectionReadout.attach(s);
   return l;
 }
 function renderColleggtibleTotals(tiers, overrides) {
@@ -675,7 +678,7 @@ function renderLoadouts() {
       const preview = el("div", void 0, "loadout-card"); preview.id = `loadout-card-${key}-${i}`;
       div.append(preview);
       const editors = el("div", void 0, "loadout-editors");
-      editors.append(selectField("Artifact " + (i + 1), `artifact-${key}-${i}`, [["", "Empty"], ...D.artifacts.map((a) => [a.id, a.label + " \xB7 " + a.effect])], slot.artifactId));
+      editors.append(selectField("Artifact " + (i + 1), `artifact-${key}-${i}`, [["", "Empty"], ...D.artifacts.map((a) => [a.id, a.label])], slot.artifactId));
       const stones = el("div", void 0, "stone-fields");
       stones.id = `stones-${key}-${i}`;
       editors.append(stones);
@@ -694,10 +697,10 @@ function updateLoadoutCard(key, i) {
 }
 function updateArtifactNotes() {
   const manual = $("manualFarmData").checked, automatic = Array.isArray(config.farm.artifactInventory) && !manual;
-  $("current-set-note").textContent = "Starting equipped gear. Changes are possible only on Humility during the plan.";
-  $("earnings-set-note").textContent = automatic ? "Highest research buying power for the starting farm: income ÷ research cost multiplier, using owned gear and stones. The solver also compares income-focused sets." : manual ? "The solver uses the entered artifacts and stones." : "Import a Virtue inventory for automatic selection, or enable Edit Farm Manually.";
+  $("current-set-note").textContent = "Starting gear. Changes require Humility.";
+  $("earnings-set-note").textContent = automatic ? "Owned gear with the highest starting research buying power: income ÷ research cost multiplier. The solver also compares income-focused sets." : manual ? "The solver uses these artifacts and stones." : "Import Virtue inventory for automatic sets, or enable Edit Farm Manually.";
   const chosen = !dirty && (result?.artifactRecommendations || result?.actions.find(a => a.type === "set" && a.set.startsWith("auto-delivery-")));
-  $("delivery-set-note").textContent = automatic ? chosen ? "Selected using the plan's research upgrades and shipping capacity. Follow the timeline for the exact gear and stones to equip." : "Starting-farm preview. The solver recalculates the laying/shipping balance at the planned equip time." : manual ? "The solver uses the entered artifacts and stones." : "Import a Virtue inventory for automatic selection, or enable Edit Farm Manually.";
+  $("delivery-set-note").textContent = automatic ? chosen ? "Selected for this plan's research and shipping capacity. Equip the gear shown in the timeline." : "Starting-farm preview. Recalculated for the planned equip time." : manual ? "The solver uses these artifacts and stones." : "Import Virtue inventory for automatic sets, or enable Edit Farm Manually.";
   setSource($("earnings-set-source"), manual ? "Manual Override" : automatic ? "Starting Farm Preview" : "Retained Set", "Research and earnings selection for the current starting inputs.", manual ? "manual" : "default");
   setSource($("delivery-set-source"), manual ? "Manual Override" : automatic ? chosen ? "Calculated for This Plan" : "Starting Farm Preview" : "Retained Set", chosen && automatic ? "Selected for the last completed plan. Changed inputs invalidate this recommendation." : "Preview for the starting farm, before planned upgrades.", manual ? "manual" : chosen && automatic ? "imported" : "default");
   updateDataSources();
@@ -722,7 +725,7 @@ function updateStartingGear(s, c) {
 function renderStones(key, i, values = []) {
   const art = S.AMAP[$(`artifact-${key}-${i}`).value], host = $(`stones-${key}-${i}`);
   host.replaceChildren();
-  for (let j = 0; j < (art?.slots || 0); j++) host.append(selectField("Stone " + (j + 1), `stone-${key}-${i}-${j}`, [["", "Empty"], ...D.stones.map((s) => [s.id, s.label + " \xB7 " + s.effect])], values[j] || null));
+  for (let j = 0; j < (art?.slots || 0); j++) host.append(selectField("Stone " + (j + 1), `stone-${key}-${i}-${j}`, [["", "Empty"], ...D.stones.map((s) => [s.id, s.label])], values[j] || null));
   updateLoadoutCard(key, i);
 }
 function formLoadouts() {
@@ -793,6 +796,7 @@ function stat(label, value, sub, egg) {
 }
 function refresh() {
   document.querySelectorAll("[data-farm-picker] select").forEach(FarmIcons.updatePicker);
+  SelectionReadout.refresh();
   clearFieldError();
   updateAccountSummaries();
   EggIcons.decorateLabel($("virtue").closest("label"), $("virtue").value);
@@ -1053,7 +1057,7 @@ function renderResult() {
   frontier.append(table, el("p", "These are feasible plans discovered by the search, not exhaustive optima for every switch count.", "hint"));
   host.append(frontier);
   const heading = el("div", void 0, "shift-overview-heading");
-  heading.append(el("h2", "Shift activities"), el("p", "Open a shift for its quick guide: purchase targets between breaks. Open Full breakdown for individual actions. Online gaps under 10 seconds stay folded into purchase groups and included in totals.", "hint"));
+  heading.append(el("h2", "Shift activities"), el("p", "Open a shift for purchase targets in game order, then follow each break and resume time. Full Breakdown shows individual actions. Online waits under 10 seconds stay in purchase groups and totals.", "hint"));
   host.append(heading);
   const events = initial.c.calendar.filter((e) => e.t > r.start && e.t <= r.end);
   let ei = 0;
@@ -1076,11 +1080,13 @@ function renderResult() {
     header.append(chips, el("div", waitTotals(shift), "shift-waits"));
     group.append(header);
     const guide = el("div", void 0, "quick-guide");
-    guide.append(el("h3", "Quick guide"), el("p", "Reach these levels, then take the listed break. Research is grouped by tier in the in-game order.", "hint"));
+    guide.append(el("h3", "Quick guide"));
     for (const [index, step] of shift.quickGuide.entries()) {
       const block = el("section", void 0, "guide-step"), stepHead = el("div", void 0, "guide-step-heading");
-      stepHead.append(el("h4", step.activities.length ? "Purchase group " + (index + 1) : "Break " + (index + 1)), el("time", timestamp(step.start, zone), "guide-start"));
-      block.append(stepHead);
+      if (step.activities.length || step.shipRun) {
+        stepHead.append(el("h4", step.activities.length ? "Purchase group " + (index + 1) : "Ship launches"), el("time", timestamp(step.start, zone), "guide-start"));
+        block.append(stepHead);
+      }
       const items = el("div", void 0, "guide-items");
       for (const tier of G.groups(step.activities)) {
         const section = el("section", void 0, "guide-tier");
@@ -1098,7 +1104,6 @@ function renderResult() {
         items.append(section);
       }
       if (step.activities.length) block.append(items);
-      else block.append(el("p", step.break ? "No purchases before this break." : "No further purchases in this shift.", "hint"));
       if (step.shipRun) {
         const run = step.shipRun, details = el("div", void 0, "ship-run-details");
         details.append(el("p", "Stay on Humility for " + exactDuration(run.end - run.t) + " to fund, fuel, and launch these missions."));
@@ -1115,19 +1120,20 @@ function renderResult() {
       }
       if (step.hiddenOnlineSeconds || step.interactionSeconds) block.append(el("p", [step.hiddenOnlineSeconds ? "Brief online waits included: " + exactDuration(step.hiddenOnlineSeconds) : "", step.interactionSeconds ? "Interactions: " + exactDuration(step.interactionSeconds) : ""].filter(Boolean).join(" \xB7 "), "guide-overhead"));
       if (step.break) {
-        const pause = step.break, breakBox = el("div", void 0, "guide-break " + pause.mode), resume = el("time", "Resume " + timestamp(pause.end, zone, true));
+        const pause = step.break, breakBox = el("div", void 0, "guide-break " + pause.mode), breakHeading = el("div", void 0, "guide-break-heading"), resume = el("time", "Resume " + timestamp(pause.end, zone, true), "guide-resume");
         resume.dateTime = new Date(pause.end * 1e3).toISOString();
-        breakBox.append(el("b", (pause.mode === "fuel" ? "Collect fuel for " : pause.mode === "offline" ? "Go offline for " : "Wait online for ") + exactDuration(pause.seconds)), el("span", "Starts " + timestamp(pause.start, zone)), resume);
+        breakHeading.append(el("b", pause.mode === "fuel" ? "Fuel Collection" : pause.mode === "offline" ? "Offline Break" : "Online Wait"), el("strong", exactDuration(pause.seconds), "guide-break-duration"));
+        breakBox.append(breakHeading, resume, el("span", "Starts " + timestamp(pause.start, zone)));
         if (pause.reason) breakBox.append(el("small", pause.reason));
         block.append(breakBox);
-      } else {
-        const done = el("time", "Shift ends " + timestamp(shift.end, zone, true), "guide-complete");
-        done.dateTime = new Date(shift.end * 1e3).toISOString();
-        block.append(done);
       }
       guide.append(block);
     }
     if (!shift.quickGuide.length) guide.append(el("p", "No purchases or breaks in this shift.", "hint"));
+    const complete = el("div", void 0, "guide-complete"), done = el("time", timestamp(shift.end, zone, true));
+    done.dateTime = new Date(shift.end * 1e3).toISOString();
+    complete.append(el("b", "Shift Complete"), done);
+    guide.append(complete);
     group.append(guide);
     const full = el("details", void 0, "full-breakdown");
     full.append(el("summary", "Full breakdown \xB7 individual purchases and waits"));
@@ -1150,7 +1156,7 @@ function renderResult() {
       const fragment = document.createDocumentFragment();
       for (const {a, leading, during} of records) {
       for (const e of leading) fragment.append(el("div", timestamp(e.t, zone) + " \xB7 " + e.earnings + "\xD7 earnings \xB7 " + (e.sale === 0.3 ? "70% research discount" : "regular research prices"), "event-marker"));
-      const row = el("div", void 0, "action " + a.type);
+      const row = el("div", void 0, "action " + a.type + (a.type === "wait" ? " " + (a.earningsMode || "online") : ""));
       const time = el("time", timestamp(a.t, zone));
       time.dateTime = new Date(a.t * 1e3).toISOString();
       const detail = el("div");
@@ -1596,10 +1602,12 @@ function sizeRunBar() {
 }
 if (typeof ResizeObserver !== "undefined") new ResizeObserver(sizeRunBar).observe(runBar);
 window.addEventListener("resize", sizeRunBar);
+SelectionReadout.observe($("main-content"));
 document.addEventListener("focusin", ({target}) => { NumericInput.focus(target); keepFocusedControlVisible(target); });
 document.addEventListener("focusout", ({target}) => NumericInput.blur(target));
 document.addEventListener("change", (e) => {
   FarmIcons.updatePicker(e.target);
+  if (e.target.matches("select")) SelectionReadout.refresh();
   const id = e.target.id;
   const editingKey = Object.keys(editingGroups).find(key => editingGroups[key].toggles.includes(id));
   if (editingKey) {
