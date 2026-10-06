@@ -178,6 +178,9 @@ aside .update-app{display:flex;align-items:center;justify-content:center;gap:8px
 .update-heading h2{margin:0}
 #update-dialog .hint{margin:14px 0;line-height:1.5}
 #update-notes{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:13px;max-height:210px;overflow:auto;padding:12px;background:#0f1a16;border-radius:8px}
+#update-error{margin:12px 0;padding:12px;border:1px solid #b66d63;border-radius:8px;background:#352522}
+#update-error p{margin:0 0 8px;font-size:12px}
+#update-error-text{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;font-size:13px;max-height:240px;overflow:auto;margin:0 0 12px;user-select:text}
 #update-source{margin-top:20px;border-top:1px solid #43534c;padding-top:14px}
 #update-source summary{cursor:pointer;margin-bottom:12px}
 .update-source-controls{display:flex;align-items:center;gap:8px;margin-top:7px}
