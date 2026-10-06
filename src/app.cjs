@@ -52,6 +52,7 @@ function updateSequenceVisibility() {
   $("effort-help").textContent = strategy === "wasmegg" ? "This strategy runs every eligible opening comparison. The additional search budget is unused." : "Opening comparisons run first. Total processing time includes those comparisons plus this additional search budget.";
 }
 const num = NumberFormat.format;
+const fuelNumber = require('./fuel-format.cjs');
 function duration(n) {
   if (!Number.isFinite(n)) return "\u2014";
   if (n > 0 && n < 1) return "<1s";
@@ -168,11 +169,11 @@ function select(id, options, value) {
   node.replaceChildren(...options.map(([v, l]) => option(v, l)));
   node.value = value;
 }
-function field(label, id, value, type = "text", attrs = {}) {
+function field(label, id, value, type = "text", attrs = {}, format) {
   const l = el("label", label), i = el("input");
   i.id = id;
   i.type = type;
-  NumericInput.write(i, value);
+  NumericInput.write(i, value, format);
   Object.assign(i, attrs);
   l.append(i);
   return l;
@@ -311,9 +312,9 @@ function renderForm() {
   $("activeSet").value = f.activeSet || "current";
   renderLoadouts();
   const tank = f.fuelTank || {}, capacity = tank.capacity ?? 2e9, capacities = Ships.TANKS.includes(capacity) ? Ships.TANKS : [...Ships.TANKS, capacity];
-  select("tankCapacity", capacities.map((n) => [n, num(n)]), capacity);
-  NumericInput.write($("tankOutput"), tank.outputPerMinute ?? Ships.rateFor(capacity));
-  $("fuel-fields").replaceChildren(...S.EGGS.map((egg, i) => EggIcons.decorateLabel(field(S.NAME[i] + " Fuel", "fuel-" + egg, tank.amounts?.[egg] ?? 0), egg)));
+  select("tankCapacity", capacities.map((n) => [n, fuelNumber(n)]), capacity);
+  NumericInput.write($("tankOutput"), tank.outputPerMinute ?? Ships.rateFor(capacity), fuelNumber);
+  $("fuel-fields").replaceChildren(...S.EGGS.map((egg, i) => EggIcons.decorateLabel(field(S.NAME[i] + " Fuel", "fuel-" + egg, tank.amounts?.[egg] ?? 0, "text", {}, fuelNumber), egg)));
   $("shipSlots").value = p.ships?.slots ?? 3;
   renderExistingFlights();
   const visits = Ships.plannedVisits(p.ships, result?.actions);
@@ -658,7 +659,7 @@ function refresh() {
     }
     const m = c.mods[s.set];
     $("artifact-mods").textContent = "Active set effects: " + Object.entries(m).map(([k, v]) => k + " \xD7" + v.toFixed(3)).join(" \xB7 ");
-    $("fuel-status").textContent = num(c.ships.stored.reduce((a, b) => a + b, 0)) + " stored / " + num(c.ships.capacity) + " capacity";
+    $("fuel-status").textContent = fuelNumber(c.ships.stored.reduce((a, b) => a + b, 0)) + " stored / " + fuelNumber(c.ships.capacity) + " capacity";
     renderExistingFlights();
     const shipEstimate = $("ship-estimate");
     shipEstimate.replaceChildren();
