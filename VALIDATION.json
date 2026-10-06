@@ -343,8 +343,15 @@
   },
   "updateFailureHandling": {
     "version": "0.7.2",
-    "windowsRestartReproduction": "reproduced before fix",
+    "windowsRestartReproduction": "reproduced before fix; socket inheritance prevented",
     "persistentErrorCopyReloadAndRetry": "passed",
-    "solverChanges": false
+    "solverChanges": false,
+    "nativeWindowsSuccessAndRollback": "passed",
+    "duplicateLivePortRejected": "passed",
+    "blockedBrowserStorageError": "passed",
+    "verificationRun": 37405606247,
+    "verificationJob": 112082381907,
+    "exclusiveLoopbackListenerRetained": true,
+    "workerSha256": "2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320"
   }
 }
