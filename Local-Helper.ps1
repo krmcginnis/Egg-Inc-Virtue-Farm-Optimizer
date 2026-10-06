@@ -27,17 +27,31 @@ if (Test-Path -LiteralPath $assetRoot -PathType Container) {
 }
 try { $Host.UI.RawUI.WindowTitle = $appTitle } catch { }
 $listener = $null
+$portMutex = $null
 $requestedPort = $Port
 if ($requestedPort -ne 0 -and ($requestedPort -lt 8765 -or $requestedPort -gt 8790)) { throw 'Invalid app port.' }
 $firstPort = 8765; $lastPort = 8790
 if ($requestedPort) { $firstPort = $requestedPort; $lastPort = $requestedPort }
 for ($candidate = $firstPort; $candidate -le $lastPort; $candidate++) {
     try {
+        # Reuse closed TCP connections on Windows without letting two app
+        # helpers share a live port. Keep the mutex until the listener stops.
+        $candidateMutex = [Threading.Mutex]::new($false, "Local\EggIncVirtueOptimizer-Port-$candidate")
+        $ownsPort = $false
+        try { $ownsPort = $candidateMutex.WaitOne(0) }
+        catch [Threading.AbandonedMutexException] { $ownsPort = $true }
+        if (-not $ownsPort) { $candidateMutex.Dispose(); continue }
+        $portMutex = $candidateMutex
         $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $candidate)
+        $listener.ExclusiveAddressUse = $false
+        $listener.Server.SetSocketOption([Net.Sockets.SocketOptionLevel]::Socket, [Net.Sockets.SocketOptionName]::ReuseAddress, $true)
         $listener.Start()
         $port = $candidate
         break
-    } catch { $listener = $null }
+    } catch {
+        if ($listener) { $listener.Stop() }; $listener = $null
+        if ($portMutex) { $portMutex.ReleaseMutex(); $portMutex.Dispose(); $portMutex = $null }
+    }
 }
 if ($null -eq $listener) { throw 'Cannot open a local app port. Close another instance and retry.' }
 $baseUrl = "http://127.0.0.1:$port"
@@ -191,4 +205,7 @@ try {
             try { Text-Reply $stream 400 'Could not read the local request.' } catch {}
         } finally { $stream.Dispose(); $client.Close() }
     }
-} finally { $listener.Stop() }
+} finally {
+    $listener.Stop()
+    if ($portMutex) { $portMutex.ReleaseMutex(); $portMutex.Dispose() }
+}
