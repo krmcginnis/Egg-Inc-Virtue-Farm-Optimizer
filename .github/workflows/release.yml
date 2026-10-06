@@ -1,0 +1,99 @@
+name: Publish App Release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Import prepared source on the first run
+        shell: pwsh
+        run: |
+          if (Test-Path -LiteralPath 'bootstrap') {
+            $chunks = @(Get-ChildItem -LiteralPath 'bootstrap' -Filter 'source-*.b64' | Sort-Object Name)
+            $encoded = ($chunks | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join ''
+            [IO.File]::WriteAllBytes((Join-Path (Get-Location) 'source-bootstrap.zip'), [Convert]::FromBase64String($encoded))
+          }
+          if (Test-Path -LiteralPath 'source-bootstrap.zip') {
+            if ((Get-FileHash -LiteralPath 'source-bootstrap.zip' -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'b70dd37c3f69a4b7e817f462df3ecbe8671484358755f479969eed97422976d1') { throw 'Prepared source checksum mismatch.' }
+            $destination = Join-Path $env:RUNNER_TEMP 'virtue-bootstrap'
+            Expand-Archive -LiteralPath 'source-bootstrap.zip' -DestinationPath $destination
+            foreach ($item in (Get-ChildItem -LiteralPath $destination -Force)) {
+              if ($item.Name -in @('.github','app.js','worker-source.js','update-config.json')) { continue }
+              Copy-Item -LiteralPath $item.FullName -Destination . -Recurse -Force
+            }
+            Remove-Item -LiteralPath 'source-bootstrap.zip'
+            if (Test-Path -LiteralPath 'bootstrap') { Remove-Item -LiteralPath 'bootstrap' -Recurse -Force }
+            git config user.name 'github-actions[bot]'
+            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+            git add --all
+            git commit -m 'Import curated optimizer source and artwork'
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+            git push origin HEAD:main
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build and verify release
+        shell: pwsh
+        env:
+          RELEASE_REPOSITORY: ${{ github.repository }}
+          RELEASE_REF_TYPE: ${{ github.ref_type }}
+          RELEASE_REF_NAME: ${{ github.ref_name }}
+        run: |
+          npm ci
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          npm run build
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python scripts/package.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/update-core.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          if ($env:RELEASE_REF_TYPE -eq 'tag' -and $env:RELEASE_REF_NAME -cne "v$version") { throw 'Release tag must match package.json version.' }
+      - name: Publish complete assets together
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          gh release view "v$version" *> $null
+          if ($LASTEXITCODE -eq 0) { throw 'This version is already published. Increment the version before releasing.' }
+          gh release create "v$version" tmp/release/Egg-Inc-Virtue-Farm-Optimizer.zip tmp/release/update-manifest.json --title "Egg Inc. Virtue Farm Optimizer v$version" --notes-file RELEASE-NOTES.md --draft
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          gh release edit "v$version" --draft=false --latest
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Verify published update feed on Windows
+        shell: powershell
+        env:
+          RELEASE_REPOSITORY: ${{ github.repository }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          . (Join-Path (Get-Location) 'Update-Core.ps1')
+          $validation = Join-Path $env:RUNNER_TEMP 'virtue-public-feed'
+          [IO.Directory]::CreateDirectory($validation) | Out-Null
+          try {
+            $release = Get-UpdateRelease $env:RELEASE_REPOSITORY '0.0.0' $validation
+            if (-not $release.available) { throw 'The published release was not found by the updater.' }
+            $archive = Join-Path $validation 'published.zip'
+            Save-UpdateDownload $release.url $archive $release.size
+            Expand-VerifiedUpdate $archive (Join-Path $validation 'verified') $release | Out-Null
+            Write-Host "PASS: public update feed, complete release download and all app file checksums on Windows PowerShell $($PSVersionTable.PSVersion)."
+          } catch {
+            $failure = $_.Exception.Message
+            $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+            gh release edit "v$version" --draft=true
+            throw "Published feed validation failed; release hidden again. $failure"
+          }
