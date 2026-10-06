@@ -1,0 +1,582 @@
+{
+  "sourceRepository": "carpetsage/EggIncAssets",
+  "sourceCommit": "e821c7c9d5b39a9aee3eed0144a732c39489de1e",
+  "sourceDirectory": "128/egginc",
+  "referenceRepository": "wasmegg-carpet/egg",
+  "referenceCommit": "9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67",
+  "size": 128,
+  "icons": {
+    "0:0": "afx_lunar_totem_1.png",
+    "0:1": "afx_lunar_totem_2.png",
+    "0:2": "afx_lunar_totem_3.png",
+    "0:3": "afx_lunar_totem_4.png",
+    "1:0": "afx_tachyon_stone_2.png",
+    "1:1": "afx_tachyon_stone_3.png",
+    "1:2": "afx_tachyon_stone_4.png",
+    "3:0": "afx_neo_medallion_1.png",
+    "3:1": "afx_neo_medallion_2.png",
+    "3:2": "afx_neo_medallion_3.png",
+    "3:3": "afx_neo_medallion_4.png",
+    "4:0": "afx_beak_of_midas_1.png",
+    "4:1": "afx_beak_of_midas_2.png",
+    "4:2": "afx_beak_of_midas_3.png",
+    "4:3": "afx_beak_of_midas_4.png",
+    "5:0": "afx_light_eggendil_1.png",
+    "5:1": "afx_light_eggendil_2.png",
+    "5:2": "afx_light_eggendil_3.png",
+    "5:3": "afx_light_eggendil_4.png",
+    "6:0": "afx_demeters_necklace_1.png",
+    "6:1": "afx_demeters_necklace_2.png",
+    "6:2": "afx_demeters_necklace_3.png",
+    "6:3": "afx_demeters_necklace_4.png",
+    "7:0": "afx_vial_martian_dust_1.png",
+    "7:1": "afx_vial_martian_dust_2.png",
+    "7:2": "afx_vial_martian_dust_3.png",
+    "7:3": "afx_vial_martian_dust_4.png",
+    "8:0": "afx_ornate_gusset_1.png",
+    "8:1": "afx_ornate_gusset_2.png",
+    "8:2": "afx_ornate_gusset_3.png",
+    "8:3": "afx_ornate_gusset_4.png",
+    "9:0": "afx_the_chalice_1.png",
+    "9:1": "afx_the_chalice_2.png",
+    "9:2": "afx_the_chalice_3.png",
+    "9:3": "afx_the_chalice_4.png",
+    "10:0": "afx_book_of_basan_1.png",
+    "10:1": "afx_book_of_basan_2.png",
+    "10:2": "afx_book_of_basan_3.png",
+    "10:3": "afx_book_of_basan_4.png",
+    "11:0": "afx_phoenix_feather_1.png",
+    "11:1": "afx_phoenix_feather_2.png",
+    "11:2": "afx_phoenix_feather_3.png",
+    "11:3": "afx_phoenix_feather_4.png",
+    "12:0": "afx_tungsten_ankh_1.png",
+    "12:1": "afx_tungsten_ankh_2.png",
+    "12:2": "afx_tungsten_ankh_3.png",
+    "12:3": "afx_tungsten_ankh_4.png",
+    "21:0": "afx_aurelian_brooch_1.png",
+    "21:1": "afx_aurelian_brooch_2.png",
+    "21:2": "afx_aurelian_brooch_3.png",
+    "21:3": "afx_aurelian_brooch_4.png",
+    "22:0": "afx_carved_rainstick_1.png",
+    "22:1": "afx_carved_rainstick_2.png",
+    "22:2": "afx_carved_rainstick_3.png",
+    "22:3": "afx_carved_rainstick_4.png",
+    "23:0": "afx_puzzle_cube_1.png",
+    "23:1": "afx_puzzle_cube_2.png",
+    "23:2": "afx_puzzle_cube_3.png",
+    "23:3": "afx_puzzle_cube_4.png",
+    "24:0": "afx_quantum_metronome_1.png",
+    "24:1": "afx_quantum_metronome_2.png",
+    "24:2": "afx_quantum_metronome_3.png",
+    "24:3": "afx_quantum_metronome_4.png",
+    "25:0": "afx_ship_in_a_bottle_1.png",
+    "25:1": "afx_ship_in_a_bottle_2.png",
+    "25:2": "afx_ship_in_a_bottle_3.png",
+    "25:3": "afx_ship_in_a_bottle_4.png",
+    "26:0": "afx_tachyon_deflector_1.png",
+    "26:1": "afx_tachyon_deflector_2.png",
+    "26:2": "afx_tachyon_deflector_3.png",
+    "26:3": "afx_tachyon_deflector_4.png",
+    "27:0": "afx_interstellar_compass_1.png",
+    "27:1": "afx_interstellar_compass_2.png",
+    "27:2": "afx_interstellar_compass_3.png",
+    "27:3": "afx_interstellar_compass_4.png",
+    "28:0": "afx_dilithium_monocle_1.png",
+    "28:1": "afx_dilithium_monocle_2.png",
+    "28:2": "afx_dilithium_monocle_3.png",
+    "28:3": "afx_dilithium_monocle_4.png",
+    "29:0": "afx_titanium_actuator_1.png",
+    "29:1": "afx_titanium_actuator_2.png",
+    "29:2": "afx_titanium_actuator_3.png",
+    "29:3": "afx_titanium_actuator_4.png",
+    "30:0": "afx_mercurys_lens_1.png",
+    "30:1": "afx_mercurys_lens_2.png",
+    "30:2": "afx_mercurys_lens_3.png",
+    "30:3": "afx_mercurys_lens_4.png",
+    "31:0": "afx_dilithium_stone_2.png",
+    "31:1": "afx_dilithium_stone_3.png",
+    "31:2": "afx_dilithium_stone_4.png",
+    "32:0": "afx_shell_stone_2.png",
+    "32:1": "afx_shell_stone_3.png",
+    "32:2": "afx_shell_stone_4.png",
+    "33:0": "afx_lunar_stone_2.png",
+    "33:1": "afx_lunar_stone_3.png",
+    "33:2": "afx_lunar_stone_4.png",
+    "34:0": "afx_soul_stone_2.png",
+    "34:1": "afx_soul_stone_3.png",
+    "34:2": "afx_soul_stone_4.png",
+    "36:0": "afx_quantum_stone_2.png",
+    "36:1": "afx_quantum_stone_3.png",
+    "36:2": "afx_quantum_stone_4.png",
+    "37:0": "afx_terra_stone_2.png",
+    "37:1": "afx_terra_stone_3.png",
+    "37:2": "afx_terra_stone_4.png",
+    "38:0": "afx_life_stone_2.png",
+    "38:1": "afx_life_stone_3.png",
+    "38:2": "afx_life_stone_4.png",
+    "39:0": "afx_prophecy_stone_2.png",
+    "39:1": "afx_prophecy_stone_3.png",
+    "39:2": "afx_prophecy_stone_4.png",
+    "40:0": "afx_clarity_stone_2.png",
+    "40:1": "afx_clarity_stone_3.png",
+    "40:2": "afx_clarity_stone_4.png"
+  },
+  "files": {
+    "afx_aurelian_brooch_1.png": {
+      "sha256": "c1fb876a3c9ad7119d9e80945722b0191e96ae1813ddfe5fd5218a7803f8f2b0",
+      "bytes": 17870
+    },
+    "afx_aurelian_brooch_2.png": {
+      "sha256": "bbd6e09f753df0b9af3adc4f9321a2dd307cd8649849bafb87d1abe640efaa95",
+      "bytes": 20701
+    },
+    "afx_aurelian_brooch_3.png": {
+      "sha256": "b689a43fe8ffdbaf09046c31792522c1c5dfdbbf6566c9529aa85b58ca8395be",
+      "bytes": 20753
+    },
+    "afx_aurelian_brooch_4.png": {
+      "sha256": "55a5f66e70f4ec5939f4d8732d5a9a62c4140cf2ed5cb62b9fc78c182c9e2795",
+      "bytes": 19345
+    },
+    "afx_beak_of_midas_1.png": {
+      "sha256": "b982fdbd6a90e74f63e70892506f1bd35e693dabaed01669c7bceeea48085637",
+      "bytes": 8972
+    },
+    "afx_beak_of_midas_2.png": {
+      "sha256": "0e3142ef30997f66f13381bbadff8fb2c5d251d85b720f83a1a81e7b593699f0",
+      "bytes": 9950
+    },
+    "afx_beak_of_midas_3.png": {
+      "sha256": "47a8de894bd2dd030cc4dd71773c307f883855ef87c7f6602e81fe688b005e5a",
+      "bytes": 10666
+    },
+    "afx_beak_of_midas_4.png": {
+      "sha256": "a2a3fd4138ff5f537672066d8a00fcc5fbfdc19cdae3db02727e228966535cb6",
+      "bytes": 11408
+    },
+    "afx_book_of_basan_1.png": {
+      "sha256": "09951bd789bdd5f41c47931e678133b06a78e349c51aba3a2ef51d3a59c47c3b",
+      "bytes": 12563
+    },
+    "afx_book_of_basan_2.png": {
+      "sha256": "25bf291ace03584abd9f04bcfc7f474e8c286d65b93957b6123a094520937fed",
+      "bytes": 14661
+    },
+    "afx_book_of_basan_3.png": {
+      "sha256": "1c7f544356a0d29db8a4e271ec1dfa593a81cc33a212de26b57df0c6554b4c06",
+      "bytes": 18479
+    },
+    "afx_book_of_basan_4.png": {
+      "sha256": "645cc9b330ae95c084a8d4fa02f3c5ec4d9a673d630cc2512acb077f288446ce",
+      "bytes": 20416
+    },
+    "afx_carved_rainstick_1.png": {
+      "sha256": "344b478e1f597159e10a77a71e2f1e1e7e19583c1b0fb2fe8bd56bc80a0e7ffc",
+      "bytes": 15103
+    },
+    "afx_carved_rainstick_2.png": {
+      "sha256": "2ef8efed4cda9d26364d59c1130fad8a70d572f4e049b4677f86b5e4db788339",
+      "bytes": 15094
+    },
+    "afx_carved_rainstick_3.png": {
+      "sha256": "513b9b1af06c793a386e0b5b5cc21b7b8a6a39e49baa83c1d1057c910fa9aeef",
+      "bytes": 14408
+    },
+    "afx_carved_rainstick_4.png": {
+      "sha256": "c300b1af9f305b241a05ae32e153c9adf5bab76284c2093ecb37a9ae769ecaf2",
+      "bytes": 15404
+    },
+    "afx_clarity_stone_2.png": {
+      "sha256": "f2f3340e74d74d8d8763006d05ca2ed781a410d84e320b7f2df1a19e8efb9c0d",
+      "bytes": 15006
+    },
+    "afx_clarity_stone_3.png": {
+      "sha256": "05df3905d28641d6ca326b2313af3823e651947aee4000fb33153bec685fc3c4",
+      "bytes": 20881
+    },
+    "afx_clarity_stone_4.png": {
+      "sha256": "e86cb0ae352f0b9e36ba00b4435d77d8c3c035fda5856eebc15b2fa4a4ecc129",
+      "bytes": 23057
+    },
+    "afx_demeters_necklace_1.png": {
+      "sha256": "33e37cc509b0e3b37a018c3002a374f06ab7d23ed41b63899107272d2832dd1f",
+      "bytes": 14151
+    },
+    "afx_demeters_necklace_2.png": {
+      "sha256": "33e19efb5c4ee601f18934e98e20ae714ad774a317dd3b1a06c5c253c06a35e5",
+      "bytes": 15393
+    },
+    "afx_demeters_necklace_3.png": {
+      "sha256": "51c6f1ddf997cf8618ac13235fb128d564c2ff3f8bf3f4dda911695fe7078fde",
+      "bytes": 16993
+    },
+    "afx_demeters_necklace_4.png": {
+      "sha256": "3d660545126a91e65029e0e5acfab472122790e3c354162495cb0ea9a8946748",
+      "bytes": 18833
+    },
+    "afx_dilithium_monocle_1.png": {
+      "sha256": "77dee7c3579cae99862120506573c6e422af221bf47f2a6e6cb3d8ca59f8bbc0",
+      "bytes": 14749
+    },
+    "afx_dilithium_monocle_2.png": {
+      "sha256": "85762796d8a20671ef7f96c490c27be3f30b6db13dc7ec6130c59d998fcd0aae",
+      "bytes": 17293
+    },
+    "afx_dilithium_monocle_3.png": {
+      "sha256": "3c62854b404bcf4fc61ee6682d6fbb8429ab930ee5be3554d73c99de68dd05fa",
+      "bytes": 19783
+    },
+    "afx_dilithium_monocle_4.png": {
+      "sha256": "2999a560dde126f9b97d451ac5b62be13df7e49b3846c4573e8cfa5db698321d",
+      "bytes": 25273
+    },
+    "afx_dilithium_stone_2.png": {
+      "sha256": "46ac58e893e0bcbca8c62810d54c83b75dc779b3bff49cb6e13b1fb9ea6f8fa0",
+      "bytes": 10367
+    },
+    "afx_dilithium_stone_3.png": {
+      "sha256": "e18186252158ef7b9b5ad0ad5aa5af32ffdf0da5c470db2072179fab9e49d54a",
+      "bytes": 12886
+    },
+    "afx_dilithium_stone_4.png": {
+      "sha256": "2f07aaa38ff1be4bfffca3067a015d395e0da65f35da34c3a2b3d73db6ca4d94",
+      "bytes": 21638
+    },
+    "afx_interstellar_compass_1.png": {
+      "sha256": "8214021f988099d53fcef68d0816f46782318bfc4a5b12275c18d9906e51bc9e",
+      "bytes": 16494
+    },
+    "afx_interstellar_compass_2.png": {
+      "sha256": "50e12d03e8825af59ae752f977cb4fa5bfe80a015e4938b2f4817a84bcc5b0fc",
+      "bytes": 19754
+    },
+    "afx_interstellar_compass_3.png": {
+      "sha256": "bf063a991be4bf5f19b5098292007bcb1bbfadaceb2f893b1a4c241486050345",
+      "bytes": 21270
+    },
+    "afx_interstellar_compass_4.png": {
+      "sha256": "663c8f8b896d831d282e4378fceae6023b7e0f467ea681271792c3f28ffc7698",
+      "bytes": 26765
+    },
+    "afx_life_stone_2.png": {
+      "sha256": "4b862e8f519b12b3572a807b0411111dd38904fbebf58c909376438807c6d2a9",
+      "bytes": 11526
+    },
+    "afx_life_stone_3.png": {
+      "sha256": "caa4efcf4d63fc39c1a6520e2372ac989ea1930ab5a6bcc501b24fa2d060a92d",
+      "bytes": 16947
+    },
+    "afx_life_stone_4.png": {
+      "sha256": "bd293f611e4d8ed0c8532a89f6bc56fcda072b5bdf599d48b9ad3a1d26a13b08",
+      "bytes": 18706
+    },
+    "afx_light_eggendil_1.png": {
+      "sha256": "638a78d161b693822d4c4ec6c59edd586c38885745f3f455d13545d97ea730c0",
+      "bytes": 7639
+    },
+    "afx_light_eggendil_2.png": {
+      "sha256": "a22bf84ddf8c64a24e2826447fb07a0af33850c820d125f4c39b7705a661c33d",
+      "bytes": 9655
+    },
+    "afx_light_eggendil_3.png": {
+      "sha256": "0237e8457a3e3f5561c03f012947659b71393052b1800c3396771fd5fa32b58a",
+      "bytes": 9828
+    },
+    "afx_light_eggendil_4.png": {
+      "sha256": "947b33dcaa7371e2ffe559670703519c44bcec43e475e8851965fdbb7103cd05",
+      "bytes": 12587
+    },
+    "afx_lunar_stone_2.png": {
+      "sha256": "61f022620ff055ada2a8f3e357f7a0fd0df686f8e1a2b3448a92d1d2342ff679",
+      "bytes": 8466
+    },
+    "afx_lunar_stone_3.png": {
+      "sha256": "914798c18825839eaaf2204b1174b15aa80e8652afac9f82188fa32e5d7a02ff",
+      "bytes": 12677
+    },
+    "afx_lunar_stone_4.png": {
+      "sha256": "1600c39a83d8a74bbe5d970de960e046b0a16435a4761d67ce03f8b8f17f035e",
+      "bytes": 17417
+    },
+    "afx_lunar_totem_1.png": {
+      "sha256": "1840e66e804f5a65e4bef004ba94316c45c9855e4fa92fe4e4c37cb79dda8d3d",
+      "bytes": 11652
+    },
+    "afx_lunar_totem_2.png": {
+      "sha256": "46482569c78298d714d480f815ea5c49a169450f0b5f5bb95a6a088d913553cf",
+      "bytes": 15071
+    },
+    "afx_lunar_totem_3.png": {
+      "sha256": "ed46039837d8a9187b9fe79b4b193009afdddf7467b376161be454e052b40a3c",
+      "bytes": 18858
+    },
+    "afx_lunar_totem_4.png": {
+      "sha256": "4354cdf68be5b7e5b5cc2f6d86ca828d0a521c17deaaca0241b69809d71b44a4",
+      "bytes": 22220
+    },
+    "afx_mercurys_lens_1.png": {
+      "sha256": "c38f76c650a27a4785760fd1560a85dabe9a378eca8fb42827bf60f2a5ec229f",
+      "bytes": 24455
+    },
+    "afx_mercurys_lens_2.png": {
+      "sha256": "34a9cefaae687eaaae1477bcf6069808fc4439ccc780ffaac266f825d1b902b9",
+      "bytes": 22034
+    },
+    "afx_mercurys_lens_3.png": {
+      "sha256": "d09bffa17632a9188f7e45d2243798306168d5478532240cb922da1cbdb83c17",
+      "bytes": 24506
+    },
+    "afx_mercurys_lens_4.png": {
+      "sha256": "e19ec94452a6ef2d5c89ad79438cbf6cd138c300e87174b67aba62ca6d2010fc",
+      "bytes": 22335
+    },
+    "afx_neo_medallion_1.png": {
+      "sha256": "2bd9be322fd7c77f1a87cf79832917fa09f7b029b16cd581d8dc7105b4030542",
+      "bytes": 12452
+    },
+    "afx_neo_medallion_2.png": {
+      "sha256": "6295d2e01c0a5a2dd1484f2b1aff20b3aec3356fd8dd49ac3fd8eb9743b82650",
+      "bytes": 14356
+    },
+    "afx_neo_medallion_3.png": {
+      "sha256": "e3fb398438f127d5f80df3a1d8c5f44d394788da35c1d2b627079571f4e4231e",
+      "bytes": 16773
+    },
+    "afx_neo_medallion_4.png": {
+      "sha256": "7220fd966f79e7591f12f9c1e902c25ec4e019e21bc00976478d2d06c3953bee",
+      "bytes": 20667
+    },
+    "afx_ornate_gusset_1.png": {
+      "sha256": "477eb461afba5514feab84ffa6d8c0e3db2dddb1f90e612fe21570a534bc7ebc",
+      "bytes": 11105
+    },
+    "afx_ornate_gusset_2.png": {
+      "sha256": "2fcbaab273442b9f6b0d5c12570141375860c9732dea8687b183af6caaa28107",
+      "bytes": 14173
+    },
+    "afx_ornate_gusset_3.png": {
+      "sha256": "877941bf44ad1d8a596f177073b44c4ef35597f128cf470379f0f5a486aec139",
+      "bytes": 16615
+    },
+    "afx_ornate_gusset_4.png": {
+      "sha256": "dc229995fb71a3a87b614f36699d13a2f1a2908838fb63f8cfda502891d78d75",
+      "bytes": 18158
+    },
+    "afx_phoenix_feather_1.png": {
+      "sha256": "772e5c3ccfb2c455f20b72660cb7f7fb6f9f55d478fa9f5aead74cb8552bab52",
+      "bytes": 20889
+    },
+    "afx_phoenix_feather_2.png": {
+      "sha256": "5b86ea42cf623f55e50217a50b5224eaeaad4f38354ab8b75ff6ef87462cdc8e",
+      "bytes": 16862
+    },
+    "afx_phoenix_feather_3.png": {
+      "sha256": "9a642b2aa7315ccd4f83b003992f67107257cfdba31540286bbacf79d92aad65",
+      "bytes": 23452
+    },
+    "afx_phoenix_feather_4.png": {
+      "sha256": "8030a7aed53ab2624862941fc19564c31e2318ede7e519417518ab8c647eecde",
+      "bytes": 29129
+    },
+    "afx_prophecy_stone_2.png": {
+      "sha256": "6575510de83a8ae0d03b331ebac11da58c6cf958838d6449ec682063ef8cf87f",
+      "bytes": 9194
+    },
+    "afx_prophecy_stone_3.png": {
+      "sha256": "ad1707b4c58abeae4927388d230cf6fa512689e1357bcde8dfc9b8602f686bcd",
+      "bytes": 10546
+    },
+    "afx_prophecy_stone_4.png": {
+      "sha256": "83a3618b9a96fd21ce464f70c9ccfa276e7bcec888e8bad5ba369c82afa84a11",
+      "bytes": 15643
+    },
+    "afx_puzzle_cube_1.png": {
+      "sha256": "024e44f91b086b79b49eeb508ab82466a747a405cb4b0d0869b4bdeb9b78d188",
+      "bytes": 16491
+    },
+    "afx_puzzle_cube_2.png": {
+      "sha256": "cf7b20c5a1cfda5b2e760e5d364e09465469db8bd4c37f51ef42216f91d802f0",
+      "bytes": 19634
+    },
+    "afx_puzzle_cube_3.png": {
+      "sha256": "78d600a6961938d9e924eee63f0971bbbc9d2dc37faabbd1e03cabf9a9da6d12",
+      "bytes": 20643
+    },
+    "afx_puzzle_cube_4.png": {
+      "sha256": "03b7dc9834f66b6a722e9b70bfa1181af4b2b8d54d1aa8b1345bf2b6dd29c176",
+      "bytes": 22523
+    },
+    "afx_quantum_metronome_1.png": {
+      "sha256": "91aeb718f450751dfe737ee3e22c0af12621f3f1ca3711414736ec13ce4ac2d9",
+      "bytes": 10871
+    },
+    "afx_quantum_metronome_2.png": {
+      "sha256": "d287c149e190e23f4bf138028aa425cf42e1f1196b000843815aaa815a358994",
+      "bytes": 14230
+    },
+    "afx_quantum_metronome_3.png": {
+      "sha256": "e96eab262edfde4a4919ac19ddd9f463bce3544d9d33eb26be1d444f3552889b",
+      "bytes": 17164
+    },
+    "afx_quantum_metronome_4.png": {
+      "sha256": "5995f1ac4dc6d85dddac96dac811264c72569e3bba4816888eac974e6dc3fbcf",
+      "bytes": 17724
+    },
+    "afx_quantum_stone_2.png": {
+      "sha256": "7b876a4338b77ba345d2db893805cf830e7189dda2c9e249ffe908de46b41bc0",
+      "bytes": 10308
+    },
+    "afx_quantum_stone_3.png": {
+      "sha256": "f27532dea92a53021a71de761736577c80fddfea4bef66ee7351e26ea81acd13",
+      "bytes": 14082
+    },
+    "afx_quantum_stone_4.png": {
+      "sha256": "0043e7d06d33137277c7ccf98157ad742d6b562c1070fa17929d314903e69964",
+      "bytes": 25293
+    },
+    "afx_shell_stone_2.png": {
+      "sha256": "4598acb1bee609e542e6ab09e190e0b35a1c4b76ce2b038c0d1b83e7383f0310",
+      "bytes": 6579
+    },
+    "afx_shell_stone_3.png": {
+      "sha256": "41fd0da982ce5180e31637d21885be7047c7708285abedf0c65748eb4cfa3dd5",
+      "bytes": 9653
+    },
+    "afx_shell_stone_4.png": {
+      "sha256": "6a984900e520603d558c5940c8ce6f097903d24eab936b9b5cf058005358b37b",
+      "bytes": 13163
+    },
+    "afx_ship_in_a_bottle_1.png": {
+      "sha256": "6b39c2bbd12ef31824e5c0315d58b23a21f0d4722e8efa1abaa19b4baca5bbd1",
+      "bytes": 19193
+    },
+    "afx_ship_in_a_bottle_2.png": {
+      "sha256": "8bf8225419f01e504cf419008e4fb1fcf6199731eeb7d40ff0ead48c42a5711f",
+      "bytes": 23693
+    },
+    "afx_ship_in_a_bottle_3.png": {
+      "sha256": "ffbb83f20e4db4ff887840f2260d7153391dbc8502290c4494e728e85ddc680b",
+      "bytes": 25307
+    },
+    "afx_ship_in_a_bottle_4.png": {
+      "sha256": "6c3678e76b08d54eff13b57f690c9c247e5de64cf1c628f3a96bfa84bb75ed14",
+      "bytes": 26469
+    },
+    "afx_soul_stone_2.png": {
+      "sha256": "a099cc865c2a6bed51f8b8ecf37775adb39fc03c365e28412dedda36cc4c831d",
+      "bytes": 7260
+    },
+    "afx_soul_stone_3.png": {
+      "sha256": "b45bc5b73659278fa0af8b5f730398ab8482a497e0df7c83b27fe31508a808a6",
+      "bytes": 11131
+    },
+    "afx_soul_stone_4.png": {
+      "sha256": "22a5a98941bf7594bcdd905a66ecc1ab4d7579fe003b54f9d3f9d1b607937ad0",
+      "bytes": 17367
+    },
+    "afx_tachyon_deflector_1.png": {
+      "sha256": "b50f33c9277d9d0e5027c52865309a4b23fee852acd4a480ce7110f777f04d2c",
+      "bytes": 14445
+    },
+    "afx_tachyon_deflector_2.png": {
+      "sha256": "bb501791ef1589e0837f9252099f2946ebd30467084288c1189f8e21bb9a1beb",
+      "bytes": 16624
+    },
+    "afx_tachyon_deflector_3.png": {
+      "sha256": "59582f5d5f0025a25a238735506043694d5d8ddc21e6773abfab9aa23754a7c7",
+      "bytes": 20167
+    },
+    "afx_tachyon_deflector_4.png": {
+      "sha256": "f134002e810c319d58b98c7e08314018b51d327d762a70a5be5fd1d0cb85f772",
+      "bytes": 23312
+    },
+    "afx_tachyon_stone_2.png": {
+      "sha256": "02d120c31dbaa64991abf04243a233fe8560ff1dd2465f0fdf93c48275734981",
+      "bytes": 11565
+    },
+    "afx_tachyon_stone_3.png": {
+      "sha256": "935a3224ab85f24ede82ead7ed7265f4988572431b470556ceae3a85ed7efd3d",
+      "bytes": 13690
+    },
+    "afx_tachyon_stone_4.png": {
+      "sha256": "2a094bcb43446ca94afc4ba4bdc4b58cd7cc498f4d1ee01ab446adb63859d0b5",
+      "bytes": 21810
+    },
+    "afx_terra_stone_2.png": {
+      "sha256": "930455e5b3d557a6ce8a235092769ca0792747c928b22cdfbd5e433ab82bbd0d",
+      "bytes": 7966
+    },
+    "afx_terra_stone_3.png": {
+      "sha256": "9a14a4a33ccee42a882e03221c752099fcad747345d6cba75493a33a5f27ac5a",
+      "bytes": 11986
+    },
+    "afx_terra_stone_4.png": {
+      "sha256": "7a12efa0f8ddeb7936c8bd70214d74459497afa9d6107274131338481f67b27a",
+      "bytes": 17120
+    },
+    "afx_the_chalice_1.png": {
+      "sha256": "a2a35a5e7682a06b12d84d8721acd5eafb0d48ad4bb296c54d44eccfa7159000",
+      "bytes": 9357
+    },
+    "afx_the_chalice_2.png": {
+      "sha256": "c2af68a5653ea0a568e314a273cba38823da15cd8440710a5b7a61d686ee851e",
+      "bytes": 11263
+    },
+    "afx_the_chalice_3.png": {
+      "sha256": "9777fe50868a7a8310e6a91fc2f7c856e4bdd4c661c2bec6f244ef77eca51cbb",
+      "bytes": 14685
+    },
+    "afx_the_chalice_4.png": {
+      "sha256": "b84a2f81a4779eda508b5d36c8af0cb39fd72d6f2573c76b8c97be2b80cbd2f0",
+      "bytes": 15100
+    },
+    "afx_titanium_actuator_1.png": {
+      "sha256": "169c39b761166421e84740c052876cdcbf633e505b878baab7f8b9bd679090a1",
+      "bytes": 12982
+    },
+    "afx_titanium_actuator_2.png": {
+      "sha256": "a7e348c1cb6207da29d062acd625c693c8d6f48689ed918d6f0e96be2b2a9f58",
+      "bytes": 15058
+    },
+    "afx_titanium_actuator_3.png": {
+      "sha256": "f35f5f0161f0d578223f7961e67c105543d1608ef1d3ace7a994d7733501e865",
+      "bytes": 15167
+    },
+    "afx_titanium_actuator_4.png": {
+      "sha256": "dd4db1144664ddc4e0df276f930c79d04ffda0eb847387d45cf83db132b5a530",
+      "bytes": 16044
+    },
+    "afx_tungsten_ankh_1.png": {
+      "sha256": "9f5016da7dc19181d97457a8d7ee3d451bcb45dd65b3c72bc3f9ba14ba38895f",
+      "bytes": 11655
+    },
+    "afx_tungsten_ankh_2.png": {
+      "sha256": "a2646adc2d48c47a3d1faf4c817385398a7da08b98ab0550539888f443056630",
+      "bytes": 10378
+    },
+    "afx_tungsten_ankh_3.png": {
+      "sha256": "9f5a9f11d3de747cd262477ef9194b1fa6fe9eb4f9e642d1fce639e5ad4a24a2",
+      "bytes": 13606
+    },
+    "afx_tungsten_ankh_4.png": {
+      "sha256": "ff0dd4aef0c93b6ae380ad57fb77195e205388759e167512e8a0e81668010a04",
+      "bytes": 15537
+    },
+    "afx_vial_martian_dust_1.png": {
+      "sha256": "8de49135519abd17b8fb0ee28f9d047ad9e7e074219cb8ead44655275cde4908",
+      "bytes": 10075
+    },
+    "afx_vial_martian_dust_2.png": {
+      "sha256": "6c2c0aa2b93f81e0a0e819c4c822824c9adb605051ebe0566ee409cb175e6e5d",
+      "bytes": 12997
+    },
+    "afx_vial_martian_dust_3.png": {
+      "sha256": "1ed41defbdf3efe1a745be3cb14ddde6dc17ac3254e63e369cbd58b7ccf65ff9",
+      "bytes": 15638
+    },
+    "afx_vial_martian_dust_4.png": {
+      "sha256": "3a5a79c91db75796664c33ee80bdd5a3b7be468b5820d70b59c9430bf19560d8",
+      "bytes": 21305
+    }
+  }
+}

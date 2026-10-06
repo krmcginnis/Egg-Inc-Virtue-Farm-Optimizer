@@ -306,3 +306,27 @@ Update App is now the final item in the sidebar, below the Local Planning note.
 The existing flex layout places it at the bottom of the desktop menu panel.
 Its ID, accessible name, styling and update handler are unchanged.
 No solver, game data or update logic was changed.
+
+
+## Visual artifact loadouts — v0.7.6
+
+Current, Research & Earnings, and Delivery sets now show tier-specific original
+artifact artwork, visible tier/rarity, a horizontal socket row, and separate
+artifact/stone effect text. Repeated stones are grouped with their catalog bonus
+labeled “each”; displayed bonuses are read from the existing game data. Empty
+sockets and artifacts remain readable. Manual editing reveals the original
+native selectors, IDs and saved values; automatic sets remain read-only.
+
+All 171 catalog artifacts and 30 stones map to 114 original 128-pixel PNGs,
+bundled unchanged with pinned source, attribution and checksums. They use the
+existing managed artwork directory so older app updaters accept this release.
+No updater rules or solver calculations change.
+
+Targeted Chromium checks cover catalog integrity, tier/rarity, horizontal
+sockets, effect text, manual edits and locks, automatic owned-inventory sets,
+saved-farm round trips, layouts from 1440 to 320 px, offline file display,
+missing-image text fallback, and Standard Permit slots. The solver worker
+remains byte-identical:
+`2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.
+The release workflow repeats native Windows updater restart, rollback and public
+feed verification before keeping the release available.

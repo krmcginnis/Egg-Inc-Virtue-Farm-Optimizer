@@ -9,6 +9,7 @@ const nextAscension = require("./next-ascension.cjs"), U = require("./shift-summ
 const S = require("./simulator.cjs"), O = require("./optimizer.cjs"), I = require("./importer.cjs"), A = require("./api.cjs"), blankFarm = require("./blank-farm.cjs"), C = require("./colleggtibles.cjs");
 const NumberFormat = require("./number-format.cjs"), NumericInput = require("./numeric-input.cjs");
 const ArtifactSets = require("./artifact-optimizer.cjs");
+const LoadoutCard = require("./loadout-card.cjs");
 const EggIcons = require("./egg-icons.cjs");
 const AppUpdates = require("./app-updates.cjs");
 const $ = (id) => document.getElementById(id), D = S.D;
@@ -365,6 +366,7 @@ function restoreDraftInputs(draft) {
   apply((id) => !id.startsWith("stone-"));
   for (const key of ["current", "earnings", "delivery"]) for (let i = 0; i < ($("proPermit").value === "true" ? 4 : 2); i++) renderStones(key, i);
   apply((id) => id.startsWith("stone-"));
+  for (const key of ["current", "earnings", "delivery"]) for (let i = 0; i < ($("proPermit").value === "true" ? 4 : 2); i++) updateLoadoutCard(key, i);
   if (draft.fields.strategy || draft.fields.autoSequence) $("strategy").value = Strategy.selected({
     strategy: draft.fields.strategy?.value || config.plan.strategy,
     autoSequence: draft.fields.autoSequence?.checked ?? config.plan.autoSequence,
@@ -517,16 +519,20 @@ function renderLoadouts() {
   for (const key of ["current", "earnings", "delivery"]) {
     const section = el("div", void 0, "loadout");
     section.append(el("h3", key === "earnings" ? "Research & Earnings Set" : key[0].toUpperCase() + key.slice(1) + " Set"));
-    const grid = el("fieldset", void 0, "four-fields account-value-fields");
+    const grid = el("fieldset", void 0, "loadout-grid account-value-fields");
     grid.id = key + "-loadout-fields"; grid.disabled = !$("manualFarmData").checked;
     const note = el("p", void 0, "hint"); note.id = key + "-set-note"; section.append(note);
     for (let i = 0; i < limit; i++) {
       const slot = config.farm.loadouts[key]?.[i] || { artifactId: null, stones: [] };
       const div = el("div", void 0, "artifact-slot");
-      div.append(selectField("Artifact " + (i + 1), `artifact-${key}-${i}`, [["", "Empty"], ...D.artifacts.map((a) => [a.id, a.label + " \xB7 " + a.effect])], slot.artifactId));
+      const preview = el("div", void 0, "loadout-card"); preview.id = `loadout-card-${key}-${i}`;
+      div.append(preview);
+      const editors = el("div", void 0, "loadout-editors");
+      editors.append(selectField("Artifact " + (i + 1), `artifact-${key}-${i}`, [["", "Empty"], ...D.artifacts.map((a) => [a.id, a.label + " \xB7 " + a.effect])], slot.artifactId));
       const stones = el("div", void 0, "stone-fields");
       stones.id = `stones-${key}-${i}`;
-      div.append(stones);
+      editors.append(stones);
+      div.append(editors);
       grid.append(div);
     }
     section.append(grid);
@@ -534,6 +540,10 @@ function renderLoadouts() {
     for (let i = 0; i < limit; i++) renderStones(key, i, config.farm.loadouts[key]?.[i]?.stones || []);
   }
   updateArtifactNotes();
+}
+function updateLoadoutCard(key, i) {
+  const art = S.AMAP[$(`artifact-${key}-${i}`)?.value];
+  LoadoutCard.render($(`loadout-card-${key}-${i}`), art?.id, Array.from({length: art?.slots || 0}, (_, j) => $(`stone-${key}-${i}-${j}`)?.value || null));
 }
 function updateArtifactNotes() {
   const manual = $("manualFarmData").checked, automatic = Array.isArray(config.farm.artifactInventory) && !manual;
@@ -563,6 +573,7 @@ function renderStones(key, i, values = []) {
   const art = S.AMAP[$(`artifact-${key}-${i}`).value], host = $(`stones-${key}-${i}`);
   host.replaceChildren();
   for (let j = 0; j < (art?.slots || 0); j++) host.append(selectField("Stone " + (j + 1), `stone-${key}-${i}-${j}`, [["", "Empty"], ...D.stones.map((s) => [s.id, s.label + " \xB7 " + s.effect])], values[j] || null));
+  updateLoadoutCard(key, i);
 }
 function formLoadouts() {
   return Object.fromEntries(["current", "earnings", "delivery"].map(key => [key,Array.from({length:$("proPermit").value === "true" ? 4 : 2},(_,i) => {
@@ -1433,6 +1444,10 @@ document.addEventListener("change", (e) => {
   if (id.startsWith("artifact-")) {
     const [, key, i] = id.split("-");
     renderStones(key, Number(i));
+  }
+  if (id.startsWith("stone-")) {
+    const [, key, i] = id.split("-");
+    updateLoadoutCard(key, Number(i));
   }
   if (id === "proPermit") {
     try {

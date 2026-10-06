@@ -205,7 +205,7 @@
     "noNewAPIRequest": true,
     "newLiveAccountRequest": false,
     "nativeWindowsTested": false,
-    "currentAudit": "AUDIT-v0.7.5.md",
+    "currentAudit": "AUDIT-v0.7.6.md",
     "olderAuditFilesIncluded": false,
     "responsiveWidths": [
       1440,
@@ -316,7 +316,7 @@
       "publicFeedDownloadAndChecksums": "passed"
     }
   },
-  "currentVersion": "0.7.5",
+  "currentVersion": "0.7.6",
   "releaseRenumbering": {
     "version": "0.7.0",
     "previousVersion": "1.7.0",
@@ -377,5 +377,31 @@
     "change": "markup order only; Update App last in sidebar",
     "solverChanges": false,
     "updateLogicChanges": false
+  },
+  "loadoutArtwork": {
+    "version": "0.7.6",
+    "catalogArtifacts": 171,
+    "catalogStones": 30,
+    "bundledImages": 114,
+    "sourceCommit": "e821c7c9d5b39a9aee3eed0144a732c39489de1e",
+    "catalogChecksums": true,
+    "manualEditingAndLocks": true,
+    "automaticInventorySets": true,
+    "savedFarmRoundtrip": true,
+    "horizontalSocketsAndExactEffectText": true,
+    "viewportWidths": [
+      1440,
+      1280,
+      1000,
+      800,
+      500,
+      390,
+      320
+    ],
+    "offlineArtwork": true,
+    "missingImageTextFallback": true,
+    "standardPermitSlots": true,
+    "solverWorkerSHA256": "2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320",
+    "test": "tests/loadout-artwork-browser.cjs"
   }
 }

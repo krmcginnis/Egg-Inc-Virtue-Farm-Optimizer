@@ -1,0 +1,11 @@
+EGG INC. ARTIFACT AND STONE ARTWORK
+
+Original Egg, Inc. game artwork belongs to Auxbrain, Inc.
+Images are bundled unchanged from the EggIncAssets extraction mirror for offline display.
+This optimizer is an unofficial fan planning tool.
+
+Source: https://github.com/carpetsage/EggIncAssets/tree/e821c7c9d5b39a9aee3eed0144a732c39489de1e/128/egginc
+Tier/icon mapping: https://github.com/wasmegg-carpet/egg/blob/9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67/lib/artifacts/data.json
+Retrieved: 2026-10-06
+Resolution: 128 x 128 pixels
+Per-file checksums and icon mappings: artifact-icons.json
