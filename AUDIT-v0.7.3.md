@@ -1,4 +1,4 @@
-# Egg Inc. Virtue Farm Optimizer v0.7.2 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.7.3 — Release Audit
 
 v1.6.2 fixes the PC launcher asset routes. The bundled images were present
 in v1.6.1, but Local-Helper.ps1 returned 404 for every assets/ URL. The
@@ -261,3 +261,22 @@ Native Windows verification run 37405606247, job 112082381907 passed the actual
 helper/worker successful update and injected startup-failure rollback. It also
 rejected a second app helper on the live port and retained private test farm JSON
 and the configured update source. The published workflow repeats these checks.
+
+
+## Compact account import — v0.7.3
+
+The Egg Inc ID and icon-only green arrow now sit to the left of the farm file
+buttons in the header; the standalone Load from Egg Inc card is removed.
+The saved backup timestamp stays visible beneath the toolbar, with a year,
+timezone and machine-readable time. It uses the backup timestamp rather than
+the moment of import. Import Details retains warnings and import scope.
+Starting from scratch clears the timestamp; undated backups say not supplied.
+Enter in the ID field starts the same guarded import as the green arrow.
+
+The synthetic account import browser suite passed toolbar position, visible
+backup time, full and account-only imports, saved farm privacy, delayed reset,
+undated backups, draft preservation, keyboard and widths down to 320 px.
+Solver and game data are unchanged; the worker SHA256 remains
+`2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.
+The standard release workflow also validates file installation, actual Windows
+helper restart, rollback and the public update feed before keeping a release live.

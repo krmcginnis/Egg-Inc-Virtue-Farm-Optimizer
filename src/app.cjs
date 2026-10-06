@@ -320,13 +320,22 @@ function renderForm() {
   const visits = Ships.plannedVisits(p.ships, result?.actions);
   for (let visit = 1; visit <= 2; visit++) renderShipMissions(visit, visits[visit - 1].missions);
   if (config.importInfo) {
+    const backupTime = Number(config.importInfo.timestamp);
+    const hasBackupTime = backupTime > 0 && Number.isFinite(new Date(backupTime * 1000).getTime());
+    $("import-backup").hidden = false;
+    $("import-backup-time").textContent = hasBackupTime ? timestamp(backupTime, p.eventTimezone, true) : "not supplied";
+    if (hasBackupTime) $("import-backup-time").dateTime = new Date(backupTime * 1000).toISOString();
+    else $("import-backup-time").removeAttribute("datetime");
     $("import-details").hidden = false;
     $("farm-source-note").hidden = true;
-    $("import-details-summary").textContent = config.importInfo.scope === "account" ? "Import Details · Account Loaded; No Current Virtue Farm" : "Import Details · Account and Virtue Farm Loaded";
-    $("import-note").textContent = "Backup timestamp: " + (config.importInfo.timestamp ? timestamp(config.importInfo.timestamp, p.eventTimezone) : "not supplied") + ". " + config.importInfo.warnings.join(" ");
+    $("import-details-summary").textContent = "Import Details";
+    $("import-note").textContent = (config.importInfo.scope === "account" ? "Account loaded; no current Virtue farm found. " : "Account and current Virtue farm loaded. ") + (config.importInfo.warnings || []).join(" ");
     $("inventory-note").hidden = false;
     $("inventory-note").replaceChildren(el("h2", "Artifact Inventory"), el("p", (config.importInfo.inventory?.filter(x => x.kind !== "stone").length || 0) + " artifact records loaded. " + (Array.isArray(f.artifactInventory) ? "Owned Virtue artifacts and loose/socketed stones are available for automatic sets under Artifacts & Stones." : "Virtue inventory was not supplied; retained sets are used. Enable manual farm editing to adjust them.")));
   } else {
+    $("import-backup").hidden = true;
+    $("import-backup-time").textContent = "";
+    $("import-backup-time").removeAttribute("datetime");
     $("import-details").hidden = true;
     $("farm-source-note").hidden = false;
     $("farm-source-note").textContent = config.label || "";
@@ -1324,6 +1333,9 @@ async function loadEidData() {
   }
 }
 $("import-eid").onclick = loadEidData;
+$("eid").addEventListener("keydown", (event) => {
+  if (event.key === "Enter") { event.preventDefault(); loadEidData(); }
+});
 $("copy-earnings").onclick = () => copySet("earnings");
 $("copy-delivery").onclick = () => copySet("delivery");
 $("review-starting-gear").onclick = () => tab("artifacts", true);

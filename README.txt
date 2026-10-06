@@ -1,4 +1,4 @@
-EGG INC. VIRTUE FARM OPTIMIZER 0.7.2 — PC EDITION
+EGG INC. VIRTUE FARM OPTIMIZER 0.7.3 — PC EDITION
 
 GET STARTED
 1. Extract the entire ZIP; open the Egg-Inc-Virtue-Farm-Optimizer folder.
@@ -758,3 +758,8 @@ Check Again clears the previous error for a retry. If a v0.7.0/v0.7.1 update fai
 save your farm, close the launcher, and extract the release ZIP into your existing
 app folder, replacing app files. Launch Start-Virtue-Optimizer.cmd again. Farm
 JSON files are not removed. Future updates use the button.
+
+COMPACT EGG INC IMPORT (v0.7.3)
+The Egg Inc ID field and green import arrow are beside Start from Scratch.
+The loaded backup timestamp is visible below the toolbar; Import Details keeps
+additional notes. Press Enter in the ID field to load.

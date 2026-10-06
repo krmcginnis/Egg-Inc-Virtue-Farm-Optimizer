@@ -205,7 +205,7 @@
     "noNewAPIRequest": true,
     "newLiveAccountRequest": false,
     "nativeWindowsTested": false,
-    "currentAudit": "AUDIT-v0.7.2.md",
+    "currentAudit": "AUDIT-v0.7.3.md",
     "olderAuditFilesIncluded": false,
     "responsiveWidths": [
       1440,
@@ -316,7 +316,7 @@
       "publicFeedDownloadAndChecksums": "passed"
     }
   },
-  "currentVersion": "0.7.2",
+  "currentVersion": "0.7.3",
   "releaseRenumbering": {
     "version": "0.7.0",
     "previousVersion": "1.7.0",
@@ -352,6 +352,16 @@
     "verificationRun": 37405606247,
     "verificationJob": 112082381907,
     "exclusiveLoopbackListenerRetained": true,
+    "workerSha256": "2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320"
+  },
+  "compactAccountImport": {
+    "version": "0.7.3",
+    "syntheticAccountImportBrowser": "passed",
+    "toolbarPosition": "passed",
+    "visibleBackupTimestamp": "passed",
+    "undatedAndResetTimestamp": "passed",
+    "keyboardAndWidthsDownTo320px": "passed",
+    "solverChanges": false,
     "workerSha256": "2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320"
   }
 }
