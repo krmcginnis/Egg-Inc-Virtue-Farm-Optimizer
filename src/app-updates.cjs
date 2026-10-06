@@ -131,7 +131,7 @@ function initialize({isBusy, capture, restore}) {
       }
       throw Error('The restart is taking longer than expected. Close the launcher and open Start-Virtue-Optimizer.cmd again; your preserved session will be restored.');
     } catch (error) {
-      if (!restarting) localStorage.removeItem(HANDOFF);
+      if (!restarting) { try { localStorage.removeItem(HANDOFF); } catch { } }
       message(error.message, true);
       release = null;
     } finally { updating = false; controls(); }
