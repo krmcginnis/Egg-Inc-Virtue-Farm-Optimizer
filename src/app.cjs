@@ -1,0 +1,1467 @@
+"use strict";
+const Ships = require("./ships.cjs");
+const E = require("./opening-search.cjs"), titleCase = require("./ui-text.cjs"), DEFAULT_ROUTE = require("./default-route.cjs");
+const upgradeStandardSequence = require("./sequence-upgrade.cjs"), Route = require("./switch-sequence.cjs");
+const T = require("./staged-route.cjs"), Model = require("./assumption-notices.cjs");
+const Strategy = require("./planning-strategy.cjs");
+const Recovery = require("./session-recovery.cjs");
+const nextAscension = require("./next-ascension.cjs"), U = require("./shift-summary.cjs"), Q = require("./walkthrough-pdf.cjs"), N = require("./export-names.cjs"), V = require("./pdf-preview.cjs"), G = require("./guide-layout.cjs");
+const S = require("./simulator.cjs"), O = require("./optimizer.cjs"), I = require("./importer.cjs"), A = require("./api.cjs"), blankFarm = require("./blank-farm.cjs"), C = require("./colleggtibles.cjs");
+const NumberFormat = require("./number-format.cjs"), NumericInput = require("./numeric-input.cjs");
+const ArtifactSets = require("./artifact-optimizer.cjs");
+const EggIcons = require("./egg-icons.cjs");
+const AppUpdates = require("./app-updates.cjs");
+const $ = (id) => document.getElementById(id), D = S.D;
+let config = blankFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
+const recoveryStore = Recovery.create(() => window.localStorage);
+let recoveryReady = false, recoveryPending = null, recoveryChanged = false, recoveryTimer = null;
+const effort = { quick: { width: 12, branches: 8, maxDepth: 500, maxMs: 1e4 }, balanced: { width: 32, branches: 12, maxDepth: 1200, maxMs: 45e3 }, thorough: { width: 72, branches: 20, maxDepth: 2200, maxMs: 18e4 } };
+const labels = { farm: "Farm & Goals", research: "Farm Research", artifacts: "Artifacts & stones", results: "Purchase timeline", help: "How it works" };
+const colNames = { earnings: "Earnings", awayEarnings: "Away earnings", ihr: "Internal hatchery", elr: "Egg laying", shippingCap: "Shipping capacity", habCap: "Hab capacity", vehicleCost: "Vehicle cost", habCost: "Hab cost", researchCost: "Research cost" };
+function el(tag, text, cls) {
+  const e = document.createElement(tag);
+  if (text !== void 0) e.textContent = typeof text === "string" && ["h1", "h2", "h3", "h4", "h5", "h6", "button", "label", "th", "summary", "option"].includes(tag) ? titleCase(text) : text;
+  if (cls) e.className = cls;
+  return e;
+}
+function option(value, text) {
+  const o = el("option", text);
+  o.value = value;
+  return o;
+}
+function show(message, error = false) {
+  $("notice").setAttribute("role", error ? "alert" : "status");
+  $("notice").setAttribute("aria-live", error ? "assertive" : "polite");
+  $("notice").textContent = message;
+  $("notice").classList.toggle("error", error);
+}
+function updateSequenceVisibility() {
+  const strategy = $("strategy").value, automatic = strategy !== "user";
+  $("autoSequence").checked = automatic;
+  $("fixed-sequence").hidden = automatic;
+  $("sequence").disabled = automatic;
+  $("sequence").required = !automatic;
+  $("wasmegg-sequence-description").hidden = strategy === "user";
+  $("strategy-description").textContent = {
+    auto: "Compares Wasmegg optimized plans, then searches other routes and purchase strategies. Keeps the fastest feasible plan found within your limits.",
+    wasmegg: "Optimizes purchases and waits within the Wasmegg stage order below, comparing C1/K1 time budgets and research sales. I1 moves before K1 if Chicken Universes can finish in under one hour.",
+    user: "Enter your truth egg switch sequence below."
+  }[strategy] || "Select a planning strategy.";
+  $("routing-help").textContent = automatic ? "Automatic visits are set by this strategy. Choose User Selected Sequence to enter your own order." : "Automatic visits are off. Your truth egg sequence controls the visit order.";
+  $("effort").disabled = strategy === "wasmegg";
+  $("effort-help").textContent = strategy === "wasmegg" ? "This strategy runs every eligible opening comparison. The additional search budget is unused." : "Opening comparisons run first. Total processing time includes those comparisons plus this additional search budget.";
+}
+const num = NumberFormat.format;
+function duration(n) {
+  if (!Number.isFinite(n)) return "\u2014";
+  if (n > 0 && n < 1) return "<1s";
+  const seconds = Math.max(0, Math.ceil(n)), days = Math.floor(seconds / 86400), hours = Math.floor(seconds % 86400 / 3600), mins = Math.floor(seconds % 3600 / 60);
+  return [days ? days + "d" : "", hours ? hours + "h" : "", mins ? mins + "m" : "", seconds < 60 ? seconds + "s" : ""].filter(Boolean).join(" ") || "0s";
+}
+function exactDuration(n) {
+  const total = Math.max(0, Math.ceil(n)), d = Math.floor(total / 86400), h = Math.floor(total % 86400 / 3600), m = Math.floor(total % 3600 / 60), sec = total % 60;
+  return [d ? d + "d" : "", h ? h + "h" : "", m ? m + "m" : "", sec ? sec + "s" : ""].filter(Boolean).join(" ") || "0s";
+}
+function waitTotals(t) {
+  return "Online waiting " + exactDuration(t.onlineSeconds) + " \xB7 Offline " + exactDuration(t.offlineSeconds) + " (" + t.offlineBreaks + " breaks)" + (t.interactionSeconds ? " \xB7 Interactions " + exactDuration(t.interactionSeconds) : "") + (t.fuelSeconds ? " \xB7 Fueling " + exactDuration(t.fuelSeconds) : "");
+}
+function dateLocal(t) {
+  const d = new Date(t * 1e3);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 16);
+}
+// Formatting options are fixed. Reuse formatters instead of creating one for
+// every purchase, while preserving each exact date and selected timezone.
+const timestampFormats = new Map();
+function timestamp(t, zone, includeYear = false) {
+  const key = zone + ":" + includeYear;
+  if (!timestampFormats.has(key)) timestampFormats.set(key, new Intl.DateTimeFormat("en-US", { timeZone: zone, year: includeYear ? "numeric" : void 0, month: "short", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short" }));
+  return timestampFormats.get(key).format(new Date(t * 1e3));
+}
+function tab(name, focusHeading = false) {
+  if (!labels[name]) name = "farm";
+  document.querySelectorAll("[data-tab]").forEach((x) => {
+    x.classList.toggle("active", x.dataset.tab === name);
+    if (x.dataset.tab === name) x.setAttribute("aria-current", "page");
+    else x.removeAttribute("aria-current");
+  });
+  document.querySelectorAll("[data-page]").forEach((x) => x.hidden = x.dataset.page !== name);
+  $("page-title").textContent = titleCase(labels[name]);
+  window.scrollTo({ top: 0 });
+  if (focusHeading) $("page-title").focus({ preventScroll: true });
+}
+function readNumber(id, name, min = 0, max = Infinity, integer = false) {
+  try { return S.number(NumericInput.value($(id)), name, min, max, integer); }
+  catch (error) { error.fieldId = id; throw error; }
+}
+function clearFieldError() {
+  if (invalidField) {
+    const node = $(invalidField);
+    node?.removeAttribute("aria-invalid");
+    const descriptions = (node?.getAttribute("aria-describedby") || "").split(/\s+/).filter(id => id && id !== "field-error");
+    if (descriptions.length) node.setAttribute("aria-describedby", descriptions.join(" "));
+    else node?.removeAttribute("aria-describedby");
+  }
+  $("field-error")?.remove();
+  invalidField = null;
+  $("review-inputs").hidden = true;
+}
+function validationField(error) {
+  if (error.fieldId) return error.fieldId;
+  const message = error.message;
+  for (const research of D.research) if (message.startsWith(research.name)) return "research-" + research.id;
+  for (const research of D.epic) if (message.startsWith(research.name)) return "epic-" + research.id;
+  if (/one artifact per family/.test(message)) for (const key of ["current", "earnings", "delivery"]) {
+    const seen = new Set();
+    for (const node of document.querySelectorAll(`[id^="artifact-${key}-"]`)) {
+      const family = S.AMAP[node.value]?.family;
+      if (family && seen.has(family)) return node.id;
+      if (family) seen.add(family);
+    }
+  }
+  for (const [test, id] of [[/Per-Virtue minimums/, "target"], [/Silos/, "silos"], [/Maximum.*switch|switch.*budget|unreachable|sequence|before H|Humility visit/i, "maxSwitches"], [/Tank capacity|tank capacity|fuel.*capacity/i, "tankCapacity"], [/start date|timestamp/i, "start"]]) if (test.test(message)) return id;
+  return null;
+}
+function fieldError(error) {
+  clearFieldError();
+  invalidField = validationField(error);
+  const node = $(invalidField);
+  if (node) {
+    node.setAttribute("aria-invalid", "true");
+    node.setAttribute("aria-describedby", [node.getAttribute("aria-describedby"), "field-error"].filter(Boolean).join(" "));
+    const hint = el("small", error.message, "field-error");
+    hint.id = "field-error";
+    node.closest("label")?.append(hint);
+  }
+  $("review-inputs").hidden = false;
+  $("run-summary").textContent = worker ? "Searching · Check Changed Inputs" : "Check Your Inputs";
+  if (!worker) $("run-detail").textContent = error.message;
+  show(error.message, true);
+}
+function reviewInputs() {
+  const node = $(invalidField);
+  tab(node?.closest("[data-page]")?.dataset.page || "farm");
+  if (node?.closest("tr")?.hidden) { $("research-filter").value = ""; filterResearch(); }
+  if (node) {
+    const fields = node.closest(".account-value-fields"), toggles = fields?.disabled ? [...document.querySelectorAll('[aria-controls~="' + fields.id + '"]')] : [];
+    const toggle = toggles.find(x => x.closest("[data-page]") === node.closest("[data-page]")) || toggles[0];
+    const target = toggle || node;
+    target.scrollIntoView({ block: "center" });
+    target.focus({ preventScroll: true });
+  }
+  else { $("notice").scrollIntoView({ block: "center" }); $("notice").focus({ preventScroll: true }); }
+}
+function markInputsChanged() {
+  queueRecovery();
+  dirty = !!result || !!worker;
+  const stale = $("plan-stale");
+  if (stale) { stale.textContent = "Inputs changed since this plan was generated. This timeline uses the saved inputs from its run. Re-run to update it."; stale.hidden = !dirty; }
+  const next = $("next-ascension");
+  if (next) next.disabled = dirty || !!worker || !result || result.target >= 490;
+  if (dirty && !worker && result) {
+    $("run-summary").textContent = "Inputs Changed · Re-run Planner";
+    $("run-detail").textContent = "The purchase timeline still uses the previous plan's inputs.";
+  }
+}
+function select(id, options, value) {
+  const node = $(id);
+  node.replaceChildren(...options.map(([v, l]) => option(v, l)));
+  node.value = value;
+}
+function field(label, id, value, type = "text", attrs = {}) {
+  const l = el("label", label), i = el("input");
+  i.id = id;
+  i.type = type;
+  NumericInput.write(i, value);
+  Object.assign(i, attrs);
+  l.append(i);
+  return l;
+}
+function selectField(label, id, opts, value) {
+  const l = el("label", label), s = el("select");
+  s.id = id;
+  s.append(...opts.map(([v, t]) => option(v, t)));
+  s.value = value === null ? "" : String(value);
+  l.append(s);
+  return l;
+}
+function renderColleggtibleTotals(tiers, overrides) {
+  const totals = C.combine(tiers, overrides);
+  $("col-totals").textContent = Object.entries(colNames).map(([k, label]) => label + " \xD7" + NumberFormat.decimal(totals[k])).join(" \xB7 ");
+}
+const editingGroups = {
+  manualAccountData: {toggles:["manualAccountData"],fields:["account-basic-fields", "account-fuel-fields", "account-progress-fields", "col-fields", "epic-fields"]},
+  manualFarmData: {toggles:["manualFarmData", "manualFarmResearch", "manualFarmArtifacts"],fields:["farm-basic-fields", "hab-fields", "vehicle-fields", "research-fields", "current-loadout-fields", "earnings-loadout-fields", "delivery-loadout-fields", "starting-set-fields"]}
+};
+function updateAccountEditing() {
+  for (const [key, group] of Object.entries(editingGroups)) {
+    const enabled = $(key).checked;
+    for (const id of group.toggles) $(id).checked = enabled;
+    for (const id of group.fields) if ($(id)) $(id).disabled = !enabled;
+  }
+  for (const id of ["copy-earnings", "copy-delivery"]) $(id).disabled = !$("manualFarmData").checked;
+}
+function renderForm() {
+  const f = config.farm, p = config.plan;
+  $("manualAccountData").checked = f.manualAccountData ?? (f.manualColleggtibles === true || f.manualEpicResearch === true);
+  $("manualFarmData").checked = f.manualFarmData === true;
+  upgradeStandardSequence(p, f.virtue);
+  Strategy.upgrade(p);
+  select("virtue", S.EGGS.map((x, i) => [x, S.NAME[i]]), f.virtue);
+  EggIcons.decorateLabel($("virtue").closest("label"), f.virtue);
+  for (const k of ["cash", "soulEggs", "shiftCount", "silos", "earningsMode"]) NumericInput.write($(k), k === "silos" ? Math.max(1, f[k] ?? 1) : f[k]);
+  for (const k of ["proPermit", "videoDoubler"]) $(k).value = String(f[k] !== false);
+  for (const k of ["target", "maxSwitches", "maxDays", "shiftSeconds", "actionSeconds"]) NumericInput.write($(k), p[k] ?? { maxSwitches: 12, maxDays: 366, shiftSeconds: 5, actionSeconds: 0 }[k]);
+  $("start").value = dateLocal(p.start || Date.now() / 1e3);
+  $("eventTimezone").value = p.eventTimezone || "America/Los_Angeles";
+  $("sequence").value = typeof p.sequence === "string" ? p.sequence : (p.sequence ?? DEFAULT_ROUTE).map((x) => ({ curiosity: "C", integrity: "I", humility: "H", resilience: "R", kindness: "K" })[x] || x).join(" ");
+  $("effort").value = p.searchEffort ?? "balanced";
+  $("minOfflineMinutes").value = p.minOfflineMinutes ?? 1;
+  $("strategy").value = p.strategy || "auto";
+  $("stagedSales").value = p.stagedSales ?? 3;
+  $("c1MaxMinutes").value = E.maximum(S.number(p.c1MaxMinutes ?? 60));
+  $("k1MaxMinutes").value = E.maximum(S.number(p.k1MaxMinutes ?? 60));
+  updateSequenceVisibility();
+  for (const k of ["earningsScale", "researchCostScale"]) NumericInput.write($(k), f[k] ?? 1);
+  const body = $("progress-body");
+  body.replaceChildren();
+  $("goal-fields").replaceChildren();
+  for (let i = 0; i < 5; i++) {
+    const tr = el("tr");
+    const virtue = el("td");
+    virtue.append(EggIcons.caption(S.EGGS[i], S.NAME[i], "egg-label progress-egg"));
+    tr.append(virtue);
+    for (const [key, value] of [["claimed", f.claimed[i]], ["delivered", f.delivered[i]]]) {
+      const td = el("td"), inp2 = el("input");
+      inp2.id = key + "-" + i;
+      if (key === "delivered") inp2.placeholder = "e.g. 1.564Q";
+      inp2.setAttribute("aria-label", S.NAME[i] + " " + key);
+      if (key === "claimed") {
+        inp2.type = "number";
+        inp2.min = "0";
+        inp2.max = "98";
+      }
+      NumericInput.write(inp2, value);
+      td.append(inp2);
+      tr.append(td);
+    }
+    const pending = el("td");
+    pending.id = "pending-" + i;
+    const claimed = Number(f.claimed[i]), delivered = Number(f.delivered[i]);
+    pending.textContent = Number.isInteger(claimed) && claimed >= 0 && claimed <= 98 && Number.isFinite(delivered) && delivered >= 0
+      ? String(Math.max(0, S.countTE(Math.max(delivered, claimed ? D.te[claimed - 1] : 0)) - claimed)) : "—";
+    tr.append(pending);
+    const goal = el("label"), inp = el("input");
+    goal.append(EggIcons.caption(S.EGGS[i], S.NAME[i]));
+    inp.id = "floor-" + i;
+    inp.type = "number";
+    inp.min = "0";
+    inp.max = "98";
+    NumericInput.write(inp, p.floors?.[i] || 0);
+    inp.setAttribute("aria-label", S.NAME[i] + " minimum final TE");
+    goal.append(inp);
+    $("goal-fields").append(goal);
+    body.append(tr);
+  }
+  $("hab-fields").replaceChildren(...f.habs.map((v, i) => selectField("Habitat " + (i + 1), "hab-" + i, [["", "Empty"], ...D.habs.map((x) => [x.id, x.name])], v)));
+  $("vehicle-fields").replaceChildren(...f.vehicles.map((v, i) => {
+    const div = el("div", void 0, "fleet-slot");
+    div.append(el("small", "Fleet Slot " + (i + 1)), selectField("Vehicle", "vehicle-" + i, [["", "Empty"], ...D.vehicles.map((x) => [x.id, x.name])], v.id), field("Train cars", "cars-" + i, v.cars, "number", { min: 1, max: 10, className: "car" }));
+    return div;
+  }));
+  const selected = C.selections(f);
+  f.colleggtibleTiers = selected.tiers;
+  f.colleggtibleOverrides = selected.overrides;
+  f.colleggtibleTiersInferred = selected.inferred;
+  $("col-fields").replaceChildren(...D.customEggs.map((e) => {
+    const name = e.name === "P.E.G.G." ? e.name : e.name.toLowerCase().replace(/\b\w/g, (x) => x.toUpperCase()), key = C.dimension[e.buffs[0].dimension];
+    return EggIcons.decorateLabel(selectField(name + " \xB7 " + colNames[key], "col-egg-" + e.identifier, [[-1, "None (1\xD7)"], ...e.buffs.map((b, i) => [i, "Tier " + (i + 1) + " \xB7 " + (b.value >= 1 ? "+" : "\u2212") + NumberFormat.decimal(Math.abs(b.value - 1) * 100) + "% (" + NumberFormat.decimal(b.value) + "\xD7)"])], selected.tiers[e.identifier] ?? -1), e.identifier);
+  }));
+  const colleggtibleSource = config.importInfo?.colleggtibleSource;
+  $("col-note").textContent = [
+    selected.inferred ? "Older files store combined bonuses only. These tiers were reconstructed to match; verify the individual selections. " + (Object.keys(selected.overrides).length ? "Custom totals are preserved until you change a colleggtible affecting that stat." : "") : "",
+    colleggtibleSource === "backup" ? "Colleggtible bonuses loaded from account contract progress." : colleggtibleSource === "partial" ? "Some contract records could not be matched. Recognized bonuses were loaded and previous selections retained; verify your tiers." : colleggtibleSource === "unavailable" ? "Contract progress was missing. Previous selections were retained; verify your tiers or sync the game and reload account data." : ""
+  ].filter(Boolean).join(" ");
+  renderColleggtibleTotals(selected.tiers, selected.overrides);
+  $("research-body").replaceChildren(...D.research.map((r) => {
+    const tr = el("tr");
+    tr.dataset.search = (r.name + " " + r.description).toLowerCase();
+    tr.append(el("td", r.tier));
+    const desc = el("td", r.name);
+    desc.append(el("small", r.description));
+    tr.append(desc);
+    const td = el("td"), input = el("input");
+    input.id = "research-" + r.id;
+    input.type = "number";
+    input.min = "0";
+    input.max = r.levels;
+    NumericInput.write(input, f.research[r.id] || 0);
+    input.setAttribute("aria-label", r.name + " current level");
+    td.append(input);
+    tr.append(td, el("td", r.levels));
+    const cost = el("td");
+    cost.id = "cost-" + r.id;
+    tr.append(cost);
+    return tr;
+  }));
+  $("epic-fields").replaceChildren(...D.epic.map((r) => field(r.name, "epic-" + r.id, f.epic?.[r.id] || 0, "number", { min: 0, max: r.levels })));
+  f.loadouts = f.loadouts || { current: [] };
+  if (!f.loadouts.current) f.loadouts.current = structuredClone(f.loadouts[f.activeSet] || []);
+  for (const key of ["earnings", "delivery"]) if (!f.loadouts[key]) f.loadouts[key] = structuredClone(f.loadouts.current);
+  $("activeSet").value = f.activeSet || "current";
+  renderLoadouts();
+  const tank = f.fuelTank || {}, capacity = tank.capacity ?? 2e9, capacities = Ships.TANKS.includes(capacity) ? Ships.TANKS : [...Ships.TANKS, capacity];
+  select("tankCapacity", capacities.map((n) => [n, num(n)]), capacity);
+  NumericInput.write($("tankOutput"), tank.outputPerMinute ?? Ships.rateFor(capacity));
+  $("fuel-fields").replaceChildren(...S.EGGS.map((egg, i) => EggIcons.decorateLabel(field(S.NAME[i] + " Fuel", "fuel-" + egg, tank.amounts?.[egg] ?? 0), egg)));
+  $("shipSlots").value = p.ships?.slots ?? 3;
+  renderExistingFlights();
+  const visits = Ships.plannedVisits(p.ships, result?.actions);
+  for (let visit = 1; visit <= 2; visit++) renderShipMissions(visit, visits[visit - 1].missions);
+  if (config.importInfo) {
+    $("import-details").hidden = false;
+    $("farm-source-note").hidden = true;
+    $("import-details-summary").textContent = config.importInfo.scope === "account" ? "Import Details · Account Loaded; No Current Virtue Farm" : "Import Details · Account and Virtue Farm Loaded";
+    $("import-note").textContent = "Backup timestamp: " + (config.importInfo.timestamp ? timestamp(config.importInfo.timestamp, p.eventTimezone) : "not supplied") + ". " + config.importInfo.warnings.join(" ");
+    $("inventory-note").hidden = false;
+    $("inventory-note").replaceChildren(el("h2", "Artifact Inventory"), el("p", (config.importInfo.inventory?.filter(x => x.kind !== "stone").length || 0) + " artifact records loaded. " + (Array.isArray(f.artifactInventory) ? "Owned Virtue artifacts and loose/socketed stones are available for automatic sets under Artifacts & Stones." : "Virtue inventory was not supplied; retained sets are used. Enable manual farm editing to adjust them.")));
+  } else {
+    $("import-details").hidden = true;
+    $("farm-source-note").hidden = false;
+    $("farm-source-note").textContent = config.label || "";
+    $("inventory-note").hidden = true;
+  }
+  if (config.draftInputs) restoreDraftInputs(config.draftInputs);
+  updateAccountEditing();
+  filterResearch();
+  return refresh();
+}
+const unsavedInputs = /* @__PURE__ */ new Set(["eid", "file-input", "research-filter", "session-autosave", "update-repository"]);
+function captureDraftInputs() {
+  return { version: 1, fields: Object.fromEntries([...document.querySelectorAll("input[id],select[id]")].filter((node) => !unsavedInputs.has(node.id)).map((node) => [node.id, node.type === "checkbox" ? { checked: node.checked } : { value: NumericInput.draft(node) }])) };
+}
+function restoreDraftInputs(draft) {
+  if (draft.version !== 1 || !draft.fields || typeof draft.fields !== "object") return;
+  function apply(test) {
+    for (const [id, value] of Object.entries(draft.fields)) {
+      const node = $(id);
+      if (unsavedInputs.has(id) || ["strategy", "autoSequence"].includes(id) || !node?.matches("input,select") || !test(id)) continue;
+      if (node.type === "checkbox" && typeof value.checked === "boolean") node.checked = value.checked;
+      else if (typeof value.value === "string") NumericInput.restore(node, value.value);
+    }
+  }
+  apply((id) => id === "proPermit");
+  renderLoadouts();
+  apply((id) => !id.startsWith("stone-"));
+  for (const key of ["current", "earnings", "delivery"]) for (let i = 0; i < ($("proPermit").value === "true" ? 4 : 2); i++) renderStones(key, i);
+  apply((id) => id.startsWith("stone-"));
+  if (draft.fields.strategy || draft.fields.autoSequence) $("strategy").value = Strategy.selected({
+    strategy: draft.fields.strategy?.value || config.plan.strategy,
+    autoSequence: draft.fields.autoSequence?.checked ?? config.plan.autoSequence,
+    sequence: draft.fields.sequence?.value ?? config.plan.sequence
+  });
+  if (!draft.fields.manualAccountData && (draft.fields.manualColleggtibles?.checked || draft.fields.manualEpicResearch?.checked)) $("manualAccountData").checked = true;
+  updateSequenceVisibility();
+}
+function currentFarmImport(backup) {
+  let existing, draft;
+  try { existing = gather(); }
+  catch {
+    existing = {...config,farm:{...config.farm,loadouts:formLoadouts()}};
+    draft = captureDraftInputs();
+  }
+  const next = I.importAll(backup, existing);
+  if (draft) {
+    draft.fields = Object.fromEntries(Object.entries(draft.fields).filter(([id]) => next.importInfo.scope === "account"
+      ? !["soulEggs", "shiftCount", "proPermit", "tankCapacity", "tankOutput", "manualAccountData", "manualColleggtibles", "manualEpicResearch"].includes(id) && !/^(fuel-|claimed-|delivered-|epic-|col-)/.test(id)
+      : id !== "start" && ($("planning-card").contains($(id)) || $("ship-planning").contains($(id)) || id.startsWith("floor-"))));
+    next.draftInputs = draft;
+  }
+  return next;
+}
+function recoveryStatus(message) { $("session-status").textContent = message; }
+function acceptRecoverySession() {
+  recoveryPending = null;
+  $("session-recovery").hidden = true;
+  queueRecovery();
+}
+function queueRecovery() {
+  if (!recoveryReady || !$("session-autosave").checked) return;
+  recoveryChanged = true;
+  if (recoveryPending) return;
+  clearTimeout(recoveryTimer);
+  recoveryTimer = setTimeout(flushRecovery, 600);
+}
+function flushRecovery() {
+  clearTimeout(recoveryTimer);
+  if (!recoveryReady || recoveryPending || !recoveryChanged || !$("session-autosave").checked) return;
+  let saved;
+  try { saved = gather(); }
+  catch { saved = {...structuredClone(config), draftInputs:captureDraftInputs()}; }
+  const savedAt = Date.now() / 1000;
+  const stored = recoveryStore.write({version:1,savedAt,config:saved,result,resultConfig,dirty,interrupted:!!worker,tab:document.querySelector("[data-tab].active").dataset.tab});
+  if (stored.ok) {
+    recoveryChanged = false;
+    recoveryStatus("Recovery copy saved in this browser at " + new Date(savedAt * 1000).toLocaleTimeString() + ".");
+  } else recoveryStatus("Recovery copy could not be saved. Use Save Farm and Save Plan to keep your work.");
+}
+function clearRecoveryCopy() {
+  clearTimeout(recoveryTimer);
+  recoveryChanged = false;
+  recoveryPending = null;
+  $("session-recovery").hidden = true;
+  const cleared = recoveryStore.clear();
+  recoveryStatus(cleared.ok ? ($("session-autosave").checked ? "Recovery copy cleared. Your next edits can be saved here." : "Recovery is off. Use Save Farm and Save Plan.") : "Recovery storage is unavailable. Use Save Farm and Save Plan.");
+}
+function replaySavedResult(savedConfig, savedResult) {
+  const verified = O.replay(savedConfig, savedResult.actions, true, {enforceOpeningCaps:savedResult.openingTimeLimits === true,oneStartingSilo:savedResult.initialSiloRule === "one" ? true : void 0});
+  return {...savedResult,actions:S.history(verified.s),start:verified.c.start,end:verified.s.t,seconds:verified.s.t - verified.c.start,switches:verified.s.stage,soulCost:verified.s.lost,target:verified.c.target,finalTE:S.teByEgg(verified.s,verified.c),pendingTE:S.totalTE(verified.s,verified.c) - verified.c.claimedTotal,finalCash:verified.s.cash,finalStats:S.stats(verified.s,verified.c),validatedReplay:true};
+}
+function restoreSession(saved, message = "Previous session restored.") {
+  let recoveredResult = null, replayError = "";
+  if (saved.result && saved.resultConfig) {
+    try { recoveredResult = replaySavedResult(saved.resultConfig, saved.result); }
+    catch (e) { replayError = " The saved timeline could not be replayed: " + e.message; }
+  }
+  config = saved.config;
+  result = recoveredResult;
+  resultConfig = result ? saved.resultConfig : null;
+  dirty = !!result && (saved.dirty || saved.interrupted);
+  loadEpoch++;
+  clearTimeout(refreshTimer);
+  acceptRecoverySession();
+  const valid = renderForm();
+  $("result-content").hidden = !result;
+  $("empty-results").hidden = !!result;
+  if (result) { result.summary = U.summarize(resultConfig, result); renderResult(); if (dirty) markInputsChanged(); }
+  tab(saved.tab === "results" && !result ? "farm" : (labels[saved.tab] ? saved.tab : "farm"), true);
+  show(message + (saved.interrupted ? " The interrupted search needs to be run again." : "") + replayError + (!valid ? " Review the marked inputs before planning." : ""), !!replayError || !valid);
+}
+$("restore-session").onclick = () => {
+  if (recoveryPending && !worker && !importingBackup) restoreSession(recoveryPending);
+};
+$("discard-session").onclick = () => {
+  const edited = recoveryChanged;
+  clearRecoveryCopy();
+  if (edited) queueRecovery();
+  $("page-title").focus({preventScroll:true});
+};
+$("session-autosave").onchange = () => {
+  const enabled = $("session-autosave").checked, stored = recoveryStore.setEnabled(enabled);
+  if (!enabled) { clearRecoveryCopy(); recoveryStatus(stored.ok ? "Recovery is off. Use Save Farm and Save Plan to keep your work." : "Recovery storage is unavailable."); }
+  else { recoveryStatus("Recovery is on for this browser."); queueRecovery(); }
+};
+window.addEventListener("pagehide", flushRecovery);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushRecovery(); });
+function renderShipMissions(visit, missions) {
+  $("ship-missions-" + visit).replaceChildren(...missions.map((m, i) => {
+    const row = el("div", void 0, "ship-mission-row");
+    row.append(selectField("Ship", "ship-" + visit + "-" + i, Ships.DATA.ships.map((s) => [s.id, s.name]), m.ship || "CHICKEN_ONE"), selectField("Mission", "mission-" + visit + "-" + i, [["SHORT", "Short"], ["LONG", "Standard"], ["EPIC", "Extended"]], m.duration || "SHORT"), field("Launch Count", "ship-count-" + visit + "-" + i, m.count === null ? "" : m.count ?? 3, "number", { min: 1, max: 1e6, placeholder: "Tank Maximum" }));
+    const remove = el("button", "Remove", "secondary");
+    remove.type = "button";
+    remove.setAttribute("aria-label", "Remove H" + visit + " Ship Mission " + (i + 1));
+    remove.onclick = () => {
+      try {
+        config = gather();
+        config.plan.ships.visits[visit - 1].missions.splice(i, 1);
+        renderShipMissions(visit, config.plan.ships.visits[visit - 1].missions);
+        markInputsChanged();
+        refresh();
+        const remaining = config.plan.ships.visits[visit - 1].missions.length;
+        ($("ship-" + visit + "-" + Math.min(i, remaining - 1)) || $("add-ship-" + visit)).focus();
+      } catch (e) {
+        show(e.message, true);
+      }
+    };
+    const moves = el("div", undefined, "ship-row-actions");
+    for (const [offset, text, direction] of [[-1, "↑", "Up"], [1, "↓", "Down"]]) {
+      const move = el("button", text, "secondary ship-move");
+      move.type = "button";
+      move.setAttribute("aria-label", "Move H" + visit + " Ship Mission " + (i + 1) + " " + direction);
+      move.title = "Move Mission " + direction;
+      move.disabled = i + offset < 0 || i + offset >= missions.length;
+      move.onclick = () => {
+        try {
+          config = gather();
+          const list = config.plan.ships.visits[visit - 1].missions;
+          [list[i], list[i + offset]] = [list[i + offset], list[i]];
+          renderShipMissions(visit, list);
+          markInputsChanged();
+          refresh();
+          $("ship-" + visit + "-" + (i + offset)).focus();
+          show("H" + visit + " mission moved " + direction.toLowerCase() + ". Ships will launch in this order.");
+        } catch (error) { fieldError(error); }
+      };
+      moves.append(move);
+    }
+    moves.append(remove);
+    row.append(moves);
+    return row;
+  }));
+  $("add-ship-" + visit).disabled = missions.length >= 8;
+}
+function renderLoadouts() {
+  const host = $("loadout-fields");
+  host.replaceChildren();
+  const limit = $("proPermit").value === "true" ? 4 : 2;
+  for (const key of ["current", "earnings", "delivery"]) {
+    const section = el("div", void 0, "loadout");
+    section.append(el("h3", key === "earnings" ? "Research & Earnings Set" : key[0].toUpperCase() + key.slice(1) + " Set"));
+    const grid = el("fieldset", void 0, "four-fields account-value-fields");
+    grid.id = key + "-loadout-fields"; grid.disabled = !$("manualFarmData").checked;
+    const note = el("p", void 0, "hint"); note.id = key + "-set-note"; section.append(note);
+    for (let i = 0; i < limit; i++) {
+      const slot = config.farm.loadouts[key]?.[i] || { artifactId: null, stones: [] };
+      const div = el("div", void 0, "artifact-slot");
+      div.append(selectField("Artifact " + (i + 1), `artifact-${key}-${i}`, [["", "Empty"], ...D.artifacts.map((a) => [a.id, a.label + " \xB7 " + a.effect])], slot.artifactId));
+      const stones = el("div", void 0, "stone-fields");
+      stones.id = `stones-${key}-${i}`;
+      div.append(stones);
+      grid.append(div);
+    }
+    section.append(grid);
+    host.append(section);
+    for (let i = 0; i < limit; i++) renderStones(key, i, config.farm.loadouts[key]?.[i]?.stones || []);
+  }
+  updateArtifactNotes();
+}
+function updateArtifactNotes() {
+  const manual = $("manualFarmData").checked, automatic = Array.isArray(config.farm.artifactInventory) && !manual;
+  $("current-set-note").textContent = "Starting equipped gear. Changes are possible only on Humility during the plan.";
+  $("earnings-set-note").textContent = automatic ? "Automatic · maximizes research purchasing power: income ÷ research cost multiplier, using actual laying/shipping limits and owned stones. Income-focused alternatives remain available to the solver. Away bonuses apply only in offline mode; after research is maxed, income determines this set." : manual ? "Manual override · the solver uses these entered artifacts and stones." : "Retained set · import a Virtue inventory to optimize automatically, or enable Edit Farm Manually.";
+  const chosen = !dirty && (result?.artifactRecommendations || result?.actions.find(a => a.type === "set" && a.set.startsWith("auto-delivery-")));
+  $("delivery-set-note").textContent = automatic ? chosen ? "Automatic · selected after the plan's research upgrades. In the staged route, cars unlocked for K3 are included in the choice. The timeline lists the exact gear and stones to equip." : "Automatic · preview for the starting farm. The solver recalculates the laying/shipping balance when it plans to equip the set." : manual ? "Manual override · the solver uses these entered artifacts and stones." : "Retained set · import a Virtue inventory to optimize automatically, or enable Edit Farm Manually.";
+}
+function populateAutomaticSets(s, c) {
+  if (!c.artifactModel) { updateArtifactNotes(); return; }
+  const action = !dirty && result?.actions.find(a => a.type === "set" && a.set.startsWith("auto-delivery-")), delivery = !dirty && result?.artifactRecommendations?.delivery || action?.loadout || ArtifactSets.bestDelivery(c.artifactModel, S.stats(s, c)).loadout;
+  const values = {earnings:c.earningLoadout, delivery}; let changed = false;
+  if (config.farm.activeSet !== "current") { config.farm.loadouts.current = structuredClone(c.loadouts[s.set]); config.farm.activeSet = "current"; $("activeSet").value = "current"; changed = true; }
+  for (const [key, value] of Object.entries(values)) if (ArtifactSets.signature(config.farm.loadouts[key]) !== ArtifactSets.signature(value)) { config.farm.loadouts[key] = structuredClone(value); changed = true; }
+  if (changed) renderLoadouts(); else updateArtifactNotes();
+}
+function updateStartingGear(s, c) {
+  const automatic = !!c.earningLoadout?.some(slot => slot.artifactId);
+  $("starting-gear-controls").hidden = !automatic;
+  const names = (c.loadouts[s.set] || []).map(slot => S.AMAP[slot.artifactId]?.label).filter(Boolean);
+  $("starting-gear-summary").textContent = "Starting gear: " + (names.length ? names.join(" · ") : "Empty. No artifact or stone bonuses apply until gear is equipped on Humility.");
+  const ready = automatic && ArtifactSets.signature(c.loadouts[s.set]) !== ArtifactSets.signature(c.earningLoadout);
+  $("use-earnings-start").dataset.ready = String(ready);
+  $("use-earnings-start").disabled = !ready || !!worker || !!importingBackup;
+}
+function renderStones(key, i, values = []) {
+  const art = S.AMAP[$(`artifact-${key}-${i}`).value], host = $(`stones-${key}-${i}`);
+  host.replaceChildren();
+  for (let j = 0; j < (art?.slots || 0); j++) host.append(selectField("Stone " + (j + 1), `stone-${key}-${i}-${j}`, [["", "Empty"], ...D.stones.map((s) => [s.id, s.label + " \xB7 " + s.effect])], values[j] || null));
+}
+function formLoadouts() {
+  return Object.fromEntries(["current", "earnings", "delivery"].map(key => [key,Array.from({length:$("proPermit").value === "true" ? 4 : 2},(_,i) => {
+    const id = $(`artifact-${key}-${i}`)?.value, a = S.AMAP[id];
+    return {artifactId:id || null,stones:Array.from({length:a?.slots || 0},(_,j) => $(`stone-${key}-${i}-${j}`)?.value || null)};
+  })]));
+}
+function renderExistingFlights() {
+  const flights = Array.isArray(config.farm.shipFlights) ? config.farm.shipFlights : [], source = config.importInfo?.flightSource;
+  const start = Number(config.plan.start), zone = config.plan.eventTimezone || "America/Los_Angeles";
+  $("flight-list").replaceChildren(...flights.map(f => {
+    const ship = Ships.DATA.ships.find(s => s.id === f.ship)?.name || "Virtue Ship", duration = {SHORT:"Short",LONG:"Standard",EPIC:"Extended"}[f.duration];
+    return el("li", (duration ? duration + " " : "") + ship + " · " + (Number.isFinite(f.returnAt) ? (f.returnAt <= start ? "ready to collect at plan start" : "returns " + timestamp(f.returnAt, zone, true)) : "return time unavailable"));
+  }));
+  $("flight-status").textContent = flights.length ? flights.length + " existing Virtue flight" + (flights.length === 1 ? "" : "s") + " accounted for." : source === "backup" ? "No active Virtue flights in the imported backup." : source === "unavailable" ? "Flight records were not included in this backup." : "No flight records loaded. Selected mission slots are assumed available.";
+  $("flight-help").textContent = source === "unavailable" ? "Sync the game and use the green import arrow to refresh flight information before relying on the ship schedule." : source === "backup" ? "Loaded automatically with your Egg Inc backup. Sync the game and use the green import arrow to refresh. Existing launches do not consume planned fuel again." : "Use the green import arrow to import current flight information automatically. Saved farms and previous plans retain their flight records.";
+}
+function gather() {
+  const f = { ...config.farm };
+  for (const id of Object.keys(editingGroups)) f[id] = $(id).checked;
+  delete f.manualColleggtibles;
+  delete f.manualEpicResearch;
+  for (const k of ["cash", "soulEggs", "shiftCount", "silos", "earningsScale", "researchCostScale"]) f[k] = readNumber(k, {cash:"Current gems",soulEggs:"Soul Eggs",shiftCount:"Previous switches",silos:"Silos",earningsScale:"Earnings calibration",researchCostScale:"Research cost calibration"}[k], ["earningsScale","researchCostScale"].includes(k) ? .000001 : k === "silos" ? 1 : 0);
+  f.virtue = $("virtue").value;
+  f.proPermit = $("proPermit").value === "true";
+  f.videoDoubler = $("videoDoubler").value === "true";
+  f.earningsMode = $("earningsMode").value;
+  f.activeSet = $("activeSet").value;
+  f.shipFlights = structuredClone(config.farm.shipFlights || []);
+  f.claimed = Array.from({ length: 5 }, (_, i) => readNumber("claimed-" + i, "Claimed TE", 0, 98, true));
+  f.delivered = Array.from({ length: 5 }, (_, i) => readNumber("delivered-" + i, "Delivered eggs"));
+  for (let i = 0; i < 5; i++) {
+    const minimum = f.claimed[i] ? D.te[f.claimed[i] - 1] : 0;
+    if (f.delivered[i] < minimum) {
+      f.delivered[i] = minimum;
+      NumericInput.write($("delivered-" + i), minimum);
+      $("delivered-" + i).title = "Minimum lifetime delivery implied by claimed TE. Enter your exact lifetime total if known.";
+    }
+  }
+  f.habs = Array.from({ length: 4 }, (_, i) => $("hab-" + i).value === "" ? null : Number($("hab-" + i).value));
+  f.vehicles = Array.from({ length: 17 }, (_, i) => ({ id: $("vehicle-" + i).value === "" ? null : Number($("vehicle-" + i).value), cars: readNumber("cars-" + i, "Train cars", 1, 10, true) }));
+  f.colleggtibleTiers = Object.fromEntries(D.customEggs.map((e) => [e.identifier, Number($("col-egg-" + e.identifier).value)]));
+  f.colleggtibles = C.combine(f.colleggtibleTiers, f.colleggtibleOverrides);
+  f.research = Object.fromEntries(D.research.map((r) => [r.id, readNumber("research-" + r.id, r.name, 0, r.levels, true)]));
+  f.epic = Object.fromEntries(D.epic.map((r) => [r.id, readNumber("epic-" + r.id, r.name, 0, 10000, true)]));
+  f.loadouts = formLoadouts();
+  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: $("eventTimezone").value, sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), maxSwitches: readNumber("maxSwitches", "Maximum switches", 0, 30, true), maxDays: readNumber("maxDays", "Planning limit", 1, 366, true), shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: $("effort").value, minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), stagedSales: readNumber("stagedSales", "Maximum research sales", 1, 6, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: Array.from({ length: 5 }, (_, i) => readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true)) };
+  if (!p.autoSequence) try {
+    Route.parse(p.sequence, {required: true});
+  } catch (error) { error.fieldId = "sequence"; throw error; }
+  for (const id of ["c1MaxMinutes", "k1MaxMinutes"]) if (p[id] % 30) throw Object.assign(Error("Choose a maximum in 30-minute steps: 30, 60, 90, up to 300 minutes."), {fieldId:id});
+  f.fuelTank = { capacity: readNumber("tankCapacity", "Tank capacity"), outputPerMinute: readNumber("tankOutput", "Tank output per minute", 1), amounts: Object.fromEntries(S.EGGS.map((egg) => [egg, readNumber("fuel-" + egg, egg + " fuel")])) };
+  p.ships = { mode: "custom-two-visits", slots: readNumber("shipSlots", "Mission slots", 1, 3, true), visits: [1, 2].map((visit) => ({ missions: Array.from($("ship-missions-" + visit).children, (_, i) => ({ ship: $("ship-" + visit + "-" + i).value, duration: $("mission-" + visit + "-" + i).value, count: $("ship-count-" + visit + "-" + i).value.trim() === "" ? null : readNumber("ship-count-" + visit + "-" + i, "H" + visit + " launch count", 1, 1e6, true) })) })) };
+  delete p.openingStepMinutes;
+  p.sequenceVersion = 2;
+  if (!Number.isFinite(p.start) || p.start <= 0) throw Object.assign(Error("Choose a valid start date/time."), {fieldId:"start"});
+  const next = { ...config, version: 1, farm: f, plan: p };
+  delete next.draftInputs;
+  return next;
+}
+function stat(label, value, sub, egg) {
+  const div = el("div", void 0, "stat");
+  const heading = el("small", titleCase(label));
+  if (egg) heading.replaceChildren(EggIcons.caption(egg, titleCase(label)));
+  div.append(heading, el("strong", value), el("span", sub));
+  return div;
+}
+function refresh() {
+  clearFieldError();
+  EggIcons.decorateLabel($("virtue").closest("label"), $("virtue").value);
+  updateSequenceVisibility();
+  $("sequence-budget").hidden = true;
+  $("fit-sequence").hidden = true;
+  try {
+    config = gather();
+    if (!config.plan.autoSequence) {
+      const route = Route.normalize(config.plan.sequence, config.farm.virtue), needed = route.length - 1, clipped = needed > config.plan.maxSwitches;
+      $("sequence-budget").hidden = false;
+      $("sequence-budget").textContent = "Full sequence: " + needed + " new switches from " + S.NAME[S.EGGS.indexOf(config.farm.virtue)] + "." + (clipped ? " Current limit: " + config.plan.maxSwitches + "; later visits are excluded." : "");
+      $("fit-sequence").hidden = !clipped;
+      $("fit-sequence").disabled = needed > 30;
+    }
+    const { s, c } = S.prepare(config), r = S.stats(s, c), pending = S.totalTE(s, c) - c.claimedTotal;
+    populateAutomaticSets(s, c);
+    updateStartingGear(s, c);
+    $("sequence-preview").hidden = c.autoSequence;
+    $("sequence-preview").textContent = "Planned order: " + c.sequence.map((i) => ({ curiosity: "C", kindness: "K", integrity: "I", resilience: "R", humility: "H" })[S.EGGS[i]]).join(" ");
+    const c1Choices = E.budgets(c.c1MaxMinutes), k1Choices = E.budgets(c.k1MaxMinutes);
+    $("opening-combinations").textContent = T.canCompare(s, c) ? (c1Choices.length * k1Choices.length).toLocaleString() + " C1/K1 combinations" : "C1/K1 limits apply to the first visits on every route.";
+    const warnings = Model.notices(s, c);
+    $("farm-advisories").replaceChildren(...warnings.map((message) => el("p", message)));
+    $("farm-advisories").hidden = !warnings.length;
+    renderColleggtibleTotals(config.farm.colleggtibleTiers, config.farm.colleggtibleOverrides);
+    $("stats").replaceChildren(stat("Truth Eggs", c.claimedTotal + " + " + pending, "claimed + pending", "truth"), stat("Egg delivery / hour", num(r.delivery * 3600), r.bottleneck + " limited \xB7 headroom " + num(r.headroom * 3600) + "/hr"), stat("Normal earnings / hour", num(r.earning * 3600), c.earningsMode + " \xB7 before weekly event"), stat("Habitat capacity", num(r.hab), "Silo coverage: " + duration(r.siloHours * 3600)));
+    for (let i = 0; i < 5; i++) $("pending-" + i).textContent = String(Math.max(0, S.countTE(s.eggs[i]) - c.claimed[i]));
+    for (const research of D.research) {
+      const i = S.RMAP[research.id];
+      $("cost-" + research.id).textContent = s.r[i] === research.levels ? "Maxed" : S.isUnlocked(s, i) ? num(S.price(s, c, { type: "research", i })) : "Tier locked";
+    }
+    for (let i = 0; i < 17; i++) {
+      $("vehicle-" + i).closest(".fleet-slot").style.opacity = i < r.slots ? "1" : ".5";
+      $("cars-" + i).disabled = s.v[i].id !== 11;
+    }
+    const m = c.mods[s.set];
+    $("artifact-mods").textContent = "Active set effects: " + Object.entries(m).map(([k, v]) => k + " \xD7" + v.toFixed(3)).join(" \xB7 ");
+    $("fuel-status").textContent = num(c.ships.stored.reduce((a, b) => a + b, 0)) + " stored / " + num(c.ships.capacity) + " capacity";
+    renderExistingFlights();
+    const shipEstimate = $("ship-estimate");
+    shipEstimate.replaceChildren();
+    if (!c.ships.enabled) shipEstimate.append(el("p", "No ship missions planned. Add missions to H1, H2, or both."));
+    else {
+      for (const run of c.ships.runs) {
+        const heading = el("h4", "H" + run.visit + " Ship Plan");
+        shipEstimate.append(heading);
+        if (!run.count) {
+          shipEstimate.append(el("p", "No ships planned for this visit."));
+          continue;
+        }
+        for (const [i, m2] of run.missions.entries()) {
+          const maximum = Ships.maximum(m2, c.ships.capacity, run.stored, Ships.needed(run.missions.filter((_, j) => j !== i)));
+          shipEstimate.append(el("p", m2.count + " \xD7 " + m2.label + (maximum === null ? "" : " \xB7 Tank maximum with other missions: " + maximum), "ship-estimate-line"));
+        }
+        shipEstimate.append(el("p", "Fuel required: " + run.fuel.map((n, i) => n ? S.NAME[i] + " " + num(n) : "").filter(Boolean).join(" \xB7 ")));
+        const missing = (run.collectionTargets || run.targets).map((n, i) => Math.max(0, n - run.stored[i]));
+        shipEstimate.append(el("p", missing.some((n) => n) ? (run.visit === 1 ? "Collect before H1: " : "Refill after H1 for H2: ") + missing.map((n, i) => n ? S.NAME[i] + " " + num(n) : "").filter(Boolean).join(" \xB7 ") : "Required non-Humility fuel is already available."));
+        if (run.visit === 1 && run.collectionTargets?.some((n, i) => n > run.targets[i])) shipEstimate.append(el("p", "Includes fuel reserved for H2 where the switch sequence has no refill stop."));
+      }
+      shipEstimate.append(el("p", "FTL: " + c.ships.ftl + " / 60 from Epic Research. Both schedules include gem costs, fueling and earlier returns; final returns are not awaited."));
+    }
+    $("optimize").disabled = !!worker || !!importingBackup;
+    if (!worker && !dirty) {
+      $("run-summary").textContent = result ? duration(result.seconds) + " to target · " + result.switches + " switches" : "Ready to Plan";
+      $("run-detail").textContent = result ? "Validated plan · " + result.pendingTE + " pending TE" : "Minimum time to your Truth Egg target";
+    }
+    return true;
+  } catch (e) {
+    $("sequence-preview").hidden = true;
+    fieldError(e);
+    $("optimize").disabled = true;
+    return false;
+  }
+}
+function saveBlob(name, text, type = "application/json") {
+  const url = URL.createObjectURL(new Blob([text], { type })), a = el("a");
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3e3);
+}
+function save() {
+  clearTimeout(refreshTimer);
+  let saved;
+  try {
+    saved = gather();
+    config = saved;
+  } catch {
+    saved = { ...structuredClone(config), draftInputs: captureDraftInputs() };
+  }
+  saveBlob(N.farm(saved), JSON.stringify(saved, null, 2));
+  queueRecovery();
+  if (refresh()) show("Farm configuration saved.");
+  else show("Farm saved. Planning still needs attention: " + $("notice").textContent, true);
+}
+function condensedActions(actions) {
+  const out = [];
+  let batch = /* @__PURE__ */ new Map(), t;
+  for (const a of actions) {
+    if (a.type === "wait" && a.earningsMode === "online" && a.end - a.t < 10) continue;
+    if (a.type !== "research" || a.t !== t) {
+      batch = /* @__PURE__ */ new Map();
+      t = a.t;
+    }
+    const prev = a.type === "research" ? batch.get(a.i) : null;
+    if (prev && prev.to === a.from) {
+      prev.to = a.to;
+      prev.cost += a.cost;
+      prev.bank = a.bank;
+      prev.after = a.after;
+      prev.grouped = true;
+    } else {
+      const row = { ...a };
+      out.push(row);
+      if (a.type === "research") batch.set(a.i, row);
+    }
+  }
+  return out;
+}
+function actionLabel(a) {
+  switch (a.type) {
+    case "research":
+      return "Buy " + D.research[a.i].name + " " + a.from + " \u2192 " + a.to;
+    case "hab":
+      return "Buy " + D.habs[a.id].name + " \xB7 habitat " + (a.slot + 1);
+    case "vehicle":
+      return "Buy " + D.vehicles[a.id].name + " \xB7 fleet slot " + (a.slot + 1);
+    case "car":
+      return "Add Hyperloop car " + a.fromCars + " \u2192 " + a.toCars + " \xB7 slot " + (a.slot + 1);
+    case "silo":
+      return "Buy another silo";
+    case "set":
+      return "Equip " + (a.setLabel || ArtifactSets.label(a.set)) + " artifact set";
+    case "shift":
+      return "Switch to " + S.NAME[a.egg];
+    case "fuel-dump":
+      return "Set Tank Limits and Discard Excess Fuel";
+    case "fuel":
+      return "Store " + num(a.amount) + " " + S.NAME[a.egg] + " fuel";
+    case "ship-visit":
+      return "H" + a.visit + " \xB7 No Ships Planned";
+    case "ship-run":
+      return "Launch " + a.count + " planned ships";
+    case "wait":
+      return (a.earningsMode === "offline" ? "Go offline for " : "Wait online for ") + duration(a.end - a.t);
+    default:
+      return a.type;
+  }
+}
+function renderResult() {
+  const r = result, zone = resultConfig.plan.eventTimezone, host = $("result-content"), summary = U.summarize(resultConfig, r);
+  if (!worker) {
+    $("run-summary").textContent = duration(r.seconds) + " to target \xB7 " + r.switches + " switches";
+    $("run-detail").textContent = "Validated plan \xB7 " + r.pendingTE + " pending TE";
+  }
+  result.summary = summary;
+  host.replaceChildren();
+  $("empty-results").hidden = true;
+  host.hidden = false;
+  const card = el("div", void 0, "card result-summary"), head = el("div", void 0, "result-header");
+  head.append(el("h2", "Target " + r.target + " TE in " + duration(r.seconds)));
+  const tools = el("div", void 0, "inline");
+  const txt = el("button", "Export Walkthrough", "secondary");
+  txt.onclick = async () => {
+    const raw = resultConfig, preview = V.open();
+    if (!preview) {
+      show("Your browser blocked the PDF tab. Allow pop-ups for this app, then click Export Walkthrough again.", true);
+      return;
+    }
+    txt.disabled = true;
+    txt.textContent = "Creating PDF\u2026";
+    try {
+      const bytes = await Q.create(raw, r);
+      V.display(preview, bytes, N.pdf(raw, r.seconds));
+      show("PDF opened in a new tab with shift summaries and the quick guide.");
+    } catch (e) {
+      preview.close();
+      show("Could not open PDF: " + e.message, true);
+    } finally {
+      txt.disabled = false;
+      txt.textContent = "Export Walkthrough";
+    }
+  };
+  txt.title = "Open a PDF with shift summaries and the quick guide in a new tab";
+  const json = el("button", "Save plan", "secondary");
+  json.onclick = () => saveBlob(N.plan(resultConfig, r.seconds), JSON.stringify({ version: 1, config: resultConfig, result: r }, null, 2));
+  const expand = el("button", "Expand all", "secondary");
+  expand.onclick = () => {
+    const items = [...host.querySelectorAll(".timeline-group, .full-breakdown")], open = items.some(d => !d.open);
+    for (const d of items) { if (open) d.fill?.(); d.open = open; }
+    expand.textContent = open ? "Collapse All" : "Expand All";
+  };
+  const next = el("button", "Start next ascension", "secondary");
+  next.id = "next-ascension";
+  next.disabled = dirty || r.target >= 490;
+  next.onclick = () => {
+    if (worker) {
+      show("Stop or finish the current search before starting the next ascension.", true);
+      return;
+    }
+    if (dirty) {
+      show("Inputs changed. Re-run the current plan before starting its next ascension.", true);
+      return;
+    }
+    config = nextAscension(resultConfig, result);
+    result = null;
+    resultConfig = null;
+    dirty = false;
+    renderForm();
+    $("result-content").hidden = true;
+    $("empty-results").hidden = false;
+    tab("farm");
+    show("Next ascension starts at the previous finish time. Claimed TE, lifetime eggs, Epic Research, artifacts, Soul Eggs and shift history are preserved; farm upgrades and gems are reset.");
+    queueRecovery();
+  };
+  tools.append(txt, json, expand, next);
+  head.append(tools);
+  card.append(head, el("p", timestamp(r.end, zone) + " \xB7 " + r.switches + " new switches \xB7 " + num(r.soulCost) + " Soul Eggs spent"), el("p", waitTotals(summary.totals), "waiting-totals"), el("p", "Minimum offline break: " + (resultConfig.plan.minOfflineMinutes ?? 1) + " min. Finish time comes first; ties favor fewer earning breaks.", "hint"), el("p", "Validated by replay: purchases affordable, Virtue permissions enforced, target reached. Claim pending TE at ascension.", "hint"));
+  const diagnostics = el("details", void 0, "search-details");
+  diagnostics.append(el("summary", "Search Details"), el("p", r.method + " \xB7 " + r.explored.toLocaleString() + " states examined \xB7 " + r.termination + ".", "hint"));
+  if (r.openingSearch) diagnostics.append(el("p", "Compared " + r.openingSearch.combinationsCompared + " of " + r.openingSearch.totalCombinations + " C1/K1 opening combinations at " + (r.openingSearch.stepMinutes || 30) + "-minute intervals" + (r.openingSearch.complete ? " (complete)." : " (stopped early)."), "hint"));
+  if (r.waitingRoutesCompared > 1) diagnostics.append(el("p", "Compared individual purchase waits and offline batches across " + r.waitingRoutesCompared + " staged routes.", "hint"));
+  const c1 = summary.shifts.find((s) => s.phase === "C1"), k1 = summary.shifts.find((s) => s.phase === "K1");
+  if (c1 && k1 && r.openingTimeLimits) diagnostics.append(el("p", "Opening duration: C1 " + exactDuration(c1.seconds) + " (limit " + (resultConfig.plan.c1MaxMinutes ?? 60) + " min) \xB7 K1 " + exactDuration(k1.seconds) + " (limit " + (resultConfig.plan.k1MaxMinutes ?? 60) + " min).", "hint"));
+  if (r.baselineSeconds) diagnostics.append(el("p", "No-upgrade comparison: " + duration(r.baselineSeconds) + " \u2192 " + duration(r.seconds) + ".", "hint"));
+  diagnostics.append(el("p", "Every smaller staged opening-budget option is retained. Timed free routing can vary between runs. Saved plans never seed a search.", "hint"), el("p", "Online waits under 10 seconds are hidden; their time remains included.", "hint"));
+  card.append(diagnostics);
+  const stale = el("div", "Inputs changed since this plan was generated. This timeline uses the saved inputs from its run. Re-run to update it.", "notice stale-plan");
+  stale.id = "plan-stale";
+  stale.hidden = !dirty;
+  stale.setAttribute("role", "status");
+  card.append(stale);
+  host.append(card);
+  const initial = S.prepare(resultConfig, { oneStartingSilo: r.initialSiloRule === "one" || r.actions.some((a) => a.initialSiloRule === "one") }), guidance = el("div", void 0, "model-notices");
+  guidance.append(el("p", Model.maintenance(initial.s, initial.c, r.finalStats)));
+  for (const message of Model.notices(initial.s, initial.c)) guidance.append(el("p", message));
+  host.append(guidance);
+  const frontier = el("div", void 0, "card");
+  frontier.append(el("h2", "Switch tradeoffs found"));
+  const table = el("table"), thead = el("thead"), thr = el("tr");
+  ["New switches", "Time to target", "Soul Egg cost"].forEach((t) => thr.append(el("th", t)));
+  thead.append(thr);
+  table.append(thead);
+  const tbody = el("tbody");
+  for (const f of r.frontier) {
+    const tr = el("tr");
+    tr.append(el("td", f.switches), el("td", duration(f.seconds)), el("td", num(f.soulCost)));
+    tbody.append(tr);
+  }
+  table.append(tbody);
+  frontier.append(table, el("p", "These are feasible plans discovered by the search, not exhaustive optima for every switch count.", "hint"));
+  host.append(frontier);
+  const heading = el("div", void 0, "shift-overview-heading");
+  heading.append(el("h2", "Shift activities"), el("p", "Open a shift for its quick guide: purchase targets between breaks. Open Full breakdown for individual actions. Online gaps under 10 seconds stay folded into purchase groups and included in totals.", "hint"));
+  host.append(heading);
+  const events = initial.c.calendar.filter((e) => e.t > r.start && e.t <= r.end);
+  let ei = 0;
+  for (const shift of summary.shifts) {
+    const group = el("details", void 0, "timeline-group shift-summary"), header = el("summary"), top = el("div", void 0, "shift-summary-top"), title = el("span", shift.phase + " \xB7 " + shift.name, "shift-title"), timing = el("div", void 0, "shift-timing"), finish = el("time", "Ends " + timestamp(shift.end, zone, true), "shift-end");
+    title.replaceChildren(EggIcons.caption(S.EGGS[shift.egg], shift.phase + " \xB7 " + shift.name));
+    finish.dateTime = new Date(shift.end * 1e3).toISOString();
+    const cost = el("span", shift.hasSwitch ? "Switch Cost: " + num(shift.soulCost) + " Soul Eggs" : "Starting Farm · No Switch Cost", "shift-cost");
+    cost.title = shift.hasSwitch ? "Soul Eggs required to enter this Truth Egg visit." : "The farm you start on does not require a new switch.";
+    timing.append(el("span", exactDuration(shift.seconds) + " \xB7 +" + shift.teGained + " TE", "shift-duration"), cost, finish);
+    top.append(title, timing);
+    header.append(top);
+    const chips = el("div", void 0, "activity-chips");
+    for (const activity of shift.activities) {
+      const chip = el("span", void 0, "activity-chip " + activity.kind);
+      chip.append(el("span", activity.label));
+      if (activity.value) chip.append(el("b", activity.value));
+      chips.append(chip);
+    }
+    header.append(chips, el("div", waitTotals(shift), "shift-waits"));
+    group.append(header);
+    const guide = el("div", void 0, "quick-guide");
+    guide.append(el("h3", "Quick guide"), el("p", "Reach these levels, then take the listed break. Research is grouped by tier in the in-game order.", "hint"));
+    for (const [index, step] of shift.quickGuide.entries()) {
+      const block = el("section", void 0, "guide-step"), stepHead = el("div", void 0, "guide-step-heading");
+      stepHead.append(el("h4", step.activities.length ? "Purchase group " + (index + 1) : "Break " + (index + 1)), el("time", timestamp(step.start, zone), "guide-start"));
+      block.append(stepHead);
+      const items = el("div", void 0, "guide-items");
+      for (const tier of G.groups(step.activities)) {
+        const section = el("section", void 0, "guide-tier");
+        section.dataset.tier = tier.tier ?? "other";
+        section.append(el("h5", tier.label));
+        const list = el("ul", void 0, "guide-item-list");
+        for (const activity of tier.items) {
+          const row = el("li", void 0, "guide-item " + activity.kind);
+          if (activity.kind === "research") row.dataset.researchIndex = activity.i;
+          row.append(el("span", activity.label));
+          if (activity.value) row.append(el("b", activity.value));
+          list.append(row);
+        }
+        section.append(list);
+        items.append(section);
+      }
+      if (step.activities.length) block.append(items);
+      else block.append(el("p", step.break ? "No purchases before this break." : "No further purchases in this shift.", "hint"));
+      if (step.shipRun) {
+        const run = step.shipRun, details = el("div", void 0, "ship-run-details");
+        details.append(el("p", "Stay on Humility for " + exactDuration(run.end - run.t) + " to fund, fuel, and launch these missions."));
+        for (const m of run.batches) details.append(el("p", m.count + " \xD7 " + m.label + " \xB7 First " + timestamp(m.firstLaunch, zone) + " \xB7 Final " + timestamp(m.lastLaunch, zone)));
+        if (run.launches?.length) {
+          const schedule = el("details", void 0, "ship-launch-schedule");
+          schedule.append(el("summary", "Launch Schedule \xB7 " + run.launches.length + " Ships"));
+          for (const [i, launch] of run.launches.entries()) schedule.append(el("p", i + 1 + ". " + launch.label + " \xB7 Slot " + launch.slot + " \xB7 " + timestamp(launch.t, zone, true)));
+          for (const pause of run.waits || []) if (pause.mode === "offline" || pause.seconds >= 10) schedule.append(el("p", (pause.mode === "offline" ? "Offline " : "Online ") + exactDuration(pause.seconds) + " \xB7 " + pause.reason + " \xB7 Resume " + timestamp(pause.end, zone, true)));
+          details.append(schedule);
+        }
+        details.append(el("p", "Final launches complete at " + timestamp(run.end, zone, true) + ". Final ships return later; the plan does not wait for them."));
+        block.append(details);
+      }
+      if (step.hiddenOnlineSeconds || step.interactionSeconds) block.append(el("p", [step.hiddenOnlineSeconds ? "Brief online waits included: " + exactDuration(step.hiddenOnlineSeconds) : "", step.interactionSeconds ? "Interactions: " + exactDuration(step.interactionSeconds) : ""].filter(Boolean).join(" \xB7 "), "guide-overhead"));
+      if (step.break) {
+        const pause = step.break, breakBox = el("div", void 0, "guide-break " + pause.mode), resume = el("time", "Resume " + timestamp(pause.end, zone, true));
+        resume.dateTime = new Date(pause.end * 1e3).toISOString();
+        breakBox.append(el("b", (pause.mode === "fuel" ? "Collect fuel for " : pause.mode === "offline" ? "Go offline for " : "Wait online for ") + exactDuration(pause.seconds)), el("span", "Starts " + timestamp(pause.start, zone)), resume);
+        if (pause.reason) breakBox.append(el("small", pause.reason));
+        block.append(breakBox);
+      } else {
+        const done = el("time", "Shift ends " + timestamp(shift.end, zone, true), "guide-complete");
+        done.dateTime = new Date(shift.end * 1e3).toISOString();
+        block.append(done);
+      }
+      guide.append(block);
+    }
+    if (!shift.quickGuide.length) guide.append(el("p", "No purchases or breaks in this shift.", "hint"));
+    group.append(guide);
+    const full = el("details", void 0, "full-breakdown");
+    full.append(el("summary", "Full breakdown \xB7 individual purchases and waits"));
+    const content = el("div");
+    full.append(content);
+    group.append(full);
+    host.append(group);
+    // Assign events once in chronological order. Collapsed details need no
+    // action DOM or date formatting until opened; expansion preserves order.
+    const records = [];
+    for (const a of condensedActions(r.actions.slice(shift.firstIndex, shift.lastIndex + 1))) {
+      const leading = [], during = [];
+      while (ei < events.length && events[ei].t <= a.t) leading.push(events[ei++]);
+      if (a.type === "wait") while (ei < events.length && events[ei].t <= a.end) during.push(events[ei++]);
+      records.push({a, leading, during});
+    }
+    full.fill = () => {
+      if (full.dataset.loaded) return;
+      full.dataset.loaded = "true";
+      const fragment = document.createDocumentFragment();
+      for (const {a, leading, during} of records) {
+      for (const e of leading) fragment.append(el("div", timestamp(e.t, zone) + " \xB7 " + e.earnings + "\xD7 earnings \xB7 " + (e.sale === 0.3 ? "70% research discount" : "regular research prices"), "event-marker"));
+      const row = el("div", void 0, "action " + a.type);
+      const time = el("time", timestamp(a.t, zone));
+      time.dateTime = new Date(a.t * 1e3).toISOString();
+      const detail = el("div");
+      detail.append(el("h4", actionLabel(a)));
+      if (a.type === "wait") {
+        detail.append(el("p", a.reason + " \xB7 " + num(a.eggsGained) + " eggs delivered"));
+        for (const e of during) {
+          detail.append(el("p", timestamp(e.t, zone) + " \xB7 " + e.earnings + "\xD7 earnings \xB7 " + (e.sale === 0.3 ? "70% research discount" : "regular research prices"), "delta"));
+        }
+      } else if (a.type === "ship-visit") {
+        detail.append(el("p", "Continue with the listed activities; no ship launches on this visit."));
+      } else if (a.type === "fuel-dump") {
+        detail.append(el("p", "Discard " + a.removed.map((v, i) => v ? num(v) + " " + S.NAME[i] : "").filter(Boolean).join(" \xB7 ")));
+      } else if (a.type === "fuel") {
+        detail.append(el("p", "100% egg diversion for " + exactDuration(a.end - a.t) + " \xB7 no gems or TE delivery during filling"));
+        detail.append(el("p", "Fuel ready " + timestamp(a.end, zone, true), "delta"));
+      } else if (a.type === "ship-run") {
+        detail.append(el("p", "Stay for " + exactDuration(a.end - a.t) + " \xB7 " + waitTotals(a) + " \xB7 Gems spent " + num(a.cost)));
+        for (const m of a.batches) detail.append(el("p", m.count + " \xD7 " + m.label + " \xB7 First " + timestamp(m.firstLaunch, zone) + " \xB7 Final " + timestamp(m.lastLaunch, zone)));
+        detail.append(el("p", "Earlier return waits " + exactDuration(a.returnWaitSeconds) + " \xB7 Funding waits " + exactDuration(a.fundingSeconds) + " \xB7 Tank transfer " + exactDuration(a.transferSeconds), "delta"));
+        detail.append(el("p", "Final launches complete " + timestamp(a.end, zone, true) + ". Continue the listed plan; no wait for final returns.", "delta"));
+      } else if (a.grouped) {
+        detail.append(el("p", "Combined cost " + num(a.cost)));
+      } else {
+        detail.append(el("p", a.type === "shift" ? "Gems Reset \xB7 " + num(a.soulCost) + " Soul Eggs spent" : "Cost " + num(a.cost) + " \xB7 gems remaining " + num(a.bank)));
+        detail.append(el("p", "Delivery " + num(a.before.delivery * 3600) + " \u2192 " + num(a.after.delivery * 3600) + "/hour \xB7 earnings " + num(a.after.earning * 3600) + "/hour", "delta"));
+      }
+      row.append(time, detail);
+      fragment.append(row);
+      }
+      content.append(fragment);
+    };
+    new MutationObserver(() => { if (full.open) full.fill(); }).observe(full, {attributes:true,attributeFilter:["open"]});
+    full.addEventListener("toggle", () => { if (full.open) full.fill(); });
+  }
+  const end = el("div", void 0, "card");
+  const totals = el("p", void 0, "egg-totals");
+  for (const [i, count] of r.finalTE.entries()) totals.append(EggIcons.caption(S.EGGS[i], S.NAME[i] + " " + count));
+  end.append(el("h2", "Target available to claim"), el("p", timestamp(r.end, zone)), totals, el("p", r.pendingTE + " pending TE \xB7 final delivery " + num(r.finalStats.delivery * 3600) + "/hour"));
+  host.append(end);
+}
+function renderSuggestion(suggestion, runConfig = resultConfig, inputsChanged = dirty) {
+  const host = $("result-content");
+  host.replaceChildren();
+  host.hidden = false;
+  $("empty-results").hidden = true;
+  const card = el("div", void 0, "card");
+  card.append(el("h2", "A validated plan is available with a longer window"), el("p", "No plan was found within your " + suggestion.requestedDays + "-day limit. A separately replayed plan reaches " + suggestion.result.target + " TE in " + duration(suggestion.result.seconds) + ". This does not prove that a shorter route is impossible."), el("p", "Your farm inputs are preserved. This alternative uses a 366-day planning limit."));
+  const accept = el("button", "Use 366-day limit and view this plan");
+  if (inputsChanged) {
+    accept.disabled = true;
+    card.append(el("p", "Inputs changed during the search. Re-run to get an alternative for the current inputs."));
+  }
+  accept.onclick = () => {
+    if (JSON.stringify(gather()) !== JSON.stringify(runConfig)) {
+      show("Inputs changed since this alternative was generated. Re-run for the current farm.", true);
+      return;
+    }
+    config = structuredClone(suggestion.config);
+    resultConfig = structuredClone(suggestion.config);
+    result = suggestion.result;
+    dirty = false;
+    renderForm();
+    renderResult();
+    tab("results");
+    show("Longer planning window applied. Every action in this plan passed replay validation.");
+  };
+  card.append(accept);
+  host.append(card);
+}
+function renderSearchClock() {
+  const total = Math.max(0, Math.floor((performance.now() - searchStartedAt) / 1e3)), elapsed = exactDuration(total) + (total >= 60 && total % 60 === 0 ? " 0s" : "");
+  $("run-detail").textContent = [searchContext, searchBestSeconds !== null ? "Best so far: " + duration(searchBestSeconds) : "", "Searching for " + elapsed].filter(Boolean).join(" \xB7 ");
+}
+function startSearchClock() {
+  clearInterval(searchTimer);
+  searchStartedAt = performance.now();
+  searchBestSeconds = null;
+  searchContext = "Evaluating affordable purchases, event waits and switches";
+  renderSearchClock();
+  searchTimer = setInterval(renderSearchClock, 1e3);
+}
+function busy(active) {
+  $("restore-session").disabled = active || !!importingBackup;
+  if (!active) {
+    clearInterval(searchTimer);
+    searchTimer = null;
+  }
+  $("stop").disabled = false;
+  $("stop").textContent = "Stop & Keep Best";
+  $("stop").hidden = !active;
+  $("run-progress").hidden = !active;
+  $("run-progress").removeAttribute("value");
+  $("run-progress").removeAttribute("aria-valuetext");
+  $("run-progress").setAttribute("aria-label", "Planner search in progress");
+  $("optimize").setAttribute("aria-busy", String(active));
+  $("optimize").disabled = active || !!importingBackup || !!invalidField;
+  if ($("next-ascension")) $("next-ascension").disabled = active || !!importingBackup || dirty || !result || result.target >= 490;
+  for (const id of ["load-file", "import-eid"]) $(id).disabled = active || !!importingBackup;
+  $("use-earnings-start").disabled = active || !!importingBackup || $("use-earnings-start").dataset.ready !== "true";
+  $("import-eid").setAttribute("aria-busy", String(!!importingBackup));
+}
+function optimize() {
+  if (importingBackup) return;
+  if (!refresh()) return;
+  acceptRecoverySession();
+  const runConfig = structuredClone(config);
+  dirty = false;
+  if ($("plan-stale")) { $("plan-stale").textContent = "A new search is running. This timeline is the previous plan; the completed search will replace it."; $("plan-stale").hidden = false; }
+  show("Searching research orders and switch timing. You can keep using the interface.");
+  tab("results");
+  busy(true);
+  $("run-summary").textContent = "Searching\u2026";
+  startSearchClock();
+  const blob = new Blob([globalThis.VIRTUE_WORKER_SOURCE], { type: "text/javascript" }), url = URL.createObjectURL(blob);
+  try { worker = new Worker(url); }
+  catch (error) {
+    busy(false);
+    markInputsChanged();
+    show("Could not start the planner: " + error.message, true);
+    $("run-summary").textContent = "Search Could Not Start";
+    $("run-detail").textContent = "Try reopening the app or using the Windows launcher.";
+    return;
+  } finally { URL.revokeObjectURL(url); }
+  const activeWorker = worker;
+  let lastAnnouncement = 0;
+  worker.onmessage = ({ data }) => {
+    if (worker !== activeWorker) return;
+    if (data.type === "progress") {
+      const p = data.progress;
+      if (p.phase === "alternative") {
+        $("run-summary").textContent = "Checking a longer planning window";
+        searchContext = "No plan found within " + p.requestedDays + " days; testing a validated alternative";
+        renderSearchClock();
+        return;
+      }
+      if (p.phase === "openings") {
+        $("run-summary").textContent = "Opening Comparison " + (p.openingCompared + 1) + " / " + p.openingTotal + " · " + p.stage;
+        searchContext = "C1 ≤" + p.openingBudget.c1MaxMinutes + " min · K1 ≤" + p.openingBudget.k1MaxMinutes + " min";
+        $("run-progress").max = p.openingTotal;
+        $("run-progress").value = p.openingCompared;
+        $("run-progress").setAttribute("aria-valuetext", p.openingCompared + " of " + p.openingTotal + " opening comparisons completed");
+      } else {
+        $("run-summary").textContent = p.phaseLabel ? "Staged route · " + p.phaseLabel : p.explored.toLocaleString() + " states examined";
+        searchContext = "Timed routing search";
+        $("run-progress").removeAttribute("value");
+        $("run-progress").removeAttribute("aria-valuetext");
+      }
+      if (p.bestSeconds !== null && p.bestSeconds !== void 0) searchBestSeconds = p.bestSeconds;
+      renderSearchClock();
+      if (performance.now() - lastAnnouncement > 5000) {
+        $("search-announcement").textContent = $("run-summary").textContent + (searchBestSeconds !== null ? ". Best plan so far: " + duration(searchBestSeconds) : ". No complete plan found yet.");
+        lastAnnouncement = performance.now();
+      }
+    } else {
+      worker.terminate();
+      worker = null;
+      busy(false);
+      if (data.type === "error") {
+        const inputsChanged = dirty;
+        dirty = dirty || !!result;
+        if ($("plan-stale")) { $("plan-stale").textContent = "The new search did not finish. This timeline still uses the previous plan's inputs."; $("plan-stale").hidden = !dirty; }
+        if ($("next-ascension")) $("next-ascension").disabled = true;
+        show(data.error, true);
+        $("run-summary").textContent = "Planning could not finish";
+        $("run-detail").textContent = "Review inputs or increase the planning/search limits";
+        if (data.suggestion) renderSuggestion(data.suggestion, runConfig, inputsChanged);
+        queueRecovery();
+      } else {
+        result = data.result;
+        resultConfig = runConfig;
+        if (!dirty) refresh();
+        renderResult();
+        show(dirty ? "Plan completed and replay validation passed. Inputs changed during the run; this timeline uses the starting inputs." : "Plan completed and replay validation passed.");
+        $("run-summary").textContent = duration(result.seconds) + " to target \xB7 " + result.switches + " switches";
+        $("run-detail").textContent = "Fastest plan found \xB7 " + result.actions.filter((a) => !["wait", "shift"].includes(a.type)).length + " purchases";
+        if (dirty) markInputsChanged();
+        queueRecovery();
+      }
+    }
+  };
+  worker.onerror = (e) => {
+    if (worker !== activeWorker) return;
+    worker?.terminate();
+    worker = null;
+    busy(false);
+    dirty = !!result;
+    if ($("plan-stale")) { $("plan-stale").textContent = "The search failed. This timeline still uses the previous plan's inputs."; $("plan-stale").hidden = !dirty; }
+    show("Planner worker failed: " + e.message, true);
+    $("run-summary").textContent = "Worker error";
+    $("run-detail").textContent = "Review inputs and try the search again";
+    queueRecovery();
+  };
+  worker.postMessage({ config: runConfig, options: { ...effort[$("effort").value] } });
+}
+async function loadFile(file) {
+  const epoch = loadEpoch;
+  try {
+    const text = await file.text();
+    if (epoch !== loadEpoch) return;
+    const raw = JSON.parse(text);
+    if (worker) throw Error("Stop or finish the current search before loading a farm.");
+    if (raw.version === 1 && raw.config && raw.result) {
+      const recovered = replaySavedResult(raw.config, raw.result);
+      config = raw.config;
+      result = recovered;
+      resultConfig = structuredClone(raw.config);
+      dirty = false;
+      result.summary = U.summarize(config, result);
+      renderForm();
+      renderResult();
+      tab("results");
+      const oldLimits = !result.openingTimeLimits && U.openingViolations(config, result).length;
+      show(oldLimits ? "Saved plan loaded and replayed. This older plan exceeds the current C1/K1 limits. Re-run the planner to enforce them." : "Saved plan loaded and replayed.", !!oldLimits);
+      acceptRecoverySession();
+      return;
+    }
+    const savedFarm = raw.version === 1 && raw.farm;
+    const next = savedFarm ? raw : currentFarmImport(raw);
+    for (const [key, length] of [["claimed", 5], ["delivered", 5], ["habs", 4], ["vehicles", 17]]) if (!Array.isArray(next.farm[key]) || next.farm[key].length !== length) throw Error("Farm file needs " + length + " " + key + " entries.");
+    config = next;
+    result = null;
+    resultConfig = null;
+    dirty = false;
+    clearTimeout(refreshTimer);
+    const valid = renderForm();
+    $("result-content").hidden = true;
+    $("empty-results").hidden = false;
+    const loaded = !savedFarm && next.importInfo.scope === "account" ? "Account information has been loaded, but no current Virtue farm was found." : "Farm loaded.";
+    show(valid ? loaded + " Check the target and start time before planning." : loaded + " Planning still needs attention: " + $("notice").textContent, !valid);
+    tab("farm");
+    acceptRecoverySession();
+  } catch (e) {
+    show("Could not load file: " + e.message, true);
+  }
+}
+for (const visit of [1, 2]) $("add-ship-" + visit).onclick = () => {
+  try {
+    config = gather();
+    const missions = config.plan.ships.visits[visit - 1].missions;
+    missions.push({ ship: "CHICKEN_ONE", duration: "SHORT", count: 3 });
+    renderShipMissions(visit, missions);
+    markInputsChanged();
+    refresh();
+    $("ship-" + visit + "-" + (missions.length - 1)).focus();
+  } catch (e) {
+    show(e.message, true);
+  }
+};
+$("copy-ships").onclick = () => {
+  try {
+    config = gather();
+    config.plan.ships.visits[1] = structuredClone(config.plan.ships.visits[0]);
+    renderShipMissions(2, config.plan.ships.visits[1].missions);
+    markInputsChanged();
+    refresh();
+  } catch (e) {
+    show(e.message, true);
+  }
+};
+$("save-file").onclick = save;
+$("load-file").onclick = () => $("file-input").click();
+$("file-input").onchange = (e) => {
+  if (e.target.files[0]) loadFile(e.target.files[0]);
+  e.target.value = "";
+};
+$("fit-sequence").onclick = () => {
+  try {
+    const needed = Route.normalize($("sequence").value, $("virtue").value).length - 1;
+    if (needed > 30) throw Error("The full sequence exceeds the 30-switch limit. Shorten it first.");
+    $("maxSwitches").value = needed;
+    markInputsChanged();
+    if (refresh()) show("Maximum New Switches set to " + needed + " for the full sequence." + (dirty ? " Re-run the planner to update the timeline." : ""));
+  } catch (e) {
+    show(e.message, true);
+  }
+};
+$("clear-data").onclick = () => {
+  let saved;
+  try { saved = gather(); } catch { saved = {...structuredClone(config), draftInputs:captureDraftInputs()}; }
+  resetSnapshot = {config:saved,result,resultConfig,dirty:dirty || !!worker && !!result,tab:document.querySelector("[data-tab].active").dataset.tab};
+  $("reset-recovery").hidden = false;
+  loadEpoch++;
+  importingBackup = null;
+  clearTimeout(refreshTimer);
+  worker?.terminate();
+  worker = null;
+  busy(false);
+  config = blankFarm();
+  result = null;
+  resultConfig = null;
+  dirty = false;
+  $("eid").value = "";
+  $("file-input").value = "";
+  $("research-filter").value = "";
+  $("effort").value = "balanced";
+  $("run-summary").textContent = "";
+  $("run-detail").textContent = "";
+  $("result-content").replaceChildren();
+  $("result-content").hidden = true;
+  $("empty-results").hidden = false;
+  renderForm();
+  tab("farm");
+  show("Data cleared. Undo Reset restores your previous inputs in this session. Enter your farm values to start from scratch; exported files are still available to load.");
+  clearRecoveryCopy();
+};
+$("undo-reset").onclick = () => {
+  if (!resetSnapshot) return;
+  const restoreTab = resetSnapshot.tab;
+  worker?.terminate(); worker = null; importingBackup = null; busy(false);
+  loadEpoch++; clearTimeout(refreshTimer);
+  ({config,result,resultConfig,dirty} = resetSnapshot);
+  resetSnapshot = null;
+  $("reset-recovery").hidden = true;
+  renderForm();
+  if (result) renderResult();
+  tab(restoreTab === "results" && !result ? "farm" : restoreTab, true);
+  show("Reset undone. Your farm, planning goals, and previous timeline have been restored.");
+  queueRecovery();
+};
+$("dismiss-reset").onclick = () => {
+  resetSnapshot = null; $("reset-recovery").hidden = true; $("page-title").focus({preventScroll:true});
+};
+async function loadEidData() {
+  if (worker || importingBackup) return;
+  const epoch = loadEpoch;
+  importingBackup = "auto";
+  busy(false);
+  show("Requesting your saved Egg Inc backup\u2026");
+  try {
+    const b = await A.loadBackup($("eid").value);
+    if (epoch !== loadEpoch) return;
+    const next = currentFarmImport(b);
+    config = next;
+    result = null;
+    resultConfig = null;
+    dirty = false;
+    clearTimeout(refreshTimer);
+    const valid = renderForm();
+    $("result-content").hidden = true;
+    $("empty-results").hidden = false;
+    const message = next.importInfo.scope === "account" ? "Account information has been loaded, but no current Virtue farm was found. Your starting farm, start time and planning goals are retained." : "Account information and the current Virtue farm have been loaded. Your planning goals are retained.";
+    show(message + (valid ? " Review backup age and assumptions before planning." : " Your draft is retained; review the marked inputs before planning."), !valid);
+    acceptRecoverySession();
+  } catch (e) {
+    if (epoch === loadEpoch) show(e.message, true);
+  } finally {
+    if (epoch === loadEpoch) { importingBackup = null; busy(!!worker); }
+  }
+}
+$("import-eid").onclick = loadEidData;
+$("copy-earnings").onclick = () => copySet("earnings");
+$("copy-delivery").onclick = () => copySet("delivery");
+$("review-starting-gear").onclick = () => tab("artifacts", true);
+$("use-earnings-start").onclick = () => {
+  if (worker || importingBackup) return;
+  try {
+    config = gather();
+    const {c} = S.prepare(config);
+    if (!c.earningLoadout?.some(slot => slot.artifactId)) return;
+    config.farm.loadouts.current = structuredClone(c.earningLoadout);
+    config.farm.activeSet = "current";
+    $("activeSet").value = "current";
+    markInputsChanged();
+    renderLoadouts();
+    refresh();
+    show("The plan now starts with your earning set. Equip the listed artifacts and stones on Humility before starting this plan. Automatic delivery optimization remains enabled.");
+  } catch (e) { show(e.message, true); }
+};
+function copySet(key) {
+  if (!$("manualFarmData").checked) return;
+  try {
+    config = gather();
+    config.farm.loadouts[key] = structuredClone(config.farm.loadouts.current);
+    renderLoadouts();
+    markInputsChanged();
+    refresh();
+    show("Current loadout copied to " + key + ".");
+  } catch (e) {
+    show(e.message, true);
+  }
+}
+function filterResearch() {
+  const query = $("research-filter").value.trim().toLowerCase();
+  let count = 0;
+  for (const tr of $("research-body").children) { tr.hidden = !tr.dataset.search.includes(query); if (!tr.hidden) count++; }
+  $("research-count").textContent = query ? count + " of " + D.research.length + " research items" : D.research.length + " research items";
+  $("research-empty").hidden = count !== 0;
+  $("clear-research-filter").hidden = !query;
+}
+$("research-filter").oninput = filterResearch;
+$("clear-research-filter").onclick = () => { $("research-filter").value = ""; filterResearch(); $("research-filter").focus(); };
+$("optimize").onclick = optimize;
+$("stop").onclick = () => {
+  worker?.postMessage({ cancel: true });
+  $("stop").disabled = true;
+  $("stop").textContent = "Finishing Best Plan\u2026";
+};
+document.querySelectorAll("[data-tab]").forEach((b) => b.onclick = (event) => tab(b.dataset.tab, event.detail === 0));
+$("review-inputs").onclick = reviewInputs;
+// Keep fixed controls from hiding focused fields at narrow widths or zoom.
+const runBar = document.querySelector(".run-bar");
+function keepFocusedControlVisible(target = document.activeElement) {
+  if (!target?.matches("input,select,button,summary,a") || runBar.contains(target) || !target.getClientRects().length) return;
+  const rect = target.getBoundingClientRect(), bar = runBar.getBoundingClientRect();
+  if (rect.bottom > bar.top - 12) window.scrollBy({top:rect.bottom - bar.top + 24,behavior:"instant"});
+  else if (rect.top < 12) window.scrollBy({top:rect.top - 24,behavior:"instant"});
+}
+function sizeRunBar() {
+  document.documentElement.style.setProperty("--run-bar-height", Math.ceil(runBar.getBoundingClientRect().height) + "px");
+  requestAnimationFrame(() => keepFocusedControlVisible());
+}
+if (typeof ResizeObserver !== "undefined") new ResizeObserver(sizeRunBar).observe(runBar);
+window.addEventListener("resize", sizeRunBar);
+document.addEventListener("focusin", ({target}) => { NumericInput.focus(target); keepFocusedControlVisible(target); });
+document.addEventListener("focusout", ({target}) => NumericInput.blur(target));
+document.addEventListener("change", (e) => {
+  const id = e.target.id;
+  const editingKey = Object.keys(editingGroups).find(key => editingGroups[key].toggles.includes(id));
+  if (editingKey) {
+    $(editingKey).checked = e.target.checked;
+    config.farm[editingKey] = e.target.checked;
+    if (resultConfig) resultConfig.farm[editingKey] = e.target.checked;
+    updateAccountEditing();
+    updateArtifactNotes();
+    if (editingKey === "manualFarmData" && !e.target.checked && Array.isArray(config.farm.artifactInventory)) {
+      const previous = ArtifactSets.signature(config.farm.loadouts);
+      refresh();
+      if (previous !== ArtifactSets.signature(config.farm.loadouts)) markInputsChanged();
+    }
+    if (editingKey === "manualFarmData" && e.target.checked) $("starting-gear-controls").hidden = true;
+    queueRecovery();
+    return;
+  }
+  if (id === "tankCapacity") NumericInput.write($("tankOutput"), Ships.rateFor(Number(e.target.value)));
+  if (id.startsWith("col-egg-")) {
+    const egg = D.customEggs.find((x) => x.identifier === id.slice(8));
+    delete config.farm.colleggtibleOverrides?.[C.dimension[egg.buffs[0].dimension]];
+  }
+  if (id === "strategy") {
+    updateSequenceVisibility();
+    markInputsChanged();
+    if (refresh()) show(dirty ? "Planning strategy changed. Re-run the planner to update the timeline." : "Planning strategy updated.");
+    if (e.target.value === "user") $("sequence").focus();
+  }
+  if (id.startsWith("artifact-")) {
+    const [, key, i] = id.split("-");
+    renderStones(key, Number(i));
+  }
+  if (id === "proPermit") {
+    try {
+      config = gather();
+      renderLoadouts();
+    } catch {
+      renderLoadouts();
+    }
+  }
+});
+document.addEventListener("input", (e) => {
+  if (!e.target.matches("input,select") || unsavedInputs.has(e.target.id)) return;
+  if (Object.values(editingGroups).some(group => group.toggles.includes(e.target.id))) return;
+  NumericInput.edited(e.target);
+  markInputsChanged();
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => {
+    if (refresh() && dirty) show("Inputs changed. Re-run the planner to update the timeline.");
+  }, 300);
+});
+EggIcons.decorateStatic();
+renderForm();
+tab("farm");
+sizeRunBar();
+show("Enter your Egg Inc ID and use the green arrow, or enable manual editing, before planning.");
+const recoveryPreference = recoveryStore.enabled(), previousSession = recoveryStore.read();
+$("session-autosave").checked = recoveryPreference.ok ? recoveryPreference.value : false;
+if (previousSession.ok && previousSession.value && $("session-autosave").checked) {
+  recoveryPending = previousSession.value;
+  $("session-recovery").hidden = false;
+  $("session-description").textContent = "A previous session from " + new Date(recoveryPending.savedAt * 1000).toLocaleString() + " is available, including unfinished inputs" + (recoveryPending.result ? " and its last timeline." : ".");
+  recoveryStatus("Restore or discard the previous session before saving a new recovery copy.");
+} else recoveryStatus(recoveryPreference.ok && previousSession.ok ? ($("session-autosave").checked ? "Edits and completed plans are kept in this browser. EID is excluded." : "Recovery is off. Use Save Farm and Save Plan.") : "Recovery storage is unavailable. Use Save Farm and Save Plan.");
+recoveryReady = true;
+AppUpdates.initialize({
+  isBusy: () => !!worker || !!importingBackup,
+  capture: () => {
+    let saved;
+    try { saved = gather(); }
+    catch { saved = {...structuredClone(config), draftInputs:captureDraftInputs()}; }
+    return {version:1,savedAt:Date.now()/1000,config:saved,result,resultConfig,dirty,interrupted:!!worker,tab:document.querySelector("[data-tab].active").dataset.tab};
+  },
+  restore: restoreSession
+});
+globalThis.VirtueApp = { S, O, I, A, getConfig: () => gather(), getResult: () => result, condensedActions, summarize: U.summarize, loadFile, refresh, tab };

@@ -1,0 +1,9 @@
+'use strict';
+// Open synchronously from the click, before PDF generation awaits, so browsers
+// can treat the new tab as a user-initiated popup. Embed rather than download.
+function open(){const tab=window.open('','_blank');if(!tab)return null;tab.document.title='Preparing Walkthrough';tab.document.body.textContent='Preparing your PDF walkthrough…';tab.opener=null;return tab;}
+function display(tab,bytes,filename){if(tab.closed)throw Error('The PDF preview tab was closed. Click Export walkthrough again.');const url=URL.createObjectURL(new Blob([bytes],{type:'application/pdf'}));
+ tab.document.open();tab.document.write('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Egg Inc. Virtue Farm Optimizer — Walkthrough</title><style>html,body{margin:0;height:100%;font:14px Segoe UI,system-ui,sans-serif;background:#30343b;color:#edf3f5}body{display:flex;flex-direction:column}header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:#17212f}b{display:block}small{display:block;color:#b3c4d8;margin-top:4px}a{color:#17212f;background:#79d9b4;border-radius:6px;padding:9px 14px;text-decoration:none;white-space:nowrap}embed{width:100%;flex:1;min-height:0}@media(max-width:500px){header{padding:10px;font-size:12px}}</style></head><body><header><div><b>Purchase Walkthrough</b><small>Shift Summaries and quick guide · Use the PDF controls to print.</small></div><a href="'+url+'" id="save-pdf" download>Save PDF</a></header><embed id="pdf" src="'+url+'#view=FitH" type="application/pdf" aria-label="PDF purchase walkthrough"></body></html>');tab.document.close();tab.document.getElementById('save-pdf').download=filename;tab.document.documentElement.dataset.pdfReady='true';
+ const cleanup=setInterval(()=>{if(tab.closed){clearInterval(cleanup);URL.revokeObjectURL(url);}},10000);
+}
+module.exports={open,display};

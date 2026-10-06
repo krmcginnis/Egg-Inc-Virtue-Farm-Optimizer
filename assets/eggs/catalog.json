@@ -1,0 +1,166 @@
+{
+  "source": "Egg Inc Wiki and Auxbrain game assets",
+  "retrieved": "2026-10-05",
+  "eggs": {
+    "curiosity": {
+      "path": "assets/eggs/curiosity.webp",
+      "source": "Egg Inc Wiki",
+      "sourceUrl": "https://static.wikia.nocookie.net/egg-inc/images/c/c2/Egg_curiosity.png/revision/latest",
+      "wikiFile": "https://egg-inc.fandom.com/wiki/File:Egg_curiosity.png",
+      "sha256": "460914626db1f06fbe0f3a68a72f9df74644c5cf71d00e67013e8d5bfd264545",
+      "bytes": 11696
+    },
+    "kindness": {
+      "path": "assets/eggs/kindness.webp",
+      "source": "Egg Inc Wiki",
+      "sourceUrl": "https://static.wikia.nocookie.net/egg-inc/images/f/f7/Egg_kindness.png/revision/latest",
+      "wikiFile": "https://egg-inc.fandom.com/wiki/File:Egg_kindness.png",
+      "sha256": "1413c7f672f1757437c03b58acbd52cbdf8f82560c359bb8bae32aef79e5b8f2",
+      "bytes": 97454
+    },
+    "integrity": {
+      "path": "assets/eggs/integrity.webp",
+      "source": "Egg Inc Wiki",
+      "sourceUrl": "https://static.wikia.nocookie.net/egg-inc/images/f/f3/Egg_integrity.png/revision/latest",
+      "wikiFile": "https://egg-inc.fandom.com/wiki/File:Egg_integrity.png",
+      "sha256": "81cebde36d68379c7423f98205e6336046cc6103583b9a1b89b30659543e72b2",
+      "bytes": 12624
+    },
+    "resilience": {
+      "path": "assets/eggs/resilience.webp",
+      "source": "Egg Inc Wiki",
+      "sourceUrl": "https://static.wikia.nocookie.net/egg-inc/images/6/61/Egg_resilience.png/revision/latest",
+      "wikiFile": "https://egg-inc.fandom.com/wiki/File:Egg_resilience.png",
+      "sha256": "f49697f0421c2a27875a7c5de09ea0e43b384d2de6045dff06789e31ec169b1f",
+      "bytes": 15982
+    },
+    "humility": {
+      "path": "assets/eggs/humility.webp",
+      "source": "Egg Inc Wiki",
+      "sourceUrl": "https://static.wikia.nocookie.net/egg-inc/images/b/b9/Egg_humility.png/revision/latest",
+      "wikiFile": "https://egg-inc.fandom.com/wiki/File:Egg_humility.png",
+      "sha256": "4189364c452b4449ad26b1d91a9516b243a40dfd9c836a50008889ea18cbf77e",
+      "bytes": 17752
+    },
+    "truth": {
+      "path": "assets/eggs/truth.webp",
+      "source": "Egg Inc Wiki",
+      "sourceUrl": "https://static.wikia.nocookie.net/egg-inc/images/d/da/Egg_truth.png/revision/latest",
+      "wikiFile": "https://egg-inc.fandom.com/wiki/File:Egg_truth.png",
+      "sha256": "de82ec6f9f15d2944169fd0b2810aaf6e4a568afff0cf1d4eb59ff6d63ea97b2",
+      "bytes": 10026
+    },
+    "soul": {
+      "path": "assets/eggs/soul.webp",
+      "source": "Egg Inc Wiki",
+      "sourceUrl": "https://static.wikia.nocookie.net/egg-inc/images/6/6c/Egg_soul.png/revision/latest",
+      "wikiFile": "https://egg-inc.fandom.com/wiki/File:Egg_soul.png",
+      "sha256": "efc2529da1d5fdfff2f8a35b65afa9eec20af4f5842d6c7087c6fe1c9d2fca78",
+      "bytes": 58374
+    },
+    "carbon-fiber": {
+      "path": "assets/eggs/carbon-fiber.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/carbon-fiber_ce_icon_8d5b22cfd0c84956c6fd86896aacfff6.png",
+      "wikiFile": null,
+      "sha256": "2f83473fe2aa47712501975a489acff6e8c9110fd27b04b4eedfdf752f33eb42",
+      "bytes": 187590
+    },
+    "chocolate": {
+      "path": "assets/eggs/chocolate.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/chocolate_img_1eff99c1bbbad336832b3b3314ae39a9.png",
+      "wikiFile": null,
+      "sha256": "a026779786ac838620468a73c998840b53c1660e55c27cfc5561904d46b1c98c",
+      "bytes": 261038
+    },
+    "easter": {
+      "path": "assets/eggs/easter.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/easter_ce_icon_a5fc768c867fff90a0bf7c91d8edea74.png",
+      "wikiFile": null,
+      "sha256": "fc0f751ddb4e0a85ae12ce59ec6e343965e9040c0180e85f9cd56a923f045300",
+      "bytes": 198614
+    },
+    "firework": {
+      "path": "assets/eggs/firework.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/firework_img_0a4a5966c5b754f8a07544bcc15a4bf3.png",
+      "wikiFile": null,
+      "sha256": "bb495c13b3998585b27ebd9381852cc2abd8c2ac23494daf5ac72df312838efb",
+      "bytes": 130444
+    },
+    "flame-retardant": {
+      "path": "assets/eggs/flame-retardant.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/flame-retardant_ce_icon_9058041dd049044901c0134f4b452006.png",
+      "wikiFile": null,
+      "sha256": "b14626f6e16ffa5300c5e718b9a7a485d125fa6b0ae24f19916f6153cea67e75",
+      "bytes": 615495
+    },
+    "gatoregg": {
+      "path": "assets/eggs/gatoregg.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/gatoregg_ce_icon_6ce075a508e05304d896be06c67115bf.png",
+      "wikiFile": null,
+      "sha256": "a4fdfb938df5f0340e708d7a45c3b85b8e3668b49eb781d5cdc537c7908dfafb",
+      "bytes": 127630
+    },
+    "ice": {
+      "path": "assets/eggs/ice.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/ice_ce_icon_13943635aae301069157445f1b77aed5.png",
+      "wikiFile": null,
+      "sha256": "d22b6948909770f882f2cbfa3ba203e98a01dcfd387916255947d8f3b9d1752a",
+      "bytes": 880244
+    },
+    "lithium": {
+      "path": "assets/eggs/lithium.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/lithium_ce_icon_a7c6adc2eff85f958db50b38934f436f.png",
+      "wikiFile": null,
+      "sha256": "d03209209ced718255239963f19187dc0e70e8f947d35072d6af976bb851791f",
+      "bytes": 300866
+    },
+    "pegg": {
+      "path": "assets/eggs/pegg.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/pegg_ce_icon_40cdc7f07195802899c666275aafd877.png",
+      "wikiFile": null,
+      "sha256": "fc72b583f80156c6f34f279ba4f7db2734c2a0d5027fc8c96dfdf516d1e8adf5",
+      "bytes": 156434
+    },
+    "pumpkin": {
+      "path": "assets/eggs/pumpkin.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/pumpkin_ce_icon_54662bb025c6e3d5b09cc4cd2e2dc61e.png",
+      "wikiFile": null,
+      "sha256": "f7f5cbd9c1a3f101441db9f26a4e5dc0cbad65674e66157537956e9f3bb7f47b",
+      "bytes": 654975
+    },
+    "silicon": {
+      "path": "assets/eggs/silicon.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/silicon_ce_icon_d3a428974d38680e286fa676c8b8438c.png",
+      "wikiFile": null,
+      "sha256": "bb93444604435f5fdfcd8ff5f86905288247dbebce62af7718d6f773f23d6a37",
+      "bytes": 186047
+    },
+    "waterballoon": {
+      "path": "assets/eggs/waterballoon.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/waterballoon_ce_icon_846583dfd9c66744881bac89f3938f02.png",
+      "wikiFile": null,
+      "sha256": "12a52d7870ed2f4012643c0c921bff3b293a14e9a30fb8f42b154e3d092cc5c8",
+      "bytes": 149041
+    },
+    "wood": {
+      "path": "assets/eggs/wood.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/wood_ce_icon_98f08e266fcdc24337c82b1f4547027d.png",
+      "wikiFile": null,
+      "sha256": "7a32544a9ec0d5b47c851796eba7d56f6e5335019ae673514d33b89f7fede6a3",
+      "bytes": 327882
+    }
+  }
+}

@@ -1,0 +1,12 @@
+node_modules/
+tmp/
+.updates/
+.update-*.json
+Update-Files.json
+update-config.json
+*.zip
+*.zip.tmp
+__pycache__/
+
+/app.js
+/worker-source.js

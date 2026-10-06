@@ -1,0 +1,71 @@
+EGG ARTWORK CREDITS
+
+Egg, Inc. artwork belongs to Auxbrain, Inc.
+These are the original egg images, bundled locally for offline display.
+Wiki index: https://egg-inc.fandom.com/wiki/Eggs
+
+Seven Virtue and mystical egg images were retrieved from the Egg Inc Wiki image host.
+All thirteen Colleggtible images use official Auxbrain asset URLs from the game catalog.
+The app is an unofficial fan planning tool.
+
+Image sources (retrieved 2026-10-05):
+
+curiosity — Egg Inc Wiki
+https://static.wikia.nocookie.net/egg-inc/images/c/c2/Egg_curiosity.png/revision/latest
+
+kindness — Egg Inc Wiki
+https://static.wikia.nocookie.net/egg-inc/images/f/f7/Egg_kindness.png/revision/latest
+
+integrity — Egg Inc Wiki
+https://static.wikia.nocookie.net/egg-inc/images/f/f3/Egg_integrity.png/revision/latest
+
+resilience — Egg Inc Wiki
+https://static.wikia.nocookie.net/egg-inc/images/6/61/Egg_resilience.png/revision/latest
+
+humility — Egg Inc Wiki
+https://static.wikia.nocookie.net/egg-inc/images/b/b9/Egg_humility.png/revision/latest
+
+truth — Egg Inc Wiki
+https://static.wikia.nocookie.net/egg-inc/images/d/da/Egg_truth.png/revision/latest
+
+soul — Egg Inc Wiki
+https://static.wikia.nocookie.net/egg-inc/images/6/6c/Egg_soul.png/revision/latest
+
+carbon-fiber — Auxbrain game catalog
+https://www.auxbrain.com/dlc/eggs/carbon-fiber_ce_icon_8d5b22cfd0c84956c6fd86896aacfff6.png
+
+chocolate — Auxbrain game catalog
+https://www.auxbrain.com/dlc/eggs/chocolate_img_1eff99c1bbbad336832b3b3314ae39a9.png
+
+easter — Auxbrain game catalog
+https://www.auxbrain.com/dlc/eggs/easter_ce_icon_a5fc768c867fff90a0bf7c91d8edea74.png
+
+firework — Auxbrain game catalog
+https://www.auxbrain.com/dlc/eggs/firework_img_0a4a5966c5b754f8a07544bcc15a4bf3.png
+
+flame-retardant — Auxbrain game catalog
+https://www.auxbrain.com/dlc/eggs/flame-retardant_ce_icon_9058041dd049044901c0134f4b452006.png
+
+gatoregg — Auxbrain game catalog
+https://www.auxbrain.com/dlc/eggs/gatoregg_ce_icon_6ce075a508e05304d896be06c67115bf.png
+
+ice — Auxbrain game catalog
+https://www.auxbrain.com/dlc/eggs/ice_ce_icon_13943635aae301069157445f1b77aed5.png
+
+lithium — Auxbrain game catalog
+https://www.auxbrain.com/dlc/eggs/lithium_ce_icon_a7c6adc2eff85f958db50b38934f436f.png
+
+pegg — Auxbrain game catalog
+https://www.auxbrain.com/dlc/eggs/pegg_ce_icon_40cdc7f07195802899c666275aafd877.png
+
+pumpkin — Auxbrain game catalog
+https://www.auxbrain.com/dlc/eggs/pumpkin_ce_icon_54662bb025c6e3d5b09cc4cd2e2dc61e.png
+
+silicon — Auxbrain game catalog
+https://www.auxbrain.com/dlc/eggs/silicon_ce_icon_d3a428974d38680e286fa676c8b8438c.png
+
+waterballoon — Auxbrain game catalog
+https://www.auxbrain.com/dlc/eggs/waterballoon_ce_icon_846583dfd9c66744881bac89f3938f02.png
+
+wood — Auxbrain game catalog
+https://www.auxbrain.com/dlc/eggs/wood_ce_icon_98f08e266fcdc24337c82b1f4547027d.png
