@@ -4,7 +4,6 @@ const E = require("./opening-search.cjs"), titleCase = require("./ui-text.cjs"),
 const upgradeStandardSequence = require("./sequence-upgrade.cjs"), Route = require("./switch-sequence.cjs");
 const T = require("./staged-route.cjs"), Model = require("./assumption-notices.cjs");
 const Strategy = require("./planning-strategy.cjs");
-const Recovery = require("./session-recovery.cjs");
 const nextAscension = require("./next-ascension.cjs"), U = require("./shift-summary.cjs"), Q = require("./walkthrough-pdf.cjs"), N = require("./export-names.cjs"), V = require("./pdf-preview.cjs"), G = require("./guide-layout.cjs");
 const S = require("./simulator.cjs"), O = require("./optimizer.cjs"), I = require("./importer.cjs"), A = require("./api.cjs"), blankFarm = require("./blank-farm.cjs"), C = require("./colleggtibles.cjs");
 const NumberFormat = require("./number-format.cjs"), NumericInput = require("./numeric-input.cjs");
@@ -17,8 +16,6 @@ const SelectionReadout = require("./selection-readout.cjs");
 const AppUpdates = require("./app-updates.cjs");
 const $ = (id) => document.getElementById(id), D = S.D;
 let config = blankFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
-const recoveryStore = Recovery.create(() => window.localStorage);
-let recoveryReady = false, recoveryPending = null, recoveryChanged = false, recoveryTimer = null;
 const effort = { quick: { width: 12, branches: 8, maxDepth: 500, maxMs: 1e4 }, balanced: { width: 32, branches: 12, maxDepth: 1200, maxMs: 45e3 }, thorough: { width: 72, branches: 20, maxDepth: 2200, maxMs: 18e4 } };
 const labels = { farm: "Farm & Account", planning: "Planning", research: "Farm Research", artifacts: "Artifacts & stones", results: "Purchase timeline", help: "How it works" };
 const colNames = { earnings: "Earnings", awayEarnings: "Away earnings", ihr: "Internal hatchery", elr: "Egg laying", shippingCap: "Shipping capacity", habCap: "Hab capacity", vehicleCost: "Vehicle cost", habCost: "Hab cost", researchCost: "Research cost" };
@@ -158,7 +155,7 @@ function showPlanningGuidance(message, fromSearch = false, inputsChanged = false
     targets = [["soulEggs", "Review Soul Eggs"], ["shiftCount", "Review Previous Switches"]];
   } else if (/All Epic Research levels are zero/i.test(message)) {
     detail = "Load your account data or enter owned Epic Research. These upgrades also apply to a fresh Virtue farm.";
-    targets = [["epic-hold_to_hatch", "Review Epic Research"], ["maxDays", "Review Planning Days"]];
+    targets = [["epic-hold_to_hatch", "Review Epic Research"]];
   } else if (/fuel|tank/i.test(message)) {
     detail = "Review stored fuel, tank capacity, and the planned missions for each Humility visit.";
     targets = [[field || "tankCapacity", "Review Fuel Inputs"], ["shipSlots", "Review Planned Ships"]];
@@ -172,8 +169,8 @@ function showPlanningGuidance(message, fromSearch = false, inputsChanged = false
     detail = "Review the starting habs and vehicles. A fresh farm uses the free Coop, Trike, and one silo.";
     targets = [["hab-0", "Review Habitats"], ["vehicle-0", "Review Shipping Fleet"]];
   } else if (fromSearch) {
-    detail = /^Under the entered farm settings/.test(message) ? "Review the imported values, increase planning days, or lower the target. This limit was checked with an optimistic production estimate." : "No complete plan was found within these limits. Review planning days and switch limits" + ($("strategy").value === "wasmegg" ? "." : ", or try a larger additional search budget.") + " A failed heuristic search does not prove the goal is impossible.";
-    targets = [["maxDays", "Review Planning Days"], ["maxSwitches", "Review Switch Limit"]];
+    detail = /^Under the entered farm settings/.test(message) ? "Review the imported values or lower the target. This limit was checked with an optimistic production estimate." : "No complete plan was found within the fixed planning horizon. Review the switch limit" + ($("strategy").value === "wasmegg" ? "." : ", or try a larger additional search budget.") + " A failed heuristic search does not prove the goal is impossible.";
+    targets = [["maxSwitches", "Review Switch Limit"]];
     if ($("strategy").value !== "wasmegg") targets.push(["effort", "Review Search Budget"]);
   } else {
     detail = "Correct the marked value, then try planning again. Your other inputs are retained.";
@@ -244,7 +241,6 @@ function reviewField(id) {
 }
 function reviewInputs() { reviewField(invalidField || $("review-inputs").dataset.field); }
 function markInputsChanged() {
-  queueRecovery();
   dirty = !!result || !!worker;
   updateArtifactNotes();
   const stale = $("plan-stale");
@@ -358,7 +354,7 @@ function renderForm() {
   EggIcons.decorateLabel($("virtue").closest("label"), f.virtue);
   for (const k of ["cash", "soulEggs", "shiftCount", "silos", "earningsMode"]) NumericInput.write($(k), k === "silos" ? Math.max(1, f[k] ?? 1) : f[k]);
   for (const k of ["proPermit", "videoDoubler"]) $(k).value = String(f[k] !== false);
-  for (const k of ["target", "maxSwitches", "maxDays", "shiftSeconds", "actionSeconds"]) NumericInput.write($(k), p[k] ?? { maxSwitches: 12, maxDays: 366, shiftSeconds: 5, actionSeconds: 0 }[k]);
+  for (const k of ["target", "maxSwitches", "shiftSeconds", "actionSeconds"]) NumericInput.write($(k), p[k] ?? { maxSwitches: 12, shiftSeconds: 5, actionSeconds: 0 }[k]);
   $("start").value = dateLocal(p.start || Date.now() / 1e3);
   $("eventTimezone").value = p.eventTimezone || "America/Los_Angeles";
   $("sequence").value = typeof p.sequence === "string" ? p.sequence : (p.sequence ?? DEFAULT_ROUTE).map((x) => ({ curiosity: "C", integrity: "I", humility: "H", resilience: "R", kindness: "K" })[x] || x).join(" ");
@@ -413,7 +409,7 @@ function renderForm() {
   $("hab-fields").replaceChildren(...f.habs.map((v, i) => FarmIcons.decoratePicker(selectField("Habitat " + (i + 1), "hab-" + i, [["", "Empty"], ...D.habs.map((x) => [x.id, x.name])], v), "hab")));
   $("vehicle-fields").replaceChildren(...f.vehicles.map((v, i) => {
     const div = el("div", void 0, "fleet-slot");
-    div.append(el("small", "Fleet Slot " + (i + 1)), FarmIcons.decoratePicker(selectField("Vehicle", "vehicle-" + i, [["", "Empty"], ...D.vehicles.map((x) => [x.id, x.name])], v.id), "vehicle"), field("Train cars", "cars-" + i, v.cars, "number", { min: 1, max: 10, className: "car" }));
+    div.append(el("small", "Fleet Slot " + (i + 1)), FarmIcons.decoratePicker(selectField("", "vehicle-" + i, [["", "Empty"], ...D.vehicles.map((x) => [x.id, x.name])], v.id), "vehicle"), field("Train cars", "cars-" + i, v.cars, "number", { min: 1, max: 10, className: "car" }));
     div.querySelector("select").setAttribute("aria-label", "Fleet Slot " + (i + 1) + " Vehicle");
     div.querySelector("input").setAttribute("aria-label", "Fleet Slot " + (i + 1) + " Train Cars");
     return div;
@@ -479,8 +475,6 @@ function renderForm() {
     $("farm-source-note").hidden = true;
     $("import-details-summary").textContent = "Import Details";
     $("import-note").textContent = (config.importInfo.scope === "account" ? "Account loaded; no current Virtue farm found. " : "Account and current Virtue farm loaded. ") + (config.importInfo.warnings || []).join(" ");
-    $("inventory-note").hidden = false;
-    $("inventory-note").replaceChildren(el("h2", "Artifact Inventory"), el("p", (config.importInfo.inventory?.filter(x => x.kind !== "stone").length || 0) + " artifact records loaded. " + (Array.isArray(f.artifactInventory) ? "Owned Virtue artifacts and loose/socketed stones are available for automatic sets under Artifacts & Stones." : "Virtue inventory was not supplied; retained sets are used. Enable manual farm editing to adjust them.")));
   } else {
     $("import-backup").hidden = true;
     $("import-backup-time").textContent = "";
@@ -488,14 +482,13 @@ function renderForm() {
     $("import-details").hidden = true;
     $("farm-source-note").hidden = false;
     $("farm-source-note").textContent = config.label || "";
-    $("inventory-note").hidden = true;
   }
   if (config.draftInputs) restoreDraftInputs(config.draftInputs);
   updateAccountEditing();
   filterResearch();
   return refresh();
 }
-const unsavedInputs = /* @__PURE__ */ new Set(["eid", "file-input", "research-filter", "session-autosave", "update-repository"]);
+const unsavedInputs = /* @__PURE__ */ new Set(["eid", "file-input", "research-filter", "update-repository"]);
 function captureDraftInputs() {
   return { version: 1, fields: Object.fromEntries([...document.querySelectorAll("input[id],select[id]")].filter((node) => !unsavedInputs.has(node.id)).map((node) => [node.id, node.type === "checkbox" ? { checked: node.checked } : { value: NumericInput.draft(node) }])) };
 }
@@ -545,45 +538,11 @@ function currentFarmImport(backup) {
   }
   return next;
 }
-function recoveryStatus(message) { $("session-status").textContent = message; }
-function acceptRecoverySession() {
-  recoveryPending = null;
-  $("session-recovery").hidden = true;
-  queueRecovery();
-}
-function queueRecovery() {
-  if (!recoveryReady || !$("session-autosave").checked) return;
-  recoveryChanged = true;
-  if (recoveryPending) return;
-  clearTimeout(recoveryTimer);
-  recoveryTimer = setTimeout(flushRecovery, 600);
-}
-function flushRecovery() {
-  clearTimeout(recoveryTimer);
-  if (!recoveryReady || recoveryPending || !recoveryChanged || !$("session-autosave").checked) return;
-  let saved;
-  try { saved = gather(); }
-  catch { saved = {...structuredClone(config), draftInputs:captureDraftInputs()}; }
-  const savedAt = Date.now() / 1000;
-  const stored = recoveryStore.write({version:1,savedAt,config:saved,result,resultConfig,dirty,interrupted:!!worker,tab:document.querySelector("[data-tab].active").dataset.tab});
-  if (stored.ok) {
-    recoveryChanged = false;
-    recoveryStatus("Recovery copy saved in this browser at " + new Date(savedAt * 1000).toLocaleTimeString() + ".");
-  } else recoveryStatus("Recovery copy could not be saved. Use Save Farm and Save Plan to keep your work.");
-}
-function clearRecoveryCopy() {
-  clearTimeout(recoveryTimer);
-  recoveryChanged = false;
-  recoveryPending = null;
-  $("session-recovery").hidden = true;
-  const cleared = recoveryStore.clear();
-  recoveryStatus(cleared.ok ? ($("session-autosave").checked ? "Recovery copy cleared. Your next edits can be saved here." : "Recovery is off. Use Save Farm and Save Plan.") : "Recovery storage is unavailable. Use Save Farm and Save Plan.");
-}
 function replaySavedResult(savedConfig, savedResult) {
   const verified = O.replay(savedConfig, savedResult.actions, true, {enforceOpeningCaps:savedResult.openingTimeLimits === true,oneStartingSilo:savedResult.initialSiloRule === "one" ? true : void 0});
   return {...savedResult,actions:S.history(verified.s),start:verified.c.start,end:verified.s.t,seconds:verified.s.t - verified.c.start,switches:verified.s.stage,soulCost:verified.s.lost,target:verified.c.target,finalTE:S.teByEgg(verified.s,verified.c),pendingTE:S.totalTE(verified.s,verified.c) - verified.c.claimedTotal,finalCash:verified.s.cash,finalStats:S.stats(verified.s,verified.c),validatedReplay:true};
 }
-function restoreSession(saved, message = "Previous session restored.") {
+function restoreUpdateSnapshot(saved, message = "Session restored.") {
   let recoveredResult = null, replayError = "";
   if (saved.result && saved.resultConfig) {
     try { recoveredResult = replaySavedResult(saved.resultConfig, saved.result); }
@@ -595,7 +554,6 @@ function restoreSession(saved, message = "Previous session restored.") {
   dirty = !!result && (saved.dirty || saved.interrupted);
   loadEpoch++;
   clearTimeout(refreshTimer);
-  acceptRecoverySession();
   const valid = renderForm();
   $("result-content").hidden = !result;
   $("empty-results").hidden = !!result;
@@ -603,22 +561,6 @@ function restoreSession(saved, message = "Previous session restored.") {
   tab(saved.tab === "results" && !result ? "farm" : (labels[saved.tab] ? saved.tab : "farm"), true);
   show(message + (saved.interrupted ? " The interrupted search needs to be run again." : "") + replayError + (!valid ? " Review the marked inputs before planning." : ""), !!replayError || !valid);
 }
-$("restore-session").onclick = () => {
-  if (recoveryPending && !worker && !importingBackup) restoreSession(recoveryPending);
-};
-$("discard-session").onclick = () => {
-  const edited = recoveryChanged;
-  clearRecoveryCopy();
-  if (edited) queueRecovery();
-  $("page-title").focus({preventScroll:true});
-};
-$("session-autosave").onchange = () => {
-  const enabled = $("session-autosave").checked, stored = recoveryStore.setEnabled(enabled);
-  if (!enabled) { clearRecoveryCopy(); recoveryStatus(stored.ok ? "Recovery is off. Use Save Farm and Save Plan to keep your work." : "Recovery storage is unavailable."); }
-  else { recoveryStatus("Recovery is on for this browser."); queueRecovery(); }
-};
-window.addEventListener("pagehide", flushRecovery);
-document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushRecovery(); });
 function renderShipMissions(visit, missions) {
   $("ship-missions-" + visit).replaceChildren(...missions.map((m, i) => {
     const row = el("div", void 0, "ship-mission-row");
@@ -781,7 +723,7 @@ function gather() {
   f.research = Object.fromEntries(D.research.map((r) => [r.id, readNumber("research-" + r.id, r.name, 0, r.levels, true)]));
   f.epic = Object.fromEntries(D.epic.map((r) => [r.id, readNumber("epic-" + r.id, r.name, 0, r.levels, true)]));
   f.loadouts = formLoadouts();
-  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: $("eventTimezone").value, sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), maxSwitches: readNumber("maxSwitches", "Maximum switches", 0, 30, true), maxDays: readNumber("maxDays", "Planning limit", 1, 366, true), shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: $("effort").value, minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), stagedSales: readNumber("stagedSales", "Maximum research sales", 1, 6, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: Array.from({ length: 5 }, (_, i) => readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true)) };
+  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: $("eventTimezone").value, sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), maxSwitches: readNumber("maxSwitches", "Maximum switches", 0, 30, true), maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: $("effort").value, minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), stagedSales: readNumber("stagedSales", "Maximum research sales", 1, 6, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: Array.from({ length: 5 }, (_, i) => readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true)) };
   if (!p.autoSequence) try {
     Route.parse(p.sequence, {required: true});
   } catch (error) { error.fieldId = "sequence"; throw error; }
@@ -926,7 +868,6 @@ function save() {
     saved = { ...structuredClone(config), draftInputs: captureDraftInputs() };
   }
   saveBlob(N.farm(saved), JSON.stringify(saved, null, 2));
-  queueRecovery();
   if (refresh()) show("Farm configuration saved.");
   else show("Farm saved. Planning still needs attention: " + $("notice").textContent, true);
 }
@@ -1049,8 +990,7 @@ function renderResult() {
     $("empty-results").hidden = false;
     tab("farm");
     show("Next ascension starts at the previous finish time. Claimed TE, lifetime eggs, Epic Research, artifacts, Soul Eggs and shift history are preserved; farm upgrades and gems are reset.");
-    queueRecovery();
-  };
+    };
   tools.append(txt, json, expand, next);
   head.append(tools);
   card.append(head, el("p", timestamp(r.end, zone) + " \xB7 " + r.switches + " new switches \xB7 " + num(r.soulCost) + " Soul Eggs spent"), el("p", waitTotals(summary.totals), "waiting-totals"), el("p", "Minimum offline break: " + (resultConfig.plan.minOfflineMinutes ?? 1) + " min. Finish time comes first; ties favor fewer earning breaks.", "hint"), el("p", "Validated by replay: purchases affordable, Virtue permissions enforced, target reached. Claim pending TE at ascension.", "hint"));
@@ -1304,7 +1244,6 @@ function busy(active) {
 function optimize() {
   if (importingBackup) return;
   if (!refresh()) return;
-  acceptRecoverySession();
   const runConfig = structuredClone(config);
   $("search-limits").textContent = "C1 ≤" + runConfig.plan.c1MaxMinutes + " min · K1 ≤" + runConfig.plan.k1MaxMinutes + " min · 30-minute opening intervals · " + (runConfig.plan.strategy === "wasmegg" ? "All eligible opening comparisons; no additional routing search." : "Additional routing budget: " + exactDuration(effort[$("effort").value].maxMs / 1000) + " after eligible opening comparisons.");
   dirty = false;
@@ -1379,10 +1318,9 @@ function optimize() {
         show(data.error, true);
         showPlanningGuidance(data.error, true, inputsChanged);
         $("run-summary").textContent = "Planning could not finish";
-        $("run-detail").textContent = "Review inputs or increase the planning/search limits";
+        $("run-detail").textContent = "Review inputs or increase the search budget";
         if (data.suggestion) renderSuggestion(data.suggestion, runConfig, inputsChanged);
-        queueRecovery();
-      } else {
+            } else {
         result = data.result;
         resultConfig = runConfig;
         if (!dirty) refresh();
@@ -1391,8 +1329,7 @@ function optimize() {
         $("run-summary").textContent = duration(result.seconds) + " to target \xB7 " + result.switches + " switches";
         $("run-detail").textContent = "Fastest plan found \xB7 " + result.actions.filter((a) => !["wait", "shift"].includes(a.type)).length + " purchases";
         if (dirty) markInputsChanged();
-        queueRecovery();
-      }
+            }
     }
   };
   worker.onerror = (e) => {
@@ -1406,8 +1343,7 @@ function optimize() {
     showPlanningGuidance("Planner worker failed: " + e.message, true);
     $("run-summary").textContent = "Worker error";
     $("run-detail").textContent = "Review inputs and try the search again";
-    queueRecovery();
-  };
+    };
   worker.postMessage({ config: runConfig, options: { ...effort[$("effort").value] } });
 }
 async function loadFile(file) {
@@ -1429,8 +1365,7 @@ async function loadFile(file) {
       tab("results");
       const oldLimits = !result.openingTimeLimits && U.openingViolations(config, result).length;
       show(oldLimits ? "Saved plan loaded and replayed. This older plan exceeds the current C1/K1 limits. Re-run the planner to enforce them." : "Saved plan loaded and replayed.", !!oldLimits);
-      acceptRecoverySession();
-      return;
+          return;
     }
     const savedFarm = raw.version === 1 && raw.farm;
     const next = savedFarm ? raw : currentFarmImport(raw);
@@ -1446,8 +1381,7 @@ async function loadFile(file) {
     const loaded = !savedFarm && next.importInfo.scope === "account" ? "Account information has been loaded, but no current Virtue farm was found." : "Farm loaded.";
     show(valid ? loaded + " Check the target and start time before planning." : loaded + " Planning still needs attention: " + $("notice").textContent, !valid);
     tab("farm");
-    acceptRecoverySession();
-  } catch (e) {
+    } catch (e) {
     show("Could not load file: " + e.message, true);
   }
 }
@@ -1519,7 +1453,6 @@ $("clear-data").onclick = () => {
   renderForm();
   tab("farm");
   show("Data cleared. Undo Reset restores your previous inputs in this session. Enter your farm values to start from scratch; exported files are still available to load.");
-  clearRecoveryCopy();
 };
 $("undo-reset").onclick = () => {
   if (!resetSnapshot) return;
@@ -1533,7 +1466,6 @@ $("undo-reset").onclick = () => {
   if (result) renderResult();
   tab(restoreTab === "results" && !result ? "farm" : restoreTab, true);
   show("Reset undone. Your farm, planning goals, and previous timeline have been restored.");
-  queueRecovery();
 };
 $("dismiss-reset").onclick = () => {
   resetSnapshot = null; $("reset-recovery").hidden = true; $("page-title").focus({preventScroll:true});
@@ -1558,8 +1490,7 @@ async function loadEidData() {
     $("empty-results").hidden = false;
     const message = next.importInfo.scope === "account" ? "Account information has been loaded, but no current Virtue farm was found. Your starting farm, start time and planning goals are retained." : "Account information and the current Virtue farm have been loaded. Your planning goals are retained.";
     show(message + (valid ? " Review backup age and assumptions before planning." : " Your draft is retained; review the marked inputs before planning."), !valid);
-    acceptRecoverySession();
-  } catch (e) {
+    } catch (e) {
     if (epoch === loadEpoch) show(e.message, true);
   } finally {
     if (epoch === loadEpoch) { importingBackup = null; busy(!!worker); }
@@ -1659,8 +1590,7 @@ document.addEventListener("change", (e) => {
       if (previous !== ArtifactSets.signature(config.farm.loadouts)) markInputsChanged();
     }
     if (editingKey === "manualFarmData" && e.target.checked) $("starting-gear-controls").hidden = true;
-    queueRecovery();
-    return;
+      return;
   }
   if (id === "tankCapacity") NumericInput.write($("tankOutput"), Ships.rateFor(Number(e.target.value)));
   if (id.startsWith("col-egg-")) {
@@ -1716,15 +1646,6 @@ renderForm();
 tab("farm");
 sizeRunBar();
 show("Enter your Egg Inc ID and use the green arrow, or enable manual editing, before planning.");
-const recoveryPreference = recoveryStore.enabled(), previousSession = recoveryStore.read();
-$("session-autosave").checked = recoveryPreference.ok ? recoveryPreference.value : false;
-if (previousSession.ok && previousSession.value && $("session-autosave").checked) {
-  recoveryPending = previousSession.value;
-  $("session-recovery").hidden = false;
-  $("session-description").textContent = "A previous session from " + new Date(recoveryPending.savedAt * 1000).toLocaleString() + " is available, including unfinished inputs" + (recoveryPending.result ? " and its last timeline." : ".");
-  recoveryStatus("Restore or discard the previous session before saving a new recovery copy.");
-} else recoveryStatus(recoveryPreference.ok && previousSession.ok ? ($("session-autosave").checked ? "Edits and completed plans are kept in this browser. EID is excluded." : "Recovery is off. Use Save Farm and Save Plan.") : "Recovery storage is unavailable. Use Save Farm and Save Plan.");
-recoveryReady = true;
 AppUpdates.initialize({
   isBusy: () => !!worker || !!importingBackup,
   capture: () => {
@@ -1733,6 +1654,6 @@ AppUpdates.initialize({
     catch { saved = {...structuredClone(config), draftInputs:captureDraftInputs()}; }
     return {version:1,savedAt:Date.now()/1000,config:saved,result,resultConfig,dirty,interrupted:!!worker,tab:document.querySelector("[data-tab].active").dataset.tab};
   },
-  restore: restoreSession
+  restore: restoreUpdateSnapshot
 });
 globalThis.VirtueApp = { S, O, I, A, getConfig: () => gather(), getResult: () => result, condensedActions, summarize: U.summarize, loadFile, refresh, tab };
