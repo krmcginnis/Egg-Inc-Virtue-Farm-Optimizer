@@ -11,6 +11,7 @@ const NumberFormat = require("./number-format.cjs"), NumericInput = require("./n
 const ArtifactSets = require("./artifact-optimizer.cjs");
 const LoadoutCard = require("./loadout-card.cjs");
 const EggIcons = require("./egg-icons.cjs");
+const ResearchIcons = require("./research-icons.cjs");
 const AppUpdates = require("./app-updates.cjs");
 const $ = (id) => document.getElementById(id), D = S.D;
 let config = blankFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
@@ -289,7 +290,8 @@ function renderForm() {
     const tr = el("tr");
     tr.dataset.search = (r.name + " " + r.description).toLowerCase();
     tr.append(el("td", r.tier));
-    const desc = el("td", r.name);
+    const desc = el("td", undefined, "research-description");
+    desc.append(ResearchIcons.caption(r.id, r.name));
     desc.append(el("small", r.description));
     tr.append(desc);
     const td = el("td"), input = el("input");
@@ -306,7 +308,7 @@ function renderForm() {
     tr.append(cost);
     return tr;
   }));
-  $("epic-fields").replaceChildren(...D.epic.map((r) => field(r.name, "epic-" + r.id, f.epic?.[r.id] || 0, "number", { min: 0, max: r.levels })));
+  $("epic-fields").replaceChildren(...D.epic.map((r) => ResearchIcons.decorateLabel(field(r.name, "epic-" + r.id, f.epic?.[r.id] || 0, "number", { min: 0, max: r.levels }), r.id)));
   f.loadouts = f.loadouts || { current: [] };
   if (!f.loadouts.current) f.loadouts.current = structuredClone(f.loadouts[f.activeSet] || []);
   for (const key of ["earnings", "delivery"]) if (!f.loadouts[key]) f.loadouts[key] = structuredClone(f.loadouts.current);
@@ -911,7 +913,7 @@ function renderResult() {
     const chips = el("div", void 0, "activity-chips");
     for (const activity of shift.activities) {
       const chip = el("span", void 0, "activity-chip " + activity.kind);
-      chip.append(el("span", activity.label));
+      chip.append(activity.kind === "research" ? ResearchIcons.captionName(activity.label) : el("span", activity.label));
       if (activity.value) chip.append(el("b", activity.value));
       chips.append(chip);
     }
@@ -932,7 +934,7 @@ function renderResult() {
         for (const activity of tier.items) {
           const row = el("li", void 0, "guide-item " + activity.kind);
           if (activity.kind === "research") row.dataset.researchIndex = activity.i;
-          row.append(el("span", activity.label));
+          row.append(activity.kind === "research" ? ResearchIcons.caption(D.research[activity.i].id, activity.label) : el("span", activity.label));
           if (activity.value) row.append(el("b", activity.value));
           list.append(row);
         }
@@ -996,7 +998,9 @@ function renderResult() {
       const time = el("time", timestamp(a.t, zone));
       time.dateTime = new Date(a.t * 1e3).toISOString();
       const detail = el("div");
-      detail.append(el("h4", actionLabel(a)));
+      const actionHeading = el("h4");
+      actionHeading.append(a.type === "research" ? ResearchIcons.caption(D.research[a.i].id, titleCase(actionLabel(a))) : document.createTextNode(titleCase(actionLabel(a))));
+      detail.append(actionHeading);
       if (a.type === "wait") {
         detail.append(el("p", a.reason + " \xB7 " + num(a.eggsGained) + " eggs delivered"));
         for (const e of during) {

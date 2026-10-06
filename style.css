@@ -241,3 +241,10 @@ header{flex-wrap:wrap;align-items:center;gap:12px 18px}
 @media(max-width:1150px){.loadout-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:500px){.loadout-grid,.loadout-grid:has(>.artifact-slot:nth-child(2):last-child){grid-template-columns:minmax(0,1fr)}}
 @media(forced-colors:active){.loadout-item-artwork,.loadout-stone-socket{border-color:CanvasText}.loadout-artifact-effect{color:CanvasText}}
+
+.research-caption{display:inline-flex;align-items:center;gap:8px;min-width:0;vertical-align:middle;line-height:1.4}
+.research-icon{display:inline-block;flex:0 0 24px;width:24px;height:24px;background-repeat:no-repeat}
+.research-caption>span:last-child{min-width:0;overflow-wrap:anywhere}
+.research-description>small{padding-left:32px}
+.activity-chip .research-caption,.guide-item .research-caption{gap:6px}
+@media(forced-colors:active){.research-icon{display:none}.research-description>small{padding-left:0}}

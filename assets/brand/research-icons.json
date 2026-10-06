@@ -1,0 +1,794 @@
+{
+  "sourceRepository": "carpetsage/EggIncAssets",
+  "sourceCommit": "e821c7c9d5b39a9aee3eed0144a732c39489de1e",
+  "sourceDirectory": "64/egginc",
+  "referenceRepository": "wasmegg-carpet/egg",
+  "referenceCommit": "9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67",
+  "asset": "assets/brand/research-icons.png",
+  "width": 680,
+  "height": 544,
+  "iconSize": 64,
+  "sha256": "9725c6808379639a621a12be057ab6f6cfd34a81747d70a2e577b5a7a14f6ee9",
+  "icons": {
+    "comfy_nests": {
+      "x": 614,
+      "y": 2,
+      "sourceFile": "r_icon_comfortable_nests.png",
+      "sha256": "3841802342ebd87ffc1e4eb99d5162c0bd46b91b623b52f667ceb0c2ba7cfacc",
+      "bytes": 4600,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "fb1c761dfe7dedbadecde5b32b832d3f5e8defdb63564172792c2eb44aee4862"
+    },
+    "nutritional_sup": {
+      "x": 614,
+      "y": 410,
+      "sourceFile": "r_icon_supplements.png",
+      "sha256": "f738a598a23ee106d4e01356eb646e5ebd9738b2c85e2c65afc0bb32cb605876",
+      "bytes": 2905,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "7aeca588bb64a85cda78c2bfec5c136769c75c813a89ff7faee74954771de443"
+    },
+    "better_incubators": {
+      "x": 342,
+      "y": 2,
+      "sourceFile": "r_icon_better_incubators.png",
+      "sha256": "bd312fd9afc71f6589bd94079cde3eaeffdd30803af5b823813eadd81eeda3ad",
+      "bytes": 2877,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "65cdea60e35038e67e299fa29d9bcf0e50bff0b8f565d5e92df0bc15d1113e84"
+    },
+    "excitable_chickens": {
+      "x": 410,
+      "y": 138,
+      "sourceFile": "r_icon_excitable.png",
+      "sha256": "4d8a560da74e9f33dd95215deeb579f1e5ee69b30438624cde3eb4f7839ba2f7",
+      "bytes": 2900,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "9760f1ceaa9e5de8cb2c9d22ca0708ec896e5e24eac4065c2296c41d985ef311"
+    },
+    "hab_capacity1": {
+      "x": 206,
+      "y": 206,
+      "sourceFile": "r_icon_hab_capacity.png",
+      "sha256": "dd401bdf6d6badf62ea1b9ec900e89eff55894fa09c96e89736ce478ef2c3a23",
+      "bytes": 3085,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "5771b54eed4bda791cd881f382a4727a2933d6966c22161c907dd8b1ab350577"
+    },
+    "internal_hatchery1": {
+      "x": 206,
+      "y": 274,
+      "sourceFile": "r_icon_internal_hatchery.png",
+      "sha256": "6e8c3b69b68c1c763dbc839e3e7a6a228a34a3c7136b785806dbe39b64b7b365",
+      "bytes": 2269,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "f8032f19fbbb99cee8a1143090eaeb811e66e7483658c8fa10df0ffc6c03110e"
+    },
+    "padded_packaging": {
+      "x": 546,
+      "y": 342,
+      "sourceFile": "r_icon_padded_packaging.png",
+      "sha256": "bc61c347907a8520b99ffb2c5b9ad6397e939bfdad5dd11ed08a0927738bb11a",
+      "bytes": 4071,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "c025516caa92cde130b717af969e9751a8e44a6824c38eb263293aa38340f9c7"
+    },
+    "hatchery_expansion": {
+      "x": 274,
+      "y": 206,
+      "sourceFile": "r_icon_hatchery_capacity.png",
+      "sha256": "b78447cf31398f135c5002a11cbfbee27f36b7cf6730a0e2b290500442f223f9",
+      "bytes": 4906,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "158dbd34d2f5123bfebacd989913984064030efd4d85a180226bf39ca6e932ed"
+    },
+    "bigger_eggs": {
+      "x": 274,
+      "y": 70,
+      "sourceFile": "r_icon_double_egg_size.png",
+      "sha256": "c77c407cf9bbf8a25c140abe7fef5a58ad15ddd54276785eeebb63dd24962857",
+      "bytes": 4775,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "8929abb4e98b8bd219f8937d96e9915eca02e6f6e8069353d41638d0dd4e98ee"
+    },
+    "internal_hatchery2": {
+      "x": 274,
+      "y": 274,
+      "sourceFile": "r_icon_internal_hatchery2.png",
+      "sha256": "695f139d3631566417861e4659632c7d59eb20c38e19e82c5568eea80682d7c3",
+      "bytes": 2470,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "35aaf20fe7aed6ae75c57dd21693e9bd5686f8e98063fdc39fd3c883b4456888"
+    },
+    "leafsprings": {
+      "x": 138,
+      "y": 274,
+      "sourceFile": "r_icon_improved_leafsprings.png",
+      "sha256": "3b257f6e8c4d8488e4689abcfe1a026e7cc4700281162e1b6b948592a4d7907c",
+      "bytes": 2713,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "c93699e9a87994c98e2e9f27f09c834c0b1f604a2c91926e98658fd229583475"
+    },
+    "vehicle_reliablity": {
+      "x": 546,
+      "y": 138,
+      "sourceFile": "r_icon_free_tuneups.png",
+      "sha256": "55f9cf71408c78228ae15a7ea1d310557b63078b32c1876ade8ac0758ab124ad",
+      "bytes": 2764,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "38246b079ff9d28106f238092fc1a8acd25d789323d3b4e901b24ad663d03549"
+    },
+    "rooster_booster": {
+      "x": 410,
+      "y": 2,
+      "sourceFile": "r_icon_better_incubators2.png",
+      "sha256": "5b50e1e3dbad21d49ae6af47d6754307c32e7b6dd7e6436b1263acc2371dd0d1",
+      "bytes": 3521,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "731dfbdb47d981ed66e3f82097be1d4a0dd4aa914f102bba669c6d74afad56b4"
+    },
+    "coordinated_clucking": {
+      "x": 70,
+      "y": 70,
+      "sourceFile": "r_icon_coordinated_clucking.png",
+      "sha256": "a2ed2c2ed90d0c63e9f989b1550c1a1455d3369c8e4d4360cc38c66a90be7570",
+      "bytes": 3878,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "375d16c29b7a0ba4e9b32ebd09536ce7ac304546ffd66ffac7987daaafcfe7be"
+    },
+    "hatchery_rebuild1": {
+      "x": 342,
+      "y": 206,
+      "sourceFile": "r_icon_hatchery_rebuild.png",
+      "sha256": "5a6b2d92e468d8bab9067b16babf097b03ca8b73fc1b699dce397806a3c78d1d",
+      "bytes": 3939,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "2b322518e04ff43a6426970dd5e2eeaec458da2e2064cb65162069439b728dbb"
+    },
+    "usde_prime": {
+      "x": 2,
+      "y": 410,
+      "sourceFile": "r_icon_prime_certification.png",
+      "sha256": "c75a23de1e1064c1ce3adf10d76b64a877669927a665c2fc5fe287211424ef55",
+      "bytes": 3486,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "9e6551f90c6e3258bbe72a66adf4d6f161fb393bd19e3038c00190ad134b04b4"
+    },
+    "hen_house_ac": {
+      "x": 410,
+      "y": 206,
+      "sourceFile": "r_icon_hen_house_ac.png",
+      "sha256": "6f773ceffa9b0f773e855b879d762ac958feadca196c726b04808c5f4cc2bbd7",
+      "bytes": 2908,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "0787e8545ebe961d4bbab1c90a47316a28c7676664245594c26c6b214e4befa6"
+    },
+    "superfeed": {
+      "x": 546,
+      "y": 410,
+      "sourceFile": "r_icon_superfeed.png",
+      "sha256": "ee46e8d9485759f720b1ddcbf1813a8de5f7a4e87bb84d42b2dccb2bdba46b85",
+      "bytes": 3306,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "6b920f3187bbabe275d9a4019d2b28030b1ea70a8f37c315c59a95630ffdee91"
+    },
+    "microlux": {
+      "x": 206,
+      "y": 342,
+      "sourceFile": "r_icon_microlux_suites.png",
+      "sha256": "0074b9beda48b4c1a0919e7d7d33b1dadefd9f99b9c988f6e02690122114e8db",
+      "bytes": 4652,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "ca4d79e81eec2577ee41c9b2e60739c749e22bbd6d4e31121af6bdfa34ac6db4"
+    },
+    "compact_incubators": {
+      "x": 2,
+      "y": 70,
+      "sourceFile": "r_icon_compact_incubators.png",
+      "sha256": "5635b3822d609e6beb17d5fca223d4092a3a1628ede438c2b2c4e921382bfdd1",
+      "bytes": 2903,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "1293425d8ab8b33a43b088df1a9ac3b779eefcb493ed04b47840d59c48f3e9d9"
+    },
+    "lightweight_boxes": {
+      "x": 2,
+      "y": 342,
+      "sourceFile": "r_icon_lightweight_boxes.png",
+      "sha256": "1d6250dec5b8284d294b7cbd611d71e8bbd8893052cf373f49c0d0d6e396e1bf",
+      "bytes": 3598,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "e0e83656fc3253f617c532f7aafbe2f28780fc9fd7dd52634a9e0d05caa1e7fe"
+    },
+    "excoskeletons": {
+      "x": 478,
+      "y": 138,
+      "sourceFile": "r_icon_exoskeletons.png",
+      "sha256": "c73c096e9019c6b2dc52875b3664c341e10e069ca0a4a5866e403cbd19249df3",
+      "bytes": 3467,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "754c63b0a286692c208d4788f009c726810ea7d55b7518eba80da2a6752cae29"
+    },
+    "internal_hatchery3": {
+      "x": 410,
+      "y": 274,
+      "sourceFile": "r_icon_internal_hatchery_expansion.png",
+      "sha256": "902aa67c6ca4f8eb4ab2041ff469a2dfc7f01f65ec4fb14cefeb84c86d754269",
+      "bytes": 2709,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "321ec486405dbf74a3f2be879398feb4c6eb24d5d292d2e6fecb6e8a41af8817"
+    },
+    "improved_genetics": {
+      "x": 70,
+      "y": 274,
+      "sourceFile": "r_icon_improved_genetics.png",
+      "sha256": "54ffbf5a5a66d2b05fde4e491bc4df25171fd7c3efc842a14dbf176460a8ba41",
+      "bytes": 4472,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "5934b2a9afc6a3995360688b11b85a0050bcc95e9ba20971249eb56245f0eeae"
+    },
+    "traffic_management": {
+      "x": 274,
+      "y": 478,
+      "sourceFile": "r_icon_traffic_management.png",
+      "sha256": "e2f1e7a9637b1a53d2e6c3103585d08b922f23eb0f897ac8c6bccc9e7d856240",
+      "bytes": 4086,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "e6f996ea7610881d3c7dd4c0b7077d09ca8d53a8c1ce66c8477218b13ae8d171"
+    },
+    "motivational_clucking": {
+      "x": 274,
+      "y": 342,
+      "sourceFile": "r_icon_motivational_clucking.png",
+      "sha256": "89ba91c0c825696ad00af2a5ffa9f87ad14ed53df01238822a8d86a6e17ea810",
+      "bytes": 3008,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "eca73303b3129368c6ad960f2dd8d0ee1d15d92adeb2da8e27fb1728841c118a"
+    },
+    "driver_training": {
+      "x": 342,
+      "y": 70,
+      "sourceFile": "r_icon_driver_training.png",
+      "sha256": "407acae94379430e5fd7ce7dd643b39b54a141ee7a415c3a2aabee0386561e91",
+      "bytes": 2880,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "ec9d65839bf757e36e2e6a930d032965ed00cd8a9070d030a56cfda0de74d1a9"
+    },
+    "shell_fortification": {
+      "x": 274,
+      "y": 410,
+      "sourceFile": "r_icon_shell_fortification.png",
+      "sha256": "e17b3283f42a4a0273d2d30059c4ad3d09e1fd9787be9839dc2067911efbd16a",
+      "bytes": 3628,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "554cecdbf7fca7853c0dbcc852282e6d2923014fedfb1e8ec0efd345a0d407ca"
+    },
+    "egg_loading_bots": {
+      "x": 478,
+      "y": 70,
+      "sourceFile": "r_icon_egg_bots.png",
+      "sha256": "d6433496184b109b08521c13be95196c5ce6c9c5c0591e0638563bd254ebdfde",
+      "bytes": 3257,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "d343641e675fe3a9746f6e39ca0259da4d1b62a081a7f5aa103fd01e04a01d24"
+    },
+    "super_alloy": {
+      "x": 478,
+      "y": 410,
+      "sourceFile": "r_icon_super_alloy_frames.png",
+      "sha256": "fe1d7aa45cd59c53ebab5b410bee6cc9e6cf6c4f56d60d9ab06bf3f41f0d33cd",
+      "bytes": 3151,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "12687222e7f2e018ddafe557feeaa3f1b1c5e1cf378c2261f9f03ebddf30c018"
+    },
+    "even_bigger_eggs": {
+      "x": 342,
+      "y": 138,
+      "sourceFile": "r_icon_even_bigger_eggs.png",
+      "sha256": "09082d8c4b285bd54b1a94384c868ad9e5f0dfce1c927d38be918eb5a16b10a6",
+      "bytes": 4741,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "66e467f6b66063784eda51ef378917922f202122d403b881086a40105c392cb7"
+    },
+    "internal_hatchery4": {
+      "x": 478,
+      "y": 274,
+      "sourceFile": "r_icon_internal_hatchery_expansion2.png",
+      "sha256": "d5512d77fe1c2ff203e09faa89910279f78531e6da1195b70c5a1795d93b22d7",
+      "bytes": 3387,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "9fc9f0d156cfde5e6b2a12c5237cda1562fefb194a5fa9a3b70d298f40df7e3c"
+    },
+    "quantum_storage": {
+      "x": 138,
+      "y": 410,
+      "sourceFile": "r_icon_quantum_egg_storage.png",
+      "sha256": "9a97d671cf06dbf6e2ab5a8993b6baf42ebceb8bacfaa1eaf3589161fd695c64",
+      "bytes": 3044,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "752b5d307580a05d38c173f84394a85ade75b5de8e8c811436ecb459224d5515"
+    },
+    "genetic_purification": {
+      "x": 614,
+      "y": 138,
+      "sourceFile": "r_icon_genetic_purification.png",
+      "sha256": "1b0b4ed18dbab3981465353aecff7d52183cd7d3ae0c711ee98ffaf0eb5ea451",
+      "bytes": 5102,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "9f36981b52624ceb255023259c68bd9b0f213593b7395f7d4a556b77d365faaa"
+    },
+    "internal_hatchery5": {
+      "x": 70,
+      "y": 342,
+      "sourceFile": "r_icon_machine_learning_incubators.png",
+      "sha256": "5b078b8775522ded8d31623c9b1f2dd6101419a28c55a90851281fcde5a28310",
+      "bytes": 3811,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "ac6e41fc5809059d146d684c681b00b84408f22daf34be13c43e9b42a4b2477e"
+    },
+    "time_compress": {
+      "x": 70,
+      "y": 478,
+      "sourceFile": "r_icon_time_compression.png",
+      "sha256": "7adc706386796879d9f3e685a7fc1c830e1298d9d9e6376769dead648c279ecd",
+      "bytes": 5928,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "f585eb52a302f998517c0e6108c20d299c9c83c2134ad94195a04a4a50342fe3"
+    },
+    "hover_upgrades": {
+      "x": 614,
+      "y": 206,
+      "sourceFile": "r_icon_hover_upgrades.png",
+      "sha256": "952c4ad0250329f4c34c03922373d81c25bca18c4d8fa7bbb2bec47bdeeb2691",
+      "bytes": 3155,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "7dab09305123955bf834151fc385ae12f81940939874a19d6847ee94274ca9c0"
+    },
+    "graviton_coating": {
+      "x": 138,
+      "y": 206,
+      "sourceFile": "r_icon_graviton_coating.png",
+      "sha256": "000d61c7c27cb546d7537cb16a3b173295d690e431862dd38bdc12c7251db167",
+      "bytes": 3281,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "f8c8c40b6299e047560b8a77cf11d66605459ac634c9be2c9571858aedb6d7a9"
+    },
+    "grav_plating": {
+      "x": 2,
+      "y": 206,
+      "sourceFile": "r_icon_grav_plating.png",
+      "sha256": "b0d905dc5b34b2d6e70861644fa27628ee1a31a9fa049f6577e4b9d0398e76da",
+      "bytes": 3629,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "3392bd42cdaef0b73510e67d411b331800489b4dbc8b2845ac7fc7b781374db5"
+    },
+    "chrystal_shells": {
+      "x": 138,
+      "y": 70,
+      "sourceFile": "r_icon_crystalline_shelling.png",
+      "sha256": "45735cdf43a0f8083cc7ba7d900a7e0b787c0c7d01590a6ee5d57dbf2569de5c",
+      "bytes": 4833,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "0540f06f3838fbab141c0456eb612da3622c31a05eca0e3f15db57b56a1da60c"
+    },
+    "autonomous_vehicles": {
+      "x": 274,
+      "y": 2,
+      "sourceFile": "r_icon_autonomous_vehicles.png",
+      "sha256": "fb803c9ea39dbcf86318026fd9af9928b3a3813a856cb68cc32e4bf05827e4c8",
+      "bytes": 4119,
+      "sourceWidth": 51,
+      "sourceHeight": 64,
+      "pixelSHA256": "553066fc695ceeab376cd93f8b5688d543da81e45028ce1aac5094904a30b15c"
+    },
+    "neural_linking": {
+      "x": 410,
+      "y": 342,
+      "sourceFile": "r_icon_neural_linking.png",
+      "sha256": "1e0939ca30f24f98f8846df85f0dd2b9ed6ebe32ee5827093ec39990d2419569",
+      "bytes": 5756,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "663393b61ea261dd24199075e8e45eb0f18b7520a4613a6b4988b03d19e5fd93"
+    },
+    "telepathic_will": {
+      "x": 2,
+      "y": 478,
+      "sourceFile": "r_icon_telepathic_will.png",
+      "sha256": "f8a3477f1abfccddc5bb031f873fd1d017e8d3d892e8240ea167527aa52b4c0d",
+      "bytes": 3881,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "159368f0ebd5f71025f9013d2b2ddcf9c57d805bdbc78037989ed273e34436d2"
+    },
+    "enlightened_chickens": {
+      "x": 614,
+      "y": 70,
+      "sourceFile": "r_icon_enlightened_chickens.png",
+      "sha256": "e69087d8614f2555bd3ec47af17ae69bbdebe2c628aca383659fd3e77d635dfa",
+      "bytes": 4179,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "4c624de7cdc3fe53655394a78457c30f44b9d059b239c1c66491db37d745615e"
+    },
+    "dark_containment": {
+      "x": 206,
+      "y": 70,
+      "sourceFile": "r_icon_dark_containment.png",
+      "sha256": "3cb292522d6b8f23a14b1da91067523563b8ffc0a590dc9ec7e14346f3dd2131",
+      "bytes": 1795,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "35350a733c64e99bcba5a31956973474beb8d3a853a89a4defb3888e4185572d"
+    },
+    "atomic_purification": {
+      "x": 206,
+      "y": 2,
+      "sourceFile": "r_icon_atomic_purification.png",
+      "sha256": "432c5b34ff56ee8a2934f1cb6c5ee2430636b5de2ff25b194dcbcf61c79fe5b1",
+      "bytes": 5158,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "14ed6499fad3c359c5d96e3cf0a89fa5cfd217465d9686fde7f7287bf98faea2"
+    },
+    "multi_layering": {
+      "x": 342,
+      "y": 342,
+      "sourceFile": "r_icon_multiversal_layering.png",
+      "sha256": "984c89561f5c0425506d886e2f110b2067c6560cbb1c327a2d9714e3c296cc01",
+      "bytes": 5866,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "e24894bab9bd5c7d425adb6f556616d1ac5288cee6684584a6eeb21c163f7ecc"
+    },
+    "timeline_diversion": {
+      "x": 138,
+      "y": 478,
+      "sourceFile": "r_icon_timeline_diversion.png",
+      "sha256": "6d8d387b9b51284c3f6ecedc8fa183bd2d15ec6e4481f9f2b23f1e5ed643ad98",
+      "bytes": 3204,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "fd44a4b891c393b4bce4962ea463f07abfcd55f1809b59102a197a7365c388cf"
+    },
+    "wormhole_dampening": {
+      "x": 478,
+      "y": 478,
+      "sourceFile": "r_icon_wormhole_dampening.png",
+      "sha256": "f40a57deb498b2c85446ab34792a84dda66b98fa3bd0fea1010a16f8919d65e1",
+      "bytes": 6661,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "1e8dfdda1ed4876888ae22312e2fb2ec3bf3df976ee7d66303d5bafa1b3038c8"
+    },
+    "eggsistor": {
+      "x": 546,
+      "y": 70,
+      "sourceFile": "r_icon_eggsistor_miniturization.png",
+      "sha256": "930695fc25aa725cf27920eff59ce73ddb9a02954c1a2938e70d672823362ba5",
+      "bytes": 7819,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "586de6def2568bcde3cbc373fa0d218b51427620723ff1d227261bcff7fea5d4"
+    },
+    "micro_coupling": {
+      "x": 70,
+      "y": 206,
+      "sourceFile": "r_icon_gravitational_coupling.png",
+      "sha256": "96f22ee85fc700e241673fc578ef72c23660a2482655f6a0d50de5af489448da",
+      "bytes": 3589,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "0580164c1127bc7f2fb41ac8d5837ff9480805014b82ad934a437c504631181c"
+    },
+    "neural_net_refine": {
+      "x": 478,
+      "y": 342,
+      "sourceFile": "r_icon_neural_net_refinement.png",
+      "sha256": "47c9b8446ccaa8f4861955e3a647f5d98585869f8be059503446ec70161b2f21",
+      "bytes": 4449,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "58e918c1088c130c5de1eeb29f7e75bd48c40552bcca50f9cc759eaef13908a0"
+    },
+    "matter_reconfig": {
+      "x": 138,
+      "y": 342,
+      "sourceFile": "r_icon_matter_reconfiguration.png",
+      "sha256": "73031f9e55959f81739bc32dfb4de2256fd8abd3789ebfd2a57c7f9804cd7d4d",
+      "bytes": 4818,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "a8434365d7bdd02208142b8ec16db6933835dc0a5fcfbe0b4cdbb529db8db3ce"
+    },
+    "timeline_splicing": {
+      "x": 206,
+      "y": 478,
+      "sourceFile": "r_icon_timeline_splicing.png",
+      "sha256": "7e0e1ece86a864644683a5c76243c355fcc0aaa98406626740b2fba38de3df63",
+      "bytes": 3296,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "fb700d3c2fe365396368bf647cc7d1c2637da2c68b31c99398caea84c0501b59"
+    },
+    "hyper_portalling": {
+      "x": 2,
+      "y": 274,
+      "sourceFile": "r_icon_hyper_portalling.png",
+      "sha256": "f73360ab2eb6581eadcd0aed3bb20b1caa1c8f9c195b1ef00bac68d5c7f13dac",
+      "bytes": 5622,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "4412f62165968cd2a509f5cacb3c231c7ec88b8ae92cc54d110bd996dced66d5"
+    },
+    "relativity_optimization": {
+      "x": 206,
+      "y": 410,
+      "sourceFile": "r_icon_relativity_optimization.png",
+      "sha256": "3826ffd7004a9a81b14e7b3e32d557599eb157269a1f1a20723eeebeca23b64b",
+      "bytes": 4970,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "5df3d7995ff7eb73093aa0fe1a62f823abbe1eff6e9cd2db4c7a3f859815eeec"
+    },
+    "hold_to_hatch": {
+      "x": 478,
+      "y": 206,
+      "sourceFile": "r_icon_hold_to_hatch.png",
+      "sha256": "c79778b51c95413fb232a00381e2745b65cf3da5810ba2402b439a6f2ba498b4",
+      "bytes": 3307,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "2dcd496c01c7ec743f5fc2d8115239ac58798b0c4c6b9f0fa3f9f2bfe58138fd"
+    },
+    "epic_hatchery": {
+      "x": 138,
+      "y": 138,
+      "sourceFile": "r_icon_epic_hatchery.png",
+      "sha256": "e10c9fbe4a1b53e6d12b71b421e55a9ed80086d4b17f89ffe8296f08f31c74c5",
+      "bytes": 3406,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "125e86359ce0e6093e7a8784e4738d65e405ad83d92aa5377c5ffdd2f02b9ef5"
+    },
+    "epic_internal_incubators": {
+      "x": 206,
+      "y": 138,
+      "sourceFile": "r_icon_epic_internal_hatchery.png",
+      "sha256": "013806a1b441f49e9fc9fa83403689a8376d8b6b3ecd853c9f49276e588ea9da",
+      "bytes": 3020,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "39420b884ca67b1176d61dbd892d7887bf310b096217188a27f19d0548f686c7"
+    },
+    "video_doubler_time": {
+      "x": 410,
+      "y": 478,
+      "sourceFile": "r_icon_video_doubler_time.png",
+      "sha256": "d5f0b67e5c537b8766f3999217440a6a98cf71264b1198607b2a28b4bf634e04",
+      "bytes": 5243,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "023e7a770eaf745adf9ff32f95444d07bb2693ba8e182af8a5779717eeb5fbe9"
+    },
+    "epic_clucking": {
+      "x": 2,
+      "y": 138,
+      "sourceFile": "r_icon_epic_clucking.png",
+      "sha256": "14ed51feecf3e9e6e9454cc38c77dbfe08083ae85d3eb81e4fee514d366440f5",
+      "bytes": 3115,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "96b64e85576b57223598e519b1a53f2e093b6c875bf361d2c5d2159c3cd2011e"
+    },
+    "epic_multiplier": {
+      "x": 274,
+      "y": 138,
+      "sourceFile": "r_icon_epic_multiplier.png",
+      "sha256": "9a330b5db78cac58340a264e51c222655e8b8064e0f457dc0f25873d6d878f0c",
+      "bytes": 3321,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "0755968c845bcbac3e098db896d1151600c7fd20c77a14d74501eed1088fbc94"
+    },
+    "cheaper_contractors": {
+      "x": 546,
+      "y": 2,
+      "sourceFile": "r_icon_cheaper_contractors.png",
+      "sha256": "83660ce95dc2c3d7bfee263dd1bc2b80f6beef92af9ef3219bfa539d448cb59b",
+      "bytes": 3258,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "b32737ca67cd987b616d52fa43f4c68b2f7af41afce9e834f978972ea6ab66e6"
+    },
+    "bust_unions": {
+      "x": 478,
+      "y": 2,
+      "sourceFile": "r_icon_bust_unions.png",
+      "sha256": "76c4721477b9cc266da125f782e7b6e6b5dc178ee3839ad2fd021f7fac297baa",
+      "bytes": 3290,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "243fbc98c45497ea14557cbf4f404d6efc90766976bd24586b1eb6e4040c89d4"
+    },
+    "cheaper_research": {
+      "x": 614,
+      "y": 274,
+      "sourceFile": "r_icon_lab_upgrade.png",
+      "sha256": "b542770b7b88ac3091a1fa32a0d2c01b1d66d1e16879f38c22cc002eb84971b0",
+      "bytes": 3334,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "f32d45790bc25f6502607be21dfc8657794e58a68fcf8832bff2b2bafb7a2c6b"
+    },
+    "silo_capacity": {
+      "x": 342,
+      "y": 410,
+      "sourceFile": "r_icon_silo_capacity.png",
+      "sha256": "d3a2273389f82d873a7bbf4ca65858c2bee66e63e0547286ddb13bc44adc2018",
+      "bytes": 2501,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "8919ebe05996943896a9a65539494475fc69d35525d2851f58309e1a4b516ae0"
+    },
+    "int_hatch_sharing": {
+      "x": 546,
+      "y": 274,
+      "sourceFile": "r_icon_internal_hatchery_sharing.png",
+      "sha256": "17f81f9f53a3d932e5425b5863e559bc743031296030781b57442a466e7a65f0",
+      "bytes": 5185,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "6e58a710a9257b76cecbb6fdbb1760ad73833eebd76c353c04a35cffeceb29e1"
+    },
+    "int_hatch_calm": {
+      "x": 342,
+      "y": 274,
+      "sourceFile": "r_icon_internal_hatchery_calm.png",
+      "sha256": "0e969278e714fdb7037aeb6945c26e12ea8e7d5aa43a9d989e0f54bac0fd488d",
+      "bytes": 4787,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "aec4e6097eff2087ce1b6051269cb06065905911ce16d62ac51e8080866f9b14"
+    },
+    "accounting_tricks": {
+      "x": 2,
+      "y": 2,
+      "sourceFile": "r_icon_accounting_tricks.png",
+      "sha256": "8fe491f11ad75fa78ae51bd58676a20aeb30a1fe72dfc02b5772661fbbd520aa",
+      "bytes": 2302,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "18980b24b21e624ab37ac57b8387efbcf72c8fd3521e1fb7d4fa907bcf49b046"
+    },
+    "soul_eggs": {
+      "x": 410,
+      "y": 410,
+      "sourceFile": "r_icon_soul_food.png",
+      "sha256": "cf541ffd405165cd30234cb6c036a1cb4df61c3596997670df3ded79b50ee9fb",
+      "bytes": 2810,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "2253a68f5ce7013c5c6fee4b617c3572a81b2c0633a172cf8d6c511486ab8535"
+    },
+    "prestige_bonus": {
+      "x": 614,
+      "y": 342,
+      "sourceFile": "r_icon_prestige_bonus.png",
+      "sha256": "746dbe4c628308529d44a227a7535c847aec88335a4467700bbbefdfb38456e2",
+      "bytes": 4772,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "2a8de4cd21ab96f141ca57e2a924d729d4ce334d9637559832911a5d893b0313"
+    },
+    "drone_rewards": {
+      "x": 410,
+      "y": 70,
+      "sourceFile": "r_icon_drone_rewards.png",
+      "sha256": "5ff0ccac099346257cdb14e09c90980b1ab97e87c4c6af2e880c80eb6332b019",
+      "bytes": 3962,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "49a64aece5af74cd5cdbf88615132716df786ebb285ff0a5da9f2e43c51c18b3"
+    },
+    "epic_egg_laying": {
+      "x": 70,
+      "y": 138,
+      "sourceFile": "r_icon_epic_egg_laying.png",
+      "sha256": "806d458e9c69dc0fc8d06e1111c72496c745ece41b5a532d432eff6b1d033c75",
+      "bytes": 4649,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "802bf90f0f9063f975bdbcee519b6cd3c9f36b804b54644665d33b11a89e4b7f"
+    },
+    "transportation_lobbyist": {
+      "x": 342,
+      "y": 478,
+      "sourceFile": "r_icon_transportation_lobbyist.png",
+      "sha256": "8a0c88207f23a4aab5766b497b9ab1110223f121f6e2271356abdd9e342ef7f8",
+      "bytes": 4484,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "989361c5a8a0e16f7df55909475215f882c315c3390df14082ff94d55a708a1b"
+    },
+    "prophecy_bonus": {
+      "x": 70,
+      "y": 410,
+      "sourceFile": "r_icon_prophecy_bonus.png",
+      "sha256": "0c919727f3b927728b467c7050f8a87c8e4d74ec92168663905bd48f071624d7",
+      "bytes": 2914,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "0829121bdc0684a06e6bdb1efad2ce38be5fd5288884dbe828d8f0fa5fe11cf3"
+    },
+    "hold_to_research": {
+      "x": 546,
+      "y": 206,
+      "sourceFile": "r_icon_hold_to_research.png",
+      "sha256": "26f8db3bdc30e636de38684daeba5ab3cb73a84f3944122e5faf805fb23fadb8",
+      "bytes": 3025,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "99fc376336c7dcb7277495a48b813dc2116b7bb09da97533ca5d52121e83c836"
+    },
+    "afx_mission_time": {
+      "x": 138,
+      "y": 2,
+      "sourceFile": "r_icon_afx_mission_duration.png",
+      "sha256": "18aa8fcb13e925f089e58c797e0294fac3ff9542db427104ea262fda8a2b7684",
+      "bytes": 7331,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "37bd41142271a665a1894c1196b69c763ad869c7576aa77fe118d39fdac03485"
+    },
+    "afx_mission_capacity": {
+      "x": 70,
+      "y": 2,
+      "sourceFile": "r_icon_afx_mission_capacity.png",
+      "sha256": "55ba63cdda9a845e57292490f9241f8fa58a762e086d47c3a221496817297f83",
+      "bytes": 6964,
+      "sourceWidth": 64,
+      "sourceHeight": 64,
+      "pixelSHA256": "b88cc0f9b61fdddb98be9f9757ec6669c74799d8d4671510c3515e2ea01613b2"
+    }
+  }
+}

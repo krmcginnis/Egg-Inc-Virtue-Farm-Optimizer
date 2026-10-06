@@ -1,6 +1,6 @@
-# v0.7.6
+# v0.7.7
 
-- Current, Research & Earnings, and Delivery sets display artifact images with stones in a horizontal row underneath.
-- Each card shows the artifact tier/rarity and separate artifact and stone effects. Repeated stones show their bonus per stone.
-- Artwork is bundled for offline use. Enable Edit Farm Manually to reveal the existing artifact and stone selectors.
-- Solver calculations and saved-farm values are unchanged. Install through Update App → Update & Restart.
+- Added original game icons inline with all Common Research and Epic Research names.
+- Research names in the purchase summary, quick guide, and full breakdown also show the icons.
+- A shared image sheet keeps artwork efficient to load and available offline. Existing labels, levels, manual edit controls, saved values, and solver calculations are retained.
+- Install through Update App → Update & Restart.

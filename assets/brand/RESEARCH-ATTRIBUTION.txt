@@ -1,0 +1,11 @@
+EGG INC. RESEARCH ARTWORK
+
+Original Egg, Inc. game artwork belongs to Auxbrain, Inc.
+This optimizer is an unofficial fan planning tool.
+The original 64-pixel icons are packed into one lossless PNG sheet without
+resizing or changing pixels, for efficient offline display.
+
+Source: https://github.com/carpetsage/EggIncAssets/tree/e821c7c9d5b39a9aee3eed0144a732c39489de1e/64/egginc
+Research/icon mapping: https://github.com/wasmegg-carpet/egg/blob/9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67/wasmegg/ascension-planner/src/lib/assets.ts
+Retrieved: 2026-10-06
+Source checksums, icon positions and sheet checksum: research-icons.json

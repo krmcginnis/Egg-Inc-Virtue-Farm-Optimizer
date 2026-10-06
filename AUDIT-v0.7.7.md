@@ -330,3 +330,28 @@ remains byte-identical:
 `2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.
 The release workflow repeats native Windows updater restart, rollback and public
 feed verification before keeping the release available.
+
+
+## Inline research artwork — v0.7.7
+
+All 56 Common Research and 22 Epic Research items now show their original game
+icons beside the existing text. Common descriptions, level fields, input IDs,
+accessible names and account edit locks are retained. Research names in the
+purchase summary, quick guide and lazy full breakdown also receive inline icons.
+The decorative icons do not enter saved farm data or research calculations.
+
+The 78 source icons use a pinned asset mirror and the Wasmegg ID mapping.
+They are packed into one 318,904-byte lossless PNG sheet without resizing or
+changing source pixels. Non-square source icons are centered with transparent
+padding. Source checksums, source-pixel checksums, positions and attribution
+are bundled in the existing managed artwork directory.
+
+Targeted Chromium checks passed all mappings and pixel integrity, inline
+labels, retained values and edit locks, research filtering, a synthetic replayed
+plan through all three timeline layers, layouts from 1440 to 320 px, offline
+file display, saved-farm round trips and missing-art text fallback. The earlier
+artifact display remains intact. No solver calculations or game data changed;
+the worker SHA256 remains
+`2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.
+The release workflow repeats native Windows install/restart/rollback and
+published feed verification before handover.
