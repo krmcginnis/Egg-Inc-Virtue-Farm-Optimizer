@@ -1,39 +1,41 @@
-# Release setup
+# GitHub development and automatic releases
 
-The public release repository is `krmcginnis/Egg-Inc-Virtue-Farm-Optimizer`.
-Published releases automatically configure the app to check this repository.
+The public app repository is `krmcginnis/Egg-Inc-Virtue-Farm-Optimizer`.
+Release ZIPs automatically configure the app to check this repository.
 
-Use a dedicated **public** repository named `Egg-Inc-Virtue-Farm-Optimizer`.
-The downloadable app reads public releases without GitHub credentials. A private
-source repository can publish to a separate public release repository, but that
-requires adapting the workflow; this initial workflow uses one public repository.
-Only the curated GitHub Setup tree belongs in that repository. Personal farms,
-account backups and older plan files have been excluded.
+## Development
 
-Initial repository publishing procedure:
+Clone the repository and use that checkout as the canonical source. Run
+`npm ci` and `npm run build` before launching a source checkout. The generated
+app and worker bundles are ignored; GitHub builds them for each release.
+Review diffs and explicitly stage only intended public source files. Private
+farms, plans, EIDs and account backups must remain outside tracked source.
 
-1. Push the contents of the GitHub Setup folder to the repository root.
-2. Enable GitHub Actions if the account or repository has disabled it.
-3. Run **Publish App Release**, or push a tag matching `package.json`, such as
-   `v0.7.3`. The workflow builds and verifies a package on Windows, creates a draft
-   with both assets, then publishes it. Existing versions cannot be overwritten.
-4. Install the first release ZIP once and run `Start-Virtue-Optimizer.cmd`.
-   Its update source is set automatically to that repository. The previously
-   supplied bootstrap ZIP can instead connect it once under Update Source.
+Terminal Git pushes need their own authentication; the connected GitHub app
+is not a terminal credential. If terminal push is unavailable, use
+`npm run prepare:publish` to prepare only staged changes in the ignored
+`tmp/publish-plan.json`, then create one commit through the existing GitHub
+connection with the expected branch head. This needs no additional password
+or token. Follow the exact procedure in AGENTS.md.
 
-For subsequent changes, update the version and release notes, keep only the
-current audit, run checks appropriate to the change, and publish a new tag.
-Select **Update App → Update & Restart** in the app to install it.
+## Automatic releases
 
-The two required assets are `Egg-Inc-Virtue-Farm-Optimizer.zip` and
-`update-manifest.json`. `scripts/package.py` creates both and verifies ZIP CRCs.
-They must describe the same stable version. The app checks the latest published,
-non-prerelease GitHub release. A new draft is invisible until both uploads finish.
+1. Increase the stable version in package.json and the root package-lock entries.
+2. Update release notes and the current audit; keep only that audit.
+3. Build and run checks appropriate to the change, review and commit the changes.
+4. Push the commit to main. No browser dispatch or separate tag is needed.
+5. Wait for Publish App Release to pass its Windows installation, restart and
+   rollback checks, publish both assets, and validate the public update feed.
 
-No password, access token, EID or account backup belongs in the app or repository.
-The workflow uses GitHub's built-in Actions token. Publishing access is separate
-from the app's unauthenticated public download access.
+Same-version package edits do not publish. Existing versions are never
+replaced; downgrades and mismatched tags are rejected. Publication is serialized,
+and each release tag points to the exact tested commit. Manual Run workflow
+with Verify Only remains available, and matching version tags also work.
 
-Current local evidence: PowerShell 7.6.6 and Chromium on Linux. The release workflow
-also runs core verification/install/rollback checks with Windows PowerShell on a
-Windows runner. A native Windows/browser update has not yet been run here.
+The two runtime assets are Egg-Inc-Virtue-Farm-Optimizer.zip and
+update-manifest.json. Downloadable ZIPs include the generated bundles and need
+no Node or Git installation. Users select Update App → Update & Restart.
+No game credentials or GitHub credentials are included in the app.
+
+The workflow uses GitHub's built-in repository-scoped Actions token with the
+existing contents:write permission. No new stored credential is required.

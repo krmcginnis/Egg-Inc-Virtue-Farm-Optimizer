@@ -8,7 +8,7 @@ Download [the latest app ZIP](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-
 
 ## Updates
 
-The current version is **v0.7.3**, renumbered from v1.7.0 with the same features. If you already installed a 1.x version, download and extract the current ZIP once; the updater does not install lower version numbers. Future 0.7.x releases update normally.
+The current version is **v0.7.4**, renumbered from v1.7.0 with the same features. If you already installed a 1.x version, download and extract the current ZIP once; the updater does not install lower version numbers. Future 0.7.x releases update normally.
 
 Use **Update App → Update & Restart** in the sidebar. Published ZIPs already point to this repository. Updates verify downloads, preserve your current inputs and timeline, and restore the previous app if installation or startup fails. Finish your search or import before updating.
 
@@ -16,6 +16,8 @@ Saved farms and plans stay on your PC. EID import uses a read-only unofficial Eg
 
 ## Development and publishing
 
-`npm ci` and `npm run build` rebuild the browser app. `python scripts/package.py` creates a verified ZIP and update manifest. The **Publish App Release** workflow builds and runs updater checks on Windows, then publishes both release assets together. Run it manually or push a version tag matching `package.json`. Increment the version for each release; existing versions are not overwritten.
+`npm ci` and `npm run build` rebuild the browser app. `python scripts/package.py` creates a verified ZIP and update manifest. A version increase in `package.json` pushed to **main** automatically runs **Publish App Release**. It builds on Windows, verifies installation/restart/rollback, publishes both assets together, and checks the public update feed. Same-version edits do not release, and existing releases are never overwritten. Manual verification and matching version tags remain available.
+
+Use a local Git checkout for development. Build before launching a source checkout; generated `app.js` and `worker-source.js` are kept out of commits. If terminal push is unavailable, `npm run prepare:publish` prepares the reviewed Git index for one atomic commit through the existing GitHub connection. See `AGENTS.md` and `GitHub-Setup.md`.
 
 The game model uses pinned Wasmegg data and reference code. Third-party notices and artwork credits are included. This project is not affiliated with or endorsed by Auxbrain. See `README.txt`, the current audit and `THIRD-PARTY-LICENSE.txt` for details.

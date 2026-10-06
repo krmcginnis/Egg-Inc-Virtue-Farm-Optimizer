@@ -1,0 +1,17 @@
+'use strict';
+const assert=require('node:assert/strict'),{compare,releaseDecision}=require('../scripts/release-state.cjs');
+const input={version:'0.7.4',previousVersion:'0.7.3',latestVersion:'0.7.3',existing:false,event:'push',refType:'branch',refName:'main'};
+assert.deepEqual(releaseDecision(input),{build:true,publish:true,reason:'New version will be published after Windows validation.'});
+assert.equal(releaseDecision({...input,version:'0.7.3'}).publish,false);
+assert.equal(releaseDecision({...input,existing:true}).publish,false);
+assert.equal(releaseDecision({...input,refName:'feature'}).publish,false);
+assert.throws(()=>releaseDecision({...input,version:'0.7.2'}),/increase/);
+assert.throws(()=>releaseDecision({...input,latestVersion:'0.8.0'}),/newer/);
+assert.throws(()=>releaseDecision({...input,event:'workflow_dispatch',existing:true}),/already/);
+assert.throws(()=>releaseDecision({...input,refType:'tag',refName:'v0.7.3'}),/tag/);
+assert.equal(releaseDecision({...input,previousVersion:null,latestVersion:null}).publish,true);
+assert.equal(releaseDecision({...input,refType:'tag',refName:'v0.7.4'}).publish,true);
+assert.deepEqual(releaseDecision({...input,verifyOnly:true,existing:true}),{build:true,publish:false,reason:'Verification only; no release will be created.'});
+for(const version of ['0.7.4-beta','01.7.4','0.7','0.7.4\n','9007199254740992.0.0'])assert.throws(()=>releaseDecision({...input,version}));
+assert.equal(compare('1.0.0','0.99.99'),1);assert.equal(compare('0.7.10','0.7.9'),1);
+console.log('PASS automatic version increases, same-version no-op, duplicate/downgrade guards, exact tags, verification-only mode and numeric versions.');

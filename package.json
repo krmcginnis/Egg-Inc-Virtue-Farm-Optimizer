@@ -1,13 +1,14 @@
 {
   "name": "egg-inc-virtue-farm-optimizer",
-  "version": "0.7.3",
+  "version": "0.7.4",
   "private": true,
   "description": "Egg Inc. Virtue Farm Optimizer",
   "scripts": {
     "build": "node scripts/build.cjs",
     "package": "npm run build && python3 scripts/package.py",
     "test": "node tests/update-core.cjs",
-    "test:updates": "node tests/update-core.cjs"
+    "test:updates": "node tests/update-core.cjs",
+    "prepare:publish": "node scripts/prepare-publish.cjs"
   },
   "devDependencies": {
     "esbuild": "0.28.2",

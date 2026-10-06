@@ -1,4 +1,4 @@
-EGG INC. VIRTUE FARM OPTIMIZER 0.7.3 — PC EDITION
+EGG INC. VIRTUE FARM OPTIMIZER 0.7.4 — PC EDITION
 
 GET STARTED
 1. Extract the entire ZIP; open the Egg-Inc-Virtue-Farm-Optimizer folder.
@@ -763,3 +763,7 @@ COMPACT EGG INC IMPORT (v0.7.3)
 The Egg Inc ID field and green import arrow are beside Start from Scratch.
 The loaded backup timestamp is visible below the toolbar; Import Details keeps
 additional notes. Press Enter in the ID field to load.
+
+AUTOMATIC RELEASES (v0.7.4)
+New versions are built and validated automatically when the app version increases
+on the main GitHub branch. Install them with Update App as before.

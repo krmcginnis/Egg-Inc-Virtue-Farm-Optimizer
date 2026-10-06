@@ -1,4 +1,4 @@
-# Egg Inc. Virtue Farm Optimizer v0.7.3 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.7.4 — Release Audit
 
 v1.6.2 fixes the PC launcher asset routes. The bundled images were present
 in v1.6.1, but Local-Helper.ps1 returned 404 for every assets/ URL. The
@@ -280,3 +280,21 @@ Solver and game data are unchanged; the worker SHA256 remains
 `2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.
 The standard release workflow also validates file installation, actual Windows
 helper restart, rollback and the public update feed before keeping a release live.
+
+
+## Local Git and automatic releases — v0.7.4
+
+A clean public Git checkout is now the development source. The generated app
+bundle is removed from tracked source; the release workflow builds it and the
+worker into the runtime ZIP. This reduces future source commits by about 4.4 MB.
+The staged-index publishing helper rejects private/unsupported paths and EIDs,
+retains local drafts and files, and prepares one atomic expected-head connector
+commit when terminal credentials are unavailable.
+
+Version increases on main trigger Windows validation and publishing without a
+browser dispatch. The release-intent gate skips same-version edits and duplicate
+pushes, rejects downgrades and mismatched tags, and preserves verification-only
+runs. Publication is serialized and tags the exact tested commit. Gate and
+publishing-plan tests passed. The standard Windows release checks remain required.
+Solver and game data are unchanged; the worker SHA256 remains
+`2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.

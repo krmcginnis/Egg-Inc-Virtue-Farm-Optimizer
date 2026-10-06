@@ -1,13 +1,18 @@
 name: Publish App Release
 on:
   push:
+    branches: [main]
     tags: ['v*']
+    paths: ['package.json']
   workflow_dispatch:
     inputs:
       verify_only:
         description: 'Run Windows checks without publishing a release'
         type: boolean
         default: false
+concurrency:
+  group: publish-app-release
+  cancel-in-progress: false
 permissions:
   contents: write
 jobs:
@@ -15,14 +20,31 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Determine release intent
+        id: intent
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_REPOSITORY: ${{ github.repository }}
+          RELEASE_EVENT: ${{ github.event_name }}
+          RELEASE_REF_TYPE: ${{ github.ref_type }}
+          RELEASE_REF_NAME: ${{ github.ref_name }}
+          RELEASE_BEFORE: ${{ github.event.before }}
+          RELEASE_VERIFY_ONLY: ${{ inputs.verify_only || false }}
+        run: node scripts/release-state.cjs
       - uses: actions/setup-node@v4
+        if: steps.intent.outputs.build == 'true'
         with:
           node-version: '22'
           cache: npm
       - uses: actions/setup-python@v5
+        if: steps.intent.outputs.build == 'true'
         with:
           python-version: '3.12'
       - name: Build and verify release
+        if: steps.intent.outputs.build == 'true'
         shell: pwsh
         env:
           RELEASE_REPOSITORY: ${{ github.repository }}
@@ -30,6 +52,10 @@ jobs:
           RELEASE_REF_NAME: ${{ github.ref_name }}
         run: |
           npm ci
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/release-state.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/prepare-publish.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
@@ -42,21 +68,22 @@ jobs:
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           if ($env:RELEASE_REF_TYPE -eq 'tag' -and $env:RELEASE_REF_NAME -cne "v$version") { throw 'Release tag must match package.json version.' }
       - name: Publish complete assets together
-        if: ${{ !inputs.verify_only }}
+        if: steps.intent.outputs.publish == 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
+          RELEASE_COMMIT: ${{ github.sha }}
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
           gh release view "v$version" *> $null
           if ($LASTEXITCODE -eq 0) { throw 'This version is already published. Increment the version before releasing.' }
-          gh release create "v$version" tmp/release/Egg-Inc-Virtue-Farm-Optimizer.zip tmp/release/update-manifest.json --title "Egg Inc. Virtue Farm Optimizer v$version" --notes-file RELEASE-NOTES.md --draft
+          gh release create "v$version" tmp/release/Egg-Inc-Virtue-Farm-Optimizer.zip tmp/release/update-manifest.json --target $env:RELEASE_COMMIT --title "Egg Inc. Virtue Farm Optimizer v$version" --notes-file RELEASE-NOTES.md --draft
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           gh release edit "v$version" --draft=false --latest
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Verify published update feed on Windows
-        if: ${{ !inputs.verify_only }}
+        if: steps.intent.outputs.publish == 'true'
         shell: powershell
         env:
           RELEASE_REPOSITORY: ${{ github.repository }}
@@ -69,7 +96,8 @@ jobs:
           [IO.Directory]::CreateDirectory($validation) | Out-Null
           try {
             $release = Get-UpdateRelease $env:RELEASE_REPOSITORY '0.0.0' $validation
-            if (-not $release.available) { throw 'The published release was not found by the updater.' }
+            $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+            if (-not $release.available -or $release.version -cne $version) { throw 'The published release was not found by the updater at the expected version.' }
             $archive = Join-Path $validation 'published.zip'
             Save-UpdateDownload $release.url $archive $release.size
             Expand-VerifiedUpdate $archive (Join-Path $validation 'verified') $release | Out-Null
