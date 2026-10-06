@@ -27,6 +27,7 @@ async function run(kind,index){
  manifest=refresh(app,manifest);fs.writeFileSync(path.join(app,'Update-Files.json'),JSON.stringify(manifest));
  const stage=path.join(dir,'next');fs.cpSync(app,stage,{recursive:true});const pkg=JSON.parse(fs.readFileSync(path.join(stage,'package.json')));pkg.version=next;fs.writeFileSync(path.join(stage,'package.json'),JSON.stringify(pkg));
  fs.renameSync(path.join(stage,`AUDIT-v${current}.md`),path.join(stage,`AUDIT-v${next}.md`));
+ fs.appendFileSync(path.join(stage,'app.js'),'\n// Isolated next-version fixture.\n');
  if(kind==='startup-failure')fs.writeFileSync(path.join(stage,'Local-Helper.ps1'),"throw 'Injected helper startup failure'\n");
  const updated=refresh(stage,{...manifest,version:next,files:manifest.files.map(f=>({...f,path:f.path===`AUDIT-v${current}.md`?`AUDIT-v${next}.md`:f.path}))});fs.writeFileSync(path.join(stage,'Update-Files.json'),JSON.stringify(updated));
  python('import zipfile,json,sys,pathlib; r=pathlib.Path(sys.argv[1]); m=json.loads((r/"Update-Files.json").read_text()); z=zipfile.ZipFile(sys.argv[2],"w",zipfile.ZIP_DEFLATED); [z.write(r/f,"Egg-Inc-Virtue-Farm-Optimizer/"+f) for f in [x["path"] for x in m["files"]]+["Update-Files.json","update-config.json"]]; z.close()',stage,archive);
@@ -35,6 +36,7 @@ async function run(kind,index){
  const helper=spawn(executable,['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(app,'Local-Helper.ps1'),'-NoBrowser','-Port',String(8780+index)],{env,cwd:app});let log='';helper.stdout.on('data',b=>log+=b);helper.stderr.on('data',b=>log+=b);helper.on('error',e=>log+=e);
  try{
   let health;const bootDeadline=Date.now()+15000;while(Date.now()<bootDeadline){try{health=await request(base,'health');break}catch{await pause(250)}}assert.equal(health?.version,current,'Initial helper failed: '+log);console.log(kind+': initial helper ready');
+  const duplicate=spawnSync(executable,['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(app,'Local-Helper.ps1'),'-NoBrowser','-Port',String(8780+index)],{env,encoding:'utf8',timeout:10000});assert.notEqual(duplicate.status,0,'A second app helper shared the live port');assert.match(duplicate.stderr,/Cannot open a local app port/);
   const session=await(await fetch(base+'/session.js')).text(),token=session.match(/'([a-f0-9]{32})'/)[1];
   assert.equal((await request(base,'check',{},token)).version,next);await request(base,'start',{version:next},token);
   console.log(kind+': download worker started');
