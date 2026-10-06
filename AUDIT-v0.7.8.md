@@ -355,3 +355,13 @@ the worker SHA256 remains
 `2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.
 The release workflow repeats native Windows install/restart/rollback and
 published feed verification before handover.
+
+
+## Research artwork publication — v0.7.8
+
+The v0.7.7 source passed Windows installation, restart and rollback checks in
+run 37484216147. The final anonymous public-feed request returned HTTP 403,
+so the existing publishing workflow held that release. This patch republishes
+the same research artwork and UI through the unchanged standard release
+process on a fresh Windows runner. No recovery workflow, updater code, solver
+code or game data was added or changed.

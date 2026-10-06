@@ -1,4 +1,4 @@
-# v0.7.7
+# v0.7.8
 
 - Added original game icons inline with all Common Research and Epic Research names.
 - Research names in the purchase summary, quick guide, and full breakdown also show the icons.

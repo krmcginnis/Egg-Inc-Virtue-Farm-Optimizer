@@ -1,4 +1,4 @@
-EGG INC. VIRTUE FARM OPTIMIZER 0.7.7 — PC EDITION
+EGG INC. VIRTUE FARM OPTIMIZER 0.7.8 — PC EDITION
 
 GET STARTED
 1. Extract the entire ZIP; open the Egg-Inc-Virtue-Farm-Optimizer folder.
