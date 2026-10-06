@@ -61,7 +61,7 @@
       "tierChecks": 20048,
       "colleggtibleSelections": 240,
       "shipChecks": 132,
-      "maxRelativeError": 1.784305611747559e-8,
+      "maxRelativeError": 1.784305611747559e-08,
       "maxHabRoundingDifference": 1,
       "roundingStates": 1,
       "passed": true,
@@ -91,7 +91,7 @@
       "Protobuf EID request and response round-trip, error handling",
       "Backup import finds Virtue farm, preserves per-Virtue ordering, artifact sockets and bonuses",
       "Optimizer reaches a single-Virtue TE target with zero switches and replay",
-      "Workbook 160→200 TE: complete feasible plan, switch budget, and full replay",
+      "Workbook 160\u2192200 TE: complete feasible plan, switch budget, and full replay",
       "Research-order scenario buys individual levels and improves target time over baseline",
       "Beam solver matches exhaustive optimum on a small research-order case"
     ],
@@ -155,8 +155,8 @@
   "automaticOwnedArtifactSets": {
     "exhaustiveDeliveryStates": 24,
     "earningsObjectives": [
-      "actual online income ÷ research cost multiplier",
-      "actual offline income ÷ research cost multiplier",
+      "actual online income \u00f7 research cost multiplier",
+      "actual offline income \u00f7 research cost multiplier",
       "actual income after common research is maxed"
     ],
     "ownedVirtueInventoryOnly": true,
@@ -205,7 +205,7 @@
     "noNewAPIRequest": true,
     "newLiveAccountRequest": false,
     "nativeWindowsTested": false,
-    "currentAudit": "AUDIT-v0.7.0.md",
+    "currentAudit": "AUDIT-v0.7.1.md",
     "olderAuditFilesIncluded": false,
     "responsiveWidths": [
       1440,
@@ -243,7 +243,9 @@
       "Official Egg Inc. logo beside the sidebar title, bundled offline",
       "Colleggtibles stacked into single rows with aligned inline selections",
       "Consistent field-label heights and vertically centered egg progress cells",
-      "Start date/time input displays and accepts year, month, day, hour and minute only"
+      "Start date/time input displays and accepts year, month, day, hour and minute only",
+      "Shorter farm-stat cards with desktop labels and values on the same row",
+      "Fuel tank display: whole T, one decimal B/M/K, whole amounts below 1000; underlying values retained"
     ],
     "wikiImages": 7,
     "officialGameImages": 13
@@ -314,11 +316,29 @@
       "publicFeedDownloadAndChecksums": "passed"
     }
   },
-  "currentVersion": "0.7.0",
+  "currentVersion": "0.7.1",
   "releaseRenumbering": {
     "version": "0.7.0",
     "previousVersion": "1.7.0",
     "solverUnchanged": true,
     "lowerVersionRequiresManualInstall": true
+  },
+  "compactFuelDisplay": {
+    "version": "0.7.1",
+    "notationAndUnitBoundaries": "passed",
+    "exactFocusBlurEditingAndRecovery": "passed",
+    "existingNumberFormatChecks": "passed",
+    "solverChanges": false,
+    "fullUiBatchReview": "deferred",
+    "syntheticAccountImportAndSaveLoad": "passed",
+    "compactLayoutWidths": [
+      1440,
+      1280,
+      800,
+      390,
+      320
+    ],
+    "horizontalOverflow": "none",
+    "workerSha256": "2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320"
   }
 }
