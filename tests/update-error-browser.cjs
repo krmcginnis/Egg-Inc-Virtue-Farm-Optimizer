@@ -1,0 +1,20 @@
+'use strict';
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright');
+const root=path.resolve(__dirname,'..'),version=require('../package.json').version;
+(async()=>{
+ let result={ok:false,version,message:'The update failed; the previous app was restored. Injected restart failure.'},checkError=false;
+ const server=http.createServer((req,res)=>{
+  if(req.url.startsWith('/api/update/')){res.setHeader('Content-Type','application/json');const route=req.url.split('/').pop();if(route==='acknowledge'){result=null;res.end('{"ok":true}');return}if(route==='check'&&checkError){res.writeHead(409);res.end(JSON.stringify({error:'Injected update check failure.'}));return}res.end(JSON.stringify({version,repository:'example/test',configured:true,available:false,pending:false,result}));return}
+  if(req.url==='/session.js'){res.setHeader('Content-Type','text/javascript');res.end("globalThis.VIRTUE_PROXY_TOKEN='test-token';");return}
+  const pathname=new URL(req.url,'http://localhost').pathname,file=path.join(root,pathname==='/'?'index.html':pathname);if(!file.startsWith(root)||!fs.existsSync(file)){res.writeHead(404);res.end();return}res.setHeader('Content-Type',file.endsWith('.js')?'text/javascript':file.endsWith('.css')?'text/css':'text/html');res.end(fs.readFileSync(file));
+ });await new Promise(r=>server.listen(8789,'127.0.0.1',r));let browser;
+ try{
+  browser=await chromium.launch({executablePath:process.env.CHROMIUM_EXECUTABLE,headless:true,args:['--no-sandbox','--disable-dev-shm-usage'],env:{...process.env,LD_LIBRARY_PATH:process.env.CHROMIUM_LIB_DIR||'',FONTCONFIG_PATH:process.env.CHROMIUM_FONT_DIR||''}});const context=await browser.newContext({permissions:['clipboard-read','clipboard-write']}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));await page.goto('http://127.0.0.1:8789');
+  await page.waitForFunction(()=>document.getElementById('update-dialog').open&&document.getElementById('update-error-text').textContent.includes('Injected restart failure'));
+  const failure=await page.locator('#update-error-text').innerText();await page.click('#update-copy-error');assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),failure);assert.equal(await page.locator('#update-error-text').innerText(),failure);
+  await page.click('#update-close');await page.evaluate(()=>VirtueApp.refresh());await page.reload();await page.waitForFunction(()=>!!globalThis.VirtueApp);await page.click('#update-app');await page.waitForFunction(()=>document.getElementById('update-status').textContent.includes('up to date'));assert.equal(await page.locator('#update-error-text').innerText(),failure);assert.ok(await page.locator('#update-error').isVisible());
+  await page.click('#update-check');await page.waitForFunction(()=>document.getElementById('update-error').hidden);checkError=true;await page.click('#update-check');await page.waitForFunction(()=>document.getElementById('update-error-text').textContent.includes('Injected update check failure'));await page.click('#update-close');await page.click('#update-app');await page.waitForFunction(()=>!document.getElementById('update-check').disabled);assert.match(await page.locator('#update-error-text').innerText(),/Injected update check failure/);assert.deepEqual(errors,[]);
+  console.log('PASS rollback failures stay in the dialog, error copy works, reload/reopen preserve details, and only an explicit retry clears them.');
+ }finally{if(browser)await browser.close();await new Promise(r=>server.close(r))}
+})().catch(e=>{console.error(e);process.exitCode=1});
