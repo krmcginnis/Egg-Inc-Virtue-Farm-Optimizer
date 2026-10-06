@@ -5,13 +5,12 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Update-Core.ps1')
 $statePath = Join-Path $JobRoot 'status.json'
 function Set-State([string]$State, [string]$Message) { Write-UpdateJson $statePath @{state=$State;message=$Message;updatedAt=[DateTime]::UtcNow.ToString('o')} }
-function Start-UpdatedHelper {
+function Start-UpdatedHelper([string]$Label) {
     $executable = (Get-Process -Id $PID).Path
     $scriptPath = Join-Path $AppRoot 'Local-Helper.ps1'
-    if ($env:OS -eq 'Windows_NT') {
-        return Start-Process -FilePath $executable -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File',('"' + $scriptPath + '"'),'-NoBrowser','-Port',"$Port") -PassThru
-    }
-    return Start-Process -FilePath $executable -ArgumentList @('-NoProfile','-File',('"' + $scriptPath + '"'),'-NoBrowser','-Port',"$Port") -PassThru -RedirectStandardOutput (Join-Path $JobRoot 'helper.log') -RedirectStandardError (Join-Path $JobRoot 'helper-error.log')
+    $options = @{FilePath=$executable;ArgumentList=@('-NoProfile','-ExecutionPolicy','Bypass','-File',('"' + $scriptPath + '"'),'-NoBrowser','-Port',"$Port");PassThru=$true;RedirectStandardError=(Join-Path $JobRoot ($Label + '-error.log'))}
+    if ($env:OS -ne 'Windows_NT') { $options.RedirectStandardOutput = Join-Path $JobRoot ($Label + '.log') }
+    return Start-Process @options
 }
 function Wait-UpdatedHelper([string]$Version) {
     $deadline = [DateTime]::UtcNow.AddSeconds(20)
@@ -45,8 +44,12 @@ try {
     try {
         Install-VerifiedUpdate $AppRoot $JobRoot
         $installed = $true
-        $newHelper = Start-UpdatedHelper
-        if (-not (Wait-UpdatedHelper $job.release.version)) { throw 'The updated app could not restart.' }
+        $newHelper = Start-UpdatedHelper 'new-helper'
+        if (-not (Wait-UpdatedHelper $job.release.version)) {
+            $details = ''; $log = Join-Path $JobRoot 'new-helper-error.log'
+            if (Test-Path -LiteralPath $log) { $details = [string](Get-Content -LiteralPath $log -Raw -ErrorAction SilentlyContinue); if ($details.Length -gt 3000) { $details = $details.Substring(0,3000) } }
+            throw ('The updated app could not restart. ' + $details.Trim())
+        }
         Write-UpdateJson (Join-Path $AppRoot '.update-result.json') @{ok=$true;version=$job.release.version;message="Updated to v$($job.release.version). Your farm and settings were kept."}
         Set-State 'complete' "Updated to v$($job.release.version)."
         # Keep the most recent backup only. Do not touch unrelated folders.
@@ -58,7 +61,7 @@ try {
         if ($newHelper -and -not $newHelper.HasExited) { Stop-Process -Id $newHelper.Id -Force -ErrorAction SilentlyContinue; $newHelper.WaitForExit(5000) | Out-Null }
         if ($installed) { Restore-UpdateBackup $AppRoot $JobRoot }
         Write-UpdateJson (Join-Path $AppRoot '.update-result.json') @{ok=$false;version=$oldVersion;message="The update failed; the previous app was restored. $failure"}
-        $restored = Start-UpdatedHelper
+        $restored = Start-UpdatedHelper 'restored-helper'
         Set-State 'failed' "The update failed; the previous app was restored. $failure"
         if (-not (Wait-UpdatedHelper $oldVersion)) { throw 'Close this window and launch Start-Virtue-Optimizer.cmd again. Your previous app files and farm data are retained.' }
     }
