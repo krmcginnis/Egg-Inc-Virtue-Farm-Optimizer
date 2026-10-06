@@ -1,4 +1,4 @@
-EGG INC. VIRTUE FARM OPTIMIZER 0.7.1 — PC EDITION
+EGG INC. VIRTUE FARM OPTIMIZER 0.7.2 — PC EDITION
 
 GET STARTED
 1. Extract the entire ZIP; open the Egg-Inc-Virtue-Farm-Optimizer folder.
@@ -751,3 +751,10 @@ ARCHIVE COMPLETION FIX — v1.6.3
 - This release retains the latest UI edits and the unchanged solver.
 - If a previous extraction reported a data error, extract this new ZIP into
   a fresh folder rather than running files from the incomplete extraction.
+
+UPDATE ERROR RECOVERY (v0.7.2)
+Update errors stay visible in Update App. Copy Error copies the complete message.
+Check Again clears the previous error for a retry. If a v0.7.0/v0.7.1 update fails,
+save your farm, close the launcher, and extract the release ZIP into your existing
+app folder, replacing app files. Launch Start-Virtue-Optimizer.cmd again. Farm
+JSON files are not removed. Future updates use the button.
