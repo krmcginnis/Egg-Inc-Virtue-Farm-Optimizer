@@ -205,7 +205,7 @@
     "noNewAPIRequest": true,
     "newLiveAccountRequest": false,
     "nativeWindowsTested": false,
-    "currentAudit": "AUDIT-v0.7.1.md",
+    "currentAudit": "AUDIT-v0.7.2.md",
     "olderAuditFilesIncluded": false,
     "responsiveWidths": [
       1440,
@@ -316,7 +316,7 @@
       "publicFeedDownloadAndChecksums": "passed"
     }
   },
-  "currentVersion": "0.7.1",
+  "currentVersion": "0.7.2",
   "releaseRenumbering": {
     "version": "0.7.0",
     "previousVersion": "1.7.0",
@@ -340,5 +340,11 @@
     ],
     "horizontalOverflow": "none",
     "workerSha256": "2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320"
+  },
+  "updateFailureHandling": {
+    "version": "0.7.2",
+    "windowsRestartReproduction": "reproduced before fix",
+    "persistentErrorCopyReloadAndRetry": "passed",
+    "solverChanges": false
   }
 }
