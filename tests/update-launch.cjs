@@ -21,6 +21,7 @@ async function run(kind,index){
  python('import zipfile,sys,pathlib,shutil; z=zipfile.ZipFile(sys.argv[1]); z.extractall(sys.argv[2]); shutil.move(str(pathlib.Path(sys.argv[2])/"Egg-Inc-Virtue-Farm-Optimizer"),sys.argv[3])',path.join(root,'tmp/release/Egg-Inc-Virtue-Farm-Optimizer.zip'),dir,app);
  const releasePath=path.join(dir,'release.json'),archive=path.join(dir,'release.zip');
  fs.appendFileSync(path.join(app,'Update-Core.ps1'),`\n# Isolated test-only network replacements.\nfunction Get-UpdateRelease { param($Repository,$CurrentVersion,$TemporaryDirectory); return (Read-UpdateJson ${quote(releasePath)}) }\nfunction Save-UpdateDownload { param($Url,$Path,$Limit); [IO.File]::Copy(${quote(archive)},$Path,$true) }\n`);
+ const hostScript=path.join(app,'Local-Helper.ps1');fs.writeFileSync(hostScript,fs.readFileSync(hostScript,'utf8').replace('$client = $listener.AcceptTcpClient()',"$client = $listener.AcceptTcpClient(); Write-Host 'TEST accepted connection'").replace("$path = $first[1].Split('?')[0]","$path = $first[1].Split('?')[0]; Write-Host ('TEST request ' + $method + ' ' + $path)"));
  fs.writeFileSync(path.join(app,'update-config.json'),JSON.stringify({repository:'example/update-test'}));fs.writeFileSync(path.join(app,'my-farm.json'),'private test farm');
  let manifest=JSON.parse(fs.readFileSync(path.join(app,'Update-Files.json')));
  const refresh=(where,m)=>({...m,files:m.files.map(f=>{const bytes=fs.readFileSync(path.join(where,f.path));return {...f,size:bytes.length,sha256:hash(bytes)};})});
