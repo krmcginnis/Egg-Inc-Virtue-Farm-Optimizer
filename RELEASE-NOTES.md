@@ -1,10 +1,8 @@
-# v0.7.0
+# v0.7.1
 
-- Renumbered the current app from v1.7.0 to v0.7.0.
-- All planning, account import, artwork and updater features are retained.
+- Reduced the height of the four farm-stat cards; desktop values sit beside their labels.
+- Fuel tank amounts, capacity, output and stored totals use whole T, one decimal for B/M/K, and whole numbers below 1,000.
+- Exact fuel amounts remain in calculations, saved farms and recovery. Selecting an editable fuel field shows the full amount.
 - Solver calculations and game data are unchanged.
 
-If you already installed a 1.x version, download and extract this ZIP once.
-The updater deliberately does not install lower version numbers. From v0.7.0,
-future published 0.7.x versions can be installed through Update App.
-Published ZIPs already use this repository as their update source.
+Install through Update App → Update & Restart from v0.7.0. Existing 1.x installations need the ZIP once to adopt the new version numbering.
