@@ -61,7 +61,7 @@
       "tierChecks": 20048,
       "colleggtibleSelections": 240,
       "shipChecks": 132,
-      "maxRelativeError": 1.784305611747559e-08,
+      "maxRelativeError": 1.784305611747559e-8,
       "maxHabRoundingDifference": 1,
       "roundingStates": 1,
       "passed": true,
@@ -91,7 +91,7 @@
       "Protobuf EID request and response round-trip, error handling",
       "Backup import finds Virtue farm, preserves per-Virtue ordering, artifact sockets and bonuses",
       "Optimizer reaches a single-Virtue TE target with zero switches and replay",
-      "Workbook 160\u2192200 TE: complete feasible plan, switch budget, and full replay",
+      "Workbook 160→200 TE: complete feasible plan, switch budget, and full replay",
       "Research-order scenario buys individual levels and improves target time over baseline",
       "Beam solver matches exhaustive optimum on a small research-order case"
     ],
@@ -155,8 +155,8 @@
   "automaticOwnedArtifactSets": {
     "exhaustiveDeliveryStates": 24,
     "earningsObjectives": [
-      "actual online income \u00f7 research cost multiplier",
-      "actual offline income \u00f7 research cost multiplier",
+      "actual online income ÷ research cost multiplier",
+      "actual offline income ÷ research cost multiplier",
       "actual income after common research is maxed"
     ],
     "ownedVirtueInventoryOnly": true,
@@ -205,7 +205,7 @@
     "noNewAPIRequest": true,
     "newLiveAccountRequest": false,
     "nativeWindowsTested": false,
-    "currentAudit": "AUDIT-v1.6.1.md",
+    "currentAudit": "AUDIT-v0.7.0.md",
     "olderAuditFilesIncluded": false,
     "responsiveWidths": [
       1440,
@@ -303,7 +303,22 @@
     "runtime": "PowerShell 7.6.6 and headless Chromium on Linux; native Windows PowerShell 5.1/browser not run locally",
     "solverWorkerSha256": "2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320",
     "solverUnchanged": true,
-    "githubPublishing": "prepared workflow; repository not yet connected; no publishing tools exposed in session",
-    "fullUIBatchValidation": "deferred per user request"
+    "githubPublishing": "Public repository connected; v1.7.0 published and verified by GitHub Actions run 37400731948.",
+    "fullUIBatchValidation": "deferred per user request",
+    "nativeWindows": {
+      "version": "1.7.0",
+      "run": 37400731948,
+      "job": 112067108505,
+      "powerShell": "5.1.26100.33438",
+      "core": "passed",
+      "publicFeedDownloadAndChecksums": "passed"
+    }
+  },
+  "currentVersion": "0.7.0",
+  "releaseRenumbering": {
+    "version": "0.7.0",
+    "previousVersion": "1.7.0",
+    "solverUnchanged": true,
+    "lowerVersionRequiresManualInstall": true
   }
 }
