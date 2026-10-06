@@ -2,12 +2,29 @@
 const VERSION = require('./version.cjs');
 const Recovery = require('./session-recovery.cjs');
 const HANDOFF = 'virtue-optimizer.update-session.v1';
+const LAST_ERROR = 'virtue-optimizer.update-error.v1';
 function initialize({isBusy, capture, restore}) {
   const $ = id => document.getElementById(id);
   const dialog = $('update-dialog'), status = $('update-status'), install = $('update-install'), check = $('update-check');
   let release = null, updating = false, checking = false;
+  let lastError = '';
+  try { lastError = localStorage.getItem(LAST_ERROR) || ''; } catch { }
   const local = location.protocol === 'http:' && location.hostname === '127.0.0.1' && Number(location.port) >= 8765 && Number(location.port) <= 8790 && !!globalThis.VIRTUE_PROXY_TOKEN;
-  const message = (text, error = false) => { status.textContent = text; status.classList.toggle('error', error); };
+  function errorDetails() {
+    $('update-error').hidden = !lastError;
+    $('update-error-text').textContent = lastError;
+  }
+  const message = (text, error = false) => {
+    status.textContent = text; status.classList.toggle('error', error);
+    status.setAttribute('role', error ? 'alert' : 'status');
+    status.setAttribute('aria-live', error ? 'assertive' : 'polite');
+    if (error) {
+      lastError = text;
+      try { localStorage.setItem(LAST_ERROR, text); } catch { }
+      errorDetails();
+    }
+  };
+  function clearError() { lastError = ''; try { localStorage.removeItem(LAST_ERROR); } catch { } errorDetails(); }
   function controls() {
     check.disabled = checking || updating || !local;
     install.disabled = !release || checking || updating || isBusy();
@@ -57,9 +74,13 @@ function initialize({isBusy, capture, restore}) {
     if (!local) message('Launch Start-Virtue-Optimizer.cmd to use Update App. Your offline farm files can still be loaded there.');
     else checkRelease();
   };
-  $('update-close').onclick = () => dialog.close();
+  $('update-close').onclick = () => { dialog.close(); if (local) api('acknowledge', {}).catch(() => {}); };
   dialog.addEventListener('cancel', event => { if (updating) event.preventDefault(); });
-  check.onclick = checkRelease;
+  check.onclick = () => { clearError(); checkRelease(); };
+  $('update-copy-error').onclick = async () => {
+    try { await navigator.clipboard.writeText(lastError); message('Error copied.'); }
+    catch { message('Select the error details below and copy them.'); }
+  };
   $('update-configure').onclick = async () => {
     if (checking || updating) return;
     checking = true; controls();
@@ -116,6 +137,7 @@ function initialize({isBusy, capture, restore}) {
     } finally { updating = false; controls(); }
   };
   controls();
+  errorDetails();
   if (local) {
     (async () => {
       let state = await api('health');
@@ -128,9 +150,12 @@ function initialize({isBusy, capture, restore}) {
         try { restore(saved.snapshot, state.result?.message || 'Your session was restored after updating the app.'); localStorage.removeItem(HANDOFF); }
         catch { message('Your preserved session is still available. Restart the app or load your saved farm.', true); }
       }
-      if (state.result) api('acknowledge', {}).catch(() => {});
+      if (state.result?.ok === false) {
+        // Keep restart/rollback failures visible independently of farm notices.
+        dialog.showModal(); message(state.result.message, true); controls();
+      } else if (state.result) api('acknowledge', {}).catch(() => {});
     })().catch(() => {});
   }
   return {active:() => updating};
 }
-module.exports = {initialize, HANDOFF};
+module.exports = {initialize, HANDOFF, LAST_ERROR};
