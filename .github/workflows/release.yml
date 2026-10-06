@@ -10,32 +10,6 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Import prepared source on the first run
-        shell: pwsh
-        run: |
-          if (Test-Path -LiteralPath 'bootstrap') {
-            $chunks = @(Get-ChildItem -LiteralPath 'bootstrap' -Filter 'source-*.b64' | Sort-Object Name)
-            $encoded = ($chunks | ForEach-Object { Get-Content -LiteralPath $_.FullName -Raw }) -join ''
-            [IO.File]::WriteAllBytes((Join-Path (Get-Location) 'source-bootstrap.zip'), [Convert]::FromBase64String($encoded))
-          }
-          if (Test-Path -LiteralPath 'source-bootstrap.zip') {
-            if ((Get-FileHash -LiteralPath 'source-bootstrap.zip' -Algorithm SHA256).Hash.ToLowerInvariant() -ne 'b70dd37c3f69a4b7e817f462df3ecbe8671484358755f479969eed97422976d1') { throw 'Prepared source checksum mismatch.' }
-            $destination = Join-Path $env:RUNNER_TEMP 'virtue-bootstrap'
-            Expand-Archive -LiteralPath 'source-bootstrap.zip' -DestinationPath $destination
-            foreach ($item in (Get-ChildItem -LiteralPath $destination -Force)) {
-              if ($item.Name -in @('.github','app.js','worker-source.js','update-config.json')) { continue }
-              Copy-Item -LiteralPath $item.FullName -Destination . -Recurse -Force
-            }
-            Remove-Item -LiteralPath 'source-bootstrap.zip'
-            if (Test-Path -LiteralPath 'bootstrap') { Remove-Item -LiteralPath 'bootstrap' -Recurse -Force }
-            git config user.name 'github-actions[bot]'
-            git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-            git add --all
-            git commit -m 'Import curated optimizer source and artwork'
-            if ($LASTEXITCODE) { exit $LASTEXITCODE }
-            git push origin HEAD:main
-            if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          }
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
