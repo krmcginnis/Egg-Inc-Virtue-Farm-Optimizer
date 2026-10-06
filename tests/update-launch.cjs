@@ -13,9 +13,10 @@ const pause=ms=>new Promise(r=>setTimeout(r,ms));
 const current=JSON.parse(fs.readFileSync(path.join(root,'package.json'))).version;
 const parts=current.split('.').map(Number);parts[2]++;const next=parts.join('.');
 function python(code,...args){const r=spawnSync(process.platform==='win32'?'python':'python3',['-c',code,...args],{encoding:'utf8'});if(r.status!==0)throw Error(r.stderr||String(r.error));}
-async function request(base,route,body,token){const response=await fetch(base+'/api/update/'+route,{signal:AbortSignal.timeout(20000),...(body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-Virtue-Token':token},body:JSON.stringify(body)})});const data=await response.json();if(!response.ok)throw Error(data.error||JSON.stringify(data));return data;}
+async function request(base,route,body,token){const response=await fetch(base+'/api/update/'+route,{signal:AbortSignal.timeout(route==='health'?1000:5000),...(body===undefined?{}:{method:'POST',headers:{'Content-Type':'application/json','X-Virtue-Token':token},body:JSON.stringify(body)})});const data=await response.json();if(!response.ok)throw Error(data.error||JSON.stringify(data));return data;}
 function cleanup(app){const target=path.join(app,'Local-Helper.ps1');if(process.platform==='win32'){spawnSync(executable,['-NoProfile','-Command',`$target=${quote(target)}; Get-CimInstance Win32_Process | Where-Object {$_.CommandLine -and $_.CommandLine.Contains($target) -and $_.ProcessId -ne $PID} | ForEach-Object {Stop-Process -Id $_.ProcessId -Force}`],{env});}else{const r=spawnSync('ps',['-eo','pid,args'],{encoding:'utf8'});for(const line of r.stdout.split('\n'))if(line.includes(target)){try{process.kill(Number(line.trim().split(/\s+/)[0]));}catch{}}}}
 async function run(kind,index){
+ console.log('START native update launch fixture: '+kind);
  const dir=path.join(testRoot,kind);fs.mkdirSync(dir);const app=path.join(dir,'installed app with spaces');
  python('import zipfile,sys,pathlib,shutil; z=zipfile.ZipFile(sys.argv[1]); z.extractall(sys.argv[2]); shutil.move(str(pathlib.Path(sys.argv[2])/"Egg-Inc-Virtue-Farm-Optimizer"),sys.argv[3])',path.join(root,'tmp/release/Egg-Inc-Virtue-Farm-Optimizer.zip'),dir,app);
  const releasePath=path.join(dir,'release.json'),archive=path.join(dir,'release.zip');
@@ -33,17 +34,19 @@ async function run(kind,index){
  const base='http://127.0.0.1:'+(8780+index),before=hash(fs.readFileSync(path.join(app,'app.js')));
  const helper=spawn(executable,['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(app,'Local-Helper.ps1'),'-NoBrowser','-Port',String(8780+index)],{env,cwd:app});let log='';helper.stdout.on('data',b=>log+=b);helper.stderr.on('data',b=>log+=b);helper.on('error',e=>log+=e);
  try{
-  let health;for(let i=0;i<60;i++){try{health=await request(base,'health');break}catch{await pause(250)}}assert.equal(health?.version,current,'Initial helper failed: '+log);
+  let health;const bootDeadline=Date.now()+15000;while(Date.now()<bootDeadline){try{health=await request(base,'health');break}catch{await pause(250)}}assert.equal(health?.version,current,'Initial helper failed: '+log);console.log(kind+': initial helper ready');
   const session=await(await fetch(base+'/session.js')).text(),token=session.match(/'([a-f0-9]{32})'/)[1];
   assert.equal((await request(base,'check',{},token)).version,next);await request(base,'start',{version:next},token);
+  console.log(kind+': download worker started');
   let state;for(let i=0;i<90;i++){state=await request(base,'status');if(['ready','failed'].includes(state.job?.state))break;await pause(250)}assert.equal(state.job?.state,'ready',JSON.stringify(state));
   await request(base,'install',{},token);
-  for(let i=0;i<180;i++){try{state=await request(base,'health');if(state.result&&!state.pending)break}catch{}await pause(300)}
+  console.log(kind+': install worker started');const restartDeadline=Date.now()+60000;
+  while(Date.now()<restartDeadline){try{state=await request(base,'health');if(state.result&&!state.pending)break}catch{}await pause(300)}
   assert.ok(state?.result,'Update did not finish: '+JSON.stringify(state));assert.equal(state.result.ok,kind==='success',JSON.stringify(state));assert.equal(state.version,kind==='success'?next:current,JSON.stringify(state));
   assert.equal(fs.readFileSync(path.join(app,'my-farm.json'),'utf8'),'private test farm');assert.equal(JSON.parse(fs.readFileSync(path.join(app,'update-config.json'))).repository,'example/update-test');
   if(kind==='startup-failure')assert.equal(hash(fs.readFileSync(path.join(app,'app.js'))),before);
   console.log('PASS native helper/worker '+kind+': launch, verification, stop, restart and retained farm/source.');
- }catch(error){console.error('Fixture diagnostics:',dir,log);for(const name of fs.readdirSync(path.join(app,'.updates')).filter(n=>n.startsWith('job-'))){const job=path.join(app,'.updates',name);for(const file of fs.readdirSync(job).filter(n=>/\.log$|status\.json$/.test(n)))console.error(file,fs.readFileSync(path.join(job,file),'utf8'));}throw error;}
+ }catch(error){console.error('Fixture diagnostics:',dir,log);const resultPath=path.join(app,'.update-result.json');if(fs.existsSync(resultPath))console.error('Update result:',fs.readFileSync(resultPath,'utf8'));const jobs=path.join(app,'.updates');if(fs.existsSync(jobs))for(const name of fs.readdirSync(jobs).filter(n=>n.startsWith('job-'))){const job=path.join(jobs,name);for(const file of fs.readdirSync(job).filter(n=>/\.log$|status\.json$/.test(n)))console.error(file,fs.readFileSync(path.join(job,file),'utf8'));}throw error;}
  finally{helper.kill();cleanup(app);}
 }
 (async()=>{await run('success',0);await run('startup-failure',1);})().catch(e=>{console.error(e);process.exitCode=1});
