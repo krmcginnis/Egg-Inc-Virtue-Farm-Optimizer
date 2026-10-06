@@ -60,7 +60,7 @@ const slot = (artifactId, ...stones) => ({ artifactId, stones });
     const automatic = structuredClone(farm); automatic.farm.manualFarmData = false;
     automatic.farm.artifactInventory = [...loadout.map(x => ({ id: x.artifactId, kind: "artifact", quantity: 1, stones: x.stones.filter(Boolean) })), { id: "quantum-stone-4", kind: "stone", quantity: 6 }, { id: "tachyon-stone-4", kind: "stone", quantity: 6 }, { id: "interstellar-compass-4-3", kind: "artifact", quantity: 1, stones: [] }, { id: "quantum-metronome-4-3", kind: "artifact", quantity: 1, stones: [] }, { id: "ornate-gusset-4-3", kind: "artifact", quantity: 1, stones: [] }];
     await load(page, automatic); await images(page);
-    assert.match(await page.locator("#earnings-set-note").innerText(), /Automatic/);
+    assert.equal(await page.locator("#earnings-set-source").innerText(), "Starting Farm Preview");
     const selected = await page.evaluate(() => VirtueApp.getConfig());
     for (const key of ["earnings", "delivery"]) for (let i = 0; i < 4; i++) assert.equal(await page.locator(`#loadout-card-${key}-${i}`).getAttribute("data-artifact-id"), selected.farm.loadouts[key][i]?.artifactId || "");
     await load(page, savedBefore); await images(page);

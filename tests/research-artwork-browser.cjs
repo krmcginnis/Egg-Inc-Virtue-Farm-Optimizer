@@ -37,7 +37,7 @@ const root = path.resolve(__dirname, "..");
     await page.fill("#research-filter", ""); await page.getByLabel(S.D.research[0].name + " current level", { exact: true }).fill("2"); await page.evaluate(() => VirtueApp.refresh());
     assert.equal((await page.evaluate(() => VirtueApp.getConfig())).farm.research[S.D.research[0].id], 2);
     await page.uncheck("#manualFarmResearch"); assert.ok(await page.locator("#research-" + S.D.research[0].id).isDisabled()); assert.ok(await page.locator("#research-body .research-icon").first().isVisible());
-    await page.click('[data-tab="farm"]'); await page.uncheck("#manualAccountData"); assert.ok(await page.locator("#epic-hold_to_hatch").isDisabled()); assert.ok(await page.locator("#epic-fields .research-icon").first().isVisible());
+    await page.click('[data-tab="farm"]'); await page.uncheck("#manualAccountData"); assert.ok(await page.locator("#epic-hold_to_hatch").isDisabled()); await page.locator("#epic-details>summary").click(); assert.ok(await page.locator("#epic-fields .research-icon").first().isVisible());
     // A small replayed plan exercises all three timeline layers without a search.
     const initial = S.prepare(farm); let state = initial.s;
     state = S.buy(state, initial.c, { type: "research", i: 0 }); state = S.buy(state, initial.c, { type: "research", i: 0 });

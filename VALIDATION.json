@@ -205,7 +205,7 @@
     "noNewAPIRequest": true,
     "newLiveAccountRequest": false,
     "nativeWindowsTested": false,
-    "currentAudit": "AUDIT-v0.7.8.md",
+    "currentAudit": "AUDIT-v0.7.9.md",
     "olderAuditFilesIncluded": false,
     "responsiveWidths": [
       1440,
@@ -316,7 +316,7 @@
       "publicFeedDownloadAndChecksums": "passed"
     }
   },
-  "currentVersion": "0.7.8",
+  "currentVersion": "0.7.9",
   "releaseRenumbering": {
     "version": "0.7.0",
     "previousVersion": "1.7.0",
@@ -438,5 +438,15 @@
     "previousRun": 37484216147,
     "releaseWorkflowUnchanged": true,
     "researchArtworkAndUIUnchanged": true
+  },
+  "planningClarity": {
+    "version": "0.7.9",
+    "targetedBrowserChecks": "passed",
+    "solverChanges": false,
+    "workerSHA256": "2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320",
+    "exactSavedValuesRetained": true,
+    "uiProvenanceMetadataOnly": true,
+    "test": "tests/planning-clarity-browser.cjs",
+    "artworkRegressionChecks": "passed"
   }
 }

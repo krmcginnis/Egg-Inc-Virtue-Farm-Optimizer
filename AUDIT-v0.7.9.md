@@ -1,4 +1,4 @@
-# Egg Inc. Virtue Farm Optimizer v0.7.5 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.7.9 — Release Audit
 
 v1.6.2 fixes the PC launcher asset routes. The bundled images were present
 in v1.6.1, but Local-Helper.ps1 returned 404 for every assets/ URL. The
@@ -365,3 +365,41 @@ so the existing publishing workflow held that release. This patch republishes
 the same research artwork and UI through the unchanged standard release
 process on a fresh Windows runner. No recovery workflow, updater code, solver
 code or game data was added or changed.
+
+
+## Account clarity and planning feedback — v0.7.9
+
+Epic Research and Colleggtibles display concise summaries with keyboard-operable
+native disclosure controls. Their existing fields, artwork, exact values and
+account edit locks remain intact. Enabling manual account editing opens the
+fields; disabling it restores their previous disclosure state without discarding
+edits. Epic Research inputs validate against the same maximum shown in the UI.
+
+Source labels distinguish imported backups, retained farms when no active
+Virtue farm was found, unresolved Colleggtible records, manual editing, and
+edited-and-locked values. Small optional uiProvenance metadata preserves manual
+source labels through farm saves and browser recovery. Next-ascension inputs
+are labeled as projections from the completed plan. Reimport clears it for
+refreshed groups while retaining it for a retained farm or unresolved tiers.
+Artifact cards distinguish starting-farm previews from delivery recommendations
+for the last completed plan; changes to planning inputs invalidate that label.
+
+A search status card uses existing worker events for the latest stage, completed
+opening comparisons, elapsed seconds and best complete plan. Routing remains
+indeterminate because it cannot provide an accurate percentage. Search failures
+keep their original message and add links to the relevant input or a retry.
+Review opens closed details and focuses the edit toggle when an imported field
+is locked. Generic failed heuristic searches do not claim impossibility; existing
+optimistic production bounds remain distinguished. Previous timelines and frozen
+run inputs retain their existing safeguards.
+
+Targeted browser checks cover real synthetic backup imports, retained-farm and
+missing-contract labels, summary counts and multiplicative bonuses, keyboard
+disclosures, manual edits and locks, exact saved values, linked field errors,
+worker progress and cancellation, a real replayed worker plan, offline display,
+and layouts from 1440 to 320 pixels. Artifact and research artwork checks are
+also repeated after the presentation changes. No solver or game-data source was
+changed. The generated worker SHA256 remains:
+`2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.
+The unchanged release workflow requires native Windows install/restart/rollback
+and public-feed checksum verification before handover.

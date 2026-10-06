@@ -108,6 +108,8 @@ function clearFieldError() {
   $("field-error")?.remove();
   invalidField = null;
   $("review-inputs").hidden = true;
+  $("planning-guidance").hidden = true;
+  delete $("review-inputs").dataset.field;
 }
 function validationField(error) {
   if (error.fieldId) return error.fieldId;
@@ -122,8 +124,69 @@ function validationField(error) {
       if (family) seen.add(family);
     }
   }
-  for (const [test, id] of [[/Per-Virtue minimums/, "target"], [/Silos/, "silos"], [/Maximum.*switch|switch.*budget|unreachable|sequence|before H|Humility visit/i, "maxSwitches"], [/Tank capacity|tank capacity|fuel.*capacity/i, "tankCapacity"], [/start date|timestamp/i, "start"]]) if (test.test(message)) return id;
+  for (const [test, id] of [
+    [/Soul Eggs|next switch costs/i, "soulEggs"],
+    [/All Epic Research levels are zero/i, "epic-hold_to_hatch"],
+    [/Per-Virtue minimums/i, "target"], [/Silos/i, "silos"],
+    [/Maximum.*switch|switch.*budget/i, "maxSwitches"],
+    [/sequence|before H|Humility visit|unreachable/i, $("strategy").value === "user" ? "sequence" : "maxSwitches"],
+    [/Tank capacity|fuel.*capacity/i, "tankCapacity"],
+    [/start date|timestamp/i, "start"]
+  ]) if (test.test(message)) return id;
   return null;
+}
+function showPlanningGuidance(message, fromSearch = false, inputsChanged = false) {
+  const field = validationField({message}) || (!fromSearch ? invalidField : null);
+  let targets, detail;
+  const workerFailure = /Planner worker failed|Could not start the planner/i.test(message);
+  if (workerFailure) {
+    detail = "Try the search again. If the worker keeps failing, reopen the app using the Windows launcher. Your inputs are retained.";
+    targets = [];
+  } else if (/Soul Eggs|next switch costs/i.test(message)) {
+    detail = "Check your Soul Eggs and previous switches. Switch costs use both values.";
+    targets = [["soulEggs", "Review Soul Eggs"], ["shiftCount", "Review Previous Switches"]];
+  } else if (/All Epic Research levels are zero/i.test(message)) {
+    detail = "Load your account data or enter owned Epic Research. These upgrades also apply to a fresh Virtue farm.";
+    targets = [["epic-hold_to_hatch", "Review Epic Research"], ["maxDays", "Review Planning Days"]];
+  } else if (/fuel|tank/i.test(message)) {
+    detail = "Review stored fuel, tank capacity, and the planned missions for each Humility visit.";
+    targets = [[field || "tankCapacity", "Review Fuel Inputs"], ["shipSlots", "Review Planned Ships"]];
+  } else if (/mission|launch count/i.test(message)) {
+    detail = "Review the mission slots and launch counts for each Humility visit.";
+    targets = [[field || "shipSlots", "Review Planned Ships"]];
+  } else if (/sequence|switch.*budget|Maximum.*switch|unreachable/i.test(message)) {
+    detail = "Check the switch limit and visit order. A user sequence may be truncated by the maximum number of new switches.";
+    targets = [[field || "maxSwitches", "Review Switch Settings"]];
+  } else if (/no egg production/i.test(message)) {
+    detail = "Review the starting habs and vehicles. A fresh farm uses the free Coop, Trike, and one silo.";
+    targets = [["hab-0", "Review Habitats"], ["vehicle-0", "Review Shipping Fleet"]];
+  } else if (fromSearch) {
+    detail = /^Under the entered farm settings/.test(message) ? "Review the imported values, increase planning days, or lower the target. This limit was checked with an optimistic production estimate." : "No complete plan was found within these limits. Review planning days and switch limits" + ($("strategy").value === "wasmegg" ? "." : ", or try a larger additional search budget.") + " A failed heuristic search does not prove the goal is impossible.";
+    targets = [["maxDays", "Review Planning Days"], ["maxSwitches", "Review Switch Limit"]];
+    if ($("strategy").value !== "wasmegg") targets.push(["effort", "Review Search Budget"]);
+  } else {
+    detail = "Correct the marked value, then try planning again. Your other inputs are retained.";
+    targets = [[field, "Review Input"]];
+  }
+  $("planning-guidance-heading").textContent = fromSearch ? "Search Needs Attention" : "Review Planning Inputs";
+  $("planning-guidance-detail").textContent = (inputsChanged ? "This message applies to the inputs at the start of the search. " : "") + detail;
+  const actions = $("planning-guidance-actions");
+  actions.replaceChildren();
+  for (const [id, label] of targets) if (id && $(id)) {
+    const button = el("button", label, "secondary");
+    button.type = "button";
+    button.onclick = () => reviewField(id);
+    actions.append(button);
+  }
+  if (workerFailure) {
+    const retry = el("button", "Try Search Again", "secondary");
+    retry.type = "button";
+    retry.onclick = optimize;
+    actions.append(retry);
+  }
+  $("review-inputs").dataset.field = targets.find(([id]) => id && $(id))?.[0] || "";
+  $("review-inputs").hidden = workerFailure;
+  $("planning-guidance").hidden = false;
 }
 function fieldError(error) {
   clearFieldError();
@@ -140,10 +203,12 @@ function fieldError(error) {
   $("run-summary").textContent = worker ? "Searching · Check Changed Inputs" : "Check Your Inputs";
   if (!worker) $("run-detail").textContent = error.message;
   show(error.message, true);
+  showPlanningGuidance(error.message);
 }
-function reviewInputs() {
-  const node = $(invalidField);
+function reviewField(id) {
+  const node = $(id);
   tab(node?.closest("[data-page]")?.dataset.page || "farm");
+  for (let parent = node?.parentElement; parent; parent = parent.parentElement) if (parent.tagName === "DETAILS") parent.open = true;
   if (node?.closest("tr")?.hidden) { $("research-filter").value = ""; filterResearch(); }
   if (node) {
     const fields = node.closest(".account-value-fields"), toggles = fields?.disabled ? [...document.querySelectorAll('[aria-controls~="' + fields.id + '"]')] : [];
@@ -154,9 +219,11 @@ function reviewInputs() {
   }
   else { $("notice").scrollIntoView({ block: "center" }); $("notice").focus({ preventScroll: true }); }
 }
+function reviewInputs() { reviewField(invalidField || $("review-inputs").dataset.field); }
 function markInputsChanged() {
   queueRecovery();
   dirty = !!result || !!worker;
+  updateArtifactNotes();
   const stale = $("plan-stale");
   if (stale) { stale.textContent = "Inputs changed since this plan was generated. This timeline uses the saved inputs from its run. Re-run to update it."; stale.hidden = !dirty; }
   const next = $("next-ascension");
@@ -190,7 +257,47 @@ function selectField(label, id, opts, value) {
 }
 function renderColleggtibleTotals(tiers, overrides) {
   const totals = C.combine(tiers, overrides);
-  $("col-totals").textContent = Object.entries(colNames).map(([k, label]) => label + " \xD7" + NumberFormat.decimal(totals[k])).join(" \xB7 ");
+  $("col-totals").replaceChildren(...Object.entries(colNames).filter(([k]) => totals[k] !== 1).map(([k, label]) => el("span", label + " \xD7" + NumberFormat.decimal(totals[k]), "bonus-chip")));
+  if (!$("col-totals").childElementCount) $("col-totals").textContent = "No Colleggtible bonuses selected.";
+  const active = D.customEggs.filter(e => (tiers[e.identifier] ?? -1) >= 0).length;
+  const maxed = D.customEggs.filter(e => tiers[e.identifier] === e.buffs.length - 1).length;
+  $("col-summary").textContent = active + " / " + D.customEggs.length + " bonuses active · " + maxed + " at highest tier";
+}
+function updateAccountSummaries() {
+  let levels = 0, maxed = 0, valid = true;
+  for (const r of D.epic) {
+    const value = Number($("epic-" + r.id)?.value);
+    if (!Number.isInteger(value) || value < 0 || value > r.levels) valid = false;
+    levels += value;
+    if (value === r.levels) maxed++;
+  }
+  $("epic-summary").textContent = valid ? maxed + " / " + D.epic.length + " researches maxed · " + levels + " levels purchased" : "Review the entered research levels.";
+  $("epic-key-levels").textContent = ["epic_egg_laying", "afx_mission_time"].map(id => {
+    const r = D.epic.find(r => r.id === id);
+    return r.name + " " + $("epic-" + id).value + " / " + r.levels;
+  }).join(" · ");
+  updateDataSources();
+}
+function setSource(node, label, detail, kind = "default") {
+  if (!node) return;
+  node.textContent = label;
+  node.title = detail;
+  node.dataset.kind = kind;
+}
+function updateDataSources() {
+  const info = config.importInfo, manualAccount = $("manualAccountData").checked, manualFarm = $("manualFarmData").checked;
+  const fallback = config.label?.startsWith("Blank farm") ? "Starting Values" : "Saved Farm";
+  for (const node of document.querySelectorAll("[data-source]")) {
+    const group = node.dataset.source, manual = group === "farm" ? manualFarm : group === "flights" ? false : manualAccount;
+    if (manual) setSource(node, "Manual Override", "Manual editing is enabled. The solver uses the entered values.", "manual");
+    else if (config.uiProvenance?.[group] === "manual") setSource(node, "Manually Edited", "Values were edited after loading and are now locked. Reimport to refresh them.", "manual");
+    else if (config.uiProvenance?.[group] === "plan") setSource(node, "Projected from Plan", "Calculated for the next ascension from the completed plan; not a new game backup.");
+    else if (group === "colleggtibles" && (info?.colleggtibleSource === "partial" || info?.colleggtibleSource === "unavailable" || config.farm.colleggtibleTiersInferred)) setSource(node, "Review Tiers", "Some tiers were retained or reconstructed. Review the warning below.", "warning");
+    else if (group === "flights" && info?.flightSource !== "backup") setSource(node, config.farm.shipFlights?.length ? "Retained Flights" : "Not Loaded", "Flight information was not supplied by the last import.");
+    else if (group === "farm" && info?.scope === "account") setSource(node, "Retained Farm", "No active Virtue farm was found. Your starting farm was retained.");
+    else if (info) setSource(node, "Imported Backup", "From the last loaded Egg Inc backup; check its timestamp above.", "imported");
+    else setSource(node, fallback, "Values in this farm configuration. Enable manual editing to adjust them.");
+  }
 }
 const editingGroups = {
   manualAccountData: {toggles:["manualAccountData"],fields:["account-basic-fields", "account-fuel-fields", "account-progress-fields", "col-fields", "epic-fields"]},
@@ -203,6 +310,19 @@ function updateAccountEditing() {
     for (const id of group.fields) if ($(id)) $(id).disabled = !enabled;
   }
   for (const id of ["copy-earnings", "copy-delivery"]) $(id).disabled = !$("manualFarmData").checked;
+  for (const id of ["col-details", "epic-details"]) {
+    const node = $(id);
+    if ($("manualAccountData").checked && !node.dataset.manualOpen) {
+      node.dataset.beforeManual = String(node.open);
+      node.dataset.manualOpen = "true";
+      node.open = true;
+    } else if (!$("manualAccountData").checked && node.dataset.manualOpen) {
+      node.open = node.dataset.beforeManual === "true";
+      delete node.dataset.manualOpen;
+      delete node.dataset.beforeManual;
+    }
+  }
+  updateAccountSummaries();
 }
 function renderForm() {
   const f = config.farm, p = config.plan;
@@ -385,6 +505,12 @@ function currentFarmImport(backup) {
     draft = captureDraftInputs();
   }
   const next = I.importAll(backup, existing);
+  if (existing.uiProvenance) {
+    const retained = {};
+    if (next.importInfo.scope === "account" && existing.uiProvenance.farm) retained.farm = existing.uiProvenance.farm;
+    if (next.importInfo.colleggtibleSource !== "backup" && existing.uiProvenance.colleggtibles) retained.colleggtibles = existing.uiProvenance.colleggtibles;
+    if (Object.keys(retained).length) next.uiProvenance = retained;
+  }
   if (draft) {
     draft.fields = Object.fromEntries(Object.entries(draft.fields).filter(([id]) => next.importInfo.scope === "account"
       ? !["soulEggs", "shiftCount", "proPermit", "tankCapacity", "tankOutput", "manualAccountData", "manualColleggtibles", "manualEpicResearch"].includes(id) && !/^(fuel-|claimed-|delivered-|epic-|col-)/.test(id)
@@ -520,7 +646,11 @@ function renderLoadouts() {
   const limit = $("proPermit").value === "true" ? 4 : 2;
   for (const key of ["current", "earnings", "delivery"]) {
     const section = el("div", void 0, "loadout");
-    section.append(el("h3", key === "earnings" ? "Research & Earnings Set" : key[0].toUpperCase() + key.slice(1) + " Set"));
+    const heading = el("div", void 0, "loadout-heading"), source = el("span", void 0, "source-badge");
+    source.id = key + "-set-source";
+    if (key === "current") source.dataset.source = "farm";
+    heading.append(el("h3", key === "earnings" ? "Research & Earnings Set" : key[0].toUpperCase() + key.slice(1) + " Set"), source);
+    section.append(heading);
     const grid = el("fieldset", void 0, "loadout-grid account-value-fields");
     grid.id = key + "-loadout-fields"; grid.disabled = !$("manualFarmData").checked;
     const note = el("p", void 0, "hint"); note.id = key + "-set-note"; section.append(note);
@@ -550,9 +680,12 @@ function updateLoadoutCard(key, i) {
 function updateArtifactNotes() {
   const manual = $("manualFarmData").checked, automatic = Array.isArray(config.farm.artifactInventory) && !manual;
   $("current-set-note").textContent = "Starting equipped gear. Changes are possible only on Humility during the plan.";
-  $("earnings-set-note").textContent = automatic ? "Automatic · maximizes research purchasing power: income ÷ research cost multiplier, using actual laying/shipping limits and owned stones. Income-focused alternatives remain available to the solver. Away bonuses apply only in offline mode; after research is maxed, income determines this set." : manual ? "Manual override · the solver uses these entered artifacts and stones." : "Retained set · import a Virtue inventory to optimize automatically, or enable Edit Farm Manually.";
+  $("earnings-set-note").textContent = automatic ? "Highest research buying power for the starting farm: income ÷ research cost multiplier, using owned gear and stones. The solver also compares income-focused sets." : manual ? "The solver uses the entered artifacts and stones." : "Import a Virtue inventory for automatic selection, or enable Edit Farm Manually.";
   const chosen = !dirty && (result?.artifactRecommendations || result?.actions.find(a => a.type === "set" && a.set.startsWith("auto-delivery-")));
-  $("delivery-set-note").textContent = automatic ? chosen ? "Automatic · selected after the plan's research upgrades. In the staged route, cars unlocked for K3 are included in the choice. The timeline lists the exact gear and stones to equip." : "Automatic · preview for the starting farm. The solver recalculates the laying/shipping balance when it plans to equip the set." : manual ? "Manual override · the solver uses these entered artifacts and stones." : "Retained set · import a Virtue inventory to optimize automatically, or enable Edit Farm Manually.";
+  $("delivery-set-note").textContent = automatic ? chosen ? "Selected using the plan's research upgrades and shipping capacity. Follow the timeline for the exact gear and stones to equip." : "Starting-farm preview. The solver recalculates the laying/shipping balance at the planned equip time." : manual ? "The solver uses the entered artifacts and stones." : "Import a Virtue inventory for automatic selection, or enable Edit Farm Manually.";
+  setSource($("earnings-set-source"), manual ? "Manual Override" : automatic ? "Starting Farm Preview" : "Retained Set", "Research and earnings selection for the current starting inputs.", manual ? "manual" : "default");
+  setSource($("delivery-set-source"), manual ? "Manual Override" : automatic ? chosen ? "Calculated for This Plan" : "Starting Farm Preview" : "Retained Set", chosen && automatic ? "Selected for the last completed plan. Changed inputs invalidate this recommendation." : "Preview for the starting farm, before planned upgrades.", manual ? "manual" : chosen && automatic ? "imported" : "default");
+  updateDataSources();
 }
 function populateAutomaticSets(s, c) {
   if (!c.artifactModel) { updateArtifactNotes(); return; }
@@ -620,7 +753,7 @@ function gather() {
   f.colleggtibleTiers = Object.fromEntries(D.customEggs.map((e) => [e.identifier, Number($("col-egg-" + e.identifier).value)]));
   f.colleggtibles = C.combine(f.colleggtibleTiers, f.colleggtibleOverrides);
   f.research = Object.fromEntries(D.research.map((r) => [r.id, readNumber("research-" + r.id, r.name, 0, r.levels, true)]));
-  f.epic = Object.fromEntries(D.epic.map((r) => [r.id, readNumber("epic-" + r.id, r.name, 0, 10000, true)]));
+  f.epic = Object.fromEntries(D.epic.map((r) => [r.id, readNumber("epic-" + r.id, r.name, 0, r.levels, true)]));
   f.loadouts = formLoadouts();
   const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: $("eventTimezone").value, sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), maxSwitches: readNumber("maxSwitches", "Maximum switches", 0, 30, true), maxDays: readNumber("maxDays", "Planning limit", 1, 366, true), shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: $("effort").value, minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), stagedSales: readNumber("stagedSales", "Maximum research sales", 1, 6, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: Array.from({ length: 5 }, (_, i) => readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true)) };
   if (!p.autoSequence) try {
@@ -645,6 +778,7 @@ function stat(label, value, sub, egg) {
 }
 function refresh() {
   clearFieldError();
+  updateAccountSummaries();
   EggIcons.decorateLabel($("virtue").closest("label"), $("virtue").value);
   updateSequenceVisibility();
   $("sequence-budget").hidden = true;
@@ -849,6 +983,7 @@ function renderResult() {
       return;
     }
     config = nextAscension(resultConfig, result);
+    config.uiProvenance = {...config.uiProvenance, ...Object.fromEntries(["farm", "account", "progress", "fuel", "flights"].map(group => [group, "plan"]))};
     result = null;
     resultConfig = null;
     dirty = false;
@@ -1070,12 +1205,17 @@ function renderSuggestion(suggestion, runConfig = resultConfig, inputsChanged = 
 function renderSearchClock() {
   const total = Math.max(0, Math.floor((performance.now() - searchStartedAt) / 1e3)), elapsed = exactDuration(total) + (total >= 60 && total % 60 === 0 ? " 0s" : "");
   $("run-detail").textContent = [searchContext, searchBestSeconds !== null ? "Best so far: " + duration(searchBestSeconds) : "", "Searching for " + elapsed].filter(Boolean).join(" \xB7 ");
+  $("search-elapsed").textContent = elapsed;
+  $("search-best").textContent = searchBestSeconds !== null ? duration(searchBestSeconds) : "None Yet";
 }
 function startSearchClock() {
   clearInterval(searchTimer);
   searchStartedAt = performance.now();
   searchBestSeconds = null;
   searchContext = "Evaluating affordable purchases, event waits and switches";
+  $("search-stage").textContent = "Preparing Farm and Checking Limits";
+  $("search-openings").textContent = "Not Started";
+  delete $("search-openings").dataset.total;
   renderSearchClock();
   searchTimer = setInterval(renderSearchClock, 1e3);
 }
@@ -1089,6 +1229,8 @@ function busy(active) {
   $("stop").textContent = "Stop & Keep Best";
   $("stop").hidden = !active;
   $("run-progress").hidden = !active;
+  $("search-status").hidden = !active;
+  $("empty-results").hidden = active || !!result;
   $("run-progress").removeAttribute("value");
   $("run-progress").removeAttribute("aria-valuetext");
   $("run-progress").setAttribute("aria-label", "Planner search in progress");
@@ -1104,6 +1246,7 @@ function optimize() {
   if (!refresh()) return;
   acceptRecoverySession();
   const runConfig = structuredClone(config);
+  $("search-limits").textContent = "C1 ≤" + runConfig.plan.c1MaxMinutes + " min · K1 ≤" + runConfig.plan.k1MaxMinutes + " min · 30-minute opening intervals · " + (runConfig.plan.strategy === "wasmegg" ? "All eligible opening comparisons; no additional routing search." : "Additional routing budget: " + exactDuration(effort[$("effort").value].maxMs / 1000) + " after eligible opening comparisons.");
   dirty = false;
   if ($("plan-stale")) { $("plan-stale").textContent = "A new search is running. This timeline is the previous plan; the completed search will replace it."; $("plan-stale").hidden = false; }
   show("Searching research orders and switch timing. You can keep using the interface.");
@@ -1117,6 +1260,7 @@ function optimize() {
     busy(false);
     markInputsChanged();
     show("Could not start the planner: " + error.message, true);
+    showPlanningGuidance("Could not start the planner: " + error.message, true);
     $("run-summary").textContent = "Search Could Not Start";
     $("run-detail").textContent = "Try reopening the app or using the Windows launcher.";
     return;
@@ -1130,18 +1274,30 @@ function optimize() {
       if (p.phase === "alternative") {
         $("run-summary").textContent = "Checking a longer planning window";
         searchContext = "No plan found within " + p.requestedDays + " days; testing a validated alternative";
+        $("search-stage").textContent = "Checking a Separate Longer-Window Plan";
+        $("run-progress").removeAttribute("value");
+        $("run-progress").removeAttribute("aria-valuetext");
         renderSearchClock();
+        $("search-announcement").textContent = searchContext;
         return;
       }
       if (p.phase === "openings") {
-        $("run-summary").textContent = "Opening Comparison " + (p.openingCompared + 1) + " / " + p.openingTotal + " · " + p.stage;
+        $("run-summary").textContent = "Checking Opening " + (p.openingCompared + 1) + " / " + p.openingTotal;
         searchContext = "C1 ≤" + p.openingBudget.c1MaxMinutes + " min · K1 ≤" + p.openingBudget.k1MaxMinutes + " min";
+        const egg = {C:"Curiosity", K:"Kindness", I:"Integrity", R:"Resilience", H:"Humility"}[p.stage?.[0]];
+        $("search-stage").textContent = /^[CKIRH]\d$/.test(p.stage) ? p.stage + " · " + egg + " Complete" : p.stage === "opening" ? "Opening Visits Complete" : p.stage;
+        $("search-openings").textContent = p.openingCompared + " / " + p.openingTotal + " completed · checking " + (p.openingCompared + 1);
+        $("search-openings").dataset.total = String(p.openingTotal);
         $("run-progress").max = p.openingTotal;
         $("run-progress").value = p.openingCompared;
         $("run-progress").setAttribute("aria-valuetext", p.openingCompared + " of " + p.openingTotal + " opening comparisons completed");
       } else {
-        $("run-summary").textContent = p.phaseLabel ? "Staged route · " + p.phaseLabel : p.explored.toLocaleString() + " states examined";
-        searchContext = "Timed routing search";
+        const route = runConfig.plan.strategy === "user" ? "User Sequence" : "Free Routing";
+        $("run-summary").textContent = route + " Search";
+        searchContext = Number(p.explored || 0).toLocaleString() + " states examined";
+        $("search-stage").textContent = route + " · " + searchContext;
+        const total = Number($("search-openings").dataset.total);
+        $("search-openings").textContent = total ? total + " / " + total + " completed" : "Not Applicable to This Route";
         $("run-progress").removeAttribute("value");
         $("run-progress").removeAttribute("aria-valuetext");
       }
@@ -1161,6 +1317,7 @@ function optimize() {
         if ($("plan-stale")) { $("plan-stale").textContent = "The new search did not finish. This timeline still uses the previous plan's inputs."; $("plan-stale").hidden = !dirty; }
         if ($("next-ascension")) $("next-ascension").disabled = true;
         show(data.error, true);
+        showPlanningGuidance(data.error, true, inputsChanged);
         $("run-summary").textContent = "Planning could not finish";
         $("run-detail").textContent = "Review inputs or increase the planning/search limits";
         if (data.suggestion) renderSuggestion(data.suggestion, runConfig, inputsChanged);
@@ -1186,6 +1343,7 @@ function optimize() {
     dirty = !!result;
     if ($("plan-stale")) { $("plan-stale").textContent = "The search failed. This timeline still uses the previous plan's inputs."; $("plan-stale").hidden = !dirty; }
     show("Planner worker failed: " + e.message, true);
+    showPlanningGuidance("Planner worker failed: " + e.message, true);
     $("run-summary").textContent = "Worker error";
     $("run-detail").textContent = "Review inputs and try the search again";
     queueRecovery();
@@ -1361,6 +1519,7 @@ $("use-earnings-start").onclick = () => {
     const {c} = S.prepare(config);
     if (!c.earningLoadout?.some(slot => slot.artifactId)) return;
     config.farm.loadouts.current = structuredClone(c.earningLoadout);
+    (config.uiProvenance ||= {}).farm = "manual";
     config.farm.activeSet = "current";
     $("activeSet").value = "current";
     markInputsChanged();
@@ -1465,11 +1624,22 @@ document.addEventListener("change", (e) => {
 document.addEventListener("input", (e) => {
   if (!e.target.matches("input,select") || unsavedInputs.has(e.target.id)) return;
   if (Object.values(editingGroups).some(group => group.toggles.includes(e.target.id))) return;
+  const group = e.target.closest("#account-basic-fields") ? "account"
+    : e.target.closest("#account-progress-fields") ? "progress"
+    : e.target.closest("#account-fuel-fields") ? "fuel"
+    : e.target.closest("#col-fields") ? "colleggtibles"
+    : e.target.closest("#epic-fields") ? "epic"
+    : e.target.closest("#farm-basic-fields,#hab-fields,#vehicle-fields,#research-fields,#current-loadout-fields,#starting-set-fields") ? "farm" : null;
+  if (group) (config.uiProvenance ||= {})[group] = "manual";
   NumericInput.edited(e.target);
   markInputsChanged();
   clearTimeout(refreshTimer);
   refreshTimer = setTimeout(() => {
-    if (refresh() && dirty) show("Inputs changed. Re-run the planner to update the timeline.");
+    const hadIssue = !$("planning-guidance").hidden;
+    if (refresh()) {
+      if (dirty) show("Inputs changed. Re-run the planner to update the timeline.");
+      else if (hadIssue) show("Inputs updated. Ready to plan.");
+    }
   }, 300);
 });
 EggIcons.decorateStatic();

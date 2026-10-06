@@ -248,3 +248,32 @@ header{flex-wrap:wrap;align-items:center;gap:12px 18px}
 .research-description>small{padding-left:32px}
 .activity-chip .research-caption,.guide-item .research-caption{gap:6px}
 @media(forced-colors:active){.research-icon{display:none}.research-description>small{padding-left:0}}
+
+/* Compact account summaries keep planning controls visible. */
+main{margin:0 auto;align-self:start}
+.account-panel-heading{justify-content:flex-start;gap:8px 12px}
+.account-panel-heading>.check{margin-left:auto}
+.source-badge{display:inline-block;padding:3px 8px;border:1px solid #53647b;border-radius:999px;font-size:11px;line-height:16px;font-weight:600;color:#d1dbea;background:#202d40;white-space:normal}
+.source-badge[data-kind="imported"]{color:#a9eed0;border-color:#3e8068;background:#18362d}
+.source-badge[data-kind="manual"]{color:#d4c5ff;border-color:#8168aa;background:#302747}
+.source-badge[data-kind="warning"]{color:#ffe1a3;border-color:#977c45;background:#3b3020}
+.account-summary{font-size:14px;line-height:20px;margin:0 0 7px}
+.bonus-summary{display:flex;flex-wrap:wrap;gap:5px 7px;font-size:12px;line-height:18px}
+.bonus-chip{padding:3px 7px;background:#1c293a;border-radius:5px;color:#d6e2f1}
+.account-details{margin-top:12px;border-top:1px solid var(--line);padding-top:6px}
+.account-details>summary{padding:7px 0;font-size:13px;font-weight:600;cursor:pointer;min-height:32px}
+.account-details[open]>summary{margin-bottom:8px}
+#col-note:empty{display:none}
+.loadout-heading{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin-bottom:8px}
+.loadout-heading>h3{margin:0}
+.planning-guidance{padding:12px 16px;border:1px solid #997856;border-radius:10px;background:#302b24;margin-bottom:12px}
+.planning-guidance h2{font-size:15px;margin:0 0 6px}
+.planning-guidance p{font-size:13px;line-height:20px;margin:0 0 10px}
+.planning-guidance button{font-size:12px}
+.search-status dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 18px;margin:0}
+.search-status dl>div{min-width:0}
+.search-status dt{font-size:12px;color:var(--muted);margin-bottom:4px}
+.search-status dd{font-size:14px;line-height:20px;margin:0;overflow-wrap:anywhere}
+#search-elapsed,#search-best{font-variant-numeric:tabular-nums}
+@media(max-width:500px){.search-status dl{grid-template-columns:minmax(0,1fr)}.account-panel-heading>.check{margin-left:0;width:100%}}
+@media(forced-colors:active){.source-badge,.source-badge[data-kind],.bonus-chip,.planning-guidance{color:CanvasText;border-color:CanvasText;background:Canvas}}
