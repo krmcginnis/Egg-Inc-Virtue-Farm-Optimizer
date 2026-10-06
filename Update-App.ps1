@@ -18,7 +18,7 @@ function Wait-UpdatedHelper([string]$Version) {
         try {
             $reply = Invoke-RestMethod -Uri "http://127.0.0.1:$Port/api/update/health" -TimeoutSec 2
             if ($reply.version -ceq $Version -and $reply.rootId -ceq (Get-UpdateHash (Join-Path $AppRoot 'app.js'))) { return $true }
-        } catch { }
+        } catch { Write-Host ('Restart health check: ' + $_.Exception.Message) }
         Start-Sleep -Milliseconds 300
     }
     return $false
@@ -46,7 +46,7 @@ try {
         $installed = $true
         $newHelper = Start-UpdatedHelper 'new-helper'
         if (-not (Wait-UpdatedHelper $job.release.version)) {
-            $details = ''; $log = Join-Path $JobRoot 'new-helper-error.log'
+            [string]$details = ''; $log = Join-Path $JobRoot 'new-helper-error.log'
             if (Test-Path -LiteralPath $log) { $details = [string](Get-Content -LiteralPath $log -Raw -ErrorAction SilentlyContinue); if ($details.Length -gt 3000) { $details = $details.Substring(0,3000) } }
             throw ('The updated app could not restart. ' + $details.Trim())
         }
@@ -58,6 +58,8 @@ try {
         }
     } catch {
         $failure = $_.Exception.Message
+        Write-Host $_.InvocationInfo.PositionMessage
+        Write-Host $_.ScriptStackTrace
         if ($newHelper -and -not $newHelper.HasExited) { Stop-Process -Id $newHelper.Id -Force -ErrorAction SilentlyContinue; $newHelper.WaitForExit(5000) | Out-Null }
         if ($installed) { Restore-UpdateBackup $AppRoot $JobRoot }
         Write-UpdateJson (Join-Path $AppRoot '.update-result.json') @{ok=$false;version=$oldVersion;message="The update failed; the previous app was restored. $failure"}
