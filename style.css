@@ -183,3 +183,10 @@ aside .update-app{display:flex;align-items:center;justify-content:center;gap:8px
 .update-source-controls{display:flex;align-items:center;gap:8px;margin-top:7px}
 .update-source-controls input{flex:1;min-width:0}
 @media(max-width:500px){.update-source-controls{flex-wrap:wrap}.update-source-controls input{flex-basis:100%}#update-dialog{padding:18px}}
+
+/* Farm status stays compact, with each value beside its label. */
+#stats .stat{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;padding:10px 12px;align-items:center;min-width:0}
+#stats .stat small{font-size:11px}
+#stats .stat strong{font-size:18px;line-height:1.2;margin:0;text-align:right;overflow-wrap:anywhere;min-width:0}
+#stats .stat>span{grid-column:1/-1;display:block;font-size:11px;line-height:1.4}
+@media(max-width:500px){#stats .stat{grid-template-columns:minmax(0,1fr)}#stats .stat strong{text-align:left}}
