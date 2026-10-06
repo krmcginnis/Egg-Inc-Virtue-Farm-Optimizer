@@ -49,6 +49,12 @@ write('private-file',data,[(folder+'saved-farm.json',b'private')])
 `, root, fixture], {encoding:'utf8'});
 if (generate.status !== 0) throw Error(generate.stderr || generate.error);
 const executable = process.env.POWERSHELL_EXECUTABLE || (process.platform === 'win32' ? 'powershell.exe' : 'pwsh');
-const run = spawnSync(executable, ['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'update-core.ps1'),'-Root',root,'-Fixture',fixture], {encoding:'utf8',timeout:120000});
+const childEnv = {...process.env};
+// A Node child of PowerShell 7 inherits its module paths. Let Windows
+// PowerShell rebuild its own paths rather than try loading incompatible modules.
+if (process.platform === 'win32' && /(?:^|[\\/])powershell(?:\.exe)?$/i.test(executable)) {
+  for (const key of Object.keys(childEnv)) if (key.toUpperCase() === 'PSMODULEPATH') delete childEnv[key];
+}
+const run = spawnSync(executable, ['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(__dirname,'update-core.ps1'),'-Root',root,'-Fixture',fixture], {encoding:'utf8',timeout:120000,env:childEnv});
 if (run.status !== 0) { console.error(run.stdout, run.stderr, run.error || ''); process.exitCode = 1; }
 else console.log(run.stdout.trim());
