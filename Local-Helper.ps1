@@ -96,6 +96,9 @@ if (-not $NoBrowser) { Start-Process $baseUrl }
 try {
     while ($true) {
         $client = $listener.AcceptTcpClient()
+        # Browsers may pre-open an idle connection. Do not let it block the
+        # single local request loop or the updater's restart health checks.
+        if (-not $client.Client.Poll(200000, [Net.Sockets.SelectMode]::SelectRead)) { $client.Close(); continue }
         $stream = $client.GetStream()
         $stream.ReadTimeout = 5000
         $stream.WriteTimeout = 35000
