@@ -198,12 +198,23 @@ function fieldError(error) {
     const hint = el("small", error.message, "field-error");
     hint.id = "field-error";
     node.closest("label")?.append(hint);
+    revealFleetField(node);
   }
   $("review-inputs").hidden = false;
   $("run-summary").textContent = worker ? "Searching · Check Changed Inputs" : "Check Your Inputs";
-  if (!worker) $("run-detail").textContent = error.message;
+  if (!worker) $("run-detail").textContent = "Review your inputs to continue.";
   show(error.message, true);
   showPlanningGuidance(error.message);
+}
+function revealFleetField(node) {
+  const slot = node?.closest(".fleet-slot");
+  if (!slot) return;
+  slot.hidden = false;
+  if (node.classList.contains("car")) {
+    node.closest("label").hidden = false;
+    // The enclosing account fieldset still enforces the manual-edit lock.
+    if (node.getAttribute("aria-invalid") === "true") node.disabled = false;
+  }
 }
 function reviewField(id) {
   const node = $(id);
@@ -211,6 +222,7 @@ function reviewField(id) {
   for (let parent = node?.parentElement; parent; parent = parent.parentElement) if (parent.tagName === "DETAILS") parent.open = true;
   if (node?.closest("tr")?.hidden) { $("research-filter").value = ""; filterResearch(); }
   if (node) {
+    revealFleetField(node);
     const fields = node.closest(".account-value-fields"), toggles = fields?.disabled ? [...document.querySelectorAll('[aria-controls~="' + fields.id + '"]')] : [];
     const toggle = toggles.find(x => x.closest("[data-page]") === node.closest("[data-page]")) || toggles[0];
     const target = toggle || node;
@@ -390,6 +402,8 @@ function renderForm() {
   $("vehicle-fields").replaceChildren(...f.vehicles.map((v, i) => {
     const div = el("div", void 0, "fleet-slot");
     div.append(el("small", "Fleet Slot " + (i + 1)), selectField("Vehicle", "vehicle-" + i, [["", "Empty"], ...D.vehicles.map((x) => [x.id, x.name])], v.id), field("Train cars", "cars-" + i, v.cars, "number", { min: 1, max: 10, className: "car" }));
+    div.querySelector("select").setAttribute("aria-label", "Fleet Slot " + (i + 1) + " Vehicle");
+    div.querySelector("input").setAttribute("aria-label", "Fleet Slot " + (i + 1) + " Train Cars");
     return div;
   }));
   const selected = C.selections(f);
@@ -809,10 +823,15 @@ function refresh() {
       const i = S.RMAP[research.id];
       $("cost-" + research.id).textContent = s.r[i] === research.levels ? "Maxed" : S.isUnlocked(s, i) ? num(S.price(s, c, { type: "research", i })) : "Tier locked";
     }
+    let hiddenSlots = 0;
     for (let i = 0; i < 17; i++) {
-      $("vehicle-" + i).closest(".fleet-slot").style.opacity = i < r.slots ? "1" : ".5";
-      $("cars-" + i).disabled = s.v[i].id !== 11;
+      const slot = $("vehicle-" + i).closest(".fleet-slot"), cars = $("cars-" + i);
+      slot.hidden = i >= r.slots && s.v[i].id === null;
+      hiddenSlots += Number(slot.hidden);
+      cars.disabled = s.v[i].id !== 11;
+      cars.closest("label").hidden = cars.disabled;
     }
+    $("fleet-status").textContent = r.slots + " unlocked " + (r.slots === 1 ? "slot" : "slots") + (hiddenSlots ? " · " + hiddenSlots + " locked empty slots hidden" : "");
     const m = c.mods[s.set];
     $("artifact-mods").textContent = "Active set effects: " + Object.entries(m).map(([k, v]) => k + " \xD7" + v.toFixed(3)).join(" \xB7 ");
     $("fuel-status").textContent = fuelNumber(c.ships.stored.reduce((a, b) => a + b, 0)) + " stored / " + fuelNumber(c.ships.capacity) + " capacity";
@@ -1563,6 +1582,8 @@ $("review-inputs").onclick = reviewInputs;
 const runBar = document.querySelector(".run-bar");
 function keepFocusedControlVisible(target = document.activeElement) {
   if (!target?.matches("input,select,button,summary,a") || runBar.contains(target) || !target.getClientRects().length) return;
+  // The desktop sidebar scrolls independently and does not overlap the run bar.
+  if (innerWidth > 800 && target.closest("aside")) return;
   const rect = target.getBoundingClientRect(), bar = runBar.getBoundingClientRect();
   if (rect.bottom > bar.top - 12) window.scrollBy({top:rect.bottom - bar.top + 24,behavior:"instant"});
   else if (rect.top < 12) window.scrollBy({top:rect.top - 24,behavior:"instant"});

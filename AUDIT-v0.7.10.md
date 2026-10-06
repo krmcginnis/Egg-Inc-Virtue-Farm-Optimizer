@@ -1,9 +1,9 @@
-# Egg Inc. Virtue Farm Optimizer v0.7.9 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.7.10 — Release Audit
 
-v1.6.2 fixes the PC launcher asset routes. The bundled images were present
-in v1.6.1, but Local-Helper.ps1 returned 404 for every assets/ URL. The
-launcher now registers only bundled asset files and serves them with their
-correct image content types. Other app files remain outside the allowlist.
+v0.7.10 fixes existing-screen usability: short-window sidebar access, compact
+fleet controls, checkbox alignment, and planning-bar layout. Its focused
+validation is recorded at the end of this audit. The solver and game data
+remain unchanged; earlier asset, import, updater, and model evidence follows.
 
 The solver evidence below is the unchanged v1.6.1 baseline.
 
@@ -403,3 +403,36 @@ changed. The generated worker SHA256 remains:
 `2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.
 The unchanged release workflow requires native Windows install/restart/rollback
 and public-feed checksum verification before handover.
+
+
+## Existing-screen usability fixes — v0.7.10
+
+The desktop sidebar stays fixed and scrolls independently in short windows.
+Its contents keep their natural size, leaving Update App reachable by scrolling
+and keyboard without jumping the main form. Narrow screens retain the existing
+horizontal navigation. Checkbox inputs have explicit dimensions and inherit
+neither the height nor padding of text fields; the full label stays clickable.
+
+Shipping Fleet hides locked empty slots and displays the current unlocked count.
+All 17 original controls and values remain in the form and saved farms. Adding
+fleet research reveals newly available slots. Occupied locked slots remain
+visible when validation fails. Train Cars appears only for Hyperloops. Invalid
+hidden car values reveal their controls for correction, while the enclosing
+manual-edit lock remains enforced. Each fleet control has its slot in its
+accessible name. The layout no longer dims an occupied invalid slot.
+
+The planning bar wraps earlier on narrower desktop windows and keeps its
+actions from shrinking. Full input errors remain in the persistent notice and
+linked field; the bar uses a short instruction rather than duplicating the error.
+Its measured height continues to reserve space for the form and focused fields.
+
+The targeted browser suite verifies fleet unlocks, hidden-value save/load
+round trips, Hyperloop car edits, invalid hidden-field correction, account
+locks, short-window Update App access, independent focus scrolling, checkbox
+dimensions, and planning-action visibility/overlap from 1366 to 320 pixels,
+including a 683-by-384 viewport representing desktop zoom. Existing planning
+clarity and artifact/research artwork regressions are repeated. These are
+presentation and interaction changes only; solver/game data and generated
+worker bytes are unchanged. The standard Windows release workflow requires
+installation, restart, rollback, and anonymous public-feed checksum verification
+before the release is handed over. Native screen-reader testing is not claimed.

@@ -1,8 +1,8 @@
-# v0.7.9
+# v0.7.10
 
-- Epic Research and Colleggtibles now show compact summaries with expandable details. Manual account editing opens the fields automatically.
-- Source labels distinguish imported backups, retained farm values, manual overrides, edited-and-locked values, and artifact previews versus solved delivery sets.
-- Solver status shows its current stage, completed opening comparisons, elapsed seconds and best complete plan. Errors stay visible with direct links to relevant inputs.
-- Fixed the page header shifting vertically on short pages. Planning controls and the two-panel layout remain visible.
-- Epic Research entries now validate against their displayed maximum levels. Solver calculations, search budgets and purchase logic are unchanged.
+- Update App stays reachable in short desktop windows. Sidebar scrolling and keyboard focus no longer move the main form.
+- Shipping Fleet shows unlocked slots and hides locked empty slots. Train Cars appears only for Hyperloops; saved fleet values are retained.
+- Improved checkbox alignment and unique accessible names for fleet controls.
+- Planning actions wrap at narrower desktop widths. Full errors stay visible beside the relevant input and in the notice, with a concise planning-bar prompt.
+- The compact two-panel layout, solver calculations, planning limits, and feature set are unchanged.
 - Install through Update App → Update & Restart.
