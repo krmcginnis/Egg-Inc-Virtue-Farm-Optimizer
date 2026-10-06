@@ -15,7 +15,7 @@ Initial repository publishing procedure:
 1. Push the contents of the GitHub Setup folder to the repository root.
 2. Enable GitHub Actions if the account or repository has disabled it.
 3. Run **Publish App Release**, or push a tag matching `package.json`, such as
-   `v1.7.0`. The workflow builds and verifies a package on Windows, creates a draft
+   `v0.7.0`. The workflow builds and verifies a package on Windows, creates a draft
    with both assets, then publishes it. Existing versions cannot be overwritten.
 4. Install the first release ZIP once and run `Start-Virtue-Optimizer.cmd`.
    Its update source is set automatically to that repository. The previously
