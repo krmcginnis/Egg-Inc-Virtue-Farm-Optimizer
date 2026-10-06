@@ -6,9 +6,11 @@ Unofficial PC app for planning Egg Inc. virtue farm research, switches, artifact
 
 Download [the latest app ZIP](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/latest/download/Egg-Inc-Virtue-Farm-Optimizer.zip), extract it, and run `Start-Virtue-Optimizer.cmd`. No installation, admin rights, domain, Python or Node is needed to run the app. Keep the launcher window open. `index.html` also works offline for manual/JSON farm entry.
 
+Start on **Farm & Account** to import and review your account and current farm. Choose **Continue to Planning** or the Planning sidebar entry to configure goals, routes, timing, and ships. **Save Farm** retains settings across both pages.
+
 ## Updates
 
-The current version is **v0.7.12**, renumbered from v1.7.0 with the same features. If you already installed a 1.x version, download and extract the current ZIP once; the updater does not install lower version numbers. Future 0.7.x releases update normally.
+The current version is **v0.8.0**, renumbered from v1.7.0 with the same features. If you already installed a 1.x version, download and extract the current ZIP once; the updater does not install lower version numbers. Future 0.x releases update normally.
 
 Use **Update App → Update & Restart** in the sidebar. Published ZIPs already point to this repository. Updates verify downloads, preserve your current inputs and timeline, and restore the previous app if installation or startup fails. Finish your search or import before updating.
 

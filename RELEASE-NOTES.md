@@ -1,8 +1,9 @@
-# v0.7.12
+# v0.8.0
 
-- Long selected hab, vehicle, artifact and stone names wrap below narrow dropdowns; short names keep the compact layout.
-- Artifact selectors show concise names, with effects still displayed beneath the artwork.
-- Purchase groups, online/offline breaks and shift completion are easier to distinguish. Break durations and resume dates stand out; every quick guide has one finish strip.
-- Trimmed repeated helper text while retaining input rules and the Assumptions panel.
-- Solver calculations, saved values, research ordering and the two-panel desktop layout are unchanged.
+- Farm & Account is the opening page for import, account data, progress, fuel, flights, and current farm equipment.
+- Planning is a separate page for goals, routes, limits, timing, and planned ships, with Assumptions below.
+- Both pages retain the compact two-panel desktop layout. Planning includes current Virtue, starting claimed/pending TE, and the last backup timestamp.
+- Continue to Planning and Review Farm make moving between the pages straightforward. Error review opens the relevant page.
+- Save Farm, import, Reset/Undo, recovery, and app updates preserve goals and ship schedules across both pages. Existing farm and plan files remain compatible.
+- Solver calculations and timeline/PDF content are unchanged.
 - Install through Update App → Update & Restart.

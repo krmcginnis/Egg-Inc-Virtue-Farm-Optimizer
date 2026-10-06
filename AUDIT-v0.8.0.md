@@ -1,15 +1,16 @@
-# Egg Inc. Virtue Farm Optimizer v0.7.12 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.0 — Release Audit
 
-v0.7.12 improves long selected names, the purchase/break/completion hierarchy
-and nearby helper text. Native controls and the compact two-panel desktop
-layout are retained. Its focused validation is recorded at the end of this
-audit. Solver and game data remain unchanged; earlier UI, asset, import,
-updater and model evidence follows.
+v0.8.0 separates Farm & Account entry/review from Planning. Both pages retain
+the compact two-panel desktop layout and share the existing farm configuration.
+A small Planning summary shows current Virtue, claimed/pending TE and the last
+backup timestamp. Focused validation is recorded at the end of this audit.
+Solver and game data remain unchanged; earlier UI, asset, import, updater and
+model evidence follows.
 
 The solver evidence below is the unchanged v1.6.1 baseline.
 
 Research projections and the actual automatic delivery recommendation now share
-one owned-artifact optimizer. Farm & Goals retains the compact two-panel layout.
+one owned-artifact optimizer. Farm & Account and Planning retain compact two-panel layouts.
 
 ## Cause and correction
 
@@ -512,3 +513,54 @@ handover. Native screen-reader testing is not claimed.
 
 Local npm install/build, release-state and publish-plan guards pass. The local
 verified package contains 164 runtime files and only the current audit.
+
+
+## Separate farm entry and plan development — v0.8.0
+
+The app opens on Farm & Account. The import arrow, backup information, starting
+farm, account data, Truth Egg progress, tank, existing flights, Colleggtibles,
+Epic Research, habs and vehicles live there. Farm/equipment occupy the left
+column and account data the right. Planning is a separate sidebar destination:
+goals, route controls, limits and timing/calibration occupy the left column;
+planned H1/H2 ships occupy the right. Assumptions remain visible below the
+planning columns. Farm Research and Artifacts & Stones keep their existing pages.
+
+Planning starts with a compact, non-editable summary of the selected Virtue,
+claimed and pending starting TE, and last backup timestamp. Source badges
+continue to distinguish imported, retained, manual and projected farms. The
+summary updates from current inputs even when unrelated planning input is
+invalid. Invalid TE values receive a review prompt rather than stale totals.
+Missing backup timestamps remain explicit. Review Farm returns to data entry.
+The Farm page's primary action is Continue to Planning; opening it does not
+start a worker. Planning's primary action starts the existing solver.
+
+All original input IDs and saved schemas remain. Hidden page fields stay in the
+shared form and gather/save/recovery operations. Save Farm retains account and
+farm data together with every goal, limit, timing value and ship schedule.
+Import retains planning goals; account-only import still retains the starting
+farm. Error review opens the affected page and retains manual-edit locks.
+Reset returns to Farm & Account; Undo and recovery can restore Planning with
+its goals and missions. Old saved Farm-tab sessions open Farm & Account; the
+new Planning tab is also retained in browser/updater session snapshots.
+
+Targeted Chromium checks pass for initial navigation and the primary action,
+page-specific input visibility, farm/TE/backup context, imported/retained labels,
+actual farm downloads containing hidden planning settings and exact numeric
+values, save/load round trips, import retention, invalid-field navigation,
+Reset/Undo and recovery to Planning. Compact two-column layouts are verified
+on both pages, with overflow checks on every app page from 1440 to 320 pixels.
+Desktop screenshots of both pages were inspected. Existing planning-clarity,
+UI-polish, timeline-readability, farm-artwork, research-artwork and loadout-artwork
+suites also pass, including keyboard focus, worker progress/cancellation, a real
+replayed worker plan, manual locks, offline operation and artwork fallback.
+
+No solver, game data, shared action grouping, API, ship scheduling or PDF source
+changes. The rebuilt worker SHA256 remains
+`2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.
+The unchanged release workflow requires native Windows installation, restart,
+rollback and anonymous public-feed/download checksum verification before
+handover. Native screen-reader testing is not claimed.
+
+Local npm install/build, release-state and publish-plan guards pass. Original
+static input/select IDs and types match the previous release. The verified
+local package contains 164 runtime files and only the current audit.

@@ -102,10 +102,10 @@ const root = path.resolve(__dirname, "..");
     await page.locator(".shift-summary").first().screenshot({ path: path.join(out, "timeline-desktop.png") });
     for (const width of [1440, 1280, 1050, 1000, 800, 500, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
-      for (const section of ["farm", "artifacts", "results"]) {
+      for (const section of ["farm", "planning", "artifacts", "results"]) {
         await page.click(`[data-tab="${section}"]`);
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), section + " overflow at " + width);
-        if (section === "farm" && width >= 1050) assert.ok(await page.evaluate(() => document.getElementById("farm-state-column").getBoundingClientRect().right <= document.getElementById("planning-column").getBoundingClientRect().left + 1), "two-panel layout at " + width);
+        if (section === "farm" && width >= 1050) assert.ok(await page.evaluate(() => document.getElementById("farm-state-column").getBoundingClientRect().right <= document.getElementById("account-information").getBoundingClientRect().left + 1), "two-panel layout at " + width);
       }
       assert.ok(await page.locator(".loadout-item-name").evaluateAll(nodes => nodes.every(n => n.scrollWidth <= n.clientWidth + 1)), "long title overflow at " + width);
     }

@@ -83,7 +83,7 @@ const root = path.resolve(__dirname, "..");
     // Exercise the actual UI message handlers with deterministic worker events.
     // Search calculations remain untouched; a real worker is checked below.
     await page.evaluate(() => { window.realWorker = Worker; window.Worker = class { constructor() { window.testWorker = this; } postMessage(message) { this.lastMessage = message; } terminate() { this.terminated = true; } }; });
-    await page.click("#optimize");
+    await page.click('[data-tab="planning"]'); await page.click("#optimize");
     await page.evaluate(() => testWorker.onmessage({ data: { type: "progress", progress: { phase: "openings", openingCompared: 1, openingTotal: 4, openingBudget: { c1MaxMinutes: 30, k1MaxMinutes: 60 }, stage: "C3", bestSeconds: 86400 } } }));
     assert.equal(await page.locator("#run-summary").innerText(), "Checking Opening 2 / 4");
     assert.equal(await page.locator("#run-progress").getAttribute("value"), "1");
@@ -105,25 +105,25 @@ const root = path.resolve(__dirname, "..");
     assert.equal(await page.evaluate(() => document.activeElement.id), "manualAccountData");
     await page.check("#manualAccountData"); await page.getByRole("button", { name: "Review Soul Eggs", exact: true }).click();
     assert.equal(await page.evaluate(() => document.activeElement.id), "soulEggs");
-    await page.click("#optimize");
+    await page.click('[data-tab="planning"]'); await page.click("#optimize");
     await page.evaluate(() => testWorker.onmessage({ data: { type: "error", error: "No feasible plan found within the search and planning limits." } }));
     assert.match(await page.locator("#planning-guidance-detail").innerText(), /does not prove.*impossible/);
     await page.getByRole("button", { name: "Review Planning Days", exact: true }).click();
     assert.equal(await page.evaluate(() => document.activeElement.id), "maxDays");
     await page.screenshot({ path: path.join(out, "guidance-desktop.png") });
-    await page.click("#optimize");
+    await page.click('[data-tab="planning"]'); await page.click("#optimize");
     await page.evaluate(() => testWorker.onerror({ message: "Synthetic worker failure" }));
     assert.match(await page.locator("#planning-guidance-detail").innerText(), /Windows launcher/);
     await page.getByRole("button", { name: "Try Search Again", exact: true }).click();
     assert.ok(await page.locator("#search-status").isVisible());
-    await page.click('[data-tab="farm"]'); await page.fill("#target", "26");
+    await page.click('[data-tab="planning"]'); await page.fill("#target", "26");
     await page.evaluate(() => testWorker.onmessage({ data: { type: "error", error: "No feasible plan found within the search and planning limits." } }));
     assert.match(await page.locator("#planning-guidance-detail").innerText(), /inputs at the start of the search/);
     // A real completed worker plan still passes replay and preserves the math.
     await page.evaluate(() => { window.Worker = realWorker; });
     const ready = blank(); Object.assign(ready.farm, { cash: 1e12, claimed: Array(5).fill(5), manualAccountData: false, manualFarmData: false });
     ready.plan.target = 25; ready.plan.strategy = "auto"; ready.farm.artifactInventory = [];
-    await load(ready); await page.click("#optimize");
+    await load(ready); await page.click('[data-tab="planning"]'); await page.click("#optimize");
     await page.waitForFunction(() => !!VirtueApp.getResult());
     assert.equal((await page.evaluate(() => VirtueApp.getResult())).validatedReplay, true);
     assert.ok(await page.locator("#planning-guidance").isHidden());
@@ -132,7 +132,7 @@ const root = path.resolve(__dirname, "..");
     plan.result.artifactRecommendations = { delivery: plan.config.farm.loadouts.delivery };
     await load({ version: 1, ...plan }); await page.click('[data-tab="artifacts"]');
     assert.equal(await page.locator("#delivery-set-source").innerText(), "Calculated for This Plan");
-    await page.click('[data-tab="farm"]'); await page.fill("#target", "26");
+    await page.click('[data-tab="planning"]'); await page.fill("#target", "26");
     await page.click('[data-tab="artifacts"]');
     assert.equal(await page.locator("#delivery-set-source").innerText(), "Starting Farm Preview");
     await load({ version: 1, ...plan }); await page.click('[data-tab="results"]'); await page.click("#next-ascension");
@@ -143,7 +143,7 @@ const root = path.resolve(__dirname, "..");
     await page.screenshot({ path: path.join(out, "summaries-desktop.png"), fullPage: true });
     for (const width of [1440, 1280, 1050, 800, 500, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
-      for (const tab of ["farm", "artifacts", "results"]) { await page.click(`[data-tab="${tab}"]`); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), tab + " overflow at " + width); }
+      for (const tab of ["farm", "planning", "artifacts", "results"]) { await page.click(`[data-tab="${tab}"]`); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), tab + " overflow at " + width); }
     }
     const offline = await browser.newPage(); await offline.goto("file://" + path.join(root, "index.html")); await offline.waitForFunction(() => !!globalThis.VirtueApp);
     assert.ok(await offline.locator("#epic-details").isVisible()); assert.ok(await offline.locator("#epic-fields").isHidden());

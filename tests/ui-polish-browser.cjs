@@ -72,7 +72,7 @@ const root = path.resolve(__dirname, "..");
     await page.evaluate(() => { document.getElementById("stop").hidden = false; document.getElementById("review-inputs").hidden = false; document.getElementById("run-progress").hidden = false; document.getElementById("run-summary").textContent = "Checking Opening 100 / 100"; document.getElementById("run-detail").textContent = "C1: 300m · K1: 300m · Best so far: 137d 18h · Searching for 59s"; });
     for (const [width, height] of [[1366, 768], [1100, 620], [1050, 620], [900, 600], [800, 600], [683, 384], [390, 600], [320, 600]]) {
       await page.setViewportSize({ width, height });
-      for (const section of ["farm", "research", "artifacts", "results", "help"]) {
+      for (const section of ["farm", "planning", "research", "artifacts", "results", "help"]) {
         await page.click(`[data-tab="${section}"]`);
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), section + " overflow at " + width);
       }
@@ -81,7 +81,7 @@ const root = path.resolve(__dirname, "..");
       for (let i = 0; i < controls.length; i++) for (let j = i + 1; j < controls.length; j++) {
         const a = controls[i], b = controls[j]; assert.ok(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top, "Planning controls overlap at " + width);
       }
-      await page.click('[data-tab="farm"]'); await page.locator("#maxDays").focus();
+      await page.click('[data-tab="planning"]'); await page.locator("#maxDays").focus();
       const focused = await page.locator("#maxDays").boundingBox(), bar = await page.locator(".run-bar").boundingBox();
       assert.ok(focused.y + focused.height < bar.y, "Focused field obscured at " + width);
     }

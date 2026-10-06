@@ -205,7 +205,7 @@
     "noNewAPIRequest": true,
     "newLiveAccountRequest": false,
     "nativeWindowsTested": false,
-    "currentAudit": "AUDIT-v0.7.12.md",
+    "currentAudit": "AUDIT-v0.8.0.md",
     "olderAuditFilesIncluded": false,
     "responsiveWidths": [
       1440,
@@ -217,13 +217,16 @@
   },
   "layout": {
     "compactTwoPanelDesktop": true,
-    "farmAccountEquipmentLeft": true,
-    "goalsShipsRight": true,
     "stackedNarrowScreens": true,
     "mobileTouchTargets": 44,
     "importDetailsKeyboardExpandable": true,
     "claimedTEVisibleAt320Pixels": true,
-    "helpTextShortened": true
+    "helpTextShortened": true,
+    "defaultPage": "Farm & Account",
+    "separatePlanningPage": true,
+    "farmEquipmentLeftAccountRight": true,
+    "planningGoalsLeftShipsRight": true,
+    "startingFarmContextOnPlanning": true
   },
   "releaseFix": {
     "cause": "Missing farm snapshot caused reference max-vehicle projections to use a starter Trike fallback",
@@ -316,7 +319,7 @@
       "publicFeedDownloadAndChecksums": "passed"
     }
   },
-  "currentVersion": "0.7.12",
+  "currentVersion": "0.8.0",
   "releaseRenumbering": {
     "version": "0.7.0",
     "previousVersion": "1.7.0",
@@ -533,6 +536,37 @@
     "workerSHA256": "2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320",
     "nativeWindowsAndPublicFeed": "Required automatic release checks",
     "localBuildAndPackaging": "passed: 164 runtime files",
+    "releaseAndPublishGuards": "passed"
+  },
+  "pageNavigation": {
+    "version": "0.8.0",
+    "test": "tests/page-navigation-browser.cjs",
+    "targetedBrowserChecks": "passed",
+    "initialFarmAndAccountPage": "passed",
+    "planningPrimaryAction": "navigation without starting a worker",
+    "farmTEAndBackupContext": "passed including missing timestamp and invalid planning inputs",
+    "importAndRetainedFarmLabels": "passed",
+    "crossPageSavedGoalsShipsAndPrecision": "passed using real downloads",
+    "importRetainsPlanningGoals": "passed",
+    "errorReviewOpensCorrectPage": "passed",
+    "resetUndoAndPlanningRecovery": "passed",
+    "compactTwoPanelDesktop": true,
+    "layouts": [
+      1440,
+      1280,
+      1050,
+      1000,
+      800,
+      500,
+      390,
+      320
+    ],
+    "existingUIRegressions": "passed: planning-clarity, ui-polish, timeline-readability, farm-artwork, research-artwork, loadout-artwork",
+    "solverChanges": false,
+    "workerSHA256": "2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320",
+    "nativeWindowsAndPublicFeed": "Required automatic release checks",
+    "localBuildAndPackaging": "passed: 164 runtime files",
+    "staticInputsAndTypesUnchanged": true,
     "releaseAndPublishGuards": "passed"
   }
 }

@@ -20,7 +20,7 @@ let config = blankFarm(), result = null, resultConfig = null, worker = null, dir
 const recoveryStore = Recovery.create(() => window.localStorage);
 let recoveryReady = false, recoveryPending = null, recoveryChanged = false, recoveryTimer = null;
 const effort = { quick: { width: 12, branches: 8, maxDepth: 500, maxMs: 1e4 }, balanced: { width: 32, branches: 12, maxDepth: 1200, maxMs: 45e3 }, thorough: { width: 72, branches: 20, maxDepth: 2200, maxMs: 18e4 } };
-const labels = { farm: "Farm & Goals", research: "Farm Research", artifacts: "Artifacts & stones", results: "Purchase timeline", help: "How it works" };
+const labels = { farm: "Farm & Account", planning: "Planning", research: "Farm Research", artifacts: "Artifacts & stones", results: "Purchase timeline", help: "How it works" };
 const colNames = { earnings: "Earnings", awayEarnings: "Away earnings", ihr: "Internal hatchery", elr: "Egg laying", shippingCap: "Shipping capacity", habCap: "Hab capacity", vehicleCost: "Vehicle cost", habCost: "Hab cost", researchCost: "Research cost" };
 function el(tag, text, cls) {
   const e = document.createElement(tag);
@@ -91,10 +91,18 @@ function tab(name, focusHeading = false) {
     else x.removeAttribute("aria-current");
   });
   document.querySelectorAll("[data-page]").forEach((x) => x.hidden = x.dataset.page !== name);
+  document.querySelector(".import-controls").hidden = name !== "farm";
+  document.querySelector(".import-status").hidden = name !== "farm";
   $("page-title").textContent = titleCase(labels[name]);
+  updatePrimaryAction();
   window.scrollTo({ top: 0 });
   SelectionReadout.refresh();
   if (focusHeading) $("page-title").focus({ preventScroll: true });
+}
+function updatePrimaryAction() {
+  const onFarm = document.querySelector('[data-tab="farm"]').classList.contains("active");
+  $("optimize").textContent = onFarm ? "Continue to Planning" : "Find Fastest Plan";
+  $("optimize").disabled = !!worker || !!importingBackup || (!onFarm && !!invalidField);
 }
 function readNumber(id, name, min = 0, max = Infinity, integer = false) {
   try { return S.number(NumericInput.value($(id)), name, min, max, integer); }
@@ -801,6 +809,7 @@ function refresh() {
   updateAccountSummaries();
   EggIcons.decorateLabel($("virtue").closest("label"), $("virtue").value);
   updateSequenceVisibility();
+  updatePlanningContext();
   $("sequence-budget").hidden = true;
   $("fit-sequence").hidden = true;
   try {
@@ -864,7 +873,7 @@ function refresh() {
       }
       shipEstimate.append(el("p", "FTL: " + c.ships.ftl + " / 60 from Epic Research. Both schedules include gem costs, fueling and earlier returns; final returns are not awaited."));
     }
-    $("optimize").disabled = !!worker || !!importingBackup;
+    updatePrimaryAction();
     if (!worker && !dirty) {
       $("run-summary").textContent = result ? duration(result.seconds) + " to target · " + result.switches + " switches" : "Ready to Plan";
       $("run-detail").textContent = result ? "Validated plan · " + result.pendingTE + " pending TE" : "Minimum time to your Truth Egg target";
@@ -873,8 +882,31 @@ function refresh() {
   } catch (e) {
     $("sequence-preview").hidden = true;
     fieldError(e);
-    $("optimize").disabled = true;
+    updatePrimaryAction();
     return false;
+  }
+}
+function updatePlanningContext() {
+  const virtue = $("virtue").value;
+  $("planning-virtue").replaceChildren(EggIcons.caption(virtue, S.NAME[S.EGGS.indexOf(virtue)] || "Review Farm"));
+  try {
+    let claimed = 0, pending = 0;
+    for (let i = 0; i < 5; i++) {
+      const level = readNumber("claimed-" + i, "Claimed TE", 0, 98, true), delivered = readNumber("delivered-" + i, "Delivered eggs");
+      claimed += level;
+      pending += Math.max(0, S.countTE(Math.max(delivered, level ? D.te[level - 1] : 0)) - level);
+    }
+    $("planning-starting-te").replaceChildren(el("span", claimed + " Claimed"), el("small", "+" + pending + " Pending"));
+  } catch {
+    $("planning-starting-te").textContent = "Review TE Inputs";
+  }
+  const backupTime = Number(config.importInfo?.timestamp), backup = $("planning-backup-time");
+  if (backupTime > 0 && Number.isFinite(new Date(backupTime * 1000).getTime())) {
+    backup.textContent = timestamp(backupTime, $("eventTimezone").value || "America/Los_Angeles", true);
+    backup.dateTime = new Date(backupTime * 1000).toISOString();
+  } else {
+    backup.textContent = config.importInfo ? "Timestamp Not Supplied" : "No Backup Loaded";
+    backup.removeAttribute("datetime");
   }
 }
 function saveBlob(name, text, type = "application/json") {
@@ -1262,7 +1294,8 @@ function busy(active) {
   $("run-progress").removeAttribute("aria-valuetext");
   $("run-progress").setAttribute("aria-label", "Planner search in progress");
   $("optimize").setAttribute("aria-busy", String(active));
-  $("optimize").disabled = active || !!importingBackup || !!invalidField;
+  updatePrimaryAction();
+  if (active) $("optimize").disabled = true;
   if ($("next-ascension")) $("next-ascension").disabled = active || !!importingBackup || dirty || !result || result.target >= 490;
   for (const id of ["load-file", "import-eid"]) $(id).disabled = active || !!importingBackup;
   $("use-earnings-start").disabled = active || !!importingBackup || $("use-earnings-start").dataset.ready !== "true";
@@ -1578,7 +1611,11 @@ function filterResearch() {
 }
 $("research-filter").oninput = filterResearch;
 $("clear-research-filter").onclick = () => { $("research-filter").value = ""; filterResearch(); $("research-filter").focus(); };
-$("optimize").onclick = optimize;
+$("optimize").onclick = () => {
+  if (document.querySelector('[data-tab="farm"]').classList.contains("active")) tab("planning", true);
+  else optimize();
+};
+$("review-farm").onclick = () => tab("farm", true);
 $("stop").onclick = () => {
   worker?.postMessage({ cancel: true });
   $("stop").disabled = true;

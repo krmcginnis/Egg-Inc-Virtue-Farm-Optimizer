@@ -1,4 +1,4 @@
-EGG INC. VIRTUE FARM OPTIMIZER 0.7.8 — PC EDITION
+EGG INC. VIRTUE FARM OPTIMIZER 0.8.0 — PC EDITION
 
 GET STARTED
 1. Extract the entire ZIP; open the Egg-Inc-Virtue-Farm-Optimizer folder.
@@ -16,10 +16,10 @@ installs app files and reopens at the same local address. Saved farm/plan files
 and browser settings are retained. Failed installation or startup restores the
 previous app. Finish or stop a search or account import before updating.
 
-This version must be installed once from its ZIP. The public GitHub release
-repository is configured automatically in published releases, or once under
-Update Source. No GitHub credentials belong in the app. The initial prepared
-package needs its release repository connected before it can find updates.
+Published releases already point to the public GitHub update repository.
+If you still run a 1.x version, extract the latest ZIP once; updates never
+downgrade. Future 0.x releases install through Update App. Use Update Source
+to connect a source checkout if needed. No GitHub credentials are stored.
 Direct index.html use remains offline; launch the CMD file for updating.
 
 YOUR FARM
@@ -38,7 +38,7 @@ account information still loads, with a notice at the top. Existing starting
 farm values, equipped gear and start time are kept in that case. A found farm
 refreshes those values and sets the start to now. Planning goals are retained. Owned Virtue inventory refreshes the automatic
 earnings and delivery sets. Existing flight fuel is not spent again.
-Account and farm values are separate groups in Farm & Goals with independent
+Account and farm values are separate groups on Farm & Account with independent
 Edit Manually checkboxes. Account imports lock account fields; a found farm also
 locks farm fields. Goals remain editable. Artifact sets unlock with Edit Farm Manually.
 
@@ -53,6 +53,10 @@ Start from scratch enables automatic Virtue routing and begins with the free
 Coop, Trike and one silo. Additional purchases require the matching Virtue.
 Enter your actual Soul Eggs before planning switches; clearing sets them to zero.
 Fresh farms use automatic online/offline waiting. Keep the starting silo refilled.
+
+Choose Continue to Planning or the Planning sidebar entry. Planning has goals,
+ship schedules, timing and assumptions, with a compact starting-farm summary.
+Save Farm includes values and settings from both pages.
 
 Set your total TE goal and switch budget. Automatic routing searches repeated
 research, shipping and habitat visits. Select User Selected Sequence to enter
