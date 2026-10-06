@@ -1,4 +1,4 @@
-# Egg Inc. Virtue Farm Optimizer v0.7.4 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.7.5 — Release Audit
 
 v1.6.2 fixes the PC launcher asset routes. The bundled images were present
 in v1.6.1, but Local-Helper.ps1 returned 404 for every assets/ URL. The
@@ -298,3 +298,11 @@ runs. Publication is serialized and tags the exact tested commit. Gate and
 publishing-plan tests passed. The standard Windows release checks remain required.
 Solver and game data are unchanged; the worker SHA256 remains
 `2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320`.
+
+
+## Sidebar update control — v0.7.5
+
+Update App is now the final item in the sidebar, below the Local Planning note.
+The existing flex layout places it at the bottom of the desktop menu panel.
+Its ID, accessible name, styling and update handler are unchanged.
+No solver, game data or update logic was changed.

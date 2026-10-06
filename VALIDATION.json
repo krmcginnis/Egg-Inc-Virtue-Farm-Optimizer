@@ -205,7 +205,7 @@
     "noNewAPIRequest": true,
     "newLiveAccountRequest": false,
     "nativeWindowsTested": false,
-    "currentAudit": "AUDIT-v0.7.4.md",
+    "currentAudit": "AUDIT-v0.7.5.md",
     "olderAuditFilesIncluded": false,
     "responsiveWidths": [
       1440,
@@ -316,7 +316,7 @@
       "publicFeedDownloadAndChecksums": "passed"
     }
   },
-  "currentVersion": "0.7.4",
+  "currentVersion": "0.7.5",
   "releaseRenumbering": {
     "version": "0.7.0",
     "previousVersion": "1.7.0",
@@ -371,5 +371,11 @@
     "terminalGitPush": "separate credentials unavailable; existing GitHub connector used",
     "solverChanges": false,
     "workerSha256": "2dfad0d4ad2a0cf69776c6bfdcce5dbd775131c0670710aa5842f21bd0727320"
+  },
+  "sidebarUpdatePosition": {
+    "version": "0.7.5",
+    "change": "markup order only; Update App last in sidebar",
+    "solverChanges": false,
+    "updateLogicChanges": false
   }
 }
