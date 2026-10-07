@@ -1153,3 +1153,15 @@ worker statements above describe historical releases. Native Windows launcher,
 installation/restart/rollback and anonymous public-feed/archive checks must pass
 in the established automatic workflow before release handover. Local native
 PowerShell is unavailable.
+
+
+Publication is verified. Original Windows run 37575363920 passed build,
+packaging, native hidden launch, install/restart/rollback and both asset uploads.
+Its first anonymous check received HTTP 403 after retries, hiding the release as
+a draft. Recovery run 37575699986 rechecked that original job and immutable
+commit e9a783b19b024f94a17c0a624aedecedf557657f, release ID 405403481,
+both original asset digests, the manifest and every app-file checksum on Windows.
+It published the same draft and the anonymous updater found v0.8.13, downloaded
+the complete archive and verified all file checksums. No asset was replaced,
+no new version/runtime change was introduced, and the temporary recovery workflow
+is removed after success. The normal release workflow remains unchanged.
