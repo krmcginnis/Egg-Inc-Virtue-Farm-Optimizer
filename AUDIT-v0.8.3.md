@@ -1,4 +1,4 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.2 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.3 — Release Audit
 
 v0.8.1 keeps the v0.8.0 Farm & Account / Planning split and applies a focused validation and UI cleanup. Both pages retain
 the compact two-panel desktop layout and share the existing farm configuration.
@@ -611,3 +611,24 @@ archive download and checksum verification up to five times with short increasin
 delays. Any persistent failure still hides the release. This changes release
 verification only; app behavior, solver behavior and update verification rules
 are unchanged.
+
+
+## Sync repair and EID identity — v0.8.3
+
+Removing persistent browser recovery in v0.8.2 left one reference to the deleted
+Restore Previous Session control inside the shared busy-state handler. Starting
+an EID import invoked that handler before the backup request, causing a browser
+exception and preventing current-farm synchronization. The stale control
+reference is removed.
+
+The EID is now a deliberately separate local preference rather than part of
+farm/session recovery. A valid EI + 16 digit identifier is stored under its own
+local key and survives reloads and Start from Scratch. It remains excluded from
+Save Farm/Save Plan data. After a successful backup response, backup.userName is
+stored separately for display. The resting EID input shows that username;
+focusing the input reveals the underlying EID. New or incomplete edits are
+validated as typed and never silently fall back to the previously saved account.
+
+Import browser regression coverage now exercises the actual backup request,
+username display, click-to-reveal behavior, EID persistence, and reset/reload
+behavior. Solver routing and optimization code are unchanged.
