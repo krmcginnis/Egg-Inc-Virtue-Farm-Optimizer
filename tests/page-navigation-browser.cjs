@@ -63,22 +63,20 @@ const root = path.resolve(__dirname, "..");
     assert.equal(await page.locator('#planning-farm-summary [data-source="farm"]').innerText(), "Imported Backup");
     assert.equal((await page.evaluate(() => VirtueApp.getConfig())).plan.target, 45);
     // Invalid planning input must not hide the starting-farm context or trap navigation.
-    await page.fill("#maxDays", "0"); await page.evaluate(() => VirtueApp.refresh());
+    await page.fill("#stagedSales", "0"); await page.evaluate(() => VirtueApp.refresh());
     assert.match(await page.locator("#planning-starting-te").innerText(), /25 Claimed/);
-    await page.click("#review-inputs"); assert.equal(await page.locator("#page-title").innerText(), "Planning"); assert.equal(await page.evaluate(() => document.activeElement.id), "maxDays");
+    await page.click("#review-inputs"); assert.equal(await page.locator("#page-title").innerText(), "Planning"); assert.equal(await page.evaluate(() => document.activeElement.id), "stagedSales");
     await page.click("#review-farm"); assert.ok(await page.getByRole("button", { name: "Continue to Planning", exact: true }).isEnabled());
-    await page.click("#optimize"); await page.fill("#maxDays", "210"); await page.evaluate(() => VirtueApp.refresh());
-    // Reset/Undo and browser recovery retain goals, missions and the Planning page.
+    await page.click("#optimize"); await page.fill("#stagedSales", "3"); await page.evaluate(() => VirtueApp.refresh());
+    // Reset/Undo retains goals, missions and the Planning page; browser recovery is absent.
     const beforeReset = await page.evaluate(() => VirtueApp.getConfig());
     await page.click("#clear-data"); assert.equal(await page.locator("#page-title").innerText(), "Farm & Account");
     await page.click("#undo-reset"); assert.equal(await page.locator("#page-title").innerText(), "Planning");
     assert.deepEqual(await page.evaluate(() => VirtueApp.getConfig()), beforeReset);
-    await page.fill("#minOfflineMinutes", "21");
-    await page.waitForFunction(() => JSON.parse(localStorage.getItem("virtue-optimizer.session.v1") || "{}").config?.plan?.minOfflineMinutes === 21);
-    await page.reload(); await page.waitForFunction(() => !!globalThis.VirtueApp); assert.equal(await page.locator("#page-title").innerText(), "Farm & Account");
-    await page.click("#restore-session"); assert.equal(await page.locator("#page-title").innerText(), "Planning");
-    assert.equal(await page.inputValue("#minOfflineMinutes"), "21");
-    assert.deepEqual((await page.evaluate(() => VirtueApp.getConfig())).plan.ships, beforeReset.plan.ships);
+    assert.equal(await page.locator("#session-autosave").count(), 0);
+    assert.equal(await page.locator("#session-recovery").count(), 0);
+    await page.fill("#minOfflineMinutes", "21"); await page.evaluate(() => VirtueApp.refresh());
+    assert.equal(await page.evaluate(() => localStorage.getItem("virtue-optimizer.session.v1")), null);
     const out = path.join(root, "tmp/page-navigation"); fs.mkdirSync(out, { recursive: true });
     await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: path.join(out, "planning-desktop.png"), fullPage: true });
     await page.click("#review-farm"); await page.screenshot({ path: path.join(out, "farm-account-desktop.png"), fullPage: true });
@@ -91,6 +89,6 @@ const root = path.resolve(__dirname, "..");
       }
     }
     assert.deepEqual(errors, []);
-    console.log("PASS Farm & Account default, Planning navigation and primary action, page-specific controls, live farm/TE/backup context, imported/retained labels, cross-page saved goals/ships/precision, import retention, error routing, Reset/Undo, recovered Planning sessions and two-panel layouts 1440–320px.");
+    console.log("PASS Farm & Account default, Planning navigation and primary action, page-specific controls, live farm/TE/backup context, imported/retained labels, cross-page saved goals/ships/precision, import retention, error routing, Reset/Undo, browser recovery removal and two-panel layouts 1440–320px.");
   } finally { if (browser) await browser.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
