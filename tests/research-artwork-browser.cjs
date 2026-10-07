@@ -19,7 +19,7 @@ const root = path.resolve(__dirname, "..");
   try {
     browser = await chromium.launch({ executablePath: process.env.CHROMIUM_EXECUTABLE, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"], env: { ...process.env, LD_LIBRARY_PATH: process.env.CHROMIUM_LIB_DIR || "", FONTCONFIG_PATH: process.env.CHROMIUM_FONT_DIR || "" } });
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } }), errors = []; page.on("pageerror", e => errors.push(e.message));
-    const farm = blank(); Object.assign(farm.farm, { cash: 1e18, claimed: Array(5).fill(5), manualAccountData: true, manualFarmData: true, epic: Object.fromEntries(S.D.epic.map((r, i) => [r.id, i % (r.levels + 1)])) });
+    const farm = blank(); Object.assign(farm.farm, { cash: 1e18, claimed: Array(5).fill(5), manualAccountData: true, manualFarmData: true, epic: Object.fromEntries(S.D.epic.map((r, i) => [r.id, i % (r.levels + 1)])) }); farm.farm.epic.hold_to_research = 20;
     Object.assign(farm.plan, { target: 25, maxSwitches: 0, autoSequence: false, strategy: "user", sequence: ["curiosity"] });
     await page.goto("http://127.0.0.1:" + server.address().port); await page.waitForFunction(() => !!globalThis.VirtueApp);
     await page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Farm.json")), farm);
