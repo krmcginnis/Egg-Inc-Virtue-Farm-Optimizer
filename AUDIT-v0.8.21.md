@@ -1706,4 +1706,21 @@ The new priority control was visually reviewed in the desktop Planning layout.
 The worker bundle SHA-256 remains identical to v0.8.20:
 0e629ed69a86efea7a57c48f81307be6044b6adc3b5749b0c3d17b70b418e271.
 Native Windows installation/restart/rollback and public update-feed verification
-will be recorded after the release workflow completes.
+passed, as recorded below.
+
+Native Windows publication is verified. GitHub Actions run 37654209017,
+job 112905069904, passed the active-ULTRA-Pro import regression, independent
+research-sale regressions, build/package checks, native hidden CMD launch,
+installation, restart, startup-failure rollback, and legacy-worker restart.
+Windows PowerShell 5.1.26100.33438 then found v0.8.21 through the public updater,
+downloaded the complete release, and verified every app file checksum.
+
+Published source commit: 0a287eb8c296cfaf32f81f04b013c0e9f7540a6e.
+Public release: 405970807, v0.8.21, with both assets uploaded:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8570380 bytes; SHA256
+  55e3230863ee90f2249b35cac40657cb4bb1f5b52e7877174fec0ac5571bcb5d.
+- update-manifest.json: 240 bytes; SHA256
+  4557609caed357c7d22b09eb385dafc3d2a683d0b8ae9afc977164b6bb8b00ea.
+
+This same-version audit commit records completed verification without replacing
+or repackaging either immutable release asset.
