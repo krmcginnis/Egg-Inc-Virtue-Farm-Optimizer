@@ -1,11 +1,9 @@
-# v0.8.14
+# v0.8.15
 
-- Use gem, Virtue egg, and Soul Egg artwork for timeline rates, TE gains, switch costs, and picker metadata.
-- Left align maximum rates and show slower vehicles first in shift summaries and the Quick Guide.
-- Simplify hab/vehicle purchase estimates, including ~<1 for the free Coop.
-- Reduce ship images by 25%; stack cost, fuel, and purchase time, keeping fuels on one line.
-- Default Event Schedule Timezone to Automatic, with detected regional time, all supported regional zones, and fixed UTC offsets.
-- Correct local 09:00 event boundaries in half-hour and quarter-hour timezones; preserve daylight saving behavior.
-- Revalidate every common research, Epic Research, artifact, stone, hab, and vehicle, plus costs, ships, artifact selection, and complete route replay.
-- Desktop validation only, as requested.
+- Normalize gem, Virtue egg, and Soul Egg artwork by visible bounds, fixing inconsistent apparent sizes caused by transparent padding.
+- Center unit images beside their numbers in timeline summaries, Quick Guide, and all purchase pickers.
+- Increase hab, vehicle, and ship cost/fuel/purchase-time details to 13px with more spacing.
+- Keep ship fuels on one line using shorter labels with redundant trailing zeroes removed; retain the same numeric values and accessible quantities.
+- Widen the ship selection dialog slightly while retaining the compact farm layout and smaller ship images.
+- Desktop checks pass; solver and rates are unchanged.
 - Install through Update App → Update & Restart.

@@ -1,6 +1,6 @@
 {
   "name": "egg-inc-virtue-farm-optimizer",
-  "version": "0.8.14",
+  "version": "0.8.15",
   "private": true,
   "description": "Egg Inc. Virtue Farm Optimizer",
   "scripts": {

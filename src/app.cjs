@@ -591,7 +591,12 @@ function shipChoiceDescriptions(visit, index) {
     const seconds = state ? mission.cost <= state.cash ? 0 : earnings > 0 ? (mission.cost-state.cash)/earnings : Infinity : null;
     const estimate = purchaseTime(seconds);
     const fuel = el("span",undefined,"picker-fuels");
-    for (const i of displayEggOrder.filter(i=>mission.fuel[i])) fuel.append(Units.amount(S.EGGS[i],num(mission.fuel[i])));
+    for (const i of displayEggOrder.filter(i=>mission.fuel[i])) {
+      const quantity=num(mission.fuel[i]),amount=Units.amount(S.EGGS[i],quantity);
+      // Remove only redundant trailing zeroes; retain the rounded numeric value.
+      amount.firstElementChild.textContent=quantity.replace(/\.0+(?=[A-Za-z]*$)/,"").replace(/(\.\d*[1-9])0+(?=[A-Za-z]*$)/,"$1");
+      fuel.append(amount);
+    }
     return Units.lines(Units.amount("gem",num(mission.cost)),fuel,estimate);
   };
 }

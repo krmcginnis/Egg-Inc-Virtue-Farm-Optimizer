@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.14 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.15 — Release Audit
+
+v0.8.15 fixes visible unit artwork sizing/alignment and increases picker detail
+sizes. Current validation appears in the v0.8.15 section below; prior evidence
+is historical.
 
 v0.8.14 adds currency and egg units to pickers/timeline, simplifies picker
 estimates, sorts vehicle summaries, and adds Automatic/full timezone choices.
@@ -1265,3 +1269,38 @@ contains exactly both verified uploaded assets:
 
 This final audit proof is a same-version documentation commit after the immutable
 release assets were verified; it does not replace or repackage them.
+
+
+## Unit sizing and picker readability — v0.8.15
+
+The v0.8.14 gem source has only 39px of visible artwork within its 64px canvas,
+while the eggs use different source sizes/padding. Giving every original a 20px
+image box therefore produced inconsistent visible sizes. UnitIcons now frames
+the visible bounds (alpha >16) of the pinned original gem, five Virtue eggs and
+Soul Egg in a fixed symbol box. CSS positions/scales each original with its
+aspect ratio preserved; no artwork file is edited or replaced. Symbols are
+centered beside the numeric text, with tabular numerals and consistent spacing.
+Timeline rates use 16px symbol boxes; TE gains/switch cost use 18px. Picker costs
+use 20px, ship fuels 18px. Broken images still fall back to readable unit names,
+and accessible labels retain quantities/units.
+
+Hab, vehicle and ship metadata increase to 13px (previously 11px, with ship fuel
+at 10px); vertical row gaps increase to 6px. Ship selection is up to 960px wide
+instead of 850px so the larger details stay readable. Fuel captions remove only
+redundant trailing zeroes (25.000T becomes 25T, 2.400T becomes 2.4T); the rounded
+numeric value, original accessible quantity and all saved values are retained.
+All fuels still fit one line. Farm columns, hab/vehicle/ship artwork sizes,
+purchase calculations and replay actions stay unchanged.
+
+npm ci/build, release-state and prepare-publish guards pass. Three affected
+Chromium suites pass at desktop widths 1440–1000px: equipment-flow,
+physical-picker and timeline-readability. Added checks verify fuel rows fit
+inside ship cards, number/symbol centers align within 1px, symbol boxes are
+square, and picker detail fonts are at least 13px. Desktop screenshots of hab,
+vehicle, ship, timeline and Quick Guide layouts are reviewed. Mobile layouts
+are not checked, as requested. The solver worker SHA256 remains exactly the
+v0.8.14 value:
+4c7950f0d1fd01da5189a6aed4a59806f05c5ea5823951e9c056bfda4d7da272.
+No solver/catalog/math source changes were required.
+
+Windows release and public updater verification follow after publishing.
