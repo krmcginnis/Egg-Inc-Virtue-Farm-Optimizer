@@ -31,9 +31,10 @@ function validateLoadout(raw,limit=4){if(!Array.isArray(raw)||raw.length>limit)t
 // Only immutable calendar boundaries are shared. Farms, search states and
 // previous plans are never cached across searches. Bound memory to four windows.
 const calendarWindows=new Map();
+// Modern UTC offsets include 30- and 45-minute zones; preserve local 09:00 events.
 function calendar(start,end,zone){const key=start+':'+end+':'+zone;if(calendarWindows.has(key))return calendarWindows.get(key);const fmt=new Intl.DateTimeFormat('en-US',{timeZone:zone,weekday:'short',hour:'2-digit',hourCycle:'h23'});
  function event(t){const p=Object.fromEntries(fmt.formatToParts(new Date(t*1000)).map(x=>[x.type,x.value]));const h=+p.hour;return {earnings:(p.weekday==='Mon'&&h>=9)||(p.weekday==='Tue'&&h<9)?2:1,sale:(p.weekday==='Fri'&&h>=9)||(p.weekday==='Sat'&&h<9)?0.3:1};}
- const out=[{t:start,...event(start)}];let prev=out[0];for(let t=(Math.floor(start/3600)+1)*3600;t<=end+7*86400;t+=3600){const e=event(t);if(e.earnings!==prev.earnings||e.sale!==prev.sale){out.push({t,...e});prev=e;}}out.push({t:Infinity,earnings:1,sale:1});out.forEach(Object.freeze);Object.freeze(out);if(calendarWindows.size>=4)calendarWindows.delete(calendarWindows.keys().next().value);calendarWindows.set(key,out);return out;}
+ const out=[{t:start,...event(start)}];let prev=out[0];for(let t=(Math.floor(start/900)+1)*900;t<=end+7*86400;t+=900){const e=event(t);if(e.earnings!==prev.earnings||e.sale!==prev.sale){out.push({t,...e});prev=e;}}out.push({t:Infinity,earnings:1,sale:1});out.forEach(Object.freeze);Object.freeze(out);if(calendarWindows.size>=4)calendarWindows.delete(calendarWindows.keys().next().value);calendarWindows.set(key,out);return out;}
 function at(c,t){let lo=0,hi=c.calendar.length-1;while(lo+1<hi){const m=(lo+hi)>>1;if(c.calendar[m].t<=t+1e-6)lo=m;else hi=m;}return {...c.calendar[lo],next:c.calendar[lo+1].t};}
 function prepare(raw,opts={}){
  if(!raw||raw.version!==1||!raw.farm)throw Error('Unsupported farm file. Use a version 1 farm configuration.');const f=raw.farm,p=raw.plan||{};

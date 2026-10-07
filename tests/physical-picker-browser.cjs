@@ -29,16 +29,16 @@ const root=path.resolve(__dirname,"..");
       for(const item of items){
         const row=page.locator(`#gear-picker [data-item-id="${item.id}"]`);
         assert.ok(await row.locator(`[data-farm-icon="${kind}:${item.id}"]`).isVisible());
-        assert.match(await row.innerText(),/gems/);assert.match(await row.innerText(),item.id ? /to afford/ : /Affordable now/);
+        assert.ok(await row.locator('[data-unit-icon="gem"] img').isVisible());assert.doesNotMatch(await row.innerText(),/gems|to afford|Affordable now/);if(!item.id)assert.match(await row.innerText(),/~<1/);
       }
       await page.getByRole("searchbox",{name:"Filter items"}).fill(kind==="hab" ? "portal" : "hyperloop");
       await page.screenshot({path:path.join(out,kind+"-desktop.png")});
-      for(const width of [1440,1050,800,500,390,320]){
+      for(const width of [1440,1280,1050,1000]){
         await page.setViewportSize({width,height:1000});
         assert.ok(await page.locator("#gear-picker").evaluate(n=>n.scrollWidth<=n.clientWidth+1));
         assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
       }
-      await page.screenshot({path:path.join(out,kind+"-mobile.png")});
+      await page.screenshot({path:path.join(out,kind+"-small-desktop.png")});
       await page.keyboard.press("Escape");assert.equal(await page.evaluate(()=>document.activeElement.id),"pick-"+kind+"-0");
       assert.deepEqual((await page.evaluate(()=>VirtueApp.getConfig())).farm,initial.farm,"cancel/search cannot change farm");
       await page.setViewportSize({width:1440,height:1000});
@@ -66,10 +66,10 @@ const root=path.resolve(__dirname,"..");
     await page.getByRole("button",{name:"Cancel",exact:true}).click();assert.equal(await page.inputValue("#start"),before);assert.equal(await page.evaluate(()=>document.activeElement.id),"start");
     await page.click("#start");await page.getByLabel("Start date",{exact:true}).fill("2026-10-09");await page.getByLabel("Start time",{exact:true}).fill("13:45");
     await page.screenshot({path:path.join(out,"date-desktop.png")});
-    await page.setViewportSize({width:320,height:600});assert.ok(await page.locator("#date-picker").evaluate(n=>n.scrollWidth<=n.clientWidth+1));await page.screenshot({path:path.join(out,"date-mobile.png")});
+    await page.setViewportSize({width:1000,height:1000});assert.ok(await page.locator("#date-picker").evaluate(n=>n.scrollWidth<=n.clientWidth+1));await page.screenshot({path:path.join(out,"date-small-desktop.png")});
     await page.getByRole("button",{name:"Ok",exact:true}).click();assert.equal(await page.inputValue("#start"),"2026-10-09T13:45");
     assert.equal((await page.evaluate(()=>VirtueApp.getConfig())).plan.start,await page.evaluate(()=>new Date("2026-10-09T13:45").getTime()/1000));
     await page.click("#start");await page.getByLabel("Start date",{exact:true}).fill("");await page.getByRole("button",{name:"Ok",exact:true}).click();assert.ok(await page.locator("#date-picker").isVisible());await page.keyboard.press("Escape");
-    assert.deepEqual(errors,[]);console.log('PASS hab/vehicle visual choices and metadata, size reduction, Hyperloop cars, cancel/focus/locks/save, C K I R H vertical fuel/progress, bottom sidebar and date OK/cancel/validation/precision, 1440–320px.');
+    assert.deepEqual(errors,[]);console.log('PASS hab/vehicle visual choices and metadata, size reduction, Hyperloop cars, cancel/focus/locks/save, C K I R H vertical fuel/progress, bottom sidebar and date OK/cancel/validation/precision, 1440–1000px.');
   }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

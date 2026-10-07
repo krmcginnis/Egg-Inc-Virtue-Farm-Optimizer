@@ -440,7 +440,7 @@ aside .update-app{margin-top:auto}
 .artifact-strip .loadout-stone-row{margin:0;min-height:24px}
 .artifact-strip .loadout-stone-socket.is-empty{font-size:12px}
 .equip-artifact-display{margin:10px 0}.equip-artifact-label{font-size:12px;margin:0 0 6px;color:#9de5c4;font-weight:600}
-.ship-icon{display:block;width:64px;height:64px;flex:none;background-repeat:no-repeat}
+.ship-icon{display:block;width:48px;height:48px;flex:none;background-repeat:no-repeat}
 .ship-image-picker{display:flex;flex-direction:column;align-items:center;gap:4px;width:100%;padding:7px;background:#101925}
 .ship-picker-name{font-size:11px;overflow-wrap:anywhere}
 .ship-choice-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -456,3 +456,16 @@ aside .update-app{margin-top:auto}
 .guide-complete>.shift-max-rates{flex:0 0 100%;margin:5px 0 0}.guide-complete .shift-max-rates dd{color:#bee9cf}
 @media(max-width:500px){.shift-max-rates{grid-template-columns:1fr;gap:6px}.shift-max-rates>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.shift-max-rates dt{flex:1;min-width:0}.shift-max-rates dd{flex:0 1 46%;text-align:right;margin:0}}
 @media(forced-colors:active){.shift-max-rates dt,.shift-max-rates dd,.guide-complete .shift-max-rates dd,.shift-start{color:CanvasText}}
+
+/* Small inline game units; meaningful unit labels remain available to readers. */
+.icon-amount{display:inline-flex;align-items:center;gap:4px;vertical-align:middle;white-space:nowrap}
+.icon-amount .unit-icon{display:inline-block;object-fit:contain;width:20px;height:20px;flex:none;margin:0}
+.picker-detail-lines{display:flex;flex-direction:column;gap:4px}
+.picker-detail-line{display:block}.picker-fuels{display:flex;flex-wrap:wrap;gap:4px 8px}
+.ship-choice-grid .picker-detail-lines{align-items:center}.ship-choice-grid .picker-fuels{justify-content:center}
+.shift-max-rates,.shift-max-rates dt,.shift-max-rates dd{text-align:left}
+@media(max-width:500px){.shift-max-rates>div{display:block}.shift-max-rates dd{margin:3px 0 0;text-align:left}}
+
+.ship-choice-grid .picker-fuels{flex-wrap:nowrap;gap:3px;font-size:10px}
+.ship-choice-grid .picker-fuels .unit-icon{width:16px;height:16px}
+.ship-choice-grid .picker-fuels .icon-amount{gap:2px}

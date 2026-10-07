@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.13 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.14 — Release Audit
+
+v0.8.14 adds currency and egg units to pickers/timeline, simplifies picker
+estimates, sorts vehicle summaries, and adds Automatic/full timezone choices.
+Current validation is in the v0.8.14 section below. Earlier evidence is historical.
 
 v0.8.13 corrects the stage adapter’s Bust Unions discount, simplifies strategy
 selection and adds shift start dates and peak rates. Prior evidence below is
@@ -1165,3 +1169,81 @@ It published the same draft and the anonymous updater found v0.8.13, downloaded
 the complete archive and verified all file checksums. No asset was replaced,
 no new version/runtime change was introduced, and the temporary recovery workflow
 is removed after success. The normal release workflow remains unchanged.
+
+
+## Units, timezones, and model revalidation — v0.8.14
+
+Timeline summary and Quick Guide peak rates use the original Virtue gem for
+income and the current shift's egg for laying/shipping, followed by /hour.
+Both rate lists are left aligned. TE gains use +number and that shift's egg,
+including the Shift Complete strip; switch cost uses the Soul Egg image.
+Image units retain accessible names and text fallback for failed artwork.
+Hab/vehicle choices retain the same research-aware capacity, price and current
+income calculation. Estimates omit “to afford”; zero wait displays ~<1,
+including the free Coop. Ship images are 48px rather than 64px (25% reduction).
+Mission-specific cost, fuels and estimate form three rows; all fuels fit one row
+at desktop widths. Estimates assume unchanged current income, full habs and
+maintained silos; they exclude future purchases, events and fueling.
+The original gem is pinned to EggIncAssets e821c7c9d5b39a9aee3eed0144a732c39489de1e,
+64/egginc/icon_virtue_gem.png; SHA256
+55ca39d6da05b89d3549c7bc6fcdc6b23fde87e411d83fc59d58f9456a21a5a1.
+
+Vehicle groups sort by base shipping capacity with catalog-order ties. Current
+research modifiers preserve that speed order (hover/Hyperloop modifiers only
+increase higher vehicle types). Actual purchases and replay action order remain
+unchanged; the same presentation groups are used by the PDF.
+
+New UI farms use eventTimezoneMode=automatic and store a resolved IANA
+ eventTimezone. Automatic resolves the device timezone for new searches; saved
+plans replay their captured resolved zone. Explicit zones in older farms remain
+selected. The menu includes every regional zone exposed by Intl, UTC and fixed
+UTC-12 through UTC+14 zones, plus Kolkata/Kathmandu aliases. Regional zones
+follow daylight saving; fixed UTC offsets do not. The event calendar now scans
+quarter-hour boundaries so 09:00 local is precise in 30/45-minute offset zones.
+Pacific/UTC whole-hour behavior is unchanged. Focused timezone checks cover
+Kolkata, Kathmandu, Chatham, UTC+14 and the Pacific November DST transition.
+
+Independent Wasmegg audit uses source commit
+9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67 and game data commit
+a089580df4cc6cce8a2f5a9a7dcf86583a2c216d. tests/reference-math.cjs accepts an
+external bundle exporting the unmodified reference functions (computeSnapshot,
+getArtifact/getStone, research price/tier helpers, hab/vehicle/car price tables,
+silo duration/cost, TE thresholds, shift cost, Colleggtibles and mission tables).
+WASMEGG_REFERENCE supplies that bundle; optional WASMEGG_AUDIT_PLAN supplies a
+private historical replay fixture. No account information is tracked.
+
+The current checkout passes 855 state comparisons, 13,980 research prices,
+228 hab prices, 612 vehicle prices, 27 car prices, 47,880 tier decisions,
+240 Colleggtible selections and 132 ship/mission/FTL combinations. Explicit
+isolated coverage includes all 56 common researches at zero/mid/max levels,
+all 22 Epic entries at zero/mid/max, all 171 artifacts and all 30 stones with
+catalog bonuses/socket counts, all 19 habs under both permits, and all 12 vehicle
+rates with unresearched/max-research scenarios. Empty/locked vehicle slots are
+respected. Farm assumptions remain full hab population and selected earnings
+mode; hatchery/UI-only Epic bonuses do not change steady-state delivery.
+
+Two of 855 comparisons differ by one chicken due to floating-point multiplication
+order before habitat ceiling. The tiny Coop fixture makes this a 0.338983% rate
+difference; the large-farm case is 1.78431e-8 relative. All other relative rate
+errors are <=6.37284e-16. The audit tolerance is bounded by that actual single
+chicken capacity difference, not a broad percentage allowance.
+
+Independent exhaustive income/research and delivery loadout oracles each pass
+24 scenarios across both permits, online/offline modes, tier/socket tradeoffs,
+owned/loose stones and laying/shipping bottlenecks. Catalog/projection checks
+also pass farm snapshots, research-dependent train lengths, immutable owned
+gear, future five/four-socket catalogs and a complete synthetic 160→200 TE
+route with exact time/delivery/affordability replay. The Bust Unions proposal
+regression and 120-minute K1 cap pass. Rate/event/gear pairing, physical previews,
+vehicle display order, and Automatic/explicit/fractional timezone tests pass.
+
+Four affected Chromium suites pass at 1440–1000px: timeline-readability,
+physical-picker, visual-gear and equipment-flow. Desktop screenshots are reviewed
+for timeline units/alignment and ship fuel rows. Mobile checks are no longer run
+for this batch at the user's request. npm ci/build, release-state, prepare-publish
+and diff checks pass. No purchase strategy/catalog changes were needed; the only
+simulation change is precise fractional-timezone event timing. The solver remains
+a heuristic search; this audit verifies calculations and replay, not global
+optimality. PDF text units remain readable words; its vehicle order is shared.
+
+Windows build, native launcher/updater and public-feed proof follow after publishing.

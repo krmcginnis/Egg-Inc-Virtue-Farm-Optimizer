@@ -6,7 +6,7 @@ function build(actions,{start,end,silos=0}){
  function begin(time){g={start:time,purchaseEnd:time,end:time,activities:[],break:null,hiddenOnlineSeconds:0,interactionSeconds:0};research=new Map();habs=new Map();vehicles=new Map();cars=new Map();sets=new Map();siloStart=silos;}
  function finish(time,pause=null){g.purchaseEnd=time;g.end=pause?.end??time;g.break=pause;
   for(const [i,v]of [...research].sort((a,b)=>a[0]-b[0]))g.activities.push({kind:'research',i,label:S.D.research[i].name,value:v.from+' → '+v.to});
-  for(const [items,data,label]of [[habs,S.D.habs,'Habitats'],[vehicles,S.D.vehicles,'Vehicles']]){const counts=new Map();for(const id of items.values())counts.set(id,(counts.get(id)||0)+1);for(const [id,count]of counts)g.activities.push({kind:'physical',label,value:count+' × '+data[id].name});}
+  for(const [items,data,label]of [[habs,S.D.habs,'Habitats'],[vehicles,S.D.vehicles,'Vehicles']]){const counts=new Map();for(const id of items.values())counts.set(id,(counts.get(id)||0)+1);for(const [id,count]of (label==='Vehicles'?[...counts].sort((a,b)=>data[a[0]].baseCapacity-data[b[0]].baseCapacity || a[0]-b[0]):counts))g.activities.push({kind:'physical',label,value:count+' × '+data[id].name});}
   for(const [slot,v]of cars)g.activities.push({kind:'physical',label:'Train '+(slot+1)+' cars',value:v.from+' → '+v.to});
   if(silos!==siloStart)g.activities.push({kind:'physical',label:'Silos',value:siloStart+' → '+silos});
   for(const action of sets.values())g.activities.push(...Artifacts.activities(action));

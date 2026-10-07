@@ -1,10 +1,11 @@
-# v0.8.13
+# v0.8.14
 
-- Fix missing Bust Unions discounts in stage purchase proposals, allowing the known C1 opening to be found with 90-minute C1 and 120-minute K1 limits.
-- Rename Wasmegg Optimized Sequence to Optimized Sequence and remove the combined free-routing strategy.
-- Map older automatic farms to Optimized Sequence for new searches while retaining saved-plan replay.
-- Remove Switch Tradeoffs Found from the Purchase Timeline.
-- Show shift start above end and maximum earning, shipping and egg laying rates in each summary and Quick Guide’s Shift Complete section.
-- Include the same dates and rates in PDF walkthroughs.
-- Replace visible cash wording with gems, including older saved timeline reasons.
+- Use gem, Virtue egg, and Soul Egg artwork for timeline rates, TE gains, switch costs, and picker metadata.
+- Left align maximum rates and show slower vehicles first in shift summaries and the Quick Guide.
+- Simplify hab/vehicle purchase estimates, including ~<1 for the free Coop.
+- Reduce ship images by 25%; stack cost, fuel, and purchase time, keeping fuels on one line.
+- Default Event Schedule Timezone to Automatic, with detected regional time, all supported regional zones, and fixed UTC offsets.
+- Correct local 09:00 event boundaries in half-hour and quarter-hour timezones; preserve daylight saving behavior.
+- Revalidate every common research, Epic Research, artifact, stone, hab, and vehicle, plus costs, ships, artifact selection, and complete route replay.
+- Desktop validation only, as requested.
 - Install through Update App → Update & Restart.

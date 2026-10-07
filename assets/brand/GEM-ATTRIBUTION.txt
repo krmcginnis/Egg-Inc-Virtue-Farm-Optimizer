@@ -1,0 +1,10 @@
+VIRTUE GEM ARTWORK CREDITS
+
+Egg, Inc. artwork belongs to Auxbrain, Inc. This is the original Virtue gem,
+bundled locally for offline use by this unofficial fan planning tool.
+
+Source mirror: carpetsage/EggIncAssets
+Pinned commit: e821c7c9d5b39a9aee3eed0144a732c39489de1e
+Source: 64/egginc/icon_virtue_gem.png
+https://github.com/carpetsage/EggIncAssets/blob/e821c7c9d5b39a9aee3eed0144a732c39489de1e/64/egginc/icon_virtue_gem.png
+Retrieved: 2026-10-07

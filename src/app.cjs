@@ -11,6 +11,7 @@ const NumberFormat = require("./number-format.cjs"), NumericInput = require("./n
 const ArtifactSets = require("./artifact-optimizer.cjs");
 const LoadoutCard = require("./loadout-card.cjs");
 const EggIcons = require("./egg-icons.cjs");
+const Units = require("./unit-icons.cjs"), Zones = require("./timezones.cjs");
 const ResearchIcons = require("./research-icons.cjs");
 const FarmIcons = require("./farm-icons.cjs");
 const ShipIcons = require("./ship-icons.cjs");
@@ -382,9 +383,10 @@ function renderForm() {
   for (const k of ["proPermit", "videoDoubler"]) $(k).value = String(f[k] !== false);
   for (const k of ["target", "maxSwitches", "shiftSeconds", "actionSeconds"]) NumericInput.write($(k), p[k] ?? { maxSwitches: 12, shiftSeconds: 5, actionSeconds: 0 }[k]);
   $("start").value = dateLocal(p.start || Date.now() / 1e3);
-  const zone = p.eventTimezone || "America/Los_Angeles";
-  if (![...$("eventTimezone").options].some(o => o.value === zone)) $("eventTimezone").append(option(zone, zone.replaceAll("_", " ")));
+  const zone = p.eventTimezoneMode === Zones.automatic || !p.eventTimezone ? Zones.automatic : p.eventTimezone;
+  if (![...$("eventTimezone").options].some(o => o.value === zone)) $("eventTimezone").append(option(zone, Zones.label(zone)));
   $("eventTimezone").value = zone;
+  updateTimezoneHelp();
   $("sequence").value = typeof p.sequence === "string" ? p.sequence : (p.sequence ?? DEFAULT_ROUTE).map((x) => ({ curiosity: "C", integrity: "I", humility: "H", resilience: "R", kindness: "K" })[x] || x).join(" ");
   $("effort").value = p.searchEffort ?? "balanced";
   $("minOfflineMinutes").value = p.minOfflineMinutes ?? 1;
@@ -570,6 +572,13 @@ function restoreUpdateSnapshot(saved, message = "Session restored.") {
   tab(saved.tab === "results" && !result ? "account" : (saved.tab || "account"), true);
   show(message + (saved.interrupted ? " The interrupted search needs to be run again." : "") + replayError + (!valid ? " Review the marked inputs before planning." : ""), !!replayError || !valid);
 }
+function updateTimezoneHelp() {
+  const zone = $("eventTimezone").value;
+  $("event-zone-help").textContent = (zone === Zones.automatic ? "Automatic: "+Zones.label(Zones.resolve(zone))+". " : "")+"Controls event times and displayed dates. Regional timezones follow daylight saving; UTC offsets stay fixed.";
+}
+function purchaseTime(seconds) {
+  return seconds === null ? "Complete farm inputs for estimate" : seconds === 0 ? "~<1" : Number.isFinite(seconds) ? seconds > 365*86400 ? ">1 year" : "~"+duration(seconds) : "No current income";
+}
 function shipChoiceDescriptions(visit, index) {
   let state, earnings;
   try {
@@ -580,8 +589,10 @@ function shipChoiceDescriptions(visit, index) {
   return item => {
     const mission = Ships.mission(item.id,length);
     const seconds = state ? mission.cost <= state.cash ? 0 : earnings > 0 ? (mission.cost-state.cash)/earnings : Infinity : null;
-    const estimate = seconds === null ? "Complete farm inputs for time to afford" : seconds === 0 ? "Affordable now" : Number.isFinite(seconds) ? seconds > 365*86400 ? ">1 year to afford" : "~"+duration(seconds)+" to afford" : "No current income";
-    return "Cost: "+num(mission.cost)+" gems · Fuel: "+displayEggOrder.filter(i=>mission.fuel[i]).map(i=>S.EGGS[i][0].toUpperCase()+" "+num(mission.fuel[i])).join(", ")+" · "+estimate;
+    const estimate = purchaseTime(seconds);
+    const fuel = el("span",undefined,"picker-fuels");
+    for (const i of displayEggOrder.filter(i=>mission.fuel[i])) fuel.append(Units.amount(S.EGGS[i],num(mission.fuel[i])));
+    return Units.lines(Units.amount("gem",num(mission.cost)),fuel,estimate);
   };
 }
 function renderShipMissions(visit, missions) {
@@ -789,7 +800,7 @@ function gather() {
   f.research = Object.fromEntries(D.research.map((r) => [r.id, readNumber("research-" + r.id, r.name, 0, r.levels, true)]));
   f.epic = Object.fromEntries(D.epic.map((r) => [r.id, readNumber("epic-" + r.id, r.name, 0, r.levels, true)]));
   f.loadouts = formLoadouts();
-  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: $("eventTimezone").value, sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), maxSwitches: readNumber("maxSwitches", "Maximum switches", 0, 30, true), maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: $("effort").value, minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), stagedSales: readNumber("stagedSales", "Maximum research sales", 1, 6, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: Array.from({ length: 5 }, (_, i) => readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true)) };
+  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), maxSwitches: readNumber("maxSwitches", "Maximum switches", 0, 30, true), maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: $("effort").value, minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), stagedSales: readNumber("stagedSales", "Maximum research sales", 1, 6, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: Array.from({ length: 5 }, (_, i) => readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true)) };
   if (!p.autoSequence) try {
     Route.parse(p.sequence, {required: true});
   } catch (error) { error.fieldId = "sequence"; throw error; }
@@ -811,6 +822,7 @@ function stat(label, value, sub, egg) {
   return div;
 }
 function refresh() {
+  updateTimezoneHelp();
   document.querySelectorAll("[data-farm-picker] select").forEach(FarmIcons.updatePicker);
   SelectionReadout.refresh();
   clearFieldError();
@@ -914,7 +926,7 @@ function updatePlanningContext() {
   }
   const backupTime = Number(config.importInfo?.timestamp), backup = $("planning-backup-time");
   if (backupTime > 0 && Number.isFinite(new Date(backupTime * 1000).getTime())) {
-    backup.textContent = timestamp(backupTime, $("eventTimezone").value || "America/Los_Angeles", true);
+    backup.textContent = timestamp(backupTime, Zones.resolve($("eventTimezone").value), true);
     backup.dateTime = new Date(backupTime * 1000).toISOString();
   } else {
     backup.textContent = config.importInfo ? "Timestamp Not Supplied" : "No Backup Loaded";
@@ -1103,9 +1115,12 @@ function renderResult() {
     finish.dateTime = new Date(shift.end * 1e3).toISOString();
     const start = el("time", "Starts " + timestamp(shift.start, zone, true), "shift-start");
     start.dateTime = new Date(shift.start * 1e3).toISOString();
-    const cost = el("span", shift.hasSwitch ? "Switch Cost: " + num(shift.soulCost) + " Soul Eggs" : "Starting Farm · No Switch Cost", "shift-cost");
+    const cost = el("span", shift.hasSwitch ? "Switch Cost: " : "Starting Farm · No Switch Cost", "shift-cost");
+    if (shift.hasSwitch) cost.append(Units.amount("soul",num(shift.soulCost)));
     cost.title = shift.hasSwitch ? "Soul Eggs required to enter this Truth Egg visit." : "The farm you start on does not require a new switch.";
-    timing.append(el("span", exactDuration(shift.seconds) + " \xB7 +" + shift.teGained + " TE", "shift-duration"), cost, start, finish);
+    const gained = el("span", exactDuration(shift.seconds)+" · ","shift-duration");
+    gained.append(Units.amount(S.EGGS[shift.egg],"+"+shift.teGained));
+    timing.append(gained, cost, start, finish);
     top.append(title, timing);
     header.append(top);
     const chips = el("div", void 0, "activity-chips");
@@ -1123,9 +1138,10 @@ function renderResult() {
     const peakRates = () => {
       const rates = el("dl", undefined, "shift-max-rates");
       rates.title = "Highest modeled farm rates during this shift. Earnings use the selected earnings mode and weekly events; laying and shipping show capacity before fuel diversion.";
-      for (const [key, label, unit] of [["earning","Maximum Earning Rate","gems/hour"],["shipping","Maximum Shipping Rate","eggs/hour"],["laying","Maximum Egg Laying Rate","eggs/hour"]]) {
+      for (const [key, label] of [["earning","Maximum Earning Rate"],["shipping","Maximum Shipping Rate"],["laying","Maximum Egg Laying Rate"]]) {
         const item = el("div"); item.dataset.rate = key;
-        item.append(el("dt",label),el("dd",num(shift.maxRates[key]*3600)+" "+unit)); rates.append(item);
+        const value = el("dd"); value.append(Units.amount(key === "earning" ? "gem" : S.EGGS[shift.egg],num(shift.maxRates[key]*3600),"/hour"));
+        item.append(el("dt",label),value); rates.append(item);
       }
       return rates;
     };
@@ -1188,7 +1204,7 @@ function renderResult() {
     if (!shift.quickGuide.length) guide.append(el("p", "No purchases or breaks in this shift.", "hint"));
     const complete = el("div", void 0, "guide-complete"), done = el("time", timestamp(shift.end, zone, true));
     done.dateTime = new Date(shift.end * 1e3).toISOString();
-    complete.append(el("b", "Shift Complete"), done);
+    complete.append(el("b", "Shift Complete"), Units.amount(S.EGGS[shift.egg],"+"+shift.teGained), done);
     complete.append(peakRates());
     guide.append(complete);
     group.append(guide);
@@ -1835,12 +1851,13 @@ FarmIcons.configure((kind,slot) => {
     const {s,c} = S.prepare(gather());
     return item => {
       const preview = PhysicalPreview.describe(s,c,kind,slot,item.id);
-      return num(preview.capacity)+(kind === "hab" ? " cap" : "/hr")+" · "+num(preview.cost)+" gems · "+(preview.seconds === 0 ? "Affordable now" : Number.isFinite(preview.seconds) ? (preview.seconds > 365*86400 ? ">1 year to afford" : "~"+duration(preview.seconds)+" to afford") : "No current income")+(item.id === 11 && kind === "vehicle" ? " · "+preview.cars+" car"+(preview.cars === 1 ? "" : "s") : "");
+      return Units.lines(num(preview.capacity)+(kind === "hab" ? " cap" : "/hr")+(item.id === 11 && kind === "vehicle" ? " · "+preview.cars+" car"+(preview.cars === 1 ? "" : "s") : ""),Units.amount("gem",num(preview.cost)),purchaseTime(preview.seconds));
     };
   } catch { return () => "Complete farm and planning inputs to see estimates"; }
 });
 DatePicker.bind($("start"));
 EggIcons.decorateStatic();
+$("eventTimezone").replaceChildren(...Zones.choices().map(zone=>option(zone,zone === Zones.automatic ? "Automatic" : Zones.label(zone))));
 renderForm();
 try {
   savedEid = localStorage.getItem(EID_KEY) || "";

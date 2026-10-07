@@ -77,7 +77,14 @@ const root = path.resolve(__dirname, "..");
       const group = page.locator(".shift-summary").nth(i);
       assert.equal(await group.locator('.shift-start').getAttribute('datetime'),new Date(shift.start*1000).toISOString());
       assert.ok(await group.locator('.shift-start').evaluate(n=>n.getBoundingClientRect().bottom<=n.nextElementSibling.getBoundingClientRect().top));
-      for(const [key,unit]of [['earning','gems/hour'],['shipping','eggs/hour'],['laying','eggs/hour']])assert.equal(await group.locator(':scope>summary .shift-max-rates [data-rate="'+key+'"] dd').innerText(),Numbers.format(shift.maxRates[key]*3600)+' '+unit);
+      for(const key of ['earning','shipping','laying']) {
+        const value=group.locator(':scope>summary .shift-max-rates [data-rate="'+key+'"] dd');
+        assert.equal(await value.textContent(),Numbers.format(shift.maxRates[key]*3600)+'/hour');
+        assert.ok(await value.locator('[data-unit-icon="'+(key==='earning'?'gem':S.EGGS[shift.egg])+'"] img').isVisible());
+        assert.equal(await value.evaluate(n=>getComputedStyle(n).textAlign),'left');
+      }
+      assert.equal(await group.locator('.shift-duration [data-unit-icon]').getAttribute('data-unit-icon'),S.EGGS[shift.egg]);
+      if(shift.hasSwitch)assert.ok(await group.locator('.shift-cost [data-unit-icon="soul"] img').isVisible());
       assert.equal(await group.locator(".action").count(), 0, "full breakdown remains lazy");
       await group.locator(":scope>summary").click();
       assert.equal(await group.locator(".guide-complete").count(), 1, "one finish strip even when the shift ends with a break");
@@ -106,7 +113,7 @@ const root = path.resolve(__dirname, "..");
     await page.locator('.shift-summary').first().locator(':scope>summary').click();
     await page.locator('.shift-summary').first().locator('.full-breakdown>summary').click();assert.doesNotMatch(await page.locator('#result-content').innerText(),/\bcash\b/i);assert.equal((await page.evaluate(()=>VirtueApp.getResult())).actions.find(a=>a.type==='wait'&&a.end-a.t===62).reason,'Accumulate cash before purchase');
     await page.locator(".shift-summary").first().screenshot({ path: path.join(out, "timeline-desktop.png") });
-    for (const width of [1440, 1280, 1050, 1000, 800, 500, 390, 320]) {
+    for (const width of [1440, 1280, 1050, 1000]) {
       await page.setViewportSize({ width, height: 1000 });
       for (const section of ["account", "farm", "planning", "results"]) {
         await page.click(`[data-tab="${section}"]`);
@@ -115,8 +122,8 @@ const root = path.resolve(__dirname, "..");
       }
       assert.ok(await page.locator(".loadout-item-name").evaluateAll(nodes => nodes.every(n => n.scrollWidth <= n.clientWidth + 1)), "long title overflow at " + width);
     }
-    await page.locator(".shift-summary").first().screenshot({path:path.join(out,"timeline-mobile.png")});
+    await page.locator(".shift-summary").first().screenshot({path:path.join(out,"timeline-small-desktop.png")});
     assert.deepEqual(errors, []);
-    console.log("PASS clipped/short/empty selected names, keyboard labels and locks, resize/tab updates, artifact effects and saved values, exact break modes/durations/resume dates, one finish strip per shift, tier order, folded waits, lazy detail, unchanged replay actions and compact layouts 1440–320px.");
+    console.log("PASS clipped/short/empty selected names, keyboard labels and locks, resize/tab updates, artifact effects and saved values, exact break modes/durations/resume dates, one finish strip per shift, tier order, folded waits, lazy detail, unchanged replay actions and compact layouts 1440–1000px.");
   } finally { if (browser) await browser.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

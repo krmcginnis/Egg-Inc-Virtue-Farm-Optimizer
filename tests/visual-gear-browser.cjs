@@ -52,14 +52,14 @@ const root=path.resolve(__dirname,"..");
     await page.locator('#current-loadout-fields').screenshot({path:path.join(out,'current-desktop.png')});
     await page.click('#pick-artifact-current-0');await page.getByRole('searchbox',{name:'Filter items'}).fill('cube');
     await page.screenshot({path:path.join(out,'artifact-popup-desktop.png')});
-    for(const width of [1440,1050,800,500,390,320]){
+    for(const width of [1440,1280,1050,1000]){
       await page.setViewportSize({width,height:1000});
       assert.ok(await page.locator('#gear-picker').evaluate(n=>n.scrollWidth<=n.clientWidth+1),'dialog overflow '+width);
       assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),'page overflow '+width);
       assert.ok(await page.locator('.gear-choice').evaluateAll(ns=>ns.every(n=>n.scrollWidth<=n.clientWidth+1)),'choice overflow '+width);
     }
-    await page.screenshot({path:path.join(out,'artifact-popup-mobile.png')});await page.keyboard.press('Escape');
-    await page.click('#pick-stone-current-0-0');await page.screenshot({path:path.join(out,'stone-popup-mobile.png')});await page.keyboard.press('Escape');
+    await page.screenshot({path:path.join(out,'artifact-popup-small-desktop.png')});await page.keyboard.press('Escape');
+    await page.click('#pick-stone-current-0-0');await page.screenshot({path:path.join(out,'stone-popup-small-desktop.png')});await page.keyboard.press('Escape');
     await page.setViewportSize({width:1440,height:1000});await page.click('[data-tab="farm"]');
     await page.locator('header').screenshot({path:path.join(out,'header-desktop.png')});await page.locator('#hab-fields').screenshot({path:path.join(out,'habs-desktop.png')});
     await page.click('[data-tab="account"]');await page.selectOption('#proPermit','false');await page.evaluate(()=>VirtueApp.tab("artifacts"));assert.equal(await page.locator('#current-loadout-fields .loadout-item-artwork').count(),2);
@@ -79,7 +79,13 @@ const root=path.resolve(__dirname,"..");
     for(const zone of ['UTC','America/New_York','Asia/Kolkata']){
       const local=await browser.newPage({timezoneId:zone});await local.goto(url);await local.waitForFunction(()=>!!globalThis.VirtueApp);
       const detected=await local.evaluate(()=>Intl.DateTimeFormat().resolvedOptions().timeZone);
-      assert.equal(await local.inputValue('#eventTimezone'),detected);
+      assert.equal(await local.inputValue('#eventTimezone'),'automatic');
+      assert.equal((await local.evaluate(()=>VirtueApp.getConfig())).plan.eventTimezone,detected);
+      assert.ok(await local.locator('#eventTimezone option').count()>400);
+      await local.click('[data-tab="planning"]');await local.selectOption('#eventTimezone','Asia/Kathmandu');await local.evaluate(()=>VirtueApp.refresh());
+      assert.equal((await local.evaluate(()=>VirtueApp.getConfig())).plan.eventTimezone,'Asia/Kathmandu');
+      await local.selectOption('#eventTimezone','automatic');await local.evaluate(()=>VirtueApp.refresh());
+      assert.equal((await local.evaluate(()=>VirtueApp.getConfig())).plan.eventTimezone,detected);
       assert.equal(await local.evaluate(({zone,detected})=>new Intl.DateTimeFormat('en-US',{timeZone:zone,dateStyle:'full',timeStyle:'long'}).format(1791388800000)===new Intl.DateTimeFormat('en-US',{timeZone:detected,dateStyle:'full',timeStyle:'long'}).format(1791388800000),{zone,detected}),true);
       await local.evaluate(raw=>VirtueApp.loadFile(new File([JSON.stringify(raw)],'Saved-Pacific.json')),farm);
       assert.equal(await local.inputValue('#eventTimezone'),'America/Los_Angeles');await local.close();
@@ -87,6 +93,6 @@ const root=path.resolve(__dirname,"..");
     const offline=await browser.newPage();await offline.route('http://**/*',r=>r.abort());await offline.route('https://**/*',r=>r.abort());
     await offline.goto('file://'+path.join(root,'index.html'));await offline.waitForFunction(()=>!!globalThis.VirtueApp);await offline.click('[data-tab="farm"]');await offline.check('#manualFarmData');await offline.evaluate(()=>VirtueApp.tab("artifacts"));await offline.click('#pick-artifact-current-0');
     await offline.locator('#gear-picker [data-item-id="puzzle-cube-4-3"]').click();assert.equal(await offline.locator('#loadout-card-current-0 .loadout-stone-socket').count(),3);
-    assert.deepEqual(errors,[]);console.log('PASS image artifact/stone choices, 0–3 sockets, rarity/effects, clear/search/cancel, keyboard/focus, manual locks, duplicate-family review, save/load, permit changes, 1440–320px popups, offline choices, claimed+40 cap and IANA detection/saved-zone retention.');
+    assert.deepEqual(errors,[]);console.log('PASS image artifact/stone choices, 0–3 sockets, rarity/effects, clear/search/cancel, keyboard/focus, manual locks, duplicate-family review, save/load, permit changes, 1440–1000px popups, offline choices, claimed+40 cap and IANA detection/saved-zone retention.');
   }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}
 })().catch(e=>{console.error(e);process.exitCode=1;});

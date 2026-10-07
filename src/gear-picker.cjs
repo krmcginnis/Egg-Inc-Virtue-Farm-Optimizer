@@ -1,4 +1,5 @@
 "use strict";
+const Units = require("./unit-icons.cjs");
 const D = require("./game-data.json"), titleCase = require("./ui-text.cjs");
 let dialog, heading, search, grid, count, active;
 function element(tag, text, cls) {
@@ -65,10 +66,11 @@ function render() {
     if (active.catalog) {
       const detail = active.catalog.describe(item);
       button.classList.add("farm-choice");
-      button.setAttribute("aria-label", item.name+" · "+detail);
+      button.setAttribute("aria-label", item.name+" · "+Units.accessible(detail));
       button.setAttribute("aria-pressed", String(active.control.value === String(item.id)));
       const copy = element("span", undefined, "farm-choice-copy");
-      copy.append(element("span", item.name, "gear-choice-name"), element("small", detail));
+      const metadata = element("small"); metadata.append(detail);
+      copy.append(element("span", item.name, "gear-choice-name"), metadata);
       button.append(active.image(item), copy);
       button.onclick = () => choose(item.id); grid.append(button); continue;
     }

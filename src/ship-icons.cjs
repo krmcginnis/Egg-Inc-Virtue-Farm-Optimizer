@@ -6,8 +6,8 @@ function image(item) {
   if (asset) {
     icon.dataset.shipIcon = item.id;
     icon.style.backgroundImage = 'url("'+catalog.asset+'")';
-    icon.style.backgroundSize = catalog.width+"px "+catalog.height+"px";
-    icon.style.backgroundPosition = -asset.x+"px "+(-asset.y)+"px";
+    icon.style.backgroundSize = catalog.width*.75+"px "+catalog.height*.75+"px";
+    icon.style.backgroundPosition = -asset.x*.75+"px "+(-asset.y*.75)+"px";
   }
   return icon;
 }
@@ -15,7 +15,7 @@ function decorate(label, describe) {
   const select = label.querySelector("select"), button = document.createElement("button");
   select.setAttribute("aria-label", "Ship"); select.hidden = true;
   button.className = "ship-image-picker secondary"; label.dataset.shipPicker = "true"; label.append(button);
-  Picker.bind(button, select, "ship", image, () => ({items:Ships.DATA.ships,plural:"ships",layout:"grid",allowEmpty:false,describe:describe(),note:"Cost and fuel are per launch for the selected mission length. Time to afford uses current gems and current farm earnings, assuming full habs and maintained silos; excludes fueling, future events and purchases."}));
+  Picker.bind(button, select, "ship", image, () => ({items:Ships.DATA.ships,plural:"ships",layout:"grid",allowEmpty:false,describe:describe(),note:"Cost and fuel are per launch for the selected mission length. Purchase time uses current gems and current farm earnings, assuming full habs and maintained silos; excludes fueling, future events and purchases."}));
   update(select);
   const probe = new Image(); probe.onerror = () => document.documentElement.classList.add("ship-artwork-unavailable"); probe.src = catalog.asset;
   return label;
