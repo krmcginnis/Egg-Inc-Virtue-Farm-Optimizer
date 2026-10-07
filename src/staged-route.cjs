@@ -26,7 +26,10 @@ function adapt(s,c){
  const inventoryItems=[...unique.values()].map((slot,i)=>{const a=S.AMAP[slot.artifactId];return {itemId:i+1,quantity:1,artifact:{spec:{name:a.afxId,level:a.afxLevel,rarity:a.rarity},stones:(slot.stones||[]).filter(Boolean).map(id=>{const st=S.SMAP[id];return {name:st.afxId,level:st.afxLevel,rarity:0};})}};});
  const owned=c.artifactModel?.inventory.map((x,i)=>{const item=x.kind==='stone'?S.SMAP[x.id]:S.AMAP[x.id];return {itemId:i+1,quantity:x.quantity,artifact:{spec:{name:item.afxId,level:item.afxLevel,rarity:item.rarity||0},stones:x.stones.map(id=>{const st=S.SMAP[id];return {name:st.afxId,level:st.afxLevel,rarity:0};})}};});
  const farm={habs:s.h.map(id=>id??S.D.habs.length),vehicles:s.v.map(v=>v.id??S.D.vehicles.length),trainLength:s.v.map(v=>v.cars),commonResearch:S.D.research.map((r,i)=>({id:r.id,level:s.r[i]}))};
- return {state,context:{epicResearchLevels:c.epic,colleggtibleModifiers:c.col,ascensionStartTime:c.start,planStartOffset:0,assumeDoubleEarnings:c.video===2,deferForEarningsMode:false,rawBackup:{farms:[farm],...(c.artifactModel?{plannerDelivery:options=>proposalDelivery(s,c,options)}:{}),game:{permitLevel:c.pro?1:0},virtue:{eovEarned:c.claimed},artifactsDb:{virtueAfxDb:{inventoryItems:owned||inventoryItems},artifactStatus:[]}}}};
+ // The reference vehicle planner calls Bust Unions "cheaper_vehicles".
+ // Translate only at this boundary; actual prices and saved Epic IDs stay canonical.
+ const epicResearchLevels={...c.epic,cheaper_vehicles:c.epic.bust_unions};
+ return {state,context:{epicResearchLevels,colleggtibleModifiers:c.col,ascensionStartTime:c.start,planStartOffset:0,assumeDoubleEarnings:c.video===2,deferForEarningsMode:false,rawBackup:{farms:[farm],...(c.artifactModel?{plannerDelivery:options=>proposalDelivery(s,c,options)}:{}),game:{permitLevel:c.pro?1:0},virtue:{eovEarned:c.claimed},artifactsDb:{virtueAfxDb:{inventoryItems:owned||inventoryItems},artifactStatus:[]}}}};
 }
 function tag(s,base,phase){const actions=[];for(let p=s.path;p&&p!==base;p=p.prev)actions.push(p.action);let path=base;for(const a of actions.reverse())path={prev:path,action:{...a,phase:a.phase||phase}};return {...s,path,phase};}
 function proposalPurchase(p){const x=p.payload||{};switch(p.type){case 'buy_research':return {type:'research',i:S.RMAP[x.researchId]};case 'buy_hab':return {type:'hab',slot:x.slotIndex,id:x.habId};case 'buy_vehicle':return {type:'vehicle',slot:x.slotIndex,id:x.vehicleId};case 'buy_train_car':return {type:'car',slot:x.slotIndex};case 'buy_silo':return {type:'silo'};default:return null;}}
@@ -79,7 +82,7 @@ function run(initial,c,saleCount,goalsFor,checkpoint=()=>{},cache={}){
  c={...c,stagedShips:true};
  if(S.reached(initial,c))return initial;
  const requiredSwitches=Route.defaultSwitches(S.EGGS[initial.egg]);
- if(c.autoSequence&&c.maxSwitches<requiredSwitches)throw Error('The full Wasmegg route requires '+requiredSwitches+' new switches from '+S.NAME[initial.egg]+'. Maximum New Switches is '+c.maxSwitches+'. Increase it or choose Best Found.');
+ if(c.autoSequence&&c.maxSwitches<requiredSwitches)throw Error('The full Wasmegg route requires '+requiredSwitches+' new switches from '+S.NAME[initial.egg]+'. Maximum New Switches is '+c.maxSwitches+'. Increase it or enter a shorter User Selected Sequence.');
  if(!c.autoSequence&&!supportsFixed(initial,c))throw Error('This fixed route uses different upgrade visits from the shared stage planner.');
  const opening=cache.opening||{},suffixes=cache.suffixes;cache.reusedSuffix=false;
  let n=cache.prefix;if(!n){if(!opening.c1){opening.c1=step(initial,c,'C1',0,(s,ctx)=>R.runC1(s,ctx,c.c1MaxMinutes*60),c.c1MaxMinutes*60);opening.speculative=null;try{opening.speculative=step(opening.c1,c,'I1',1,R.runI1);}catch{}}n=opening.c1;checkpoint('C1',n);

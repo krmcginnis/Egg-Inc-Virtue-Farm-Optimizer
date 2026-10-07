@@ -150,7 +150,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
       if(cancelled())throw Error('Cancelled');
      },stagedCache);
      explored+=history(candidate).length;waitingRoutesCompared++;if(!stagedCache.reusedSuffix)openingSearch.uniqueRoutesCompared++;
-     candidate={...candidate,routeStrategy:'Wasmegg staged route',researchSales:sales,waitingPolicy:batchMode==='all-waits'?'Compare combined online and offline purchase waits':batchMode?'Compare short online purchase batches':'Compare individual purchases'};consider(candidate);
+     candidate={...candidate,routeStrategy:'Optimized Sequence',researchSales:sales,waitingPolicy:batchMode==='all-waits'?'Compare combined online and offline purchase waits':batchMode?'Compare short online purchase batches':'Compare individual purchases'};consider(candidate);
      }catch(e){stagedError=e.message;if(!stagedCache.prefix)break;}
      await new Promise(resolve=>setTimeout(resolve,0));
     }

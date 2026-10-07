@@ -4,6 +4,7 @@ const E = require("./opening-search.cjs"), titleCase = require("./ui-text.cjs"),
 const upgradeStandardSequence = require("./sequence-upgrade.cjs"), Route = require("./switch-sequence.cjs");
 const T = require("./staged-route.cjs"), Model = require("./assumption-notices.cjs");
 const Strategy = require("./planning-strategy.cjs");
+const gemsText = require("./gems-text.cjs");
 const nextAscension = require("./next-ascension.cjs"), U = require("./shift-summary.cjs"), Q = require("./walkthrough-pdf.cjs"), N = require("./export-names.cjs"), V = require("./pdf-preview.cjs"), G = require("./guide-layout.cjs");
 const S = require("./simulator.cjs"), O = require("./optimizer.cjs"), I = require("./importer.cjs"), A = require("./api.cjs"), C = require("./colleggtibles.cjs");
 const NumberFormat = require("./number-format.cjs"), NumericInput = require("./numeric-input.cjs");
@@ -30,7 +31,7 @@ const labels = { account: "Account", farm: "Virtue Farm", planning: "Planning", 
 const colNames = { earnings: "Earnings", awayEarnings: "Away earnings", ihr: "Internal hatchery", elr: "Egg laying", shippingCap: "Shipping capacity", habCap: "Hab capacity", vehicleCost: "Vehicle cost", habCost: "Hab cost", researchCost: "Research cost" };
 function el(tag, text, cls) {
   const e = document.createElement(tag);
-  if (text !== void 0) e.textContent = typeof text === "string" && ["h1", "h2", "h3", "h4", "h5", "h6", "button", "label", "th", "summary", "option"].includes(tag) ? titleCase(text) : text;
+  if (text !== void 0) e.textContent = typeof text === "string" ? gemsText(["h1", "h2", "h3", "h4", "h5", "h6", "button", "label", "th", "summary", "option"].includes(tag) ? titleCase(text) : text) : text;
   if (cls) e.className = cls;
   return e;
 }
@@ -42,7 +43,7 @@ function option(value, text) {
 function show(message, error = false) {
   $("notice").setAttribute("role", error ? "alert" : "status");
   $("notice").setAttribute("aria-live", error ? "assertive" : "polite");
-  $("notice").textContent = message;
+  $("notice").textContent = gemsText(message);
   $("notice").classList.toggle("error", error);
 }
 function updateSequenceVisibility() {
@@ -53,7 +54,6 @@ function updateSequenceVisibility() {
   $("sequence").required = !automatic;
   $("wasmegg-sequence-description").hidden = strategy === "user";
   $("strategy-description").textContent = {
-    auto: "Compares Wasmegg optimized plans with free routing; keeps the fastest feasible result found within your limits.",
     wasmegg: "Uses the stage order below, comparing opening budgets and research sales. I1 precedes K1 when Chicken Universes can finish in under one hour.",
     user: "Enter your truth egg switch sequence below."
   }[strategy] || "Select a planning strategy.";
@@ -192,7 +192,7 @@ function showPlanningGuidance(message, fromSearch = false, inputsChanged = false
     targets = [[field, "Review Input"]];
   }
   $("planning-guidance-heading").textContent = fromSearch ? "Search Needs Attention" : "Review Planning Inputs";
-  $("planning-guidance-detail").textContent = (inputsChanged ? "This message applies to the inputs at the start of the search. " : "") + detail;
+  $("planning-guidance-detail").textContent = gemsText((inputsChanged ? "This message applies to the inputs at the start of the search. " : "") + detail);
   const actions = $("planning-guidance-actions");
   actions.replaceChildren();
   for (const [id, label] of targets) if (id && $(id)) {
@@ -388,7 +388,7 @@ function renderForm() {
   $("sequence").value = typeof p.sequence === "string" ? p.sequence : (p.sequence ?? DEFAULT_ROUTE).map((x) => ({ curiosity: "C", integrity: "I", humility: "H", resilience: "R", kindness: "K" })[x] || x).join(" ");
   $("effort").value = p.searchEffort ?? "balanced";
   $("minOfflineMinutes").value = p.minOfflineMinutes ?? 1;
-  $("strategy").value = p.strategy || "auto";
+  $("strategy").value = p.strategy || "wasmegg";
   $("stagedSales").value = p.stagedSales ?? 3;
   $("c1MaxMinutes").value = E.maximum(S.number(p.c1MaxMinutes ?? 60));
   $("k1MaxMinutes").value = E.maximum(S.number(p.k1MaxMinutes ?? 60));
@@ -1064,7 +1064,7 @@ function renderResult() {
     };
   tools.append(txt, json, expand, next);
   head.append(tools);
-  card.append(head, el("p", timestamp(r.end, zone) + " \xB7 " + r.switches + " new switches \xB7 " + num(r.soulCost) + " Soul Eggs spent"), el("p", waitTotals(summary.totals), "waiting-totals"), el("p", "Minimum offline break: " + (resultConfig.plan.minOfflineMinutes ?? 1) + " min. Finish time comes first; ties favor fewer earning breaks.", "hint"), el("p", "Validated by replay: purchases affordable, Virtue permissions enforced, target reached. Claim pending TE at ascension.", "hint"));
+  card.append(head, el("p", "Starts " + timestamp(r.start, zone), "plan-start"), el("p", "Ends " + timestamp(r.end, zone), "plan-end"), el("p", r.switches + " new switches \xB7 " + num(r.soulCost) + " Soul Eggs spent"), el("p", waitTotals(summary.totals), "waiting-totals"), el("p", "Minimum offline break: " + (resultConfig.plan.minOfflineMinutes ?? 1) + " min. Finish time comes first; ties favor fewer earning breaks.", "hint"), el("p", "Validated by replay: purchases affordable, Virtue permissions enforced, target reached. Claim pending TE at ascension.", "hint"));
   const diagnostics = el("details", void 0, "search-details");
   diagnostics.append(el("summary", "Search Details"), el("p", r.method + " \xB7 " + r.explored.toLocaleString() + " states examined \xB7 " + r.termination + ".", "hint"));
   if (r.openingSearch) diagnostics.append(el("p", "Compared " + r.openingSearch.combinationsCompared + " of " + r.openingSearch.totalCombinations + " C1/K1 opening combinations at " + (r.openingSearch.stepMinutes || 30) + "-minute intervals" + (r.openingSearch.complete ? " (complete)." : " (stopped early)."), "hint"));
@@ -1072,7 +1072,7 @@ function renderResult() {
   const c1 = summary.shifts.find((s) => s.phase === "C1"), k1 = summary.shifts.find((s) => s.phase === "K1");
   if (c1 && k1 && r.openingTimeLimits) diagnostics.append(el("p", "Opening duration: C1 " + exactDuration(c1.seconds) + " (limit " + (resultConfig.plan.c1MaxMinutes ?? 60) + " min) \xB7 K1 " + exactDuration(k1.seconds) + " (limit " + (resultConfig.plan.k1MaxMinutes ?? 60) + " min).", "hint"));
   if (r.baselineSeconds) diagnostics.append(el("p", "No-upgrade comparison: " + duration(r.baselineSeconds) + " \u2192 " + duration(r.seconds) + ".", "hint"));
-  diagnostics.append(el("p", "Every smaller staged opening-budget option is retained. Timed free routing can vary between runs. Saved plans never seed a search.", "hint"), el("p", "Online waits under 10 seconds are hidden; their time remains included.", "hint"));
+  diagnostics.append(el("p", "Every smaller staged opening-budget option is retained. Saved plans never seed a search.", "hint"), el("p", "Online waits under 10 seconds are hidden; their time remains included.", "hint"));
   card.append(diagnostics);
   const stale = el("div", "Inputs changed since this plan was generated. This timeline uses the saved inputs from its run. Re-run to update it.", "notice stale-plan");
   stale.id = "plan-stale";
@@ -1084,21 +1084,6 @@ function renderResult() {
   guidance.append(el("p", Model.maintenance(initial.s, initial.c, r.finalStats)));
   for (const message of Model.notices(initial.s, initial.c)) guidance.append(el("p", message));
   host.append(guidance);
-  const frontier = el("div", void 0, "card");
-  frontier.append(el("h2", "Switch tradeoffs found"));
-  const table = el("table"), thead = el("thead"), thr = el("tr");
-  ["New switches", "Time to target", "Soul Egg cost"].forEach((t) => thr.append(el("th", t)));
-  thead.append(thr);
-  table.append(thead);
-  const tbody = el("tbody");
-  for (const f of r.frontier) {
-    const tr = el("tr");
-    tr.append(el("td", f.switches), el("td", duration(f.seconds)), el("td", num(f.soulCost)));
-    tbody.append(tr);
-  }
-  table.append(tbody);
-  frontier.append(table, el("p", "These are feasible plans discovered by the search, not exhaustive optima for every switch count.", "hint"));
-  host.append(frontier);
   const heading = el("div", void 0, "shift-overview-heading");
   heading.append(el("h2", "Shift activities"), el("p", "Open a shift for purchase targets in game order, then follow each break and resume time. Full Breakdown shows individual actions. Online waits under 10 seconds stay in purchase groups and totals.", "hint"));
   host.append(heading);
@@ -1116,9 +1101,11 @@ function renderResult() {
     const group = el("details", void 0, "timeline-group shift-summary"), header = el("summary"), top = el("div", void 0, "shift-summary-top"), title = el("span", shift.phase + " \xB7 " + shift.name, "shift-title"), timing = el("div", void 0, "shift-timing"), finish = el("time", "Ends " + timestamp(shift.end, zone, true), "shift-end");
     title.replaceChildren(EggIcons.caption(S.EGGS[shift.egg], shift.phase + " \xB7 " + shift.name));
     finish.dateTime = new Date(shift.end * 1e3).toISOString();
+    const start = el("time", "Starts " + timestamp(shift.start, zone, true), "shift-start");
+    start.dateTime = new Date(shift.start * 1e3).toISOString();
     const cost = el("span", shift.hasSwitch ? "Switch Cost: " + num(shift.soulCost) + " Soul Eggs" : "Starting Farm · No Switch Cost", "shift-cost");
     cost.title = shift.hasSwitch ? "Soul Eggs required to enter this Truth Egg visit." : "The farm you start on does not require a new switch.";
-    timing.append(el("span", exactDuration(shift.seconds) + " \xB7 +" + shift.teGained + " TE", "shift-duration"), cost, finish);
+    timing.append(el("span", exactDuration(shift.seconds) + " \xB7 +" + shift.teGained + " TE", "shift-duration"), cost, start, finish);
     top.append(title, timing);
     header.append(top);
     const chips = el("div", void 0, "activity-chips");
@@ -1133,6 +1120,16 @@ function renderResult() {
     for (const action of equipActions) appendGear(header,action);
     if (shift.phase === "H2" && !equipActions.length) appendGear(header,null,true);
     header.append(el("div", waitTotals(shift), "shift-waits"));
+    const peakRates = () => {
+      const rates = el("dl", undefined, "shift-max-rates");
+      rates.title = "Highest modeled farm rates during this shift. Earnings use the selected earnings mode and weekly events; laying and shipping show capacity before fuel diversion.";
+      for (const [key, label, unit] of [["earning","Maximum Earning Rate","gems/hour"],["shipping","Maximum Shipping Rate","eggs/hour"],["laying","Maximum Egg Laying Rate","eggs/hour"]]) {
+        const item = el("div"); item.dataset.rate = key;
+        item.append(el("dt",label),el("dd",num(shift.maxRates[key]*3600)+" "+unit)); rates.append(item);
+      }
+      return rates;
+    };
+    header.append(peakRates());
     group.append(header);
     const guide = el("div", void 0, "quick-guide");
     guide.append(el("h3", "Quick guide"));
@@ -1192,6 +1189,7 @@ function renderResult() {
     const complete = el("div", void 0, "guide-complete"), done = el("time", timestamp(shift.end, zone, true));
     done.dateTime = new Date(shift.end * 1e3).toISOString();
     complete.append(el("b", "Shift Complete"), done);
+    complete.append(peakRates());
     guide.append(complete);
     group.append(guide);
     const full = el("details", void 0, "full-breakdown");

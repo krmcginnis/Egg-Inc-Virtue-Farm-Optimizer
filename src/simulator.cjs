@@ -63,7 +63,7 @@ function prepare(raw,opts={}){
  researchCostScale:number(f.researchCostScale??1,'Research cost calibration',.000001,1000000),earningsScale:number(f.earningsScale??1,'Earnings calibration',.000001,1000000)};
  if(!opts.artifactReplay&&f.manualFarmData!==true&&Array.isArray(f.artifactInventory))c.artifactModel=Artifacts.compile(f.artifactInventory,pro,c.earningsMode);
  c.ships=Ships.prepare(f,p,number);
- if(!['auto','wasmegg','user','free'].includes(c.strategy))throw Error('Select a valid planning strategy.');if(c.strategy==='wasmegg'&&!c.autoSequence)throw Error('Enable automatic visits for the Wasmegg optimized strategy.');
+ if(!['auto','wasmegg','user','free'].includes(c.strategy))throw Error('Select a valid planning strategy.');if(c.strategy==='wasmegg'&&!c.autoSequence)throw Error('Enable automatic visits for Optimized Sequence.');
  if(!['quick','balanced','thorough'].includes(p.searchEffort??'balanced'))throw Error('Select a valid search effort.');
  if(!['offline','online'].includes(c.earningsMode))throw Error('Earnings mode must be offline or online.');c.calendar=calendar(start,c.end,c.zone);
  const enteredSilos=number(f.silos??1,'Silos',0,pro?10:2,true);

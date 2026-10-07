@@ -448,3 +448,11 @@ aside .update-app{margin-top:auto}
 .ship-artwork-unavailable .ship-icon{display:none}
 @media(max-width:600px){.ship-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:500px){#artifacts-card .loadout-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.artifact-strip{gap:4px}.artifact-strip .loadout-card{padding:3px}.artifact-strip .loadout-item-artwork{width:42px;height:42px}.artifact-strip .loadout-artifact-image{width:36px;height:36px}.artifact-strip .loadout-stone-socket{width:16px;height:16px;min-width:16px}.artifact-strip .loadout-stone-image{width:14px;height:14px}.artifact-strip .loadout-stone-row{gap:1px}.artifact-strip .loadout-item-name{font-size:9px;overflow-wrap:normal}}
+
+/* Shift dates and peak rates remain readable in compact summary/guide cards. */
+.shift-start{font-size:11px;color:#9db1c7;font-weight:400;line-height:1.5;overflow-wrap:anywhere}
+.shift-max-rates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 16px;margin:12px 0 0;font-size:11px;line-height:1.5;font-weight:400}
+.shift-max-rates>div{min-width:0}.shift-max-rates dt{color:var(--muted)}.shift-max-rates dd{margin:3px 0 0;color:#dce8f5;font-weight:600;overflow-wrap:anywhere}
+.guide-complete>.shift-max-rates{flex:0 0 100%;margin:5px 0 0}.guide-complete .shift-max-rates dd{color:#bee9cf}
+@media(max-width:500px){.shift-max-rates{grid-template-columns:1fr;gap:6px}.shift-max-rates>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.shift-max-rates dt{flex:1;min-width:0}.shift-max-rates dd{flex:0 1 46%;text-align:right;margin:0}}
+@media(forced-colors:active){.shift-max-rates dt,.shift-max-rates dd,.guide-complete .shift-max-rates dd,.shift-start{color:CanvasText}}

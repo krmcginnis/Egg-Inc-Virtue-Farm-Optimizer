@@ -1,11 +1,10 @@
-# v0.8.12
+# v0.8.13
 
-- Make artifact tiles compact enough for one desktop row, with circular + buttons for empty stone sockets.
-- Remove the Delivery tab, copy button and normal starting-set choice; retain compatible saved delivery data and solver behavior.
-- Show actual H2 artifacts and their stones horizontally in both the summary and Quick Guide, ordered Gusset, Metronome, Compass, then other artifacts.
-- Show carried H2 gear when no new equip action is needed.
-- Replace ship menus with an illustrated chooser showing per-launch cost, mission-specific fuel and current-rate time to afford.
-- Remove the separate Choose Date & Time button; clicking the start input still opens the dialog with Ok.
-- Move Assumptions to How It Works.
-- Preserve compact panels, imports, research, ship scheduling and existing update behavior.
+- Fix missing Bust Unions discounts in stage purchase proposals, allowing the known C1 opening to be found with 90-minute C1 and 120-minute K1 limits.
+- Rename Wasmegg Optimized Sequence to Optimized Sequence and remove the combined free-routing strategy.
+- Map older automatic farms to Optimized Sequence for new searches while retaining saved-plan replay.
+- Remove Switch Tradeoffs Found from the Purchase Timeline.
+- Show shift start above end and maximum earning, shipping and egg laying rates in each summary and Quick Guide’s Shift Complete section.
+- Include the same dates and rates in PDF walkthroughs.
+- Replace visible cash wording with gems, including older saved timeline reasons.
 - Install through Update App → Update & Restart.

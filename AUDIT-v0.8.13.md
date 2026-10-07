@@ -1,4 +1,9 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.12 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.13 — Release Audit
+
+v0.8.13 corrects the stage adapter’s Bust Unions discount, simplifies strategy
+selection and adds shift start dates and peak rates. Prior evidence below is
+historical; current validation and the limits of the opening comparison appear
+in the v0.8.13 section at the end.
 
 v0.8.12 compacts the artifact controls, adds visual ship selection, moves
 Assumptions to How It Works and replaces artifact text in shift summaries and
@@ -128,7 +133,7 @@ Personal farms/plans are excluded from the app archive.
 | Purchases | Research rounds up; discounted hab/vehicle/car prices round down. Duplicate physical types affect prices. Calibration defaults to 1. |
 | Switches | Gems reset, upgrades/deliveries persist, Soul Egg balance decreases and prior-switch count increases. Entered maximum new switches and interaction time are enforced. |
 | Search | Every C1/K1 budget pair at 30-minute increments up to the selected maximum, capped at 300 minutes. No previous-plan incumbent. Caps include waits, interactions and fuel collection. Search is heuristic and does not prove a global optimum. |
-| Routes | Wasmegg Optimized Sequence, Best Found: Wasmegg Optimized + Free Routing, or User Selected Sequence. Entered visit order is honored; compatible upgrade visits share staged purchase rules. |
+| Routes | Optimized Sequence or User Selected Sequence. Entered visit order is honored; compatible upgrade visits share staged purchase rules. |
 | Ships | Separate H1/H2 lists launch in entered row order. Earlier returns, funding, fuel transfer and fuel production are included. Final ships need not return before departure. Imported existing flights occupy slots and their launch fuel is not spent again. |
 | Ascensions | No sleep or downtime allowance. Each solve covers one ascension. Next Ascension preserves permanent progress and active flights, with one starting silo. |
 
@@ -917,7 +922,7 @@ artifact modifiers, Epic Research and Colleggtibles. Vehicle rates show eggs/hou
 an already selected Hyperloop retains its current car count, while a new train
 shows one car, stated beside its rate. Prices use simulator.price for the
 specific replaced slot, including other copies and existing discounts.
-Affordability subtracts current cash and divides by current event earnings in
+Affordability subtracts current gems and divides by current event earnings in
 the selected earnings mode. It is explicitly a current-rate estimate, assuming
 full habs, maintained silos and no future events or purchases. Zero-income farms
 show No current income, affordable items show Affordable now, and estimates
@@ -943,7 +948,7 @@ are excluded from plan invalidation and update handoff capture.
 Validation: npm ci/build, physical-preview unit checks and all nine Chromium
 suites pass, including new physical-picker checks. Coverage includes every
 hab/vehicle row, calculated portal/hover/train/epic/duplicate-price factors,
-zero cash/income, immutable preview state, filtering/cancel/focus/locks,
+zero gems/income, immutable preview state, filtering/cancel/focus/locks,
 Hyperloop cars, save/load, exact image sizes, egg DOM order/vertical stacking,
 bottom sidebar alignment, date commit/cancel/required validation/second precision
 and 1440–320px layouts. Existing suites retain actual synthetic protobuf/API
@@ -1043,7 +1048,7 @@ second launcher button. Assumptions move intact from Planning to How It Works.
 Ship image buttons use the existing illustrated dialog with 11 offline game
 icons, search, selection state, cancellation and restored focus. Fuel is for the
 row's selected mission length, per launch, ordered C K I R H. Cost uses the
-existing ship catalog; ETA subtracts current cash and divides by current event
+existing ship catalog; ETA subtracts current gems and divides by current event
 farm earnings. It assumes full habs and maintained silos, excludes future events,
 upgrades and fueling, and shows affordable/zero-income/unavailable cases.
 No ownership, mission availability, scheduler or ship-cost rules are changed.
@@ -1070,3 +1075,81 @@ Windows workflow must pass native launcher/update/rollback checks and anonymous
 public-feed/archive verification before release handover. Local PowerShell is
 unavailable. The solver worker is byte-identical to v0.8.11:
 26a402fae2d31a8c270bf7fd6d03e0e0ebbda684095f4f5c1ad4cb5937b0625a.
+
+
+## Opening discount and shift rates — v0.8.13
+
+Cause: the bundled reference vehicle planner reads Bust Unions through its
+`cheaper_vehicles` alias, while the adapter supplied only canonical `bust_unions`.
+The engine therefore forecast undiscounted vehicles and cars, truncating bounded
+K1 proposals before actual replay could use the account’s discount. The adapter
+now creates an independent Epic Research map containing the translated alias.
+Simulator prices, account Epic IDs, permits, purchase permissions, time caps,
+calibration, offline minimums and ship scheduling remain unchanged.
+
+On the retained private 160→200 comparison farm, the old 90/180 short-online
+proposal predicted 10,146.749 seconds for K1; actual execution took 5,676.987.
+The corrected 90/120 proposal contains the same 49 physical purchases and predicts
+5,073.374 seconds, then executes to the same 5,676.987 seconds under the actual
+interaction/offline rules. The full fresh 12-pair 90/120 search finds C1
+4,616.141 seconds (displayed 1h 16m 57s), K1 5,676.987 seconds and the previously
+validated complete run of 11,880,595.603 seconds. All actions replay under the
+smaller opening caps, with the entered ships/fuel and offline minimum unchanged.
+This retained farm’s complete duration is 137d 12h 9m; the user’s newer
+136d 23h 24m 38s configuration was not supplied, so that exact total is not claimed.
+The fresh 36-pair 180/180 comparison finds a further 145.586-second improvement
+using a different C1 proposal budget. Larger proposal budgets can still change
+heuristic purchase choices even when actual durations fit smaller caps. The fix
+restores the omitted discount; it does not enumerate all feasible purchase orders
+or prove a global optimum. No private farms, EIDs or plans enter tracked source.
+
+Optimized Sequence and User Selected Sequence are the only menu choices. Older
+automatic/free-routing configurations map to Optimized Sequence for subsequent
+searches; custom routes retain their entered sequence. Original saved results
+replay before UI migration with the original configuration/actions. Legacy solver
+strategy IDs remain accepted for that replay. The switch-tradeoff table is removed
+from display without altering recorded solver frontier data.
+
+Shift summaries show start above end, with semantic times. Each visit’s peak
+rates are reconstructed from its starting configuration, purchases and immutable
+recorded artifact loadouts. Earnings use the selected earning mode and weekly
+multiplier; event boundaries are matched to the gear/upgrades present then rather
+than multiplying an early event by stronger later gear. Shipping and laying are
+capacity before fuel diversion. Peaks survive set replacements, inherited gear,
+zero-duration purchases, waits, ship launches and missing historical before/after
+snapshots. The same values appear in Quick Guide Shift Complete and PDFs. Raw
+actions and replay timing are unchanged. Legacy reasons/notices display gems
+through a presentation formatter; persistent currency keys remain compatible.
+
+Self-contained opening-discount regression checks both permits and zero/partial/
+max Bust Unions, independent simulator prices for every proposed vehicle/car,
+proposal truncation, actual K1 caps, affordability replay and account immutability.
+Shift-rate regression covers both earning modes, weekly event/gear pairing,
+calibration, independently calculated peaks, inheritance, legacy snapshots,
+unchanged actions, strategy migration and historical gem wording. PDF text and
+rendered pages are inspected for dates/rates, completion and currency wording.
+Browser, packaging and Windows release results follow after completion.
+
+Local validation completed: npm ci/build, Node syntax, opening-discount,
+shift-rates, physical-preview, release-state and prepare-publish checks pass.
+All eleven Chromium suites pass: timeline-readability, planning-clarity,
+equipment-flow, page-navigation, physical-picker, loadout-artwork, visual-gear,
+farm-artwork, research-artwork, ui-polish and update-error. Updated timeline
+checks cover the two strategy choices/default, legacy automatic migration,
+retained custom routing, semantic start/end ordering, identical peak values in
+summary and completion, no tradeoff table, historical gems wording with unchanged
+replayed reasons, lazy breakdowns and 1440–320px layouts. Actual browser worker
+execution, artifact gear/stone displays, imports, research, physical pickers,
+update handoff/legacy page routing and compact paired panels remain passing.
+Desktop/mobile timeline and PDF summaries/completion were inspected. The older
+standalone import-account suite still lacks its two fixture dependencies.
+No live-account, native Firefox or screen-reader execution is claimed.
+
+Packaging verifies 167 runtime files, closed ZIP integrity and one current audit.
+The generated worker SHA256 is now
+b4cc67c1c7a05b66df423a2e83f1e37bef62f1a603ca4a1cb55ce6a326d43bfc,
+reflecting the reviewed proposal-discount/strategy changes. The prior byte-identical
+worker statements above describe historical releases. Native Windows launcher,
+installation/restart/rollback and anonymous public-feed/archive checks must pass
+in the established automatic workflow before release handover. Local native
+PowerShell is unavailable.

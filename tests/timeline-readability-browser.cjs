@@ -2,6 +2,7 @@
 const assert = require("node:assert/strict"), fs = require("node:fs"), path = require("node:path"), http = require("node:http");
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 const blank = require("../src/blank-farm.cjs"), S = require("../src/simulator.cjs"), U = require("../src/shift-summary.cjs");
+const Numbers = require("../src/number-format.cjs");
 const root = path.resolve(__dirname, "..");
 (async () => {
   const server = http.createServer((req, res) => {
@@ -16,6 +17,8 @@ const root = path.resolve(__dirname, "..");
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } }), errors = [];
     page.on("pageerror", e => errors.push(e.message));
     await page.goto("http://127.0.0.1:" + server.address().port); await page.waitForFunction(() => !!globalThis.VirtueApp);
+    assert.deepEqual(await page.locator('#strategy option').evaluateAll(nodes=>nodes.map(n=>[n.value,n.textContent])),[['wasmegg','Optimized Sequence'],['user','User Selected Sequence']]);
+    assert.equal(await page.inputValue('#strategy'),'wasmegg');assert.ok(await page.locator('#effort').isDisabled());
     const load = async raw => { await page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Readability.json")), raw); await page.click(raw.result ? '[data-tab="results"]' : '[data-tab="farm"]'); };
     const farm = blank(1791244800);
     Object.assign(farm.farm, { cash: 1e18, soulEggs: 1e20, claimed: Array(5).fill(5), proPermit: true, manualFarmData: true, manualAccountData: true });
@@ -24,6 +27,8 @@ const root = path.resolve(__dirname, "..");
     farm.farm.loadouts = Object.fromEntries(["current", "earnings", "delivery"].map(key => [key, structuredClone(loadout)]));
     Object.assign(farm.plan, { target: 25, maxSwitches: 1, strategy: "user", autoSequence: false, sequence: ["curiosity", "integrity"], shiftSeconds: 0, actionSeconds: 0 });
     await load(farm);
+    const legacyFarm=structuredClone(farm);Object.assign(legacyFarm.plan,{strategy:'auto',strategyVersion:2,autoSequence:true});await load(legacyFarm);assert.equal(await page.inputValue('#strategy'),'wasmegg');assert.equal((await page.evaluate(()=>VirtueApp.getConfig())).plan.strategy,'wasmegg');await load(farm);
+    assert.ok(await page.locator('#effort').isEnabled());
     assert.equal(await page.locator("#pick-vehicle-0").getAttribute("title"),"Quantum Transporter");
     assert.equal(await page.locator("#hab-0-full-name").count(),0);
     assert.ok(await page.locator("#pick-hab-0").isEnabled());
@@ -65,14 +70,20 @@ const root = path.resolve(__dirname, "..");
     const result = { version: 1, start: initial.c.start, end: state.t, seconds: state.t - initial.c.start, target: 25, actions: S.history(state), frontier: [], explored: 0, method: "Synthetic UI fixture", termination: "complete" };
     const summary = U.summarize(fixture, result);
     await load({ version: 1, config: fixture, result }); assert.match(await page.locator("#notice").innerText(), /replayed/);
+    assert.doesNotMatch(await page.locator('#result-content').innerText(),/Switch Tradeoffs Found/i);
+    assert.ok(await page.locator('.plan-start').evaluate(n=>n.nextElementSibling.classList.contains('plan-end')));
     assert.equal(await page.locator(".shift-summary").count(), 2);
     for (const [i, shift] of summary.shifts.entries()) {
       const group = page.locator(".shift-summary").nth(i);
+      assert.equal(await group.locator('.shift-start').getAttribute('datetime'),new Date(shift.start*1000).toISOString());
+      assert.ok(await group.locator('.shift-start').evaluate(n=>n.getBoundingClientRect().bottom<=n.nextElementSibling.getBoundingClientRect().top));
+      for(const [key,unit]of [['earning','gems/hour'],['shipping','eggs/hour'],['laying','eggs/hour']])assert.equal(await group.locator(':scope>summary .shift-max-rates [data-rate="'+key+'"] dd').innerText(),Numbers.format(shift.maxRates[key]*3600)+' '+unit);
       assert.equal(await group.locator(".action").count(), 0, "full breakdown remains lazy");
       await group.locator(":scope>summary").click();
       assert.equal(await group.locator(".guide-complete").count(), 1, "one finish strip even when the shift ends with a break");
       assert.equal(await group.locator(".guide-complete time").getAttribute("datetime"), new Date(shift.end * 1000).toISOString());
       assert.ok(await group.locator(".guide-complete").evaluate(node => node === node.parentElement.lastElementChild));
+      for(const key of ['earning','shipping','laying'])assert.equal(await group.locator('.guide-complete [data-rate="'+key+'"] dd').innerText(),await group.locator(':scope>summary [data-rate="'+key+'"] dd').innerText());
       const pauses = shift.quickGuide.filter(step => step.break).map(step => step.break);
       assert.equal(await group.locator(".guide-break").count(), pauses.length);
       for (const [j, pause] of pauses.entries()) {
@@ -90,6 +101,10 @@ const root = path.resolve(__dirname, "..");
     assert.match(await page.locator(".shift-summary").first().locator(".guide-overhead").innerText(), /3s/);
     assert.equal(await page.locator(".shift-summary").last().locator(".guide-step-heading").count(), 0, "a wait-only shift needs no duplicate purchase heading");
     assert.deepEqual((await page.evaluate(() => VirtueApp.getResult())).actions, result.actions);
+    // Older saved reasons are displayed as gems without altering replay data.
+    const old=structuredClone(result);old.actions.find(a=>a.type==='wait'&&a.end-a.t===62).reason='Accumulate cash before purchase';await load({version:1,config:fixture,result:old});
+    await page.locator('.shift-summary').first().locator(':scope>summary').click();
+    await page.locator('.shift-summary').first().locator('.full-breakdown>summary').click();assert.doesNotMatch(await page.locator('#result-content').innerText(),/\bcash\b/i);assert.equal((await page.evaluate(()=>VirtueApp.getResult())).actions.find(a=>a.type==='wait'&&a.end-a.t===62).reason,'Accumulate cash before purchase');
     await page.locator(".shift-summary").first().screenshot({ path: path.join(out, "timeline-desktop.png") });
     for (const width of [1440, 1280, 1050, 1000, 800, 500, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
@@ -100,6 +115,7 @@ const root = path.resolve(__dirname, "..");
       }
       assert.ok(await page.locator(".loadout-item-name").evaluateAll(nodes => nodes.every(n => n.scrollWidth <= n.clientWidth + 1)), "long title overflow at " + width);
     }
+    await page.locator(".shift-summary").first().screenshot({path:path.join(out,"timeline-mobile.png")});
     assert.deepEqual(errors, []);
     console.log("PASS clipped/short/empty selected names, keyboard labels and locks, resize/tab updates, artifact effects and saved values, exact break modes/durations/resume dates, one finish strip per shift, tier order, folded waits, lazy detail, unchanged replay actions and compact layouts 1440–320px.");
   } finally { if (browser) await browser.close(); await new Promise(resolve => server.close(resolve)); }

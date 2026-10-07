@@ -2,11 +2,13 @@
 const {PDFDocument,rgb}=require('./vendor/pdf-lib.min.cjs'),U=require('./shift-summary.cjs'),F=require('./pdf-font.cjs'),fonts=require('./vendor/pdf-fonts.cjs');
 const Numbers=require('./number-format.cjs');
 const G=require('./guide-layout.cjs'),version=require('./version.cjs'),Model=require('./assumption-notices.cjs'),S=require('./simulator.cjs');
-function text(value){return String(value).replace(/[–—−]/g,'-').replace(/→/g,'->').replace(/\s+/g,' ').replace(/[^\x20-\x7e\xa0-\xff\u2122]/g,'?');}
+const gemsText=require('./gems-text.cjs');
+function text(value){return gemsText(value).replace(/[–—−]/g,'-').replace(/→/g,'->').replace(/\s+/g,' ').replace(/[^\x20-\x7e\xa0-\xff\u2122]/g,'?');}
 function duration(seconds){const total=Math.max(0,Math.ceil(seconds)),d=Math.floor(total/86400),h=Math.floor(total%86400/3600),m=Math.floor(total%3600/60),s=total%60;return [d?d+'d':'',h?h+'h':'',m?m+'m':'',s?s+'s':''].filter(Boolean).join(' ')||'0s';}
 function timestamp(t,zone){return new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'short',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'}).format(new Date(t*1000));}
 function waits(t){return 'Online waiting '+duration(t.onlineSeconds)+' | Offline '+duration(t.offlineSeconds)+' ('+t.offlineBreaks+' breaks)'+(t.interactionSeconds?' | Interactions '+duration(t.interactionSeconds):'')+(t.fuelSeconds?' | Fueling '+duration(t.fuelSeconds):'');}
 function switchCost(shift){return shift.hasSwitch?'Switch Cost: '+Numbers.format(shift.soulCost)+' Soul Eggs':'Starting Farm - No Switch Cost';}
+function rateLines(shift){return ['Maximum Earning Rate: '+Numbers.format(shift.maxRates.earning*3600)+' gems/hour','Maximum Shipping Rate: '+Numbers.format(shift.maxRates.shipping*3600)+' eggs/hour','Maximum Egg Laying Rate: '+Numbers.format(shift.maxRates.laying*3600)+' eggs/hour'];}
 async function create(raw,result){
  const summary=U.summarize(raw,result),zone=raw.plan.eventTimezone||'America/Los_Angeles',pdf=await PDFDocument.create(),normal=F.embed(pdf,fonts.regular,'VirtueSans-Regular'),bold=F.embed(pdf,fonts.bold,'VirtueSans-Bold');
  pdf.setTitle('Egg Inc. Virtue Farm Optimizer - '+result.target+' TE purchase walkthrough');pdf.setAuthor('Egg Inc. Virtue Farm Optimizer');pdf.setSubject('Shift Summaries and purchase targets between online/offline breaks');pdf.setCreator('Egg Inc. Virtue Farm Optimizer '+version);
@@ -24,23 +26,23 @@ async function create(raw,result){
  }
  function chipRows(activities){const rows=[];let row=[],used=0;for(const activity of activities){const label=text(activity.label),value=activity.value?text(activity.value):'',max=body-28;let size=9;while(size>6.5&&normal.widthOfTextAtSize(label,size)+(value?bold.widthOfTextAtSize(' '+value,size):0)+14>max)size-=.25;
   const w=Math.min(max,normal.widthOfTextAtSize(label,size)+(value?bold.widthOfTextAtSize(' '+value,size):0)+14);if(row.length&&used+w>max){rows.push(row);row=[];used=0;}row.push({label,value,size,w,kind:activity.kind});used+=w+6;}if(row.length)rows.push(row);return rows;}
- function card(shift,rows,continued,last){const waitLines=last?wrap(waits(shift),body-28,8):[],h=48+rows.length*24+(last?waitLines.length*12+8:8);rectangle(margin,y,body,h,paper);rectangle(margin,y,3,h,green,green);
-  const title=shift.phase+' - '+shift.name+(continued?' (continued)':''),timing=duration(shift.seconds)+' | +'+shift.teGained+' TE';draw(title,margin+14,y+12,11,bold);draw(timing,width-margin-14-normal.widthOfTextAtSize(text(timing),9),y+14,9,normal,muted);draw('Ends: '+timestamp(shift.end,zone),margin+14,y+31,8.5,normal,muted);const cost=switchCost(shift);draw(cost,width-margin-14-normal.widthOfTextAtSize(text(cost),8.5),y+31,8.5,normal,green);
-  for(let ri=0;ri<rows.length;ri++){let x=margin+14;const top=y+48+ri*24;for(const chip of rows[ri]){const tier=chip.kind==='tier';rectangle(x,top,chip.w,20,tier?rgb(.99,.96,.87):chipFill);draw(chip.label,x+7,top+5,chip.size,normal,tier?gold:ink);if(chip.value)draw(' '+chip.value,x+7+normal.widthOfTextAtSize(chip.label,chip.size),top+5,chip.size,bold,green);x+=chip.w+6;}}
-  for(let i=0;i<waitLines.length;i++)draw(waitLines[i],margin+14,y+48+rows.length*24+i*12,8,normal,muted);y+=h+10;
+ function card(shift,rows,continued,last){const waitLines=last?[...wrap(waits(shift),body-28,8),...rateLines(shift)]:[],h=62+rows.length*24+(last?waitLines.length*12+8:8);rectangle(margin,y,body,h,paper);rectangle(margin,y,3,h,green,green);
+  const title=shift.phase+' - '+shift.name+(continued?' (continued)':''),timing=duration(shift.seconds)+' | +'+shift.teGained+' TE';draw(title,margin+14,y+12,11,bold);draw(timing,width-margin-14-normal.widthOfTextAtSize(text(timing),9),y+14,9,normal,muted);draw('Starts: '+timestamp(shift.start,zone),margin+14,y+31,8.5,normal,muted);draw('Ends: '+timestamp(shift.end,zone),margin+14,y+44,8.5,normal,muted);const cost=switchCost(shift);draw(cost,width-margin-14-normal.widthOfTextAtSize(text(cost),8.5),y+31,8.5,normal,green);
+  for(let ri=0;ri<rows.length;ri++){let x=margin+14;const top=y+62+ri*24;for(const chip of rows[ri]){const tier=chip.kind==='tier';rectangle(x,top,chip.w,20,tier?rgb(.99,.96,.87):chipFill);draw(chip.label,x+7,top+5,chip.size,normal,tier?gold:ink);if(chip.value)draw(' '+chip.value,x+7+normal.widthOfTextAtSize(chip.label,chip.size),top+5,chip.size,bold,green);x+=chip.w+6;}}
+  for(let i=0;i<waitLines.length;i++)draw(waitLines[i],margin+14,y+62+rows.length*24+i*12,8,normal,muted);y+=h+10;
  }
  newPage(true);
- for(const shift of summary.shifts){const rows=chipRows(shift.activities),waitHeight=wrap(waits(shift),body-28,8).length*12+8;let offset=0;
-  while(offset<rows.length){const available=bottom-y,remaining=rows.length-offset,fullHeight=48+remaining*24+waitHeight;
+ for(const shift of summary.shifts){const rows=chipRows(shift.activities),waitHeight=(wrap(waits(shift),body-28,8).length+3)*12+8;let offset=0;
+  while(offset<rows.length){const available=bottom-y,remaining=rows.length-offset,fullHeight=62+remaining*24+waitHeight;
    if(fullHeight<=available){card(shift,rows.slice(offset),offset>0,true);break;}
    // Keep a normal card together. Split only cards taller than a fresh page.
    const freshSpace=bottom-127;if(fullHeight<=freshSpace||available<80){newPage();continue;}
-   const count=Math.min(remaining-1,Math.floor((available-56)/24));if(count<1){newPage();continue;}card(shift,rows.slice(offset,offset+count),offset>0,false);offset+=count;newPage();
+   const count=Math.min(remaining-1,Math.floor((available-70)/24));if(count<1){newPage();continue;}card(shift,rows.slice(offset,offset+count),offset>0,false);offset+=count;newPage();
   }
  }
  if(!summary.shifts.length)y=paragraph('The target is already available to claim.',y,11,ink)+12;
  if(summary.shifts.length){section='Quick Guide';newPage();
-  function guideHeader(shift,continued=false){draw(shift.phase+' - '+shift.name+(continued?' (continued)':''),margin,y,13,bold);const timing=duration(shift.seconds)+' | +'+shift.teGained+' TE';draw(timing,width-margin-normal.widthOfTextAtSize(text(timing),9),y+2,9,normal,muted);y+=21;draw('Shift ends: '+timestamp(shift.end,zone),margin,y,8.5,normal,muted);const cost=switchCost(shift);draw(cost,width-margin-normal.widthOfTextAtSize(text(cost),8.5),y,8.5,normal,green);y+=23;}
+  function guideHeader(shift,continued=false){draw(shift.phase+' - '+shift.name+(continued?' (continued)':''),margin,y,13,bold);const timing=duration(shift.seconds)+' | +'+shift.teGained+' TE';draw(timing,width-margin-normal.widthOfTextAtSize(text(timing),9),y+2,9,normal,muted);y+=21;draw('Shift starts: '+timestamp(shift.start,zone),margin,y,8.5,normal,muted);const cost=switchCost(shift);draw(cost,width-margin-normal.widthOfTextAtSize(text(cost),8.5),y,8.5,normal,green);y+=13;draw('Shift ends: '+timestamp(shift.end,zone),margin,y,8.5,normal,muted);y+=23;}
   function footerLines(step,shift){const values=[];if(!step.activities.length)values.push([step.break?'No purchases before this break.':'No further purchases in this shift.',false]);
    if(step.shipRun){const r=step.shipRun;values.push(['Stay on Humility: '+duration(r.end-r.t)+' to fund, fuel and launch.',true]);for(const m of r.batches){values.push([m.count+' x '+m.label,false],['First launch: '+timestamp(m.firstLaunch,zone),false],['Final launch: '+timestamp(m.lastLaunch,zone),false]);}values.push(['Final launches complete: '+timestamp(r.end,zone),true],['Final ships return later; do not wait for them.',false]);}
    if(step.hiddenOnlineSeconds)values.push(['Brief online waits included: '+duration(step.hiddenOnlineSeconds),false]);if(step.interactionSeconds)values.push(['Interactions: '+duration(step.interactionSeconds),false]);
@@ -56,16 +58,18 @@ async function create(raw,result){
    if(last){rectangle(margin+14,top,body-28,footer.length*13+10,step.break?.mode==='offline'?rgb(.89,.95,.92):chipFill);for(let i=0;i<footer.length;i++)draw(footer[i].value,margin+20,top+5+i*13,8.5,footer[i].strong?bold:normal,footer[i].strong?green:muted);}
    y+=h+10;
   }
-  for(const shift of summary.shifts){const first=shift.quickGuide[0],firstHeight=first?42+rowsHeight(guideRows(first.activities))+footerLines(first,shift).length*13+16:40;if(bottom-y<44+Math.min(firstHeight,bottom-171))newPage();guideHeader(shift);
-   if(!shift.quickGuide.length){y=paragraph('No purchases or breaks in this shift.',y)+12;continue;}
+  for(const shift of summary.shifts){const first=shift.quickGuide[0],firstHeight=first?42+rowsHeight(guideRows(first.activities))+footerLines(first,shift).length*13+16:40;if(bottom-y<57+Math.min(firstHeight,bottom-184))newPage();guideHeader(shift);
+   if(!shift.quickGuide.length)y=paragraph('No purchases or breaks in this shift.',y)+12;
    for(const [index,step]of shift.quickGuide.entries()){const rows=guideRows(step.activities),footer=footerLines(step,shift);let offset=0;
     while(true){const head=continuedRows(rows,offset),remaining=rows.length-offset,available=bottom-y,fullHeight=42+rowsHeight(head)+rowsHeight(rows.slice(offset))+footer.length*13+16;
      if(fullHeight<=available){guideCard(step,index,head.concat(rows.slice(offset)),footer,offset>0,true);break;}
-     const freshSpace=bottom-171;if(fullHeight<=freshSpace||available<90){newPage();guideHeader(shift,true);continue;}
+     const freshSpace=bottom-184;if(fullHeight<=freshSpace||available<90){newPage();guideHeader(shift,true);continue;}
      let count=0,used=rowsHeight(head);while(count<remaining-1&&used+rows[offset+count].height<=available-54){used+=rows[offset+count].height;count++;}if(count&&rows[offset+count-1].type==='tier')count--;if(count<1){newPage();guideHeader(shift,true);continue;}guideCard(step,index,head.concat(rows.slice(offset,offset+count)),footer,offset>0,false);offset+=count;newPage();guideHeader(shift,true);
     }
    }
-   y+=8;
+   if(bottom-y<82){newPage();guideHeader(shift,true);}
+   rectangle(margin,y,body,76,rgb(.89,.95,.92));draw('Shift Complete: '+timestamp(shift.end,zone),margin+14,y+10,9,bold,green);
+   rateLines(shift).forEach((value,i)=>draw(value,margin+14,y+29+i*12,8.5,normal,green));y+=86;
   }
  }
  const shipRuns=result.actions.filter(a=>a.type==='ship-run'&&a.launches?.length);

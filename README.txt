@@ -124,13 +124,13 @@ persists across ascensions; enter your owned levels after clearing farm data.
 This is a heuristic beam-search optimizer. It returns the fastest feasible plan
 found within the fixed sequence or automatically searched routes, time limit, and
 switch budget. It is not a
-proof of global optimality. Thorough mode searches longer. Switch tradeoffs list
-feasible plans discovered during the search. Every final timeline is replayed to
+proof of global optimality. Thorough mode searches longer for user sequences.
+Every final timeline is replayed to
 check affordability, research prerequisites, permissions, Soul Egg costs and goal.
 
 VALIDATION
 - Simulator matches the saved v1.5 workbook rates and Friday research pricing.
-- All 98 TE thresholds, Monday/Friday boundaries, cash resets and shift costs tested.
+- All 98 TE thresholds, Monday/Friday boundaries, gems resets and shift costs tested.
 - Small research-order problem checked against exhaustive enumeration.
 - Workbook 160 to 200 TE plan replayed.
 - Browser worker, JSON save/load, exports, socket editing, stopping and layout tested.
@@ -173,13 +173,13 @@ WALKTHROUGH
 Levels of the same research within a batch purchased at the same instant are shown as one level range, with their combined cost. Waits and switches remain separate; saved plans retain every individual purchase for replay validation.
 
 ONLINE AND OFFLINE WAITS
-Automatic online + offline compares the fastest online purchase time against an offline break of at least 60 seconds. Away bonuses apply to the whole eligible offline break. Purchases and switch interaction time earn online income. Cash collected on return can fund multiple research levels immediately. The detailed timeline identifies online/offline waits; online waits under 10 seconds are omitted from that display. The PDF summary includes total online and offline waiting for each shift. Online-only mode remains available. Offline breaks assume maintained silo coverage.
+Automatic online + offline compares the fastest online purchase time against an offline break of at least 60 seconds. Away bonuses apply to the whole eligible offline break. Purchases and switch interaction time earn online income. gems collected on return can fund multiple research levels immediately. The detailed timeline identifies online/offline waits; online waits under 10 seconds are omitted from that display. The PDF summary includes total online and offline waiting for each shift. Online-only mode remains available. Offline breaks assume maintained silo coverage.
 
 COMPACT WAIT DISPLAY
-Online waits shorter than 10 seconds are hidden from the detailed timeline. Exactly 10 seconds, longer waits, and all offline breaks remain visible there. Hidden waits still count toward elapsed time, cash and egg delivery, PDF waiting totals, and saved plans for replay.
+Online waits shorter than 10 seconds are hidden from the detailed timeline. Exactly 10 seconds, longer waits, and all offline breaks remain visible there. Hidden waits still count toward elapsed time, gems and egg delivery, PDF waiting totals, and saved plans for replay.
 
 WASMEGG STAGED STRATEGY
-Planning strategy offers Best Found (staged and free routing), Wasmegg Staged Sequence, or Free Routing + Stage Baseline. The shared stage purchase planner evaluates one through the selected maximum number of research sales in every routing strategy. Free Routing retains those feasible candidates while searching for faster routes. Fixed sequences with the same CKI/CIK upgrade visits use the same purchase rules and preserve the entered order, including reordered final TE visits. From Curiosity the full route uses 12 new switches. Stage proposals use Wasmegg source commit 9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67; this app independently executes each level, enforces stage budgets, restores locked fleet prerequisites in C2, and replays actual costs, permissions and 60-second offline breaks. Results can differ from the website.
+Planning strategy offers Optimized Sequence or User Selected Sequence. Compatible sequences share the stage purchase rules; entered visit order is preserved. The full optimized route uses 12 new switches from Curiosity. Research-sale counts and all C1/K1 budget pairs are compared. Stage proposals are independently replayed with actual costs, permissions, interaction times and minimum offline breaks.
 
 C1 (configured limit; default 60 minutes): fleet size and Graviton Coupling priorities.
 K1 (configured limit; default 60 minutes): best affordable vehicles.
@@ -193,7 +193,7 @@ K3: new train cars, then Kindness's TE share.
 C4/I2/R2/H2: wait for each remaining Virtue's TE share.
 
 PLANNING ASSUMPTIONS
-Habitats stay full; estimates are most reliable at approximately 100 TE or more. Artifacts do not improve during a plan. There are no sleep periods. Silo/video coverage must be maintained. Each plan covers one ascension. Start next ascension immediately begins at the prior plan's finish, preserving claimed TE, lifetime deliveries, Epic Research, artifacts, remaining Soul Eggs and total shifts, while resetting cash and common farm upgrades. Review these inputs before running the next plan. Actual results may vary.
+Habitats stay full; estimates are most reliable at approximately 100 TE or more. Artifacts do not improve during a plan. There are no sleep periods. Silo/video coverage must be maintained. Each plan covers one ascension. Start next ascension immediately begins at the prior plan's finish, preserving claimed TE, lifetime deliveries, Epic Research, artifacts, remaining Soul Eggs and total shifts, while resetting gems and common farm upgrades. Review these inputs before running the next plan. Actual results may vary.
 
 Wasmegg-Staged-Plan.json is a newly generated, replay-validated fixed-stage plan for the supplied max-Epic farm.
 
@@ -203,7 +203,7 @@ C1 and K1 maximum time are individually editable in Planning Goal, in whole minu
 WAIT BATCHING AND SHIFT SUMMARIES (VERSION 1.1 UPDATE)
 The solver compares runs of short online purchase waits with one uninterrupted offline break of at least 60 seconds. It evaluates a one-minute break and a longer break that funds the purchase batch, using the earnings rate before those purchases. Staged routing retains individual-purchase and batch alternatives and picks the fastest complete TE plan found. Free routing also explores batches of successive research levels or train cars. The comparison is bounded lookahead, not a guarantee of the global optimum. Online-only mode disables offline batches.
 
-Each shift card now summarizes completed tiers, combined research ranges, habitat/vehicle upgrades, train cars, silos and artifact changes, plus exact duration, TE gained and online/offline waiting totals. Click a card for the quick guide, then open Full breakdown for the detailed purchase timeline. Short online gaps hidden from that timeline still count toward every total. Switch/purchase interactions are listed separately from cash waits. The PDF walkthrough and saved plan include the summaries.
+Each shift card now summarizes completed tiers, combined research ranges, habitat/vehicle upgrades, train cars, silos and artifact changes, plus exact duration, TE gained and online/offline waiting totals. Click a card for the quick guide, then open Full breakdown for the detailed purchase timeline. Short online gaps hidden from that timeline still count toward every total. Switch/purchase interactions are listed separately from gems waits. The PDF walkthrough and saved plan include the summaries.
 
 Shift summary research items follow the in-game research order. Every card and PDF summary includes its end date/time in the selected event timezone.
 
@@ -258,7 +258,7 @@ inputs were unchanged during the search; input changes still require a rerun.
 VERSION 1.3.6
 Timing and calibration fields are always visible at the bottom of Planning Goal.
 All model assumptions are consolidated in an Assumptions panel at the bottom
-of Farm & Goal. Current Gems replaces Current cash on the form; existing JSON
+of Farm & Goal. The form labels the currency as Current Gems; existing JSON
 keys and saved farms remain compatible. Interface labels use Title Case.
 
 VERSION 1.3.8
@@ -291,7 +291,7 @@ lower limits to 12 or 13. Both fixed and automatic solvers use the entered limit
 as a ceiling on new switches; lifetime switches do not count against it.
 The full staged Wasmegg route still requires 12 new switches from Curiosity
 (13 from another truth egg). If your limit is lower, the search explains
-the conflict without changing it. Best Found / Free Routing can use fewer.
+the conflict without changing it. For fewer switches, enter a shorter User Selected Sequence.
 Use Full Sequence remains an explicit way to raise the limit for a fixed route.
 
 VERSION 1.4.7 — SWITCH LIMIT FEEDBACK
@@ -546,16 +546,14 @@ VERSION 1.5.1 — INTERACTION AND PERFORMANCE REVIEW
 - The current release audit consolidates validation and limitations.
 
 VERSION 1.5.2 — PLANNING STRATEGIES
-- Best Found: Wasmegg Optimized + Free Routing compares compatible Wasmegg
-  candidates, then searches other routes and keeps the fastest plan found.
-- Wasmegg Optimized Sequence optimizes within the prescribed stage order,
+- Optimized Sequence optimizes within the prescribed stage order,
   including the allowed K1/I1 swap. Its description is beside the selector.
 - User Selected Sequence requires your visit order and optimizes purchases
   and waits on that route. Compatible routes share Wasmegg purchase logic.
 - Automatic visits are controlled by the strategy selection. Custom sequences
   stay entered when switching modes, but hidden values do not constrain an
   automatic search. Blank or unknown custom sequences must be corrected.
-- Older automatic free-routing farms map to Best Found; older fixed routes
+- Older automatic free-routing farms map to Optimized Sequence for new searches; older fixed routes
   map to User Selected Sequence. Saved plans still replay original actions.
 - New ascensions retain your selected mode and custom sequence.
 
@@ -568,7 +566,7 @@ VERSION 1.5.3 — EID FUEL TANK IMPORT
   produce an error; fuel amounts are never trimmed to make an import pass.
 
 Opening maxima use 30-minute steps from 30 to 300. Additional Search Budget
-starts after opening comparisons and is unused for Wasmegg Optimized Sequence.
+starts after opening comparisons and is unused for Optimized Sequence.
 Existing Virtue flights are imported automatically with Load EID or a game
 JSON backup. The read-only flight list shows ship types and return times.
 Sync the game and use Load EID to refresh; there are no manual flight fields.
@@ -820,5 +818,21 @@ with their exact stones below. Gear remains visible when carried from H1.
 Click the start input for the date/time dialog; the separate launch button is
 removed. Ship images open an offline illustrated chooser. Cost and fuel are
 per launch for the selected mission length. Time to afford subtracts current
-cash and uses the current farm earning rate; future upgrades, events and fuel
+gems and uses the current farm earning rate; future upgrades, events and fuel
 collection time are excluded. Assumptions are on How It Works.
+
+VERSION 0.8.13 — OPENING DISCOUNTS AND SHIFT RATES
+- Translate Bust Unions into the reference stage planner’s vehicle-discount key.
+  Bounded K1 proposals now include the owned discount before selecting purchases;
+  actual simulator prices, opening caps, waiting rules and saved Epic IDs stay intact.
+- Optimized Sequence replaces the old strategy name. The combined free-routing
+  choice is removed; older automatic farms use Optimized Sequence for new searches.
+  User Selected Sequence and original saved-plan replay remain supported.
+- Remove the switch-tradeoff table from the Purchase Timeline.
+- Show start above end for each shift and report maximum earning (gems/hour),
+  shipping and egg laying (eggs/hour) in summaries and Quick Guide completion.
+  Peaks use the upgrades and gear present at each event time, the selected earnings
+  mode and weekly multiplier. Shipping/laying are capacity before fuel diversion.
+- PDF walkthroughs show the same dates and peak rates.
+- Use gems throughout visible currency wording, including historical wait reasons,
+  without changing saved JSON keys or recorded actions.
