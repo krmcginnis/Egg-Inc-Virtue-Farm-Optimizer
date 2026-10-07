@@ -1303,4 +1303,19 @@ v0.8.14 value:
 4c7950f0d1fd01da5189a6aed4a59806f05c5ea5823951e9c056bfda4d7da272.
 No solver/catalog/math source changes were required.
 
-Windows release and public updater verification follow after publishing.
+Windows release proof: app commit fa586edcd152d50e47e65b46f04506e0d07e02c9;
+automatic Publish App Release run 37583381597 / job 112667908063 succeeds.
+The native Windows build packages 169 runtime files. Archive validation, rollback,
+preserved user settings and tamper guards pass. Hidden CMD launch, repeat-launch
+reuse, successful restart, startup-failure recovery and legacy-worker recovery
+pass. Windows PowerShell 5.1.26100.33438 anonymously finds v0.8.15, downloads
+its complete archive and verifies every app-file checksum on the first attempt.
+
+The public release targets the exact app commit and contains both verified assets:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8,560,666 bytes; SHA256
+  fdc6dd9828648d5a28803dd0653c3d58933a9a864eabce3706f76b2b273fa624.
+- update-manifest.json: 240 bytes; SHA256
+  d566fa00e1c2e87c8cac0a3d8179ce7c4dffbf5a22ff8340b163810a0915d198.
+
+This final audit proof is recorded after release verification without replacing
+or repackaging the immutable release assets.
