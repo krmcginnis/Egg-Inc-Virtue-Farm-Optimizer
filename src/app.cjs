@@ -1430,7 +1430,7 @@ $("clear-data").onclick = () => {
   let saved;
   try { saved = gather(); } catch { saved = {...structuredClone(config), draftInputs:captureDraftInputs()}; }
   resetSnapshot = {config:saved,result,resultConfig,dirty:dirty || !!worker && !!result,tab:document.querySelector("[data-tab].active").dataset.tab};
-  $("reset-recovery").hidden = false;
+  $("reset-undo").hidden = false;
   loadEpoch++;
   importingBackup = null;
   clearTimeout(refreshTimer);
@@ -1461,14 +1461,14 @@ $("undo-reset").onclick = () => {
   loadEpoch++; clearTimeout(refreshTimer);
   ({config,result,resultConfig,dirty} = resetSnapshot);
   resetSnapshot = null;
-  $("reset-recovery").hidden = true;
+  $("reset-undo").hidden = true;
   renderForm();
   if (result) renderResult();
   tab(restoreTab === "results" && !result ? "farm" : restoreTab, true);
   show("Reset undone. Your farm, planning goals, and previous timeline have been restored.");
 };
 $("dismiss-reset").onclick = () => {
-  resetSnapshot = null; $("reset-recovery").hidden = true; $("page-title").focus({preventScroll:true});
+  resetSnapshot = null; $("reset-undo").hidden = true; $("page-title").focus({preventScroll:true});
 };
 async function loadEidData() {
   if (worker || importingBackup) return;
