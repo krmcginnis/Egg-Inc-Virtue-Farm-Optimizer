@@ -47,7 +47,7 @@ function render(host, artifactId, stoneIds = [], controls = {}) {
     socket.title = stone ? titleCase(stone.label) + " · " + stone.effect : "Empty Stone Slot " + (i + 1);
     if (!controls.stones?.[i]) socket.setAttribute("aria-label", socket.title);
     if (stone) { socket.append(image(stone, 30, "loadout-stone-image")); equipped.push(stone); }
-    else { socket.classList.add("is-empty"); socket.append(node("span", "—")); }
+    else { socket.classList.add("is-empty"); socket.append(node("span", controls.stones?.[i] ? "+" : "—")); }
     sockets.append(wrapper);
   }
   if (artifact && !artifact.slots) sockets.append(node("small", "No Stone Slots"));
@@ -66,4 +66,19 @@ function render(host, artifactId, stoneIds = [], controls = {}) {
   if (artifact?.slots && !equipped.length) effects.append(node("p", "No Stones Equipped", "loadout-stone-effect"));
   host.append(effects);
 }
-module.exports = { render };
+function strip(loadout, label, limit = loadout.length) {
+  const host = node("div", undefined, "artifact-strip");
+  host.setAttribute("role", "group"); host.setAttribute("aria-label", label);
+  host.style.setProperty("--artifact-count",limit);
+  const rank = slot => { const id = slot.artifactId || ""; return !id ? 4 : id.startsWith("ornate-gusset-") ? 0 : id.startsWith("quantum-metronome-") ? 1 : id.startsWith("interstellar-compass-") ? 2 : 3; };
+  const slots = [...loadout]; while (slots.length < limit) slots.push({artifactId:null,stones:[]});
+  for (const slot of slots.sort((a,b) => rank(a)-rank(b))) {
+    const card = node("div", undefined, "loadout-card");
+    render(card, slot.artifactId, slot.stones);
+    const artifact = artifacts.get(slot.artifactId), name = card.querySelector(".loadout-item-name");
+    if (artifact) { name.textContent = ["Gusset","Metronome","Compass"][rank(slot)] || titleCase(artifact.name); name.setAttribute("aria-label",titleCase(artifact.label)); card.title = titleCase(artifact.label)+" · "+artifact.effect; }
+    host.append(card);
+  }
+  return host;
+}
+module.exports = { render, strip };

@@ -12,6 +12,7 @@ const LoadoutCard = require("./loadout-card.cjs");
 const EggIcons = require("./egg-icons.cjs");
 const ResearchIcons = require("./research-icons.cjs");
 const FarmIcons = require("./farm-icons.cjs");
+const ShipIcons = require("./ship-icons.cjs");
 const PhysicalPreview = require("./physical-preview.cjs");
 const DatePicker = require("./date-picker.cjs");
 const displayEggOrder = [0,4,1,3,2];
@@ -244,7 +245,12 @@ function reviewField(id) {
   const node = $(id);
   tab(node?.closest("[data-page]")?.dataset.page || "account");
   const loadout = node?.closest("[data-loadout-panel]");
-  if (loadout) selectLoadout(loadout.dataset.loadoutPanel);
+  if (loadout) {
+    selectLoadout(loadout.dataset.loadoutPanel);
+    // Old saved files can contain invalid delivery gear; expose only its repair
+    // fields when validation requests them, without restoring a delivery tab.
+    if (loadout.dataset.loadoutPanel === "delivery") loadout.hidden = false;
+  }
   if (node?.closest(".research-tier") && $("research-filter").value) { $("research-filter").value = ""; filterResearch(); }
   for (let parent = node?.parentElement; parent; parent = parent.parentElement) if (parent.tagName === "DETAILS") parent.open = true;
   if (node) {
@@ -348,7 +354,7 @@ function updateAccountEditing() {
     for (const id of group.toggles) $(id).checked = enabled;
     for (const id of group.fields) if ($(id)) $(id).disabled = !enabled;
   }
-  for (const id of ["copy-earnings", "copy-delivery"]) $(id).disabled = !$("manualFarmData").checked;
+  $("copy-earnings").disabled = !$("manualFarmData").checked;
   for (const id of ["col-details", "epic-details"]) {
     const node = $(id);
     if ($("manualAccountData").checked && !node.dataset.manualOpen) {
@@ -564,10 +570,26 @@ function restoreUpdateSnapshot(saved, message = "Session restored.") {
   tab(saved.tab === "results" && !result ? "account" : (saved.tab || "account"), true);
   show(message + (saved.interrupted ? " The interrupted search needs to be run again." : "") + replayError + (!valid ? " Review the marked inputs before planning." : ""), !!replayError || !valid);
 }
+function shipChoiceDescriptions(visit, index) {
+  let state, earnings;
+  try {
+    const raw = gather(); raw.plan.ships = {mode:"none",slots:3};
+    const {s,c} = S.prepare(raw); state = s; earnings = S.stats(s,c).eventEarning;
+  } catch { }
+  const length = $("mission-"+visit+"-"+index)?.value || "SHORT";
+  return item => {
+    const mission = Ships.mission(item.id,length);
+    const seconds = state ? mission.cost <= state.cash ? 0 : earnings > 0 ? (mission.cost-state.cash)/earnings : Infinity : null;
+    const estimate = seconds === null ? "Complete farm inputs for time to afford" : seconds === 0 ? "Affordable now" : Number.isFinite(seconds) ? seconds > 365*86400 ? ">1 year to afford" : "~"+duration(seconds)+" to afford" : "No current income";
+    return "Cost: "+num(mission.cost)+" gems · Fuel: "+displayEggOrder.filter(i=>mission.fuel[i]).map(i=>S.EGGS[i][0].toUpperCase()+" "+num(mission.fuel[i])).join(", ")+" · "+estimate;
+  };
+}
 function renderShipMissions(visit, missions) {
   $("ship-missions-" + visit).replaceChildren(...missions.map((m, i) => {
     const row = el("div", void 0, "ship-mission-row");
-    row.append(selectField("Ship", "ship-" + visit + "-" + i, Ships.DATA.ships.map((s) => [s.id, s.name]), m.ship || "CHICKEN_ONE"), selectField("Mission", "mission-" + visit + "-" + i, [["SHORT", "Short"], ["LONG", "Standard"], ["EPIC", "Extended"]], m.duration || "SHORT"), field("Launch Count", "ship-count-" + visit + "-" + i, m.count === null ? "" : m.count ?? 3, "number", { min: 1, max: 1e6, placeholder: "Tank Maximum" }));
+    const shipField = selectField("Ship", "ship-" + visit + "-" + i, Ships.DATA.ships.map((s) => [s.id, s.name]), m.ship || "CHICKEN_ONE");
+    ShipIcons.decorate(shipField, () => shipChoiceDescriptions(visit, i));
+    row.append(shipField, selectField("Mission", "mission-" + visit + "-" + i, [["SHORT", "Short"], ["LONG", "Standard"], ["EPIC", "Extended"]], m.duration || "SHORT"), field("Launch Count", "ship-count-" + visit + "-" + i, m.count === null ? "" : m.count ?? 3, "number", { min: 1, max: 1e6, placeholder: "Tank Maximum" }));
     const remove = el("button", "Remove", "secondary");
     remove.type = "button";
     remove.setAttribute("aria-label", "Remove H" + visit + " Ship Mission " + (i + 1));
@@ -579,7 +601,7 @@ function renderShipMissions(visit, missions) {
         markInputsChanged();
         refresh();
         const remaining = config.plan.ships.visits[visit - 1].missions.length;
-        ($("ship-" + visit + "-" + Math.min(i, remaining - 1)) || $("add-ship-" + visit)).focus();
+        ($("pick-ship-" + visit + "-" + Math.min(i, remaining - 1)) || $("add-ship-" + visit)).focus();
       } catch (e) {
         show(e.message, true);
       }
@@ -599,7 +621,7 @@ function renderShipMissions(visit, missions) {
           renderShipMissions(visit, list);
           markInputsChanged();
           refresh();
-          $("ship-" + visit + "-" + (i + offset)).focus();
+          $("pick-ship-" + visit + "-" + (i + offset)).focus();
           show("H" + visit + " mission moved " + direction.toLowerCase() + ". Ships will launch in this order.");
         } catch (error) { fieldError(error); }
       };
@@ -615,13 +637,13 @@ function renderLoadouts() {
   const host = $("loadout-fields");
   host.replaceChildren();
   const tabs = el("div", undefined, "loadout-tabs"); tabs.setAttribute("role","tablist"); tabs.setAttribute("aria-label","Artifact sets");
-  for (const key of ["current","earnings","delivery"]) {
+  for (const key of ["current","earnings"]) {
     const button = el("button", key[0].toUpperCase()+key.slice(1), "secondary"); button.type = "button";
     button.id = "loadout-tab-"+key; button.dataset.loadoutTab = key; button.setAttribute("role","tab"); button.setAttribute("aria-controls","loadout-panel-"+key);
     button.onclick = () => selectLoadout(key);
     button.onkeydown = event => {
-      const keys = ["current","earnings","delivery"], i = keys.indexOf(key);
-      const next = event.key === "ArrowRight" ? keys[(i+1)%3] : event.key === "ArrowLeft" ? keys[(i+2)%3] : event.key === "Home" ? keys[0] : event.key === "End" ? keys[2] : null;
+      const keys = ["current","earnings"], i = keys.indexOf(key);
+      const next = event.key === "ArrowRight" || event.key === "ArrowLeft" ? keys[(i+1)%2] : event.key === "Home" ? keys[0] : event.key === "End" ? keys[1] : null;
       if (next) { event.preventDefault(); selectLoadout(next); $("loadout-tab-"+next).focus(); }
     };
     tabs.append(button);
@@ -630,13 +652,16 @@ function renderLoadouts() {
   const limit = $("proPermit").value === "true" ? 4 : 2;
   for (const key of ["current", "earnings", "delivery"]) {
     const section = el("div", void 0, "loadout");
-    section.id = "loadout-panel-"+key; section.dataset.loadoutPanel = key; section.setAttribute("role","tabpanel"); section.tabIndex = 0; section.setAttribute("aria-labelledby","loadout-tab-"+key);
+    section.id = "loadout-panel-"+key; section.dataset.loadoutPanel = key; section.setAttribute("role",key === "delivery" ? "group" : "tabpanel"); section.tabIndex = 0; section.setAttribute("aria-labelledby",key === "delivery" ? "retained-delivery-heading" : "loadout-tab-"+key);
     const heading = el("div", void 0, "loadout-heading"), source = el("span", void 0, "source-badge");
     source.id = key + "-set-source";
     if (key === "current") source.dataset.source = "farm";
-    heading.append(el("h3", key === "earnings" ? "Research & Earnings Set" : key[0].toUpperCase() + key.slice(1) + " Set"), source);
+    const title = el("h3", key === "delivery" ? "Review Saved Delivery Gear" : key === "earnings" ? "Research & Earnings Set" : "Current Set");
+    if (key === "delivery") title.id = "retained-delivery-heading";
+    heading.append(title, source);
     section.append(heading);
     const grid = el("fieldset", void 0, "loadout-grid account-value-fields");
+    grid.style.setProperty("--loadout-slots",limit);
     grid.id = key + "-loadout-fields"; grid.disabled = !$("manualFarmData").checked;
     const note = el("p", void 0, "hint"); note.id = key + "-set-note"; section.append(note);
     for (let i = 0; i < limit; i++) {
@@ -663,7 +688,7 @@ function renderLoadouts() {
   updateArtifactNotes();
 }
 function selectLoadout(key) {
-  activeLoadoutTab = ["current","earnings","delivery"].includes(key) ? key : "current";
+  activeLoadoutTab = ["current","earnings"].includes(key) ? key : "current";
   document.querySelectorAll("[data-loadout-tab]").forEach(button => { const selected = button.dataset.loadoutTab === activeLoadoutTab; button.setAttribute("aria-selected",String(selected)); button.tabIndex = selected ? 0 : -1; });
   document.querySelectorAll("[data-loadout-panel]").forEach(panel => panel.hidden = panel.dataset.loadoutPanel !== activeLoadoutTab);
 }
@@ -1079,7 +1104,15 @@ function renderResult() {
   host.append(heading);
   const events = initial.c.calendar.filter((e) => e.t > r.start && e.t <= r.end);
   let ei = 0;
+  let carriedGear = initial.c.loadouts[initial.s.set] || [];
   for (const shift of summary.shifts) {
+    const equipActions = r.actions.slice(shift.firstIndex,shift.lastIndex+1).filter(a=>a.type === "set");
+    const equipGear = action => action.loadout || initial.c.loadouts[action.set] || [];
+    const appendGear = (host, action, inherited = false) => {
+      const label = inherited ? "Artifacts carried into H2" : "Equip "+(action.setLabel || ArtifactSets.label(action.set))+" Artifacts";
+      const box = el("div", undefined, "equip-artifact-display");
+      box.append(el("p",label,"equip-artifact-label"),LoadoutCard.strip(inherited ? carriedGear : equipGear(action),label,initial.c.pro ? 4 : 2)); host.append(box);
+    };
     const group = el("details", void 0, "timeline-group shift-summary"), header = el("summary"), top = el("div", void 0, "shift-summary-top"), title = el("span", shift.phase + " \xB7 " + shift.name, "shift-title"), timing = el("div", void 0, "shift-timing"), finish = el("time", "Ends " + timestamp(shift.end, zone, true), "shift-end");
     title.replaceChildren(EggIcons.caption(S.EGGS[shift.egg], shift.phase + " \xB7 " + shift.name));
     finish.dateTime = new Date(shift.end * 1e3).toISOString();
@@ -1090,15 +1123,21 @@ function renderResult() {
     header.append(top);
     const chips = el("div", void 0, "activity-chips");
     for (const activity of shift.activities) {
+      if (activity.kind === "artifact") continue;
       const chip = el("span", void 0, "activity-chip " + activity.kind);
       chip.append(activity.kind === "research" ? ResearchIcons.captionName(activity.label) : FarmIcons.activityCaption(activity));
       if (activity.value) chip.append(el("b", activity.value));
       chips.append(chip);
     }
-    header.append(chips, el("div", waitTotals(shift), "shift-waits"));
+    header.append(chips);
+    for (const action of equipActions) appendGear(header,action);
+    if (shift.phase === "H2" && !equipActions.length) appendGear(header,null,true);
+    header.append(el("div", waitTotals(shift), "shift-waits"));
     group.append(header);
     const guide = el("div", void 0, "quick-guide");
     guide.append(el("h3", "Quick guide"));
+    if (shift.phase === "H2" && !equipActions.length) appendGear(guide,null,true);
+    const shownGear = new Set();
     for (const [index, step] of shift.quickGuide.entries()) {
       const block = el("section", void 0, "guide-step"), stepHead = el("div", void 0, "guide-step-heading");
       if (step.activities.length || step.shipRun) {
@@ -1106,7 +1145,8 @@ function renderResult() {
         block.append(stepHead);
       }
       const items = el("div", void 0, "guide-items");
-      for (const tier of G.groups(step.activities)) {
+      for (const action of equipActions) if (!shownGear.has(action) && action.t >= step.start && action.t <= step.purchaseEnd) { appendGear(block,action); shownGear.add(action); }
+      for (const tier of G.groups(step.activities.filter(a=>a.kind !== "artifact"))) {
         const section = el("section", void 0, "guide-tier");
         section.dataset.tier = tier.tier ?? "other";
         section.append(el("h5", tier.label));
@@ -1121,7 +1161,7 @@ function renderResult() {
         section.append(list);
         items.append(section);
       }
-      if (step.activities.length) block.append(items);
+      if (items.childElementCount) block.append(items);
       if (step.shipRun) {
         const run = step.shipRun, details = el("div", void 0, "ship-run-details");
         details.append(el("p", "Stay on Humility for " + exactDuration(run.end - run.t) + " to fund, fuel, and launch these missions."));
@@ -1147,6 +1187,7 @@ function renderResult() {
       }
       guide.append(block);
     }
+    if (equipActions.length) carriedGear = equipGear(equipActions.at(-1));
     if (!shift.quickGuide.length) guide.append(el("p", "No purchases or breaks in this shift.", "hint"));
     const complete = el("div", void 0, "guide-complete"), done = el("time", timestamp(shift.end, zone, true));
     done.dateTime = new Date(shift.end * 1e3).toISOString();
@@ -1438,7 +1479,7 @@ for (const visit of [1, 2]) $("add-ship-" + visit).onclick = () => {
     renderShipMissions(visit, missions);
     markInputsChanged();
     refresh();
-    $("ship-" + visit + "-" + (missions.length - 1)).focus();
+    $("pick-ship-" + visit + "-" + (missions.length - 1)).focus();
   } catch (e) {
     show(e.message, true);
   }
@@ -1586,7 +1627,6 @@ $("eid").addEventListener("keydown", (event) => {
   if (event.key === "Enter") { event.preventDefault(); persistEid(); loadEidData(); }
 });
 $("copy-earnings").onclick = () => copySet("earnings");
-$("copy-delivery").onclick = () => copySet("delivery");
 $("review-starting-gear").onclick = () => tab("artifacts", true);
 $("use-earnings-start").onclick = () => {
   if (worker || importingBackup) return;
@@ -1724,6 +1764,7 @@ document.addEventListener("focusin", ({target}) => { NumericInput.focus(target);
 document.addEventListener("focusout", ({target}) => NumericInput.blur(target));
 document.addEventListener("change", (e) => {
   FarmIcons.updatePicker(e.target);
+  ShipIcons.update(e.target);
   if (e.target.matches("select")) SelectionReadout.refresh();
   const id = e.target.id;
   const editingKey = Object.keys(editingGroups).find(key => editingGroups[key].toggles.includes(id));

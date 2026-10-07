@@ -1,4 +1,4 @@
-EGG INC. VIRTUE FARM OPTIMIZER 0.8.11 — PC EDITION
+EGG INC. VIRTUE FARM OPTIMIZER 0.8.12 — PC EDITION
 
 GET STARTED
 1. Extract the entire ZIP; open the Egg-Inc-Virtue-Farm-Optimizer folder.
@@ -62,15 +62,15 @@ Coop, Trike and one silo. Additional purchases require the matching Virtue.
 Enter your actual Soul Eggs before planning switches; clearing sets them to zero.
 Fresh farms use automatic online/offline waiting. Keep the starting silo refilled.
 
-Use Continue to Artifacts, then Continue to Common Research, then Continue to
-Planning. The sidebar follows the same review order. Common Research shows
+Use Continue to Virtue Farm, then Continue to Planning. Review artifacts and
+expand Common Research on Virtue Farm before planning. Common Research shows
 each item's next cost and total remaining cost at current discounts/sale prices.
 Tier prerequisites are not included in that item's remaining cost. The target
 defaults to claimed TE + 40 (up to 490), updating after import or manual progress
 edits until you enter your own target. Next Ascension starts with this default.
 Planning has goals,
-ship schedules, timing and assumptions, with a compact starting-farm summary.
-Save Farm includes values and settings from both pages.
+ship schedules and timing, with a compact starting-farm summary. Assumptions
+are on How It Works. Save Farm includes settings from all three pages.
 
 Set your total TE goal and switch budget. Automatic routing searches repeated
 research, shipping and habitat visits. Select User Selected Sequence to enter
@@ -795,16 +795,30 @@ On Artifacts, enable Edit Farm Manually and click an artifact image or empty slo
 for an illustrated chooser. Its actual number of stone sockets appears below;
 click any socket for an illustrated stone chooser. Search by name, tier or effect,
 select Empty to clear, or close/Escape to cancel. Catalog rarities, effects and
-socket counts are shown. Current, Research & Earnings and Delivery remain separate.
+socket counts are shown. Current and Research & Earnings use separate tabs.
+Calculated delivery gear is shown with its stones in the plan results.
 Images work offline; readable item/effect text remains if an image cannot load.
 Manual gear retains the same legality checks, permit limits and saving behavior.
 
 ACCOUNT → VIRTUE FARM → PLANNING (v0.8.10)
 Account is the opening/import page. Continue to Virtue Farm to review the
 current farm in two columns: upgrades and expandable Common Research on the
-left, artifacts, fuel and flights on the right. Artifact tabs show Current,
-Earnings or Delivery; arrow keys, Home and End switch tabs. Copying a set shows
+left, artifacts, fuel and flights on the right. Artifact tabs show Current
+or Earnings; arrow keys, Home and End switch tabs. Copying a set shows
 Current for verification. Research tiers keep their maxed/collapsed behavior.
 Fuel retains the account manual-edit setting, with a linked toggle on Virtue
 Farm. Continue to Planning for targets, routes, dates, events and missions.
 The solver, import rules, saved farm format and updater remain unchanged.
+
+COMPACT GEAR AND VISUAL SHIPS (v0.8.12)
+Artifact slots fit in one desktop row; small screens use two columns. Empty
+stone sockets are circular + buttons. Delivery editing/copy controls are
+removed from the normal artifact UI; existing saved values remain compatible.
+H2 shows the actual gear used by the plan in both the shift summary and Quick
+Guide. Artifacts are ordered Gusset, Metronome, Compass, then other artifacts,
+with their exact stones below. Gear remains visible when carried from H1.
+Click the start input for the date/time dialog; the separate launch button is
+removed. Ship images open an offline illustrated chooser. Cost and fuel are
+per launch for the selected mission length. Time to afford subtracts current
+cash and uses the current farm earning rate; future upgrades, events and fuel
+collection time are excluded. Assumptions are on How It Works.

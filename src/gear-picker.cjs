@@ -54,10 +54,11 @@ function render() {
   if (!active) return;
   const query = search.value.trim().toLowerCase();
   const items = (active.catalog?.items || (active.kind === "artifact" ? D.artifacts : D.stones)).filter(item => ((item.label || item.name || "")+" "+(item.effect || "")).toLowerCase().includes(query));
-  grid.classList.toggle("farm-choice-list", !!active.catalog);
+  grid.classList.toggle("farm-choice-list", !!active.catalog && active.catalog.layout !== "grid");
+  grid.classList.toggle("ship-choice-grid", active.kind === "ship");
   grid.replaceChildren();
   const empty = element("button", "Empty", "gear-choice gear-choice-empty"); empty.type = "button";
-  empty.dataset.itemId = ""; empty.setAttribute("aria-pressed", String(!active.control.value)); empty.onclick = () => choose(""); grid.append(empty);
+  empty.dataset.itemId = ""; empty.setAttribute("aria-pressed", String(!active.control.value)); empty.onclick = () => choose(""); if (active.catalog?.allowEmpty !== false) grid.append(empty);
   for (const item of items) {
     const button = element("button", undefined, "gear-choice"); button.type = "button";
     button.dataset.itemId = item.id;
@@ -79,7 +80,7 @@ function render() {
     button.onclick = () => choose(item.id); grid.append(button);
   }
   count.textContent = items.length ? items.length+" matching "+(active.catalog?.plural || (active.kind === "artifact" ? "artifacts" : "stones")) : "No matches. Try another name or effect.";
-  if (active.catalog) count.textContent += " · Current research and bonuses. ETA assumes full habs, maintained silos and unchanged current earnings; excludes future events and purchases.";
+  if (active.catalog) count.textContent += " · "+(active.catalog.note || "Current research and bonuses. ETA assumes full habs, maintained silos and unchanged current earnings; excludes future events and purchases.");
 }
 function bind(button, control, kind, image, catalog) {
   initialize();

@@ -1,4 +1,9 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.11 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.12 — Release Audit
+
+v0.8.12 compacts the artifact controls, adds visual ship selection, moves
+Assumptions to How It Works and replaces artifact text in shift summaries and
+Quick Guides with horizontal gear/stone displays. The current audit consolidates
+prior solver evidence and the new presentation checks below.
 
 v0.8.11 retries publication of the unchanged v0.8.10 app changes. The v0.8.10
 Windows run passed build, package, native hidden launch, installation, restart
@@ -1009,4 +1014,59 @@ install/restart/rollback and public feed/download checksum verification before
 release handover. Local PowerShell is unavailable. Simulator, optimizer,
 worker, game data, import math, ship scheduling and updater source are unchanged.
 Solver worker SHA256:
+26a402fae2d31a8c270bf7fd6d03e0e0ebbda684095f4f5c1ad4cb5937b0625a.
+
+
+## Compact artifacts, visual ships and H2 gear — v0.8.12
+
+The Virtue Farm artifact panel uses compact tiles in one desktop row, with two
+columns on small phones. Exact socket counts remain; editable empty sockets
+use a + and fixed square dimensions with 50% rounding, overriding general
+button minimum heights. Native controls and manual locks retain existing values.
+Current/Earnings tabs remain. The Delivery tab, copy button and normal starting
+choice are removed. A hidden legacy option and native delivery values preserve
+existing saved configurations and solver inputs. Old delivery-tab handoffs land
+on Current. Invalid delivery gear in an old saved file can still be reviewed and
+corrected through validation; it does not restore normal delivery selection.
+
+Read-only gear strips replace artifact text in shift summaries and Quick Guides.
+Each equip action uses its recorded loadout, or the saved named manual set for
+older plans. H2 without a new equip shows the gear carried from earlier shifts.
+Presentation sorts a copied slot list Gusset, Metronome, Compass, then other
+artifacts, with empty slots last. Slot count follows the saved permit and each
+artifact keeps its actual stones. Raw actions, equipment order, replay, research
+and solver calculations are unchanged. Compact family labels keep phone rows
+readable; full item names/effects and stone names remain accessible/tooltips.
+
+The start input retains its click/keyboard date dialog and Ok/Cancel, without a
+second launcher button. Assumptions move intact from Planning to How It Works.
+Ship image buttons use the existing illustrated dialog with 11 offline game
+icons, search, selection state, cancellation and restored focus. Fuel is for the
+row's selected mission length, per launch, ordered C K I R H. Cost uses the
+existing ship catalog; ETA subtracts current cash and divides by current event
+farm earnings. It assumes full habs and maintained silos, excludes future events,
+upgrades and fueling, and shows affordable/zero-income/unavailable cases.
+No ownership, mission availability, scheduler or ship-cost rules are changed.
+Original ship pixels are bundled losslessly from the same pinned asset mirror
+as habs/vehicles, with mapping, hashes and attribution. Existing managed asset
+paths support these files; no updater allowlist or runtime source changes.
+
+Validation: npm ci/build, Node syntax, physical-preview, release-state and
+prepare-publish checks pass. All eleven Chromium suites pass, including the new
+equipment-flow suite. It checks compact rows, exact circular sockets and + edits,
+legacy delivery round-trips, no delivery controls, input-only dates, all ship
+artwork/costs/fuel, finite current-rate ETA, affordable and zero-income cases,
+search/cancel/order/focus, assumptions location, real replayed automatic H2 gear
+whose stones differ from its starting preview, inherited H2 gear, both summary
+and Quick Guide, unchanged actions, and 1440–320px layouts. Updated navigation,
+physical-picker and actual browser update-handoff suites pass. Existing gear,
+research, farm artwork, planning, timeline and polish coverage remains passing.
+Desktop/mobile artifacts, ship catalog and H2 views were visually inspected.
+The standalone import-account suite still lacks its two existing fixtures;
+no live-account, native screen-reader or Firefox execution is claimed.
+
+Packaging checks 167 runtime files, ZIP integrity and one current audit. The
+Windows workflow must pass native launcher/update/rollback checks and anonymous
+public-feed/archive verification before release handover. Local PowerShell is
+unavailable. The solver worker is byte-identical to v0.8.11:
 26a402fae2d31a8c270bf7fd6d03e0e0ebbda684095f4f5c1ad4cb5937b0625a.

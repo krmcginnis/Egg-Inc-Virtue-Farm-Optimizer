@@ -16,9 +16,6 @@ function bind(control) {
   control.addEventListener("keydown",event => {
     if (event.key === " " || event.altKey && event.key === "ArrowDown") { event.preventDefault(); open(); }
   });
-  const launch = document.createElement("button"); launch.type = "button"; launch.className = "secondary date-picker-launch"; launch.textContent = "Choose Date & Time";
-  launch.setAttribute("aria-haspopup","dialog"); launch.setAttribute("aria-controls",dialog.id); launch.onclick = open;
-  control.after(launch);
   dialog.querySelector("[data-cancel]").onclick = () => dialog.close();
   dialog.querySelector("[data-ok]").onclick = () => {
     if (!date.reportValidity() || !time.reportValidity()) return;

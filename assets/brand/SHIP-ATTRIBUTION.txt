@@ -1,0 +1,10 @@
+EGG INC. SHIP ARTWORK
+
+Original Egg, Inc. game artwork belongs to Auxbrain, Inc.
+This optimizer is an unofficial fan planning tool. Original 64-pixel icons are
+packed losslessly without resizing into one PNG sheet for offline display.
+Source: https://github.com/carpetsage/EggIncAssets/tree/e821c7c9d5b39a9aee3eed0144a732c39489de1e/64/egginc
+Mapping: SHIP_INFO in the existing Wasmegg mission source.
+Retrieved: 2026-10-07
+Source/pixel/sheet SHA256 and positions: ship-icons.json
+Developer regeneration: scripts/bundle-ship-icons.py

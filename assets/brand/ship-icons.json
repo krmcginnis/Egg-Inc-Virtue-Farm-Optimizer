@@ -1,0 +1,111 @@
+{
+  "sourceRepository": "carpetsage/EggIncAssets",
+  "sourceCommit": "e821c7c9d5b39a9aee3eed0144a732c39489de1e",
+  "sourceDirectory": "64/egginc",
+  "asset": "assets/brand/ship-icons.png",
+  "width": 272,
+  "height": 204,
+  "iconSize": 64,
+  "sha256": "08fb469d1d49b1a335bf3f070a5687bd8480f5baf64f290e59d9e9094cbf70fd",
+  "icons": {
+    "CHICKEN_ONE": {
+      "x": 2,
+      "y": 2,
+      "sourceFile": "afx_ship_chicken_1.png",
+      "sha256": "b782ae140642c16a3309583fd534ef5ba56155ddcac53a11723b45f904cef3f7",
+      "pixelSHA256": "acacf2019f1efc698e21ca54524dde9d311465985cd06eb69a1231e1c1e616ac",
+      "sourceWidth": 64,
+      "sourceHeight": 64
+    },
+    "CHICKEN_NINE": {
+      "x": 70,
+      "y": 2,
+      "sourceFile": "afx_ship_chicken_9.png",
+      "sha256": "127fe2cd58ee2b61d923e04e4f6fcf65f1aa8d1041615735df45c29e7e60ea68",
+      "pixelSHA256": "500e65c17dca543f8df8e2a9e9a0a25be72d14cfb13301ce1d1fab73f8f8d509",
+      "sourceWidth": 64,
+      "sourceHeight": 64
+    },
+    "CHICKEN_HEAVY": {
+      "x": 138,
+      "y": 2,
+      "sourceFile": "afx_ship_chicken_heavy.png",
+      "sha256": "1356edf6fbe3eef4749e2531b4d4f818d3b4b24ec7df49d9786e5833c3609a76",
+      "pixelSHA256": "1d5f2280b0e400c7426e8c7f7dbf23cf99ec7864d5b8dad79e21ff8a665e480a",
+      "sourceWidth": 64,
+      "sourceHeight": 64
+    },
+    "BCR": {
+      "x": 206,
+      "y": 2,
+      "sourceFile": "afx_ship_bcr.png",
+      "sha256": "aa58eb5fe62bca3cf33c7f822aeae1646134c2d9274fd5f922bcd2d8809db01b",
+      "pixelSHA256": "a230a2821ea76550bfe0bcb9363a3a051725d4600233f51acca8f0da6ec3a1a0",
+      "sourceWidth": 64,
+      "sourceHeight": 64
+    },
+    "MILLENIUM_CHICKEN": {
+      "x": 2,
+      "y": 70,
+      "sourceFile": "afx_ship_millenium_chicken.png",
+      "sha256": "02f1f1fef8ba62c675e5a5d0ef593668bfc5948e8a971424b9396c3f6f0eb2da",
+      "pixelSHA256": "052f556ed53cf0772ce4d13785fe511573a36c9c87e523bf3f26ab6e628a13da",
+      "sourceWidth": 64,
+      "sourceHeight": 64
+    },
+    "CORELLIHEN_CORVETTE": {
+      "x": 70,
+      "y": 70,
+      "sourceFile": "afx_ship_corellihen_corvette.png",
+      "sha256": "d5714c5d7f03d17a683452c21298afa3c8af275e7185f77c50e36b18ef8810a3",
+      "pixelSHA256": "aaab34f706f3021b9c4d92d80a177eb13873c16535f3c6ea14ac07dce19cba10",
+      "sourceWidth": 64,
+      "sourceHeight": 64
+    },
+    "GALEGGTICA": {
+      "x": 138,
+      "y": 70,
+      "sourceFile": "afx_ship_galeggtica.png",
+      "sha256": "41eb39788b2219a34da47a5adfee2ec30817d6cd749ec155eaa075832da1afee",
+      "pixelSHA256": "0aa0d8a32655701785dba3a1d7929e10844e0e3ada06195a8fe8d380061cf926",
+      "sourceWidth": 64,
+      "sourceHeight": 64
+    },
+    "CHICKFIANT": {
+      "x": 206,
+      "y": 70,
+      "sourceFile": "afx_ship_defihent.png",
+      "sha256": "29735cd562ba9a275d52f56f58698965cc872abff47a8af8bb9cb8202a64eaa0",
+      "pixelSHA256": "63cc1296dd1be8b3442953ffe39d1c811ee20bb27bfc96431606eddfbc20b19b",
+      "sourceWidth": 64,
+      "sourceHeight": 64
+    },
+    "VOYEGGER": {
+      "x": 2,
+      "y": 138,
+      "sourceFile": "afx_ship_voyegger.png",
+      "sha256": "22380f7ba9b6db054a7046cf11ebcc3ca34376c0c16bdff6ae4b938aa61cc6b2",
+      "pixelSHA256": "48a438cf5c80bee522b6387311f72e4ac7606fedb42becbed266526151f73f20",
+      "sourceWidth": 64,
+      "sourceHeight": 64
+    },
+    "HENERPRISE": {
+      "x": 70,
+      "y": 138,
+      "sourceFile": "afx_ship_henerprise.png",
+      "sha256": "0f0d1bfe92e863357083f2da7bd37624cd4824b4057c0480c5be5417873f5fe1",
+      "pixelSHA256": "fffeb7f417398f8a7e61c639765af934704dabb15b1e39b0764c608cf36344c8",
+      "sourceWidth": 64,
+      "sourceHeight": 64
+    },
+    "ATREGGIES": {
+      "x": 138,
+      "y": 138,
+      "sourceFile": "afx_ship_atreggies.png",
+      "sha256": "e1036084b57908412df65709116afc46d320ca595d6d16271e2c06c6fc2120aa",
+      "pixelSHA256": "4cb19ca74a6c578beaff056ad6d3e9134054ef8a8cbceea046824541378bad58",
+      "sourceWidth": 64,
+      "sourceHeight": 64
+    }
+  }
+}
