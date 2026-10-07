@@ -1,8 +1,9 @@
-# v0.8.22
+# v0.8.23
 
-- Show a required Maximum Time (Days) field for Minimize Time or Maximum Shifts for Minimize Switches. Preserve both values when changing priorities.
-- Add Automatically Determine Truth Egg Allocation beside the TE target, checked by default.
-- Hide per-Virtue TE minimums below the target until automatic allocation is unchecked. Retain entered minimums while automatic allocation is enabled, without applying them to the plan.
-- Preserve explicit per-Virtue goals in older files and keep the controls through saves, EID imports, and app updates.
-- Priority and maximum settings remain saved preferences for future solver work; search ranking and its existing horizon are unchanged.
+- Move Planning Strategy below the TE target and allocation controls.
+- Remove Plan Prioritization and the maximum time/shift fields.
+- Rename Plan Start (PC Local Time) and place it beside Event Schedule Timezone.
+- Move Automatically Determine Truth Egg Allocation below the TE target and remove the target-default explanatory text.
+- Set the Seconds per Purchase default to 0.3. Preserve explicitly saved timing values and existing plan replay.
+- Keep automatic/manual TE allocation and retained per-Virtue minimums.
 - Install through Update App → Update & Restart.

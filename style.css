@@ -477,13 +477,10 @@ aside .update-app{margin-top:auto}
 .research-sale-option .research-sale-end{color:var(--muted);font-size:11px}
 .research-sale-option .research-sale-best{color:#8be7bc;font-weight:650}
 
-/* Target allocation and the selected priority's accompanying maximum. */
-.target-allocation,.priority-settings{grid-column:1/-1}
-.target-allocation-row{display:flex;flex-wrap:wrap;gap:12px;align-items:end}
-.target-allocation-row>label:not(.check){flex:1 1 165px;min-width:0}
-.target-allocation .allocation-check{flex:1.5 1 300px;margin:0;min-height:36px;line-height:18px}
-.target-allocation>small{display:block;margin-top:5px;line-height:20px}
+/* Target allocation and paired plan-start/event-zone controls. */
+.target-allocation,.plan-start-settings{grid-column:1/-1}
+.target-allocation .allocation-check{margin:5px 0 0;min-height:36px;line-height:18px}
 #te-minimums{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
 .allocation-minimums{border:0;margin:0;padding:0;min-width:0}
-.priority-settings{align-items:start}
-#plan-priority-help{grid-column:1/-1;line-height:20px}
+.plan-start-settings{align-items:start}
+.plan-start-settings #event-zone-help{grid-column:1/-1;margin:0}

@@ -886,3 +886,15 @@ TE target. Uncheck it to display Per-Virtue TE Minimums below the target.
 Checking it again keeps the entered values but uses automatic allocation.
 Older files with explicit minimums open with manual allocation selected.
 Next Ascension continues to reset per-Virtue minimums, including retained values.
+
+Simplified Planning — v0.8.23
+---------------------------
+Planning starts with the TE target, the automatic-allocation checkbox below it,
+and Planning Strategy. Plan Start (PC Local Time) and Event Schedule Timezone
+share the next row. Plan Prioritization and its time/shift maximums are removed.
+The target-default explanatory text is removed; the default target calculation
+and automatic/manual allocation behavior remain available.
+
+Seconds per Purchase defaults to 0.3 for new farms or missing form settings.
+Explicit saved timing values, including zero, retain their values. Older saved
+plans continue to replay with their original purchase timing.

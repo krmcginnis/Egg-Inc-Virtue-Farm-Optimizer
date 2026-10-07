@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.22 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.23 — Release Audit
+
+v0.8.23 simplifies the Planning control order, removes prioritization/maxima,
+and sets the new-farm purchase-time default to 0.3 seconds. Current evidence
+appears in the v0.8.23 section at the end; older evidence is historical.
 
 v0.8.22 adds conditional priority maxima and a default automatic-TE-allocation
 checkbox with minimums revealed beneath the target. Current evidence appears
@@ -1778,3 +1782,30 @@ Public release: 406077536, v0.8.22, with both assets uploaded:
 
 This same-version audit commit records completed verification without replacing
 or repackaging either immutable release asset.
+
+## Simplified Planning and purchase-time default — v0.8.23
+
+The TE target is followed by the allocation checkbox, retained manual minimums
+when enabled, and Planning Strategy. Plan Start (PC Local Time) and Event
+Schedule Timezone share a two-column row beneath the strategy controls.
+The target-default text, priority selector, and time/shift maximum inputs are
+removed. Newly gathered configurations discard the obsolete priority metadata;
+old saved settings and drafts containing those missing controls load safely.
+Automatic/manual TE allocation and the claimed-plus-40 target default remain.
+
+Blank farms and the form fallback use 0.3 seconds per purchase. Explicit saved
+values, including zero, are preserved. The simulator's legacy missing-value
+fallback is unchanged so historical plans replay using their original timing.
+The actual search reads the form's configured purchase time as before.
+
+Local npm install/build, planning-controls, planning-clarity, EID-import,
+research-sale-plan browser, independent research-sale, subscription-import,
+and shift-rates/PDF checks passed. The desktop suites cover 1440–1000px layout,
+relative control positions, paired dates/timezone, default and explicit purchase
+timing, removed-field drafts, manual/automatic minima, saved files, real workers,
+selected JSON/PDF exports, update recovery, and next ascension. Automatic layouts
+were visually reviewed at 1440 and 1280px.
+The worker bundle SHA-256 remains byte-identical to v0.8.22:
+0e629ed69a86efea7a57c48f81307be6044b6adc3b5749b0c3d17b70b418e271.
+Native Windows installation/restart/rollback and public update-feed verification
+will be recorded after the release workflow completes.

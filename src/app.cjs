@@ -60,12 +60,6 @@ function updateSequenceVisibility() {
   $("routing-help").textContent = automatic ? "Choose User Selected Sequence to enter your own order." : "Your truth egg sequence controls the visit order.";
 }
 function updatePlanControls() {
-  const time = $("planPriority").value !== "switches";
-  for (const [name, active] of [["Days", time], ["Shifts", !time]]) {
-    $("priority-" + name.toLowerCase() + "-field").hidden = !active;
-    $("priorityMax" + name).disabled = !active;
-    $("priorityMax" + name).required = active;
-  }
   const automatic = $("autoTeAllocation").checked;
   $("te-minimums").hidden = automatic;
   $("goal-fields").disabled = automatic;
@@ -391,7 +385,7 @@ function renderForm() {
   EggIcons.decorateLabel($("virtue").closest("label"), f.virtue);
   for (const k of ["cash", "soulEggs", "shiftCount", "silos", "earningsMode"]) NumericInput.write($(k), k === "silos" ? Math.max(1, f[k] ?? 1) : f[k]);
   for (const k of ["proPermit", "videoDoubler"]) $(k).value = String(f[k] !== false);
-  for (const k of ["target", "shiftSeconds", "actionSeconds"]) NumericInput.write($(k), p[k] ?? { shiftSeconds: 5, actionSeconds: 0 }[k]);
+  for (const k of ["target", "shiftSeconds", "actionSeconds"]) NumericInput.write($(k), p[k] ?? { shiftSeconds: 5, actionSeconds: 0.3 }[k]);
   $("start").value = dateLocal(p.start || Date.now() / 1e3);
   const zone = p.eventTimezoneMode === Zones.automatic || !p.eventTimezone ? Zones.automatic : p.eventTimezone;
   if (![...$("eventTimezone").options].some(o => o.value === zone)) $("eventTimezone").append(option(zone, Zones.label(zone)));
@@ -400,9 +394,6 @@ function renderForm() {
   $("sequence").value = typeof p.sequence === "string" ? p.sequence : (p.sequence ?? DEFAULT_ROUTE).map((x) => ({ curiosity: "C", integrity: "I", humility: "H", resilience: "R", kindness: "K" })[x] || x).join(" ");
   $("minOfflineMinutes").value = p.minOfflineMinutes ?? 1;
   $("strategy").value = p.strategy || "wasmegg";
-  $("planPriority").value = p.priority === "switches" ? "switches" : "time";
-  $("priorityMaxDays").value = p.priorityMaxDays ?? p.maxDays ?? 366;
-  $("priorityMaxShifts").value = p.priorityMaxShifts ?? p.maxSwitches ?? 12;
   $("autoTeAllocation").checked = p.autoTeAllocation ?? !(p.floors || []).some(n => Number(n) > 0);
   $("c1MaxMinutes").value = E.maximum(S.number(p.c1MaxMinutes ?? 60));
   $("k1MaxMinutes").value = E.maximum(S.number(p.k1MaxMinutes ?? 60));
@@ -826,11 +817,8 @@ function gather() {
   f.loadouts = formLoadouts();
   const autoTeAllocation = $("autoTeAllocation").checked;
   const manualFloors = Array.from({length:5}, (_, i) => autoTeAllocation ? retainedNumber("floor-" + i) : readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true));
-  const timePriority = $("planPriority").value !== "switches";
-  const priorityMaxDays = timePriority ? readNumber("priorityMaxDays", "Maximum time (days)", 1, 366, true) : retainedNumber("priorityMaxDays");
-  const priorityMaxShifts = timePriority ? retainedNumber("priorityMaxShifts") : readNumber("priorityMaxShifts", "Maximum shifts", 0, 30, true);
-  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), saleComparisonVersion: 1, priority: $("planPriority").value || "time", priorityMaxDays, priorityMaxShifts, autoTeAllocation, manualFloors, maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: autoTeAllocation ? Array(5).fill(0) : manualFloors.slice() };
-  delete p.maxSwitches; delete p.stagedSales;
+  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), saleComparisonVersion: 1, autoTeAllocation, manualFloors, maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: autoTeAllocation ? Array(5).fill(0) : manualFloors.slice() };
+  for (const key of ["maxSwitches", "stagedSales", "priority", "priorityMaxDays", "priorityMaxShifts"]) delete p[key];
   if (!p.autoSequence) try {
     Route.parse(p.sequence, {required: true});
   } catch (error) { error.fieldId = "sequence"; throw error; }
@@ -1826,7 +1814,7 @@ document.addEventListener("change", (e) => {
   ShipIcons.update(e.target);
   if (e.target.matches("select")) SelectionReadout.refresh();
   const id = e.target.id;
-  if (id === "planPriority" || id === "autoTeAllocation") updatePlanControls();
+  if (id === "autoTeAllocation") updatePlanControls();
   const editingKey = Object.keys(editingGroups).find(key => editingGroups[key].toggles.includes(id));
   if (editingKey) {
     $(editingKey).checked = e.target.checked;
