@@ -1431,3 +1431,22 @@ contains 169 runtime files and passes archive CRC/current-audit guards. The
 solver worker is byte-for-byte identical to v0.8.16:
 4c7950f0d1fd01da5189a6aed4a59806f05c5ea5823951e9c056bfda4d7da272.
 Windows release and public-feed proof are recorded after automatic verification.
+
+
+Windows release proof: app commit 025b3fa825f40762dbe4721b2c1d5a6d8ef4035c;
+automatic Publish App Release run 37634487063 / job 112836973706 succeeds.
+The Windows build packages 169 runtime files. Archive validation, bad-archive and
+digest guards, rollback, exact backup restore, user settings preservation and
+tamper rejection pass. Native hidden CMD launch/reuse, successful restart,
+startup-failure recovery and legacy-worker recovery pass. Windows PowerShell
+5.1.26100.33438 anonymously reads the public feed, downloads v0.8.17 and verifies
+every app-file checksum on the first attempt.
+
+The public release targets the exact app commit and contains both verified assets:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8,562,639 bytes; SHA256
+  d6886def635b7dd7f3e8dac83f37387e800533228aa752ba6d58a61bf6214954.
+- update-manifest.json: 240 bytes; SHA256
+  6292647028470496d7e11fb61ca11bc0284e1dcbbe0a6223bf0046d855d41112.
+
+This final proof is recorded after release verification without replacing or
+repackaging the immutable release assets.
