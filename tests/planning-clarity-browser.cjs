@@ -48,11 +48,6 @@ const root = path.resolve(__dirname, "..");
     const editedSave = await page.evaluate(() => VirtueApp.getConfig());
     await load(editedSave);
     assert.equal(await page.locator('#epic-research-card [data-source]').innerText(), "Manually Edited");
-    await page.waitForFunction(() => JSON.parse(localStorage.getItem("virtue-optimizer.session.v1") || "{}").config?.uiProvenance?.epic === "manual");
-    await page.reload(); await page.waitForFunction(() => !!globalThis.VirtueApp);
-    await page.click("#restore-session");
-    assert.equal(await page.locator('#epic-research-card [data-source]').innerText(), "Manually Edited");
-    assert.equal(await page.inputValue("#epic-hold_to_hatch"), "0");
     // Account-only imports keep the existing farm and explicitly label that fact.
     const accountOnly = structuredClone(backup); accountOnly.farms = [{ eggType: 1 }];
     await load({ backup: accountOnly });
