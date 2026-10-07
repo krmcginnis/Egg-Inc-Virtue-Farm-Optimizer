@@ -2,7 +2,7 @@
 const assert = require("node:assert/strict"), fs = require("node:fs"), path = require("node:path"), http = require("node:http"), crypto = require("node:crypto"), { execFileSync } = require("node:child_process");
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
 const blank = require("../src/blank-farm.cjs"), S = require("../src/simulator.cjs"), catalog = require("../assets/brand/research-icons.json");
-const titleCase = require("../src/ui-text.cjs");
+const titleCase = require("../src/ui-text.cjs"), remainingCost = require("../src/research-cost-preview.cjs");
 const root = path.resolve(__dirname, "..");
 (async () => {
   for (const item of [...S.D.research, ...S.D.epic]) assert.ok(catalog.icons[item.id], item.id);
@@ -19,7 +19,7 @@ const root = path.resolve(__dirname, "..");
   try {
     browser = await chromium.launch({ executablePath: process.env.CHROMIUM_EXECUTABLE, headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"], env: { ...process.env, LD_LIBRARY_PATH: process.env.CHROMIUM_LIB_DIR || "", FONTCONFIG_PATH: process.env.CHROMIUM_FONT_DIR || "" } });
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } }), errors = []; page.on("pageerror", e => errors.push(e.message));
-    const farm = blank(); Object.assign(farm.farm, { cash: 1e18, claimed: Array(5).fill(5), manualAccountData: true, manualFarmData: true, epic: Object.fromEntries(S.D.epic.map((r, i) => [r.id, i % (r.levels + 1)])) }); farm.farm.epic.hold_to_research = 20;
+    const farm = blank(Date.parse("2026-10-07T16:00:00Z") / 1000); Object.assign(farm.farm, { cash: 1e18, claimed: Array(5).fill(5), manualAccountData: true, manualFarmData: true, epic: Object.fromEntries(S.D.epic.map((r, i) => [r.id, i % (r.levels + 1)])) }); farm.farm.epic.hold_to_research = 20;
     Object.assign(farm.plan, { target: 25, maxSwitches: 0, autoSequence: false, strategy: "user", sequence: ["curiosity"] });
     await page.goto("http://127.0.0.1:" + server.address().port); await page.waitForFunction(() => !!globalThis.VirtueApp);
     await page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Farm.json")), farm);
@@ -32,12 +32,29 @@ const root = path.resolve(__dirname, "..");
     const out = path.join(root, "tmp/research-artwork"); fs.mkdirSync(out, { recursive: true });
     await page.locator("#epic-fields").screenshot({ path: path.join(out, "epic-desktop.png") });
     await page.click('[data-tab="research"]');
+    assert.equal(await page.locator('#research-body [id^="max-cost-"]').count(),56);
+    assert.deepEqual(await page.locator('.research-tier').first().locator('th').allTextContents(),['Research','Level / Max','Next Cost','Cost to Max']);
+    // Check displayed totals independently of the UI helper, including per-level rounding.
+    const checkCosts = async raw => {
+      const {s,c}=S.prepare(raw);Object.freeze(s.r);Object.freeze(s);
+      const mult=(1-.05*c.epic.cheaper_research)*c.col.researchCost*c.mods[s.set].research*c.researchCostScale;
+      const sale=raw.plan.start===Date.parse('2026-10-09T16:00:00Z')/1000 ? .3 : 1;
+      for (const [i,r] of S.D.research.entries()) {
+        const expected=r.virtue_prices.slice(s.r[i]).reduce((sum,price)=>sum+Math.ceil(price*mult*sale),0);
+        assert.equal(remainingCost(s,c,i),expected,r.id+' immutable preview');
+        assert.ok((await page.locator('#max-cost-'+r.id).getAttribute('title')).startsWith(expected.toLocaleString('en-US',{maximumFractionDigits:0})+' gems '),r.id+' exact remaining cost');
+      }
+    };
+    await checkCosts(before);
     assert.equal(await page.locator(".research-tier").count(), 13);
     assert.equal(await page.locator(".research-tier[open]").count(), 13);
     for (const r of S.D.research) assert.equal(await page.locator("#research-"+r.id).evaluate(n=>Number(n.closest("details").dataset.tier)),r.tier);
     await page.fill("#research-filter", "leafsprings"); assert.equal(await page.locator("#research-body tbody tr:visible").count(), 1);
     assert.equal(await page.locator('#research-body tbody tr:visible [data-research-icon]').getAttribute("data-research-icon"), "leafsprings");
     await page.locator("#research-body tbody tr:visible").screenshot({ path: path.join(out, "common-desktop.png") });
+    await page.click('[data-tab="farm"]'); await page.fill('#epic-cheaper_research','3'); await page.evaluate(()=>VirtueApp.refresh());
+    await checkCosts(await page.evaluate(()=>VirtueApp.getConfig()));
+    await page.click('[data-tab="research"]');
     await page.fill("#research-filter", ""); await page.getByLabel(S.D.research[0].name + " current level", { exact: true }).fill("2"); await page.evaluate(() => VirtueApp.refresh());
     assert.equal((await page.evaluate(() => VirtueApp.getConfig())).farm.research[S.D.research[0].id], 2);
     await page.uncheck("#manualFarmResearch"); assert.ok(await page.locator("#research-" + S.D.research[0].id).isDisabled()); assert.ok(await page.locator("#research-body .research-icon").first().isVisible());
@@ -47,6 +64,8 @@ const root = path.resolve(__dirname, "..");
     for (const r of S.D.research.filter(r=>r.tier===1)) complete.farm.research[r.id]=r.levels;
     await page.evaluate(raw=>VirtueApp.loadFile(new File([JSON.stringify(raw)],"Maxed-Tier.json")),complete);
     await page.click('[data-tab="research"]');
+    await checkCosts(await page.evaluate(()=>VirtueApp.getConfig()));
+    for (const r of S.D.research.filter(r=>r.tier===1)) assert.equal(await page.locator('#max-cost-'+r.id).textContent(),'0');
     assert.equal(await page.locator('.research-tier[data-tier="1"]').getAttribute("open"),null);
     assert.match(await page.locator('.research-tier[data-tier="1"]>summary').innerText(),/Maxed/);
     assert.ok(await page.locator('.research-tier[data-tier="2"]').evaluate(n=>n.open));
@@ -74,12 +93,23 @@ const root = path.resolve(__dirname, "..");
     assert.equal(await page.locator('.research-tier[data-tier="1"]').getAttribute("open"),null);
     await page.click('[data-tab="research"]');
     await page.screenshot({path:path.join(out,"tiers-desktop.png"),fullPage:true});
+    await page.screenshot({path:path.join(out,"tiers-desktop-viewport.png")});
     await page.setViewportSize({width:390,height:1000});
     await page.screenshot({path:path.join(out,"tiers-mobile.png"),fullPage:true});
+    await page.screenshot({path:path.join(out,"tiers-mobile-viewport.png")});
+    await page.setViewportSize({width:320,height:1000});
+    await page.screenshot({path:path.join(out,"tiers-small-viewport.png")});
     await page.setViewportSize({width:1440,height:1000});
     await page.uncheck("#manualFarmResearch");
     await page.locator('.research-tier[data-tier="1"]>summary').click();
     assert.ok(await page.locator("#research-comfy_nests").isDisabled());
+    const saleFarm=structuredClone(farm);saleFarm.plan.start=Date.parse('2026-10-09T16:00:00Z')/1000;
+    saleFarm.farm.epic.cheaper_research=3;saleFarm.farm.researchCostScale=.83;
+    const cube=S.D.artifacts.find(a=>a.target==='research cost' && a.slots>0);
+    assert.ok(cube,'catalog research-discount artifact');
+    saleFarm.farm.loadouts.current[0]={artifactId:cube.id,stones:[]};
+    await page.evaluate(raw=>VirtueApp.loadFile(new File([JSON.stringify(raw)],'Sale-Farm.json')),saleFarm);
+    await checkCosts(await page.evaluate(()=>VirtueApp.getConfig()));
     // A small replayed plan exercises all three timeline layers without a search.
     const initial = S.prepare(farm); let state = initial.s;
     state = S.buy(state, initial.c, { type: "research", i: 0 }); state = S.buy(state, initial.c, { type: "research", i: 0 });
@@ -107,6 +137,6 @@ const root = path.resolve(__dirname, "..");
     await page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Missing-Art-Farm.json")), farm);
     assert.ok(await page.getByLabel("Hold to Hatch", { exact: true }).isEnabled()); assert.equal(await page.locator("#epic-fields label").count(), 22);
     assert.deepEqual(errors, []);
-    console.log("PASS all research mappings and original pixels, inline icons, unchanged labels/values, edit locks, filtering, replayed timeline layers, layouts 1440–320px, offline display, saved-farm roundtrip and missing-art text fallback.");
+    console.log("PASS exact remaining research costs, completed zero cost, epic/artifact discounts, calibration and current sale, immutable preview, all research mappings and original pixels, inline icons, unchanged labels/values, edit locks, filtering, replayed timeline layers, layouts 1440–320px, offline display, saved-farm roundtrip and missing-art text fallback.");
   } finally { if (browser) await browser.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

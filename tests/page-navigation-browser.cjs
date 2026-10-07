@@ -28,14 +28,21 @@ const root = path.resolve(__dirname, "..");
     assert.equal(await page.locator("#page-title").innerText(), "Farm & Account");
     assert.ok(await page.locator("#eid").isVisible()); assert.ok(await page.locator("#account-data-card").isVisible());
     assert.ok(await page.locator("#target").isHidden()); assert.ok(await page.locator("#ship-planning").isHidden()); assert.ok(await page.locator("#assumptions").isHidden());
-    // Farm entry continues through artifact verification before Planning; neither step starts a worker.
-    await page.getByRole("button", { name: "Continue to Planning", exact: true }).click();
+    assert.deepEqual(await page.locator('nav [data-tab]').allTextContents(), ['Farm & Account','Artifacts','Common Research','Planning','Purchase Timeline','How It Works']);
+    assert.equal(await page.locator('.side-note, #import-details, #import-details-summary, #import-note').count(), 0);
+    assert.ok(await page.locator('#eid').evaluate(n => n.closest('.page-heading') && n.getBoundingClientRect().top >= document.getElementById('page-title').getBoundingClientRect().bottom));
+    // Three review steps keep exact labels and never start a worker.
+    await page.getByRole("button", { name: "Continue to Artifacts", exact: true }).click();
     assert.equal(await page.locator("#page-title").innerText(), "Artifacts");
     assert.equal(await page.locator('[data-tab="artifacts"]').innerText(), "Artifacts");
     assert.ok(await page.locator("#loadout-fields").isVisible());
     assert.ok(await page.locator("#search-status").isHidden());
     assert.ok(await page.locator("#copy-earnings").isDisabled());
     assert.ok(await page.locator("#copy-delivery").isDisabled());
+    await page.getByRole("button", { name: "Continue to Common Research", exact: true }).click();
+    assert.equal(await page.locator("#page-title").innerText(), "Common Research");
+    assert.ok(await page.locator("#research-body").isVisible());
+    assert.ok(await page.locator("#search-status").isHidden());
     await page.getByRole("button", { name: "Continue to Planning", exact: true }).click();
     assert.equal(await page.locator("#page-title").innerText(), "Planning");
     assert.equal(await page.locator('[data-tab="planning"]').getAttribute("aria-current"), "page");
@@ -81,8 +88,8 @@ const root = path.resolve(__dirname, "..");
     await page.fill("#stagedSales", "0"); await page.evaluate(() => VirtueApp.refresh());
     assert.match(await page.locator("#planning-starting-te").innerText(), /25 Claimed/);
     await page.click("#review-inputs"); assert.equal(await page.locator("#page-title").innerText(), "Planning"); assert.equal(await page.evaluate(() => document.activeElement.id), "stagedSales");
-    await page.click("#review-farm"); assert.ok(await page.getByRole("button", { name: "Continue to Planning", exact: true }).isEnabled());
-    await page.click("#optimize"); assert.equal(await page.locator("#page-title").innerText(), "Artifacts"); await page.click("#optimize"); await page.fill("#stagedSales", "3"); await page.evaluate(() => VirtueApp.refresh());
+    await page.click("#review-farm"); assert.ok(await page.getByRole("button", { name: "Continue to Artifacts", exact: true }).isEnabled());
+    await page.click("#optimize"); assert.equal(await page.locator("#page-title").innerText(), "Artifacts"); await page.click("#optimize"); assert.equal(await page.locator("#page-title").innerText(), "Common Research"); assert.ok(await page.locator("#optimize").isEnabled()); await page.click("#optimize"); await page.fill("#stagedSales", "3"); await page.evaluate(() => VirtueApp.refresh());
     // Copy each distinct alternate loadout (including stones) into Current, with no source aliasing.
     const sets = structuredClone(saved);
     const artifacts = S.D.artifacts.filter(a => a.slots > 0), stone = S.D.stones[0].id;
@@ -103,7 +110,7 @@ const root = path.resolve(__dirname, "..");
     }
     await page.selectOption("#artifact-current-0", ""); await page.evaluate(() => VirtueApp.refresh());
     assert.deepEqual((await page.evaluate(() => VirtueApp.getConfig())).farm.loadouts.delivery, alternates.delivery);
-    await page.click("#optimize");
+    await page.click("#optimize"); await page.click("#optimize");
     // Reset/Undo retains goals, missions and the Planning page; browser recovery is absent.
     const beforeReset = await page.evaluate(() => VirtueApp.getConfig());
     await page.click("#clear-data"); assert.equal(await page.locator("#page-title").innerText(), "Farm & Account");
@@ -119,6 +126,7 @@ const root = path.resolve(__dirname, "..");
     for (const id of ["colleggtibles-card", "epic-research-card"]) assert.equal(await page.locator("#" + id).evaluate(node => node.parentElement.id), "farm-state-column");
     assert.ok(await page.locator("#col-fields select").first().isEnabled()); await page.uncheck("#manualAccountData"); assert.ok(await page.locator("#col-fields select").first().isDisabled()); assert.ok(await page.locator("#epic-fields input").first().isDisabled());
     await page.screenshot({ path: path.join(out, "farm-account-desktop.png"), fullPage: true });
+    await page.locator("header").screenshot({path:path.join(out,"farm-header-desktop.png")});
     for (const width of [1440, 1280, 1050, 1000, 800, 500, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
       for (const section of ["farm", "planning", "research", "artifacts", "results", "help"]) {
@@ -127,6 +135,9 @@ const root = path.resolve(__dirname, "..");
         if (["farm", "planning"].includes(section) && width >= 1050) assert.ok(await page.locator('[data-page="' + section + '"] .farm-workspace').evaluate(node => { const [left, right] = [...node.children].map(n => n.getBoundingClientRect()); return left.right <= right.left + 1; }), section + " two-panel layout at " + width);
       }
     }
+    await page.click('[data-tab="farm"]'); await page.evaluate(()=>window.scrollTo(0,0));
+    await page.screenshot({path:path.join(out,"farm-account-mobile.png"),fullPage:true});
+    await page.locator("header").screenshot({path:path.join(out,"farm-header-mobile.png")});
     // Exercise EID sync through the real protobuf/API path, including fleet rendering and identity preferences.
     syncBackup = {...activeBackup,userName:"SyntheticTester"};
     await page.click('[data-tab="farm"]');
@@ -137,11 +148,12 @@ const root = path.resolve(__dirname, "..");
     assert.equal(await page.inputValue("#epic-hold_to_research"),"20");
     assert.equal(await page.locator('#colleggtibles-card [data-source]').innerText(),"Imported Backup");
     await page.click("#optimize");assert.equal(await page.locator("#page-title").innerText(),"Artifacts");
+    await page.click("#optimize");assert.equal(await page.locator("#page-title").innerText(),"Common Research");
     await page.click("#optimize");assert.equal(await page.locator("#page-title").innerText(),"Planning");
     await page.reload();await page.waitForFunction(()=>!!globalThis.VirtueApp);
     assert.equal(await page.inputValue("#eid"),"SyntheticTester");
     await page.locator("#eid").focus();assert.equal(await page.inputValue("#eid"),"EI0000000000000000");
     assert.deepEqual(errors, []);
-    console.log("PASS Farm → Artifacts → Planning, real synthetic EID sync/identity, directional loadout copies with stones, left account panels, tier-compatible navigation and primary action, page-specific controls, live farm/TE/backup context, imported/retained labels, cross-page saved goals/ships/precision, import retention, error routing, Reset/Undo, browser recovery removal and two-panel layouts 1440–320px.");
+    console.log("PASS Farm → Artifacts → Common Research → Planning, exact Continue labels/menu order, EID below heading, removed sidebar info/import details, real synthetic EID sync/identity, directional loadout copies with stones, left account panels, tier-compatible navigation and primary action, page-specific controls, live farm/TE/backup context, imported/retained labels, cross-page saved goals/ships/precision, import retention, error routing, Reset/Undo, browser recovery removal and two-panel layouts 1440–320px.");
   } finally { if (browser) await browser.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

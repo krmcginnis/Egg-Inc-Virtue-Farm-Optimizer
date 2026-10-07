@@ -14,12 +14,13 @@ const ResearchIcons = require("./research-icons.cjs");
 const FarmIcons = require("./farm-icons.cjs");
 const SelectionReadout = require("./selection-readout.cjs");
 const AppUpdates = require("./app-updates.cjs");
+const remainingResearchCost = require("./research-cost-preview.cjs");
 const $ = (id) => document.getElementById(id), D = S.D;
 const EID_KEY = "virtue-optimizer.eid.v1", EID_NAME_KEY = "virtue-optimizer.eid-name.v1";
 let savedEid = "", savedEidName = "", eidDraft = "";
 let config = blankFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
 const effort = { quick: { width: 12, branches: 8, maxDepth: 500, maxMs: 1e4 }, balanced: { width: 32, branches: 12, maxDepth: 1200, maxMs: 45e3 }, thorough: { width: 72, branches: 20, maxDepth: 2200, maxMs: 18e4 } };
-const labels = { farm: "Farm & Account", planning: "Planning", research: "Farm Research", artifacts: "Artifacts", results: "Purchase timeline", help: "How it works" };
+const labels = { farm: "Farm & Account", planning: "Planning", research: "Common Research", artifacts: "Artifacts", results: "Purchase timeline", help: "How it works" };
 const colNames = { earnings: "Earnings", awayEarnings: "Away earnings", ihr: "Internal hatchery", elr: "Egg laying", shippingCap: "Shipping capacity", habCap: "Hab capacity", vehicleCost: "Vehicle cost", habCost: "Hab cost", researchCost: "Research cost" };
 function el(tag, text, cls) {
   const e = document.createElement(tag);
@@ -99,8 +100,9 @@ function tab(name, focusHeading = false) {
   if (focusHeading) $("page-title").focus({ preventScroll: true });
 }
 function updatePrimaryAction() {
-  const reviewing = ["farm", "artifacts"].some(name => document.querySelector(`[data-tab="${name}"]`).classList.contains("active"));
-  $("optimize").textContent = reviewing ? "Continue to Planning" : "Find Fastest Plan";
+  const next = {farm:"artifacts", artifacts:"research", research:"planning"}[document.querySelector('[data-tab].active')?.dataset.tab];
+  const reviewing = !!next;
+  $("optimize").textContent = next ? "Continue to " + labels[next] : "Find Fastest Plan";
   $("optimize").disabled = !!worker || !!importingBackup || (!reviewing && !!invalidField);
 }
 function readNumber(id, name, min = 0, max = Infinity, integer = false) {
@@ -454,15 +456,11 @@ function renderForm() {
     $("import-backup-time").textContent = hasBackupTime ? timestamp(backupTime, p.eventTimezone, true) : "not supplied";
     if (hasBackupTime) $("import-backup-time").dateTime = new Date(backupTime * 1000).toISOString();
     else $("import-backup-time").removeAttribute("datetime");
-    $("import-details").hidden = false;
     $("farm-source-note").hidden = true;
-    $("import-details-summary").textContent = "Import Details";
-    $("import-note").textContent = (config.importInfo.scope === "account" ? "Account loaded; no current Virtue farm found. " : "Account and current Virtue farm loaded. ") + (config.importInfo.warnings || []).join(" ");
   } else {
     $("import-backup").hidden = true;
     $("import-backup-time").textContent = "";
     $("import-backup-time").removeAttribute("datetime");
-    $("import-details").hidden = true;
     $("farm-source-note").hidden = false;
     $("farm-source-note").textContent = config.label || "";
   }
@@ -763,6 +761,9 @@ function refresh() {
     for (const research of D.research) {
       const i = S.RMAP[research.id];
       $("cost-" + research.id).textContent = s.r[i] === research.levels ? "Maxed" : S.isUnlocked(s, i) ? num(S.price(s, c, { type: "research", i })) : "Tier locked";
+      const remaining = remainingResearchCost(s, c, i), total = $("max-cost-" + research.id);
+      total.textContent = num(remaining);
+      total.title = remaining.toLocaleString("en-US", {maximumFractionDigits:0}) + " gems at current discounts and sale prices; excludes prerequisites.";
     }
     let hiddenSlots = 0;
     for (let i = 0; i < 17; i++) {
@@ -1568,7 +1569,7 @@ function renderResearch() {
     summary.append(label, totals);
     section.append(summary);
     const table = el("table"), head = el("thead"), headings = el("tr"), body = el("tbody");
-    for (const name of ["Research", "Level / Max", "Next Cost"]) {
+    for (const name of ["Research", "Level / Max", "Next Cost", "Cost to Max"]) {
       const th = el("th", name); th.scope = "col"; headings.append(th);
     }
     head.append(headings);
@@ -1587,7 +1588,8 @@ function renderResearch() {
       const levels = el("div", undefined, "research-level-value");
       levels.append(input, el("span", "/ " + r.levels)); level.append(levels);
       const cost = el("td", undefined, "research-cost"); cost.id = "cost-" + r.id;
-      row.append(name, level, cost); body.append(row);
+      const total = el("td", undefined, "research-cost"); total.id = "max-cost-" + r.id;
+      row.append(name, level, cost, total); body.append(row);
     }
     table.append(head, body); section.append(table); host.append(section);
   }
@@ -1627,7 +1629,8 @@ $("research-filter").oninput = filterResearch;
 $("clear-research-filter").onclick = () => { $("research-filter").value = ""; filterResearch(); $("research-filter").focus(); };
 $("optimize").onclick = () => {
   if (document.querySelector('[data-tab="farm"]').classList.contains("active")) tab("artifacts", true);
-  else if (document.querySelector('[data-tab="artifacts"]').classList.contains("active")) tab("planning", true);
+  else if (document.querySelector('[data-tab="artifacts"]').classList.contains("active")) tab("research", true);
+  else if (document.querySelector('[data-tab="research"]').classList.contains("active")) tab("planning", true);
   else optimize();
 };
 $("review-farm").onclick = () => tab("farm", true);

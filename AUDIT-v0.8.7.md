@@ -1,6 +1,6 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.6 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.7 — Release Audit
 
-v0.8.6 runs the Windows helper in the background while retaining the Farm & Account / Artifacts / Planning flow, compact layout and unchanged solver. Both pages retain
+v0.8.7 aligns the sidebar and Continue actions with Farm & Account / Artifacts / Common Research / Planning, adds remaining research cost, and simplifies the import header. Farm & Account and Planning retain
 the compact two-panel desktop layout and share the existing farm configuration.
 A small Planning summary shows current Virtue, claimed/pending TE and the last
 backup timestamp. Focused validation is recorded at the end of this audit.
@@ -751,3 +751,53 @@ PowerShell execution is unavailable; native behavior is checked in the existing
 Windows release workflow. The rebuilt solver worker remains byte-identical to
 v0.8.5: SHA256 26a402fae2d31a8c270bf7fd6d03e0e0ebbda684095f4f5c1ad4cb5937b0625a.
 No solver, farm/account import calculations, game data or UI layout changes.
+
+
+## Review sequence and remaining research cost — v0.8.7
+
+The sidebar and Continue buttons follow Farm & Account → Artifacts → Common
+Research → Planning. Farm Research is renamed Common Research without changing
+its internal tab ID or saved research schema. All three review actions remain
+available with unrelated invalid input and navigate without starting a worker.
+Planning retains its existing Find Fastest Plan action and solver behavior.
+
+The EID field and green import arrow sit directly below the Farm & Account
+heading. Existing accessible labels, Enter behavior, sync API, account-name/EID
+preferences, editing locks and backup timestamp remain. Local Planning sidebar
+information and Import Details, including their rendering references/styles,
+are removed. Imported/retained source badges and import result notices remain.
+The two-panel farm/account and planning layouts are preserved.
+
+Common Research adds Cost to Max immediately after Next Cost. Its display-only
+preview prices every remaining level individually with the existing simulator
+price function and round-up rule, at the entered start time and active loadout.
+It applies the same Epic Research, Colleggtible, artifact and calibration
+multipliers and current sale as Next Cost. Maxed research displays zero. Locked
+research still shows its remaining cost, excluding tier prerequisites. It does
+not forecast future sales or mutate research levels, farm state or the solver.
+Compact rows, tier disclosures, default completed-tier collapse and filtering
+remain; costs use compact notation with exact amounts in tooltips.
+
+Targeted Chromium page-navigation, research-artwork, planning-clarity and
+ui-polish suites pass. Checks cover all Continue labels, sidebar order,
+removed UI, EID placement and actual synthetic protobuf/API sync, persisted EID
+identity, invalid-input navigation, save/load values and Reset/Undo. All 56
+cost totals are checked against an independent per-level formula, including
+completed research, rounding, changed Epic Research, Cube discount, calibration
+and current research-sale pricing. Frozen-state previews verify no mutation.
+Existing tier/filter/keyboard, replayed worker plan, offline artwork/fallback,
+focus and desktop/mobile overflow checks pass at widths down to 320 pixels.
+Header and research desktop/mobile screenshots were inspected. No live-account
+request or native screen-reader check is claimed. The historical import-account
+suite remains unavailable because its two fixture dependencies are missing;
+its header/detail assertions were updated for the current UI.
+
+No solver, game data, account import calculations, ship scheduling or updater
+source changes. The rebuilt solver worker remains byte-identical to v0.8.6:
+SHA256 26a402fae2d31a8c270bf7fd6d03e0e0ebbda684095f4f5c1ad4cb5937b0625a.
+The established Windows release workflow checks native hidden launcher,
+updater install/restart/rollback, packaging and anonymous public-feed/download
+checksums before release handover. Local PowerShell execution is unavailable.
+
+Local npm ci/build, release-state and prepare-publish guards pass. Packaging
+verifies 164 runtime files, archive integrity and one current audit.

@@ -1,4 +1,4 @@
-EGG INC. VIRTUE FARM OPTIMIZER 0.8.6 — PC EDITION
+EGG INC. VIRTUE FARM OPTIMIZER 0.8.7 — PC EDITION
 
 GET STARTED
 1. Extract the entire ZIP; open the Egg-Inc-Virtue-Farm-Optimizer folder.
@@ -61,8 +61,10 @@ Coop, Trike and one silo. Additional purchases require the matching Virtue.
 Enter your actual Soul Eggs before planning switches; clearing sets them to zero.
 Fresh farms use automatic online/offline waiting. Keep the starting silo refilled.
 
-Choose Continue to Planning to review Artifacts first, then continue to Planning;
-you can also open Planning from the sidebar. Planning has goals,
+Use Continue to Artifacts, then Continue to Common Research, then Continue to
+Planning. The sidebar follows the same review order. Common Research shows
+each item's next cost and total remaining cost at current discounts/sale prices.
+Tier prerequisites are not included in that item's remaining cost. Planning has goals,
 ship schedules, timing and assumptions, with a compact starting-farm summary.
 Save Farm includes values and settings from both pages.
 
@@ -772,9 +774,8 @@ app folder, replacing app files. Launch Start-Virtue-Optimizer.cmd again. Farm
 JSON files are not removed. Future updates use the button.
 
 COMPACT EGG INC IMPORT (v0.7.3)
-The Egg Inc ID field and green import arrow are beside Start from Scratch.
-The loaded backup timestamp is visible below the toolbar; Import Details keeps
-additional notes. Press Enter in the ID field to load.
+The Egg Inc ID field and green import arrow are below the Farm & Account heading.
+The loaded backup timestamp remains visible. Press Enter in the ID field to load.
 
 AUTOMATIC RELEASES (v0.7.4)
 New versions are built and validated automatically when the app version increases
