@@ -1,5 +1,5 @@
 param([switch]$NoBrowser, [int]$Port = 0, [switch]$Background, [switch]$Console)
-# Local app host, read-only Egg Inc proxy and user-requested app updater.
+# Local app host, read-only Egg Inc. proxy and user-requested app updater.
 $ErrorActionPreference = 'Stop'
 if ($env:OS -eq 'Windows_NT' -and -not $Console) { $Background = $true }
 # Background startup failures must remain visible even without a console.
@@ -240,13 +240,13 @@ try {
                     if ($path -eq '/api/update/install' -and $updateProcess -and (Get-UpdateState).job.state -eq 'installing') { break }
                     continue
                 }
-                if ($request.eid -notmatch '^EI[0-9]{16}$' -or $request.data -notmatch '^[A-Za-z0-9+/=]+$') { Text-Reply $stream 400 'Invalid Egg Inc request.'; continue }
+                if ($request.eid -notmatch '^EI[0-9]{16}$' -or $request.data -notmatch '^[A-Za-z0-9+/=]+$') { Text-Reply $stream 400 'Invalid Egg Inc. request.'; continue }
                 # Only a fixed, read-only backup endpoint is supported. No game mutations.
                 try {
                     $payload = 'data=' + [Uri]::EscapeDataString([string]$request.data)
                     $response = Invoke-WebRequest -UseBasicParsing -Uri 'https://www.auxbrain.com/ei/bot_first_contact' -Method POST -ContentType 'application/x-www-form-urlencoded' -Body $payload -TimeoutSec 30
                     Send-Reply $stream 200 'text/plain; charset=utf-8' ([Text.Encoding]::UTF8.GetBytes([string]$response.Content))
-                } catch { Text-Reply $stream 502 'Egg Inc API could not be reached. Check your connection, sync the game, and retry. The private API may have changed.' }
+                } catch { Text-Reply $stream 502 'Egg Inc. API could not be reached. Check your connection, sync the game, and retry. The private API may have changed.' }
                 continue
             }
             if ($method -ne 'GET') { Text-Reply $stream 405 'Only GET and supported local POST requests are allowed.'; continue }

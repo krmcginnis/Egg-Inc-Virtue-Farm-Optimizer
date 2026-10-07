@@ -16,7 +16,7 @@ function initialize() {
   heading = element("h2"); heading.id = "gear-picker-title";
   const close = element("button", "Close", "secondary"); close.type = "button"; close.onclick = () => dialog.close();
   top.append(heading, close);
-  search = element("input"); search.type = "search"; search.placeholder = "Find by name, tier or effect…";
+  search = element("input"); search.type = "search"; search.placeholder = "Find by name, tier, or effect…";
   search.setAttribute("aria-label", "Filter items"); search.oninput = render;
   count = element("p", undefined, "hint"); count.setAttribute("role", "status"); count.setAttribute("aria-live", "polite");
   grid = element("div", undefined, "gear-picker-grid");
@@ -82,7 +82,7 @@ function render() {
     button.onclick = () => choose(item.id); grid.append(button);
   }
   count.textContent = items.length ? items.length+" matching "+(active.catalog?.plural || (active.kind === "artifact" ? "artifacts" : "stones")) : "No matches. Try another name or effect.";
-  if (active.catalog) count.textContent += " · "+(active.catalog.note || "Current research and bonuses. ETA assumes full habs, maintained silos and unchanged current earnings; excludes future events and purchases.");
+  if (active.catalog) count.textContent += " · "+(active.catalog.note || "Current research and bonuses. ETA assumes full habs, maintained silos, and unchanged current earnings; excludes future events and purchases.");
 }
 function bind(button, control, kind, image, catalog) {
   initialize();
@@ -93,7 +93,7 @@ function bind(button, control, kind, image, catalog) {
   button.onclick = () => {
     if (control.matches(":disabled")) return;
     initialize(); active = {control,kind,image,catalog:typeof catalog === "function" ? catalog() : catalog}; search.value = "";
-    search.placeholder = active.catalog ? "Find by name…" : "Find by name, tier or effect…";
+    search.placeholder = active.catalog ? "Find by name…" : "Find by name, tier, or effect…";
     heading.textContent = "Choose "+label; render(); dialog.showModal(); search.focus();
   };
 }

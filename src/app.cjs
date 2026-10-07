@@ -83,9 +83,9 @@ function dateLocal(t) {
 // Formatting options are fixed. Reuse formatters instead of creating one for
 // every purchase, while preserving each exact date and selected timezone.
 const timestampFormats = new Map();
-function timestamp(t, zone, includeYear = false) {
-  const key = zone + ":" + includeYear;
-  if (!timestampFormats.has(key)) timestampFormats.set(key, new Intl.DateTimeFormat("en-US", { timeZone: zone, year: includeYear ? "numeric" : void 0, month: "short", day: "numeric", weekday: "short", hour: "2-digit", minute: "2-digit", second: "2-digit", timeZoneName: "short" }));
+function timestamp(t, zone, includeYear = false, compact = false) {
+  const key = zone + ":" + includeYear + ":" + compact;
+  if (!timestampFormats.has(key)) timestampFormats.set(key, new Intl.DateTimeFormat("en-US", { timeZone: zone, year: includeYear ? "numeric" : void 0, month: "short", day: "numeric", weekday: compact ? undefined : "short", hour: "2-digit", minute: "2-digit", second: compact ? undefined : "2-digit", timeZoneName: "short" }));
   return timestampFormats.get(key).format(new Date(t * 1e3));
 }
 function tab(name, focusHeading = false) {
@@ -336,7 +336,7 @@ function updateDataSources() {
     else if (group === "colleggtibles" && config.farm.colleggtibleTiersInferred) setSource(node, "Reconstructed from Totals", "Individual tiers were reconstructed from an older saved file's combined bonuses; see the explanation below.", "warning");
     else if (group === "flights" && info?.flightSource !== "backup") setSource(node, config.farm.shipFlights?.length ? "Retained Flights" : "Not Loaded", "Flight information was not supplied by the last import.");
     else if (group === "farm" && info?.scope === "account") setSource(node, "Retained Farm", "No active Virtue farm was found. Your starting farm was retained.");
-    else if (info) setSource(node, "Imported Backup", "From the last loaded Egg Inc backup; check its timestamp above.", "imported");
+    else if (info) setSource(node, "Imported Backup", "From the last loaded Egg Inc. backup; check its timestamp in the sidebar.", "imported");
     else setSource(node, fallback, "Values in this farm configuration. Enable manual editing to adjust them.");
   }
 }
@@ -479,7 +479,7 @@ function renderForm() {
     const backupTime = Number(config.importInfo.timestamp);
     const hasBackupTime = backupTime > 0 && Number.isFinite(new Date(backupTime * 1000).getTime());
     $("import-backup").hidden = false;
-    $("import-backup-time").textContent = hasBackupTime ? timestamp(backupTime, p.eventTimezone, true) : "not supplied";
+    $("import-backup-time").textContent = hasBackupTime ? timestamp(backupTime, p.eventTimezone, true, true) : "not supplied";
     if (hasBackupTime) $("import-backup-time").dateTime = new Date(backupTime * 1000).toISOString();
     else $("import-backup-time").removeAttribute("datetime");
   } else {
@@ -762,7 +762,7 @@ function renderExistingFlights() {
     return el("li", (duration ? duration + " " : "") + ship + " · " + (Number.isFinite(f.returnAt) ? (f.returnAt <= start ? "ready to collect at plan start" : "returns " + timestamp(f.returnAt, zone, true)) : "return time unavailable"));
   }));
   $("flight-status").textContent = flights.length ? flights.length + " existing Virtue flight" + (flights.length === 1 ? "" : "s") + " accounted for." : source === "backup" ? "No active Virtue flights in the imported backup." : source === "unavailable" ? "Flight records were not included in this backup." : "No flight records loaded. Selected mission slots are assumed available.";
-  $("flight-help").textContent = source === "unavailable" ? "Sync the game and use the import arrow in the sidebar to refresh flight information before relying on the ship schedule." : source === "backup" ? "Loaded automatically with your Egg Inc backup. Sync the game and use the import arrow in the sidebar to refresh. Existing launches do not consume planned fuel again." : "Use the import arrow in the sidebar to refresh current flights. Saved farms and previous plans retain their flight records.";
+  $("flight-help").textContent = source === "unavailable" ? "Sync the game and use the import arrow in the sidebar to refresh flight information before relying on the ship schedule." : source === "backup" ? "Loaded automatically with your Egg Inc. backup. Sync the game and use the import arrow in the sidebar to refresh. Existing launches do not consume planned fuel again." : "Use the import arrow in the sidebar to refresh current flights. Saved farms and previous plans retain their flight records.";
 }
 function syncDefaultTarget() {
   if (config.plan.targetMode !== Defaults.targetMode) return;
@@ -898,7 +898,7 @@ function refresh() {
         shipEstimate.append(el("p", missing.some((n) => n) ? (run.visit === 1 ? "Collect before H1: " : "Refill after H1 for H2: ") + missing.map((n, i) => n ? S.NAME[i] + " " + num(n) : "").filter(Boolean).join(" \xB7 ") : "Required non-Humility fuel is already available."));
         if (run.visit === 1 && run.collectionTargets?.some((n, i) => n > run.targets[i])) shipEstimate.append(el("p", "Includes fuel reserved for H2 where the switch sequence has no refill stop."));
       }
-      shipEstimate.append(el("p", "FTL: " + c.ships.ftl + " / 60 from Epic Research. Both schedules include gem costs, fueling and earlier returns; final returns are not awaited."));
+      shipEstimate.append(el("p", "FTL: " + c.ships.ftl + " / 60 from Epic Research. Both schedules include gem costs, fueling, and earlier returns; final returns are not awaited."));
     }
     updatePrimaryAction();
     if (!worker && !dirty) {
@@ -929,7 +929,7 @@ function updatePlanningContext() {
   }
   const backupTime = Number(config.importInfo?.timestamp), backup = $("planning-backup-time");
   if (backupTime > 0 && Number.isFinite(new Date(backupTime * 1000).getTime())) {
-    backup.textContent = timestamp(backupTime, Zones.resolve($("eventTimezone").value), true);
+    backup.textContent = timestamp(backupTime, Zones.resolve($("eventTimezone").value), true, true);
     backup.dateTime = new Date(backupTime * 1000).toISOString();
   } else {
     backup.textContent = config.importInfo ? "Timestamp Not Supplied" : "No Backup Loaded";
@@ -1075,7 +1075,7 @@ function renderResult() {
     $("result-content").hidden = true;
     $("empty-results").hidden = false;
     tab("farm");
-    show("Next ascension starts at the previous finish time. Claimed TE, lifetime eggs, Epic Research, artifacts, Soul Eggs and shift history are preserved; farm upgrades and gems are reset.");
+    show("Next ascension starts at the previous finish time. Claimed TE, lifetime eggs, Epic Research, artifacts, Soul Eggs, and shift history are preserved; farm upgrades and gems are reset.");
     };
   tools.append(txt, json, expand, next);
   head.append(tools);
@@ -1315,7 +1315,7 @@ function startSearchClock() {
   clearInterval(searchTimer);
   searchStartedAt = performance.now();
   searchBestSeconds = null;
-  searchContext = "Evaluating affordable purchases, event waits and switches";
+  searchContext = "Evaluating affordable purchases, event waits, and switches";
   $("search-stage").textContent = "Preparing Farm and Checking Limits";
   $("search-openings").textContent = "Not Started";
   delete $("search-openings").dataset.total;
@@ -1587,7 +1587,7 @@ async function loadEidData() {
   const epoch = loadEpoch;
   importingBackup = "auto";
   busy(false);
-  show("Requesting your saved Egg Inc backup\u2026");
+  show("Requesting your saved Egg Inc. backup\u2026");
   try {
     const b = await A.loadBackup(eid);
     if (epoch !== loadEpoch) return;
@@ -1609,7 +1609,7 @@ async function loadEidData() {
     const valid = renderForm();
     $("result-content").hidden = true;
     $("empty-results").hidden = false;
-    const message = next.importInfo.scope === "account" ? "Account information has been loaded, but no current Virtue farm was found. Your starting farm, start time and planning goals are retained." : "Account information and the current Virtue farm have been loaded. Your planning goals are retained.";
+    const message = next.importInfo.scope === "account" ? "Account information has been loaded, but no current Virtue farm was found. Your starting farm, start time, and planning goals are retained." : "Account information and the current Virtue farm have been loaded. Your planning goals are retained.";
     show(message + (valid ? " Review backup age and assumptions before planning." : " Your draft is retained; review the marked inputs before planning."), !valid);
   } catch (e) {
     if (epoch === loadEpoch) show(e.message, true);
@@ -1684,7 +1684,7 @@ function renderResearch() {
     const items = D.research.filter(r => r.tier === tier), section = el("details", undefined, "research-tier");
     section.dataset.tier = tier;
     section.open = !items.every(r => config.farm.research[r.id] === r.levels);
-    const summary = el("summary"), label = el("span", "Tier " + tier), totals = el("span", undefined, "research-tier-totals");
+    const summary = el("summary"), label = el("span", "Tier " + tier, "research-tier-label"), totals = el("span", undefined, "research-tier-totals");
     summary.append(label, totals);
     section.append(summary);
     const table = el("table"), head = el("thead"), headings = el("tr"), body = el("tbody");
@@ -1720,7 +1720,8 @@ function updateResearchSummaries() {
     const values = items.map(r => Number($("research-" + r.id).value));
     const valid = values.every((n, i) => $("research-" + items[i].id).value.trim() !== "" && Number.isInteger(n) && n >= 0 && n <= items[i].levels);
     const maxed = valid && values.every((n, i) => n === items[i].levels);
-    section.querySelector(".research-tier-totals").textContent = valid ? values.reduce((a, b) => a + b, 0) + " / " + items.reduce((sum, r) => sum + r.levels, 0) + " levels" + (maxed ? " · Maxed" : "") : "Check levels";
+    section.querySelector(".research-tier-totals").textContent = valid ? values.reduce((a, b) => a + b, 0) + " / " + items.reduce((sum, r) => sum + r.levels, 0) + " levels" : "Check levels";
+    section.querySelector(".research-tier-label").textContent = "Tier " + section.dataset.tier + (maxed ? " (Maxed)" : "");
     section.classList.toggle("maxed", maxed);
   }
 }
@@ -1868,7 +1869,7 @@ try {
 showEidIdentity();
 tab("account");
 sizeRunBar();
-show("Enter your Egg Inc ID and use the green arrow, or enable manual editing, before planning.");
+show("Enter your Egg Inc. ID and use the green arrow, or enable manual editing, before planning.");
 AppUpdates.initialize({
   isBusy: () => !!worker || !!importingBackup,
   capture: () => {

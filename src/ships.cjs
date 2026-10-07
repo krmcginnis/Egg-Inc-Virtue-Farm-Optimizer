@@ -3,7 +3,7 @@ const DATA=require('./ship-data.json');
 const EGGS=['curiosity','integrity','humility','resilience','kindness'];
 const RECIPE=[175e12,9e12,0,140e12,175e12];
 const TANKS=[2e9,200e9,10e12,100e12,200e12,300e12,400e12,500e12];
-// Standard tank rates (Egg Inc Wiki/Fuel_Tank); auxiliary boosts can be entered explicitly.
+// Standard tank rates (Egg Inc. Wiki/Fuel_Tank); auxiliary boosts can be entered explicitly.
 const OUTPUTS=[300e6,12e9,180e9,3e12,4.5e12,6e12,7.5e12,9e12];
 function rateFor(capacity){return OUTPUTS[TANKS.indexOf(capacity)]??300e6;}
 const MAP=Object.fromEntries(DATA.ships.map(s=>[s.id,s]));

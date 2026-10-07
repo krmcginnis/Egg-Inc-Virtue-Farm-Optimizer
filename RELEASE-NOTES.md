@@ -1,8 +1,8 @@
-# v0.8.17
+# v0.8.18
 
-- Move EID loading into the left sidebar so it is available on every page.
-- Show only the backup date and time beneath the EID field, without a visible timestamp label.
-- Remove import/backup information from the Account and Virtue Farm headers; all pages now share the same header layout.
-- Keep Start from Scratch, Load Farm and Save Farm in the header, and Update App at the bottom of the sidebar.
-- Preserve EID/username persistence, import safety, the compact desktop farm panels, and all solver behavior.
+- Move EID loading above the page menu and reduce the input and arrow from 36px to 32px.
+- Show backup dates without weekdays or seconds, retaining the selected timezone.
+- Standardize Egg Inc. punctuation and use Oxford commas in app lists.
+- Expand Common Research by default; fully completed tiers start collapsed with (Maxed) after their names.
+- Preserve account import, saved farms, planning settings, and solver calculations.
 - Install through Update App → Update & Restart.

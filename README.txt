@@ -30,24 +30,24 @@ to connect a source checkout if needed. No GitHub credentials are stored.
 Direct index.html use remains offline; launch the CMD file for updating.
 
 YOUR FARM
-Click Start from scratch to clear all farm values, upgrades, artifacts and the
+Click Start from scratch to clear all farm values, upgrades, artifacts, and the
 current plan. Any running search stops. Exported files remain available to load.
 
 The app opens on Account with an empty farm. Load your account or saved farm,
-continue to Virtue Farm to review current upgrades, gear, fuel and flights, then
+continue to Virtue Farm to review current upgrades, gear, fuel, and flights, then
 continue to Planning. Save Farm and Save Plan remain portable backups. Reset
 offers Undo for the current session; browser recovery is not used.
 
-Enter your Egg Inc ID and select the green arrow to load account information
+Enter your Egg Inc. ID and select the green arrow to load account information
 and the current Virtue farm from one backup request. If no Virtue farm is active,
 account information still loads, with a notice at the top. Existing starting
-farm values, equipped gear and start time are kept in that case. A found farm
+farm values, equipped gear, and start time are kept in that case. A found farm
 refreshes those values and sets the start to now. Planning goals are retained. Owned Virtue inventory refreshes the automatic
 earnings and delivery sets. Existing flight fuel is not spent again.
 Account and Virtue Farm are separate pages with independent Edit Manually
 settings. Account holds Soul Eggs, permit, switch history, TE progress,
-Colleggtibles and Epic Research. Virtue Farm holds current farm upgrades,
-tabbed artifact sets, Common Research, fuel and flights. Account imports lock account fields; a found farm also
+Colleggtibles, and Epic Research. Virtue Farm holds current farm upgrades,
+tabbed artifact sets, Common Research, fuel, and flights. Account imports lock account fields; a found farm also
 locks farm fields. Goals remain editable. Artifact sets unlock with Edit Farm Manually.
 
 Use Load farm for your saved farm or JSON
@@ -137,7 +137,7 @@ VALIDATION
 - Local helper HTTP/session/access behavior tested using PowerShell 7.5.3 on Linux.
 
 LIMITS OF TESTING
-A read-only live Egg Inc backup request succeeded for v1.5.5. That saved backup
+A read-only live Egg Inc. backup request succeeded for v1.5.5. That saved backup
 reported no active Virtue flights; occupied slots and return times were validated
 with synthetic protobuf backups. Native Windows PowerShell 5.1 execution could not
 be tested here; the helper uses APIs available in that version.
@@ -451,7 +451,7 @@ VERSION 1.4.0 — SHIPS AT FIRST HUMILITY
 Farm inputs now include the fuel tank capacity, editable output rate, and stored
 fuel for all five Virtue eggs. Selecting capacity fills the standard output rate.
 Tank values accept exact game suffixes and are saved with every planning goal.
-Egg Inc backup imports read the Virtue tank contents/capacity and FTL level.
+Egg Inc. backup imports read the Virtue tank contents/capacity and FTL level.
 
 Planning Goals lets you choose ship types, Short/Standard/Extended missions,
 launch counts, FTL Drive Upgrades, and 1–3 mission slots, with existing flights accounted for. Add up
@@ -491,7 +491,7 @@ Return promptly for the next launch and maintain silo/video coverage.
 
 Mission fuel, duration, launch prices and FTL rules verified against Wasmegg:
 https://github.com/wasmegg-carpet/egg
-Standard tank output rates verified against the Egg Inc Wiki:
+Standard tank output rates verified against the Egg Inc. Wiki:
 https://egg-inc.fandom.com/wiki/Fuel_Tank
 
 Developer ship checks: node tests/ships.cjs and tests/ships-browser.cjs.
@@ -649,7 +649,7 @@ VERSION 1.5.11 — SEPARATE ACCOUNT AND FARM DATA
 VERSION 1.5.12 — ONE IMPORT ON FARM & GOALS
 - Account information is back on Farm & Goals, grouped separately from live farm
   values. The separate Account navigation page has been removed.
-- One green-arrow button by the Egg Inc ID loads account and active-farm data.
+- One green-arrow button by the Egg Inc. ID loads account and active-farm data.
   The icon has a tooltip and accessible name and works with keyboard Enter.
 - When no Virtue farm is found, account information still loads. A notice at the
   top says so, and existing starting-farm data, gear and start time are retained.
@@ -741,7 +741,7 @@ UI BATCH IN PROGRESS — EGG ARTWORK (2026-10-05)
   fields, goals, fuel, Colleggtibles and the purchase timeline. The images work
   offline and names remain visible.
 - Artwork sources are recorded in assets/eggs/ATTRIBUTION.txt. Seven images
-  are from the Egg Inc Wiki; all 13 Colleggtibles use official game assets.
+  are from the Egg Inc. Wiki; all 13 Colleggtibles use official game assets.
 - The sidebar title uses the official Egg Inc. chicken icon from Auxbrain's
   Google Play listing. The unchanged image is bundled for offline display;
   source details are recorded in assets/brand/ATTRIBUTION.txt and SOURCE.json.
@@ -777,8 +777,8 @@ save your farm, close the launcher, and extract the release ZIP into your existi
 app folder, replacing app files. Launch Start-Virtue-Optimizer.cmd again. Farm
 JSON files are not removed. Future updates use the button.
 
-COMPACT EGG INC IMPORT (v0.7.3)
-The Egg Inc ID field and green import arrow are below the Farm & Account heading.
+COMPACT EGG INC. IMPORT (v0.7.3)
+The Egg Inc. ID field and green import arrow are below the Farm & Account heading.
 The loaded backup timestamp remains visible. Press Enter in the ID field to load.
 
 AUTOMATIC RELEASES (v0.7.4)
@@ -836,3 +836,12 @@ VERSION 0.8.13 — OPENING DISCOUNTS AND SHIFT RATES
 - PDF walkthroughs show the same dates and peak rates.
 - Use gems throughout visible currency wording, including historical wait reasons,
   without changing saved JSON keys or recorded actions.
+
+
+VERSION 0.8.18 — SIDEBAR AND RESEARCH DISPLAY
+The Egg Inc. ID field is above the page menu, with a smaller field and green
+arrow. Backup dates omit weekdays and seconds, while timeline actions retain
+precise timing. Common Research opens by default; fully maxed tiers start
+collapsed and show (Maxed) after their tier names. Imported levels, research
+costs, saved plans, and solver calculations are retained. UI prose and exported
+walkthroughs use Oxford commas for serial lists.

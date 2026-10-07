@@ -199,11 +199,12 @@ header{flex-wrap:wrap;align-items:flex-end;gap:12px 18px}
 .page-heading{min-width:0}
 .header-actions{align-items:center;gap:10px;min-width:0}
 .farm-file-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
-.sidebar-account{margin:22px 0;border-top:1px solid var(--line);padding-top:16px;min-width:0}
+.sidebar-account{margin:0 0 20px;border-bottom:1px solid var(--line);padding-bottom:16px;min-width:0}
 .sidebar-account h2{font-size:12px;margin:0 0 9px;color:#b6c4d7}
 .sidebar-account .import-controls{flex-wrap:nowrap;align-items:center;gap:5px;width:100%}
-.sidebar-account #eid{flex:1;min-width:0;width:0;height:36px;padding:8px;font-size:12px}
-.sidebar-account .import-arrow{flex:none;width:36px;height:36px;min-width:36px;min-height:36px;padding:6px}
+.sidebar-account #eid{flex:1;min-width:0;width:0;height:32px;min-height:32px;padding:7px;font-size:11px}
+.sidebar-account .import-arrow{flex:none;width:32px;height:32px;min-width:32px;min-height:32px;padding:5px}
+.sidebar-account .import-arrow svg{width:22px;height:22px}
 .sidebar-account #import-backup{display:block;margin-top:10px;font-size:11px;line-height:1.6;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 @media(max-width:1100px){.header-actions{justify-content:flex-start}}
 @media(max-width:500px){.header-actions,.farm-file-actions{width:100%}}

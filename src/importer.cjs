@@ -42,16 +42,16 @@ function importBackup(input,existing,now=Date.now()/1000,{scope='farm'}={}){
  const backupTime=Number(b.settings?.lastBackupTime||b.approxTime||farm.lastStepTime||0),shipFlights=importMissions(b,Number(b.approxTime||backupTime),now,warnings);
  const retained=fresh?{}:Object.fromEntries(['videoDoubler','earningsMode','earningsScale','researchCostScale'].filter(k=>existing.farm?.[k]!==undefined).map(k=>[k,existing.farm[k]]));
  const cfg={
-  version:1,label:'Imported Egg Inc Virtue farm',
+  version:1,label:'Imported Egg Inc. Virtue farm',
   farm:{fuelTank,shipFlights,virtue:S.EGGS[eggId-50],claimed,delivered,research,epic,habs,vehicles,silos:Math.max(1,Number(farm.silosOwned||1)),cash,soulEggs:Number(b.game?.soulEggsD||b.game?.soulEggs||0),shiftCount:Number(b.virtue.shiftCount||0),proPermit:pro,videoDoubler:true,earningsMode:'offline',...retained,colleggtibles:colleggtibles.bonuses,colleggtibleTiers:colleggtibles.tiers,colleggtibleOverrides:colleggtibles.overrides,loadouts,activeSet:'current'},
   plan:{...structuredClone(existing?.plan||{}),start:now,target:!fresh&&existing?.plan?.target!==undefined?existing.plan.target:Math.min(490,claimed.reduce((a,b)=>a+b,0)+10),eventTimezone:existing?.plan?.eventTimezone||'America/Los_Angeles',maxDays:existing?.plan?.maxDays??90,maxSwitches:existing?.plan?.maxSwitches??12,sequence:structuredClone(existing?.plan?.sequence??DEFAULT_ROUTE),initialPhysicalPurchases:false,ships:{mode:'custom-two-visits',slots:existing?.plan?.ships?.slots??3,visits:Ships.plannedVisits(existing?.plan?.ships)}},
-  importInfo:{timestamp:backupTime,warnings,inventory,flightSource:b.artifactsDb?'backup':'unavailable',colleggtibleSource:colleggtibles.source,colleggtibleMatches:colleggtibles.matched,colleggtibleMappedContracts:colleggtibles.mapped,colleggtibleUnresolved:colleggtibles.unresolved,scope:accountOnly?'account':'farm',currentVirtueFarmFound:!!activeFarm,source:'Egg Inc player backup'}
+  importInfo:{timestamp:backupTime,warnings,inventory,flightSource:b.artifactsDb?'backup':'unavailable',colleggtibleSource:colleggtibles.source,colleggtibleMatches:colleggtibles.matched,colleggtibleMappedContracts:colleggtibles.mapped,colleggtibleUnresolved:colleggtibles.unresolved,scope:accountOnly?'account':'farm',currentVirtueFarmFound:!!activeFarm,source:'Egg Inc. player backup'}
  };
  if(accountOnly){
   const base=structuredClone(existing||blankFarm(now));
   cfg.farm={...base.farm,...Object.fromEntries(ACCOUNT_KEYS.map(key=>[key,cfg.farm[key]]))};
   cfg.plan={...base.plan,target:fresh?cfg.plan.target:base.plan.target};
-  cfg.label='Imported Egg Inc account data';
+  cfg.label='Imported Egg Inc. account data';
  }
  cfg.farm.manualAccountData=false;
  cfg.farm.manualFarmData=accountOnly?existing?.farm?.manualFarmData===true:false;
@@ -72,10 +72,10 @@ function importBackup(input,existing,now=Date.now()/1000,{scope='farm'}={}){
  delete cfg.farm.manualEpicResearch;
  delete cfg.farm.colleggtibleTiersInferred;
  if(!cfg.farm.colleggtibleOverrides)delete cfg.farm.colleggtibleOverrides;
- if(!pro)warnings.push('Standard permit: 2 artifacts, 2 silos and half offline earnings.');warnings.push('Imported values reflect the last saved backup. Population is treated as full. Video doubler is '+(cfg.farm.videoDoubler?'assumed active.':'configured inactive.'));
+ if(!pro)warnings.push('Standard permit: 2 artifacts, 2 silos, and half offline earnings.');warnings.push('Imported values reflect the last saved backup. Population is treated as full. Video doubler is '+(cfg.farm.videoDoubler?'assumed active.':'configured inactive.'));
  if(farm.activeBoosts?.length)warnings.push('Active boosts are not simulated.');
  if(b.virtue.afx?.fuelingEnabled||b.virtue.afx?.tankFillingEnabled)warnings.push('Fuel diversion is modeled only during listed ship-fueling steps; pause other fueling for the predicted delivery rate.');
- warnings.push(accountOnly?'Account data was refreshed. Farm upgrades, equipped gear, gems, current Virtue, start time and planning goals are retained.':'Farm data and equipped artifacts were refreshed; the plan starts now. Planning goals are retained.');
+ warnings.push(accountOnly?'Account data was refreshed. Farm upgrades, equipped gear, gems, current Virtue, start time, and planning goals are retained.':'Farm data and equipped artifacts were refreshed; the plan starts now. Planning goals are retained.');
  if(scope==='auto'&&!activeFarm)warnings.push('Account information has been loaded, but no current Virtue farm was found.');
  warnings.push('Tank output uses the standard rate for the imported capacity; adjust it for auxiliary upgrades.');
  if(!b.artifactsDb)warnings.push('The backup did not include mission records. Sync the game and use the green import arrow to refresh existing Virtue flights.');

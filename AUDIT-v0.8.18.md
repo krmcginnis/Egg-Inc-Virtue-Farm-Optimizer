@@ -1,4 +1,4 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.17 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.18 — Release Audit
 
 v0.8.17 moves EID loading and an unlabeled backup timestamp into the sidebar,
 with consistent headers across all pages. Current validation is in the v0.8.17
@@ -168,7 +168,7 @@ execution remain untested here.
 ## UI batch in progress — 2026-10-05
 
 Bundled 20 original egg images for offline display: the five Virtue eggs, Soul
-and Truth eggs, and all 13 Colleggtibles. Seven images come from the Egg Inc
+and Truth eggs, and all 13 Colleggtibles. Seven images come from the Egg Inc.
 Wiki image host; all 13 Colleggtibles use official Auxbrain asset URLs in the game catalog.
 Per-image source details and attribution are included under assets/eggs.
 
@@ -312,8 +312,8 @@ and the configured update source. The published workflow repeats these checks.
 
 ## Compact account import — v0.7.3
 
-The Egg Inc ID and icon-only green arrow now sit to the left of the farm file
-buttons in the header; the standalone Load from Egg Inc card is removed.
+The Egg Inc. ID and icon-only green arrow now sit to the left of the farm file
+buttons in the header; the standalone Load from Egg Inc. card is removed.
 The saved backup timestamp stays visible beneath the toolbar, with a year,
 timezone and machine-readable time. It uses the backup timestamp rather than
 the moment of import. Import Details retains warnings and import scope.
@@ -1450,3 +1450,32 @@ The public release targets the exact app commit and contains both verified asset
 
 This final proof is recorded after release verification without replacing or
 repackaging the immutable release assets.
+
+
+## Sidebar polish and research disclosure — v0.8.18
+
+EID controls sit above page navigation. Input and arrow heights are 32px
+(previously 36px), with a 22px arrow and smaller input padding/text. The sidebar
+backup and Planning backup context omit weekday and seconds while preserving
+ISO metadata, date, minute, and timezone. Full timeline timestamps retain their
+existing precision. Common Research starts expanded; fully completed tiers
+start collapsed and show (Maxed) directly after the tier name. Filters, manual
+editing, and validation disclosure retain their existing behavior.
+
+App, import, help, and exported wording use Egg Inc. and Oxford commas in
+three-or-more-item prose lists. Historical timeline presentation also normalizes
+Egg Inc. wording without changing recorded actions or calculations. Vendor/game
+reference data and source URLs retain their original content.
+
+Validation and Windows publication proof are recorded below after completion.
+
+Local validation: npm ci/build and diff checks pass. Desktop Chromium
+page-navigation, import-account, and research-artwork suites pass at
+1440–1000px, including sidebar ordering and 32px controls, compact timestamps,
+real synthetic protobuf imports, persisted EID/username display, reset/undated
+backups, expanded research, tier-level (Maxed) labels, research filtering,
+manual locks, exact remaining costs, and saved-farm round trips.
+Shift-rates, physical-preview, timezones, opening-discount, release-state,
+and prepare-publish checks pass. No catalog/rate/purchase/search logic changes.
+Worker text changes only reflect the shared Egg Inc. wording normalization;
+recorded actions and numerical replay behavior remain unchanged.

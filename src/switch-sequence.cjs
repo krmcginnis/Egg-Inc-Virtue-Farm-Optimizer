@@ -13,7 +13,7 @@ function parse(value,options={}){
   if(names.has(lower))return [lower];
   if(/^[CKIRH]\d*$/.test(upper))return [codes[upper[0]]];
   if(/^[CKIRH]+$/.test(upper))return [...upper].map(code=>codes[code]);
-  throw Error('Unrecognized switch sequence item '+JSON.stringify(token)+'. Use C, K, I, R, H or full Virtue names, separated by spaces, commas or arrows.');
+  throw Error('Unrecognized switch sequence item '+JSON.stringify(token)+'. Use C, K, I, R, H, or full Virtue names, separated by spaces, commas, or arrows.');
  });
 }
 function normalize(value,virtue,options){let route=parse(value,options);if(route[0]!==virtue)route.unshift(virtue);return route.filter((egg,i)=>i===0||egg!==route[i-1]);}

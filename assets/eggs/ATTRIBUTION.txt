@@ -4,31 +4,31 @@ Egg, Inc. artwork belongs to Auxbrain, Inc.
 These are the original egg images, bundled locally for offline display.
 Wiki index: https://egg-inc.fandom.com/wiki/Eggs
 
-Seven Virtue and mystical egg images were retrieved from the Egg Inc Wiki image host.
+Seven Virtue and mystical egg images were retrieved from the Egg Inc. Wiki image host.
 All thirteen Colleggtible images use official Auxbrain asset URLs from the game catalog.
 The app is an unofficial fan planning tool.
 
 Image sources (retrieved 2026-10-05):
 
-curiosity — Egg Inc Wiki
+curiosity — Egg Inc. Wiki
 https://static.wikia.nocookie.net/egg-inc/images/c/c2/Egg_curiosity.png/revision/latest
 
-kindness — Egg Inc Wiki
+kindness — Egg Inc. Wiki
 https://static.wikia.nocookie.net/egg-inc/images/f/f7/Egg_kindness.png/revision/latest
 
-integrity — Egg Inc Wiki
+integrity — Egg Inc. Wiki
 https://static.wikia.nocookie.net/egg-inc/images/f/f3/Egg_integrity.png/revision/latest
 
-resilience — Egg Inc Wiki
+resilience — Egg Inc. Wiki
 https://static.wikia.nocookie.net/egg-inc/images/6/61/Egg_resilience.png/revision/latest
 
-humility — Egg Inc Wiki
+humility — Egg Inc. Wiki
 https://static.wikia.nocookie.net/egg-inc/images/b/b9/Egg_humility.png/revision/latest
 
-truth — Egg Inc Wiki
+truth — Egg Inc. Wiki
 https://static.wikia.nocookie.net/egg-inc/images/d/da/Egg_truth.png/revision/latest
 
-soul — Egg Inc Wiki
+soul — Egg Inc. Wiki
 https://static.wikia.nocookie.net/egg-inc/images/6/6c/Egg_soul.png/revision/latest
 
 carbon-fiber — Auxbrain game catalog
