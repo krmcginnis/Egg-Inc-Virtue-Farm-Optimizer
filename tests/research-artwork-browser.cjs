@@ -24,6 +24,7 @@ const root = path.resolve(__dirname, "..");
     await page.goto("http://127.0.0.1:" + server.address().port); await page.waitForFunction(() => !!globalThis.VirtueApp);
     await page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Farm.json")), farm);
     assert.equal(await page.locator("#epic-fields .research-icon").count(), 22); assert.equal(await page.locator("#research-body .research-icon").count(), 56);
+    assert.equal(await page.locator("#epic-hold_to_research").getAttribute("max"), "20"); await page.fill("#epic-hold_to_research", "20"); assert.equal(await page.inputValue("#epic-hold_to_research"), "20"); await page.evaluate(() => VirtueApp.refresh()); assert.equal((await page.evaluate(() => VirtueApp.getConfig())).farm.epic.hold_to_research, 20);
     const before = await page.evaluate(() => VirtueApp.getConfig());
     for (const r of S.D.epic) { assert.equal(await page.getByLabel(titleCase(r.name), { exact: true }).inputValue(), String(farm.farm.epic[r.id])); assert.equal(await page.locator(`[data-research-icon="${r.id}"] .research-icon`).getAttribute("aria-hidden"), "true"); }
     assert.deepEqual(before.farm.epic, farm.farm.epic);
