@@ -15,7 +15,8 @@ const FarmIcons = require("./farm-icons.cjs");
 const SelectionReadout = require("./selection-readout.cjs");
 const AppUpdates = require("./app-updates.cjs");
 const $ = (id) => document.getElementById(id), D = S.D;
-const EID_KEY = "virtue-optimizer.eid.v1";
+const EID_KEY = "virtue-optimizer.eid.v1", EID_NAME_KEY = "virtue-optimizer.eid-name.v1";
+let savedEid = "", savedEidName = "";
 let config = blankFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
 const effort = { quick: { width: 12, branches: 8, maxDepth: 500, maxMs: 1e4 }, balanced: { width: 32, branches: 12, maxDepth: 1200, maxMs: 45e3 }, thorough: { width: 72, branches: 20, maxDepth: 2200, maxMs: 18e4 } };
 const labels = { farm: "Farm & Account", planning: "Planning", research: "Farm Research", artifacts: "Artifacts & stones", results: "Purchase timeline", help: "How it works" };
@@ -1469,15 +1470,32 @@ $("undo-reset").onclick = () => {
 $("dismiss-reset").onclick = () => {
   resetSnapshot = null; $("reset-undo").hidden = true; $("page-title").focus({preventScroll:true});
 };
+function eidForSync() {
+  const typed = $("eid").value.trim().toUpperCase();
+  return /^EI\d{16}$/.test(typed) ? typed : savedEid;
+}
+function showEidIdentity() {
+  if (document.activeElement === $("eid")) $("eid").value = savedEid;
+  else $("eid").value = savedEidName || savedEid;
+}
 async function loadEidData() {
   if (worker || importingBackup) return;
+  const eid = eidForSync();
   const epoch = loadEpoch;
   importingBackup = "auto";
   busy(false);
   show("Requesting your saved Egg Inc backup\u2026");
   try {
-    const b = await A.loadBackup($("eid").value);
+    const b = await A.loadBackup(eid);
     if (epoch !== loadEpoch) return;
+    savedEid = A.eid(eid);
+    savedEidName = String(b.backup?.userName || "").trim();
+    try {
+      localStorage.setItem(EID_KEY, savedEid);
+      if (savedEidName) localStorage.setItem(EID_NAME_KEY, savedEidName);
+      else localStorage.removeItem(EID_NAME_KEY);
+    } catch { }
+    showEidIdentity();
     const next = currentFarmImport(b);
     config = next;
     result = null;
@@ -1498,11 +1516,22 @@ async function loadEidData() {
 $("import-eid").onclick = loadEidData;
 function persistEid() {
   const value = $("eid").value.trim().toUpperCase();
+  if (!value) {
+    savedEid = "";
+    savedEidName = "";
+    try { localStorage.removeItem(EID_KEY); localStorage.removeItem(EID_NAME_KEY); } catch { }
+    return;
+  }
+  if (!/^EI\d{16}$/.test(value)) return;
+  if (value !== savedEid) savedEidName = "";
+  savedEid = value;
   try {
-    if (!value) localStorage.removeItem(EID_KEY);
-    else if (/^EI\d{16}$/.test(value)) localStorage.setItem(EID_KEY, value);
+    localStorage.setItem(EID_KEY, savedEid);
+    if (!savedEidName) localStorage.removeItem(EID_NAME_KEY);
   } catch { }
 }
+$("eid").addEventListener("focus", () => { $("eid").value = savedEid || $("eid").value; $("eid").select(); });
+$("eid").addEventListener("blur", () => { persistEid(); showEidIdentity(); });
 $("eid").addEventListener("input", persistEid);
 $("eid").addEventListener("keydown", (event) => {
   if (event.key === "Enter") { event.preventDefault(); persistEid(); loadEidData(); }
@@ -1650,7 +1679,11 @@ document.addEventListener("input", (e) => {
 });
 EggIcons.decorateStatic();
 renderForm();
-try { $("eid").value = localStorage.getItem(EID_KEY) || ""; } catch { }
+try {
+  savedEid = localStorage.getItem(EID_KEY) || "";
+  savedEidName = localStorage.getItem(EID_NAME_KEY) || "";
+} catch { }
+showEidIdentity();
 tab("farm");
 sizeRunBar();
 show("Enter your Egg Inc ID and use the green arrow, or enable manual editing, before planning.");
