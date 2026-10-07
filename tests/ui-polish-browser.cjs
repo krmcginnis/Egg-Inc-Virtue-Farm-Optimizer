@@ -9,7 +9,7 @@ const root = path.resolve(__dirname, "..");
     const page = await browser.newPage({ viewport: { width: 1366, height: 768 } }), errors = [];
     page.on("pageerror", error => errors.push(error.message));
     await page.goto("file://" + path.join(root, "index.html")); await page.waitForFunction(() => !!globalThis.VirtueApp);
-    const load = raw => page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Farm.json")), raw);
+    const load = async raw => { await page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Farm.json")), raw); await page.click(raw.result ? '[data-tab="results"]' : '[data-tab="farm"]'); };
     const farm = blank();
     Object.assign(farm.farm, { cash: 1e18, soulEggs: 1e20, claimed: Array(5).fill(5), proPermit: true, manualFarmData: true, manualAccountData: true, epic: Object.fromEntries(S.D.epic.map(r => [r.id, r.levels])) });
     Object.assign(farm.plan, { target: 25, maxSwitches: 0, strategy: "user", autoSequence: false, sequence: ["curiosity"] });
@@ -73,7 +73,7 @@ const root = path.resolve(__dirname, "..");
     await page.evaluate(() => { document.getElementById("stop").hidden = false; document.getElementById("review-inputs").hidden = false; document.getElementById("run-progress").hidden = false; document.getElementById("run-summary").textContent = "Checking Opening 100 / 100"; document.getElementById("run-detail").textContent = "C1: 300m · K1: 300m · Best so far: 137d 18h · Searching for 59s"; });
     for (const [width, height] of [[1366, 768], [1100, 620], [1050, 620], [900, 600], [800, 600], [683, 384], [390, 600], [320, 600]]) {
       await page.setViewportSize({ width, height });
-      for (const section of ["farm", "planning", "research", "artifacts", "results", "help"]) {
+      for (const section of ["account", "farm", "planning", "results", "help"]) {
         await page.click(`[data-tab="${section}"]`);
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), section + " overflow at " + width);
       }

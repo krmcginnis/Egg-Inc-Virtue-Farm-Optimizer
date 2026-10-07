@@ -24,7 +24,8 @@ const EID_KEY = "virtue-optimizer.eid.v1", EID_NAME_KEY = "virtue-optimizer.eid-
 let savedEid = "", savedEidName = "", eidDraft = "";
 let config = Defaults.freshFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
 const effort = { quick: { width: 12, branches: 8, maxDepth: 500, maxMs: 1e4 }, balanced: { width: 32, branches: 12, maxDepth: 1200, maxMs: 45e3 }, thorough: { width: 72, branches: 20, maxDepth: 2200, maxMs: 18e4 } };
-const labels = { farm: "Farm & Account", planning: "Planning", research: "Common Research", artifacts: "Artifacts", results: "Purchase timeline", help: "How it works" };
+let activeLoadoutTab = "current";
+const labels = { account: "Account", farm: "Virtue Farm", planning: "Planning", results: "Purchase timeline", help: "How it works" };
 const colNames = { earnings: "Earnings", awayEarnings: "Away earnings", ihr: "Internal hatchery", elr: "Egg laying", shippingCap: "Shipping capacity", habCap: "Hab capacity", vehicleCost: "Vehicle cost", habCost: "Hab cost", researchCost: "Research cost" };
 function el(tag, text, cls) {
   const e = document.createElement(tag);
@@ -88,23 +89,26 @@ function timestamp(t, zone, includeYear = false) {
   return timestampFormats.get(key).format(new Date(t * 1e3));
 }
 function tab(name, focusHeading = false) {
-  if (!labels[name]) name = "farm";
+  const section = name === "artifacts" ? "artifacts-card" : name === "research" ? "common-research-card" : null;
+  if (section) name = "farm";
+  if (!labels[name]) name = "account";
   document.querySelectorAll("[data-tab]").forEach((x) => {
     x.classList.toggle("active", x.dataset.tab === name);
     if (x.dataset.tab === name) x.setAttribute("aria-current", "page");
     else x.removeAttribute("aria-current");
   });
   document.querySelectorAll("[data-page]").forEach((x) => x.hidden = x.dataset.page !== name);
-  document.querySelector(".import-controls").hidden = name !== "farm";
-  document.querySelector(".import-status").hidden = name !== "farm";
+  document.querySelector(".import-controls").hidden = name !== "account";
+  document.querySelector(".import-status").hidden = !["account","farm"].includes(name);
   $("page-title").textContent = titleCase(labels[name]);
   updatePrimaryAction();
   window.scrollTo({ top: 0 });
   SelectionReadout.refresh();
   if (focusHeading) $("page-title").focus({ preventScroll: true });
+  if (section) { if (section === "common-research-card") $("common-research-details").open = true; $(section).scrollIntoView({block:"start"}); }
 }
 function updatePrimaryAction() {
-  const next = {farm:"artifacts", artifacts:"research", research:"planning"}[document.querySelector('[data-tab].active')?.dataset.tab];
+  const next = {account:"farm", farm:"planning"}[document.querySelector('[data-tab].active')?.dataset.tab];
   const reviewing = !!next;
   $("optimize").textContent = next ? "Continue to " + labels[next] : "Find Fastest Plan";
   $("optimize").disabled = !!worker || !!importingBackup || (!reviewing && !!invalidField);
@@ -238,7 +242,9 @@ function revealFleetField(node) {
 }
 function reviewField(id) {
   const node = $(id);
-  tab(node?.closest("[data-page]")?.dataset.page || "farm");
+  tab(node?.closest("[data-page]")?.dataset.page || "account");
+  const loadout = node?.closest("[data-loadout-panel]");
+  if (loadout) selectLoadout(loadout.dataset.loadoutPanel);
   if (node?.closest(".research-tier") && $("research-filter").value) { $("research-filter").value = ""; filterResearch(); }
   for (let parent = node?.parentElement; parent; parent = parent.parentElement) if (parent.tagName === "DETAILS") parent.open = true;
   if (node) {
@@ -333,7 +339,7 @@ function updateDataSources() {
   }
 }
 const editingGroups = {
-  manualAccountData: {toggles:["manualAccountData"],fields:["account-basic-fields", "account-fuel-fields", "account-progress-fields", "col-fields", "epic-fields"]},
+  manualAccountData: {toggles:["manualAccountData", "manualAccountFuel"],fields:["account-basic-fields", "account-fuel-fields", "account-progress-fields", "col-fields", "epic-fields"]},
   manualFarmData: {toggles:["manualFarmData", "manualFarmResearch", "manualFarmArtifacts"],fields:["farm-basic-fields", "hab-fields", "vehicle-fields", "research-fields", "current-loadout-fields", "earnings-loadout-fields", "delivery-loadout-fields", "starting-set-fields"]}
 };
 function updateAccountEditing() {
@@ -359,6 +365,7 @@ function updateAccountEditing() {
 }
 function renderForm() {
   const f = config.farm, p = config.plan;
+  activeLoadoutTab = "current";
   $("manualAccountData").checked = f.manualAccountData ?? (f.manualColleggtibles === true || f.manualEpicResearch === true);
   $("manualFarmData").checked = f.manualFarmData === true;
   upgradeStandardSequence(p, f.virtue);
@@ -527,7 +534,7 @@ function currentFarmImport(backup) {
   }
   if (draft) {
     draft.fields = Object.fromEntries(Object.entries(draft.fields).filter(([id]) => next.importInfo.scope === "account"
-      ? !["soulEggs", "shiftCount", "proPermit", "tankCapacity", "tankOutput", "manualAccountData", "manualColleggtibles", "manualEpicResearch"].includes(id) && !/^(fuel-|claimed-|delivered-|epic-|col-)/.test(id)
+      ? !["soulEggs", "shiftCount", "proPermit", "tankCapacity", "tankOutput", "manualAccountData", "manualAccountFuel", "manualColleggtibles", "manualEpicResearch"].includes(id) && !/^(fuel-|claimed-|delivered-|epic-|col-)/.test(id)
       : id !== "start" && ($("planning-card").contains($(id)) || $("ship-planning").contains($(id)) || id.startsWith("floor-"))));
     next.draftInputs = draft;
   }
@@ -553,7 +560,8 @@ function restoreUpdateSnapshot(saved, message = "Session restored.") {
   $("result-content").hidden = !result;
   $("empty-results").hidden = !!result;
   if (result) { result.summary = U.summarize(resultConfig, result); renderResult(); if (dirty) markInputsChanged(); }
-  tab(saved.tab === "results" && !result ? "farm" : (labels[saved.tab] ? saved.tab : "farm"), true);
+  selectLoadout(saved.loadoutTab || "current");
+  tab(saved.tab === "results" && !result ? "account" : (saved.tab || "account"), true);
   show(message + (saved.interrupted ? " The interrupted search needs to be run again." : "") + replayError + (!valid ? " Review the marked inputs before planning." : ""), !!replayError || !valid);
 }
 function renderShipMissions(visit, missions) {
@@ -606,9 +614,23 @@ function renderShipMissions(visit, missions) {
 function renderLoadouts() {
   const host = $("loadout-fields");
   host.replaceChildren();
+  const tabs = el("div", undefined, "loadout-tabs"); tabs.setAttribute("role","tablist"); tabs.setAttribute("aria-label","Artifact sets");
+  for (const key of ["current","earnings","delivery"]) {
+    const button = el("button", key[0].toUpperCase()+key.slice(1), "secondary"); button.type = "button";
+    button.id = "loadout-tab-"+key; button.dataset.loadoutTab = key; button.setAttribute("role","tab"); button.setAttribute("aria-controls","loadout-panel-"+key);
+    button.onclick = () => selectLoadout(key);
+    button.onkeydown = event => {
+      const keys = ["current","earnings","delivery"], i = keys.indexOf(key);
+      const next = event.key === "ArrowRight" ? keys[(i+1)%3] : event.key === "ArrowLeft" ? keys[(i+2)%3] : event.key === "Home" ? keys[0] : event.key === "End" ? keys[2] : null;
+      if (next) { event.preventDefault(); selectLoadout(next); $("loadout-tab-"+next).focus(); }
+    };
+    tabs.append(button);
+  }
+  host.append(tabs);
   const limit = $("proPermit").value === "true" ? 4 : 2;
   for (const key of ["current", "earnings", "delivery"]) {
     const section = el("div", void 0, "loadout");
+    section.id = "loadout-panel-"+key; section.dataset.loadoutPanel = key; section.setAttribute("role","tabpanel"); section.tabIndex = 0; section.setAttribute("aria-labelledby","loadout-tab-"+key);
     const heading = el("div", void 0, "loadout-heading"), source = el("span", void 0, "source-badge");
     source.id = key + "-set-source";
     if (key === "current") source.dataset.source = "farm";
@@ -637,7 +659,13 @@ function renderLoadouts() {
     host.append(section);
     for (let i = 0; i < limit; i++) renderStones(key, i, config.farm.loadouts[key]?.[i]?.stones || []);
   }
+  selectLoadout(activeLoadoutTab);
   updateArtifactNotes();
+}
+function selectLoadout(key) {
+  activeLoadoutTab = ["current","earnings","delivery"].includes(key) ? key : "current";
+  document.querySelectorAll("[data-loadout-tab]").forEach(button => { const selected = button.dataset.loadoutTab === activeLoadoutTab; button.setAttribute("aria-selected",String(selected)); button.tabIndex = selected ? 0 : -1; });
+  document.querySelectorAll("[data-loadout-panel]").forEach(panel => panel.hidden = panel.dataset.loadoutPanel !== activeLoadoutTab);
 }
 function updateLoadoutCard(key, i) {
   const art = S.AMAP[$(`artifact-${key}-${i}`)?.value];
@@ -695,7 +723,7 @@ function renderExistingFlights() {
     return el("li", (duration ? duration + " " : "") + ship + " · " + (Number.isFinite(f.returnAt) ? (f.returnAt <= start ? "ready to collect at plan start" : "returns " + timestamp(f.returnAt, zone, true)) : "return time unavailable"));
   }));
   $("flight-status").textContent = flights.length ? flights.length + " existing Virtue flight" + (flights.length === 1 ? "" : "s") + " accounted for." : source === "backup" ? "No active Virtue flights in the imported backup." : source === "unavailable" ? "Flight records were not included in this backup." : "No flight records loaded. Selected mission slots are assumed available.";
-  $("flight-help").textContent = source === "unavailable" ? "Sync the game and use the green import arrow to refresh flight information before relying on the ship schedule." : source === "backup" ? "Loaded automatically with your Egg Inc backup. Sync the game and use the green import arrow to refresh. Existing launches do not consume planned fuel again." : "Use the green import arrow to import current flight information automatically. Saved farms and previous plans retain their flight records.";
+  $("flight-help").textContent = source === "unavailable" ? "Sync the game and use the import arrow on Account to refresh flight information before relying on the ship schedule." : source === "backup" ? "Loaded automatically with your Egg Inc backup. Sync the game and use the import arrow on Account to refresh. Existing launches do not consume planned fuel again." : "Use the import arrow on Account to refresh current flights. Saved farms and previous plans retain their flight records.";
 }
 function syncDefaultTarget() {
   if (config.plan.targetMode !== Defaults.targetMode) return;
@@ -1397,7 +1425,7 @@ async function loadFile(file) {
     $("empty-results").hidden = false;
     const loaded = !savedFarm && next.importInfo.scope === "account" ? "Account information has been loaded, but no current Virtue farm was found." : "Farm loaded.";
     show(valid ? loaded + " Check the target and start time before planning." : loaded + " Planning still needs attention: " + $("notice").textContent, !valid);
-    tab("farm");
+    tab("account");
     } catch (e) {
     show("Could not load file: " + e.message, true);
   }
@@ -1446,7 +1474,7 @@ $("fit-sequence").onclick = () => {
 $("clear-data").onclick = () => {
   let saved;
   try { saved = gather(); } catch { saved = {...structuredClone(config), draftInputs:captureDraftInputs()}; }
-  resetSnapshot = {config:saved,result,resultConfig,dirty:dirty || !!worker && !!result,tab:document.querySelector("[data-tab].active").dataset.tab};
+  resetSnapshot = {config:saved,result,resultConfig,dirty:dirty || !!worker && !!result,tab:document.querySelector("[data-tab].active").dataset.tab,loadoutTab:activeLoadoutTab};
   $("reset-undo").hidden = false;
   loadEpoch++;
   importingBackup = null;
@@ -1467,12 +1495,12 @@ $("clear-data").onclick = () => {
   $("result-content").hidden = true;
   $("empty-results").hidden = false;
   renderForm();
-  tab("farm");
+  tab("account");
   show("Data cleared. Undo Reset restores your previous inputs in this session. Enter your farm values to start from scratch; exported files are still available to load.");
 };
 $("undo-reset").onclick = () => {
   if (!resetSnapshot) return;
-  const restoreTab = resetSnapshot.tab;
+  const restoreTab = resetSnapshot.tab, restoreLoadout = resetSnapshot.loadoutTab;
   worker?.terminate(); worker = null; importingBackup = null; busy(false);
   loadEpoch++; clearTimeout(refreshTimer);
   ({config,result,resultConfig,dirty} = resetSnapshot);
@@ -1480,7 +1508,8 @@ $("undo-reset").onclick = () => {
   $("reset-undo").hidden = true;
   renderForm();
   if (result) renderResult();
-  tab(restoreTab === "results" && !result ? "farm" : restoreTab, true);
+  selectLoadout(restoreLoadout || "current");
+  tab(restoreTab === "results" && !result ? "account" : restoreTab, true);
   show("Reset undone. Your farm, planning goals, and previous timeline have been restored.");
 };
 $("dismiss-reset").onclick = () => {
@@ -1584,6 +1613,7 @@ function copySet(key) {
     $("activeSet").value = "current";
     (config.uiProvenance ||= {}).farm = "manual";
     renderLoadouts();
+    selectLoadout("current");
     markInputsChanged();
     refresh();
     show((key === "earnings" ? "Earnings" : "Delivery") + " loadout copied to Current. Equip these artifacts and stones in the game before starting the plan.");
@@ -1661,9 +1691,8 @@ function filterResearch() {
 $("research-filter").oninput = filterResearch;
 $("clear-research-filter").onclick = () => { $("research-filter").value = ""; filterResearch(); $("research-filter").focus(); };
 $("optimize").onclick = () => {
-  if (document.querySelector('[data-tab="farm"]').classList.contains("active")) tab("artifacts", true);
-  else if (document.querySelector('[data-tab="artifacts"]').classList.contains("active")) tab("research", true);
-  else if (document.querySelector('[data-tab="research"]').classList.contains("active")) tab("planning", true);
+  const next = {account:"farm", farm:"planning"}[document.querySelector("[data-tab].active")?.dataset.tab];
+  if (next) tab(next, true);
   else optimize();
 };
 $("review-farm").onclick = () => tab("farm", true);
@@ -1779,7 +1808,7 @@ try {
   savedEidName = localStorage.getItem(EID_NAME_KEY) || "";
 } catch { }
 showEidIdentity();
-tab("farm");
+tab("account");
 sizeRunBar();
 show("Enter your Egg Inc ID and use the green arrow, or enable manual editing, before planning.");
 AppUpdates.initialize({
@@ -1788,8 +1817,8 @@ AppUpdates.initialize({
     let saved;
     try { saved = gather(); }
     catch { saved = {...structuredClone(config), draftInputs:captureDraftInputs()}; }
-    return {version:1,savedAt:Date.now()/1000,config:saved,result,resultConfig,dirty,interrupted:!!worker,tab:document.querySelector("[data-tab].active").dataset.tab};
+    return {version:1,savedAt:Date.now()/1000,config:saved,result,resultConfig,dirty,interrupted:!!worker,tab:document.querySelector("[data-tab].active").dataset.tab,loadoutTab:activeLoadoutTab};
   },
   restore: restoreUpdateSnapshot
 });
-globalThis.VirtueApp = { S, O, I, A, getConfig: () => gather(), getResult: () => result, condensedActions, summarize: U.summarize, loadFile, refresh, tab };
+globalThis.VirtueApp = { S, O, I, A, selectLoadout, getConfig: () => gather(), getResult: () => result, condensedActions, summarize: U.summarize, loadFile, refresh, tab };

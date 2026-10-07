@@ -33,11 +33,10 @@ YOUR FARM
 Click Start from scratch to clear all farm values, upgrades, artifacts and the
 current plan. Any running search stops. Exported files remain available to load.
 
-The app opens with an empty farm. When a recovery copy exists in this browser,
-choose Restore Previous Session to recover unfinished inputs and the last plan.
-Start from Scratch and turning recovery off clear the recovery copy.
-EID is excluded; recovery is specific to this browser and app address.
-Save Farm and Save Plan remain portable backups.
+The app opens on Account with an empty farm. Load your account or saved farm,
+continue to Virtue Farm to review current upgrades, gear, fuel and flights, then
+continue to Planning. Save Farm and Save Plan remain portable backups. Reset
+offers Undo for the current session; browser recovery is not used.
 
 Enter your Egg Inc ID and select the green arrow to load account information
 and the current Virtue farm from one backup request. If no Virtue farm is active,
@@ -45,8 +44,10 @@ account information still loads, with a notice at the top. Existing starting
 farm values, equipped gear and start time are kept in that case. A found farm
 refreshes those values and sets the start to now. Planning goals are retained. Owned Virtue inventory refreshes the automatic
 earnings and delivery sets. Existing flight fuel is not spent again.
-Account and farm values are separate groups on Farm & Account with independent
-Edit Manually checkboxes. Account imports lock account fields; a found farm also
+Account and Virtue Farm are separate pages with independent Edit Manually
+settings. Account holds Soul Eggs, permit, switch history, TE progress,
+Colleggtibles and Epic Research. Virtue Farm holds current farm upgrades,
+tabbed artifact sets, Common Research, fuel and flights. Account imports lock account fields; a found farm also
 locks farm fields. Goals remain editable. Artifact sets unlock with Edit Farm Manually.
 
 Use Load farm for your saved farm or JSON
@@ -797,3 +798,13 @@ select Empty to clear, or close/Escape to cancel. Catalog rarities, effects and
 socket counts are shown. Current, Research & Earnings and Delivery remain separate.
 Images work offline; readable item/effect text remains if an image cannot load.
 Manual gear retains the same legality checks, permit limits and saving behavior.
+
+ACCOUNT → VIRTUE FARM → PLANNING (v0.8.10)
+Account is the opening/import page. Continue to Virtue Farm to review the
+current farm in two columns: upgrades and expandable Common Research on the
+left, artifacts, fuel and flights on the right. Artifact tabs show Current,
+Earnings or Delivery; arrow keys, Home and End switch tabs. Copying a set shows
+Current for verification. Research tiers keep their maxed/collapsed behavior.
+Fuel retains the account manual-edit setting, with a linked toggle on Virtue
+Farm. Continue to Planning for targets, routes, dates, events and missions.
+The solver, import rules, saved farm format and updater remain unchanged.

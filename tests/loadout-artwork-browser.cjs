@@ -31,7 +31,7 @@ const slot = (artifactId, ...stones) => ({ artifactId, stones });
     const farm = blank(); Object.assign(farm.farm, { manualAccountData: true, manualFarmData: true, proPermit: true });
     const loadout = [slot("puzzle-cube-4-3", "lunar-stone-4", "lunar-stone-4", "shell-stone-4"), slot("lunar-totem-4-2", "lunar-stone-4", null), slot("tungsten-ankh-3-3", "shell-stone-3", "shell-stone-4", "lunar-stone-4"), slot("demeters-necklace-1-0")];
     farm.farm.loadouts = Object.fromEntries(["current", "earnings", "delivery"].map(key => [key, structuredClone(loadout)]));
-    async function load(target, value) { await target.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Farm.json")), value); await target.click('[data-tab="artifacts"]'); }
+    async function load(target, value) { await target.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Farm.json")), value); await target.evaluate(()=>VirtueApp.tab("artifacts"));await target.click("#loadout-tab-earnings"); }
     async function images(target) { await target.waitForFunction(() => [...document.querySelectorAll(".loadout-card img")].every(image => image.complete && image.naturalWidth === 128)); }
     await page.goto("http://127.0.0.1:" + server.address().port); await page.waitForFunction(() => !!globalThis.VirtueApp);
     await load(page, farm); await images(page);
@@ -81,7 +81,7 @@ const slot = (artifactId, ...stones) => ({ artifactId, stones });
     await page.waitForFunction(() => document.querySelector("#loadout-card-earnings-0 img").hidden);
     assert.match(await cube.innerText(), /Puzzle Cube/); assert.match(await cube.innerText(), /-60% research cost/);
     await page.check("#manualFarmArtifacts"); assert.ok(await page.locator("#artifact-earnings-0").isEnabled());
-    await page.click('[data-tab="farm"]'); await page.selectOption("#proPermit", "false"); await page.click('[data-tab="artifacts"]');
+    await page.click('[data-tab="account"]'); await page.selectOption("#proPermit", "false"); await page.evaluate(()=>VirtueApp.tab("artifacts"));
     assert.equal(await page.locator("#earnings-loadout-fields .loadout-card").count(), 2);
     assert.deepEqual(errors, []);
     console.log("PASS catalog checksums, artifact tier/rarity, horizontal sockets, exact effect text, manual edits/locks, automatic inventory sets, saved-farm roundtrip, layouts 1440–320px, offline artwork, missing-image fallback and Standard Permit slots.");

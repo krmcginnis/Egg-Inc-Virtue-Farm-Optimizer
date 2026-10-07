@@ -407,3 +407,14 @@ aside .update-app{margin-top:auto}
 
 .farm-choice-list .gear-choice-empty{min-height:44px;padding:10px}
 .farm-choice-copy .gear-choice-name{font-size:14px;font-weight:650}
+
+/* Account, current Virtue farm and planning retain compact paired columns. */
+#artifacts-card .loadout-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+#artifacts-card .loadout{margin-top:10px;padding-top:10px}
+.loadout-tabs{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
+.loadout-tabs [aria-selected="true"]{background:#234337;color:#9befc9;outline:1px solid #458265}
+#common-research-details{margin-top:10px}
+#common-research-details>summary{font-weight:600}
+#common-research-details[open]>summary{margin-bottom:12px}
+#common-research-card .research-toolbar{flex-wrap:wrap}
+@media(max-width:500px){#artifacts-card .loadout-grid{grid-template-columns:minmax(0,1fr)}}

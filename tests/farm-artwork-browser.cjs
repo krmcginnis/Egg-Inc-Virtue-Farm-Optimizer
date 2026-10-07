@@ -24,7 +24,7 @@ const root = path.resolve(__dirname, "..");
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } }), errors = [];
     page.on("pageerror", e => errors.push(e.message));
     await page.goto("http://127.0.0.1:" + server.address().port); await page.waitForFunction(() => !!globalThis.VirtueApp);
-    const load = raw => page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Farm.json")), raw);
+    const load = async raw => { await page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Farm.json")), raw); await page.click(raw.result ? '[data-tab="results"]' : '[data-tab="farm"]'); };
     const farm = blank(); Object.assign(farm.farm, { cash: 1e40, soulEggs: 1e20, claimed: Array(5).fill(5), proPermit: true, manualFarmData: true, manualAccountData: true, epic: Object.fromEntries(S.D.epic.map(r => [r.id, r.levels])), research: Object.fromEntries(S.D.research.map(r => [r.id, r.levels])) });
     Object.assign(farm.plan, { target: 25, maxSwitches: 0, strategy: "user", autoSequence: false, sequence: ["curiosity"] });
     await load(farm);

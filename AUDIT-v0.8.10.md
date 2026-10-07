@@ -1,11 +1,10 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.9 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.10 — Release Audit
 
-v0.8.9 adds illustrated hab/vehicle catalogs with current-farm capacity,
-slot-specific prices and current-rate affordability estimates, smaller picker
-artwork, C K I R H fuel/progress ordering, bottom sidebar alignment and a draft
-start-date/time dialog with explicit Ok confirmation.
-Farm & Account and Planning retain
-the compact two-panel desktop layout and share the existing farm configuration.
+v0.8.10 reorganizes setup into Account → Virtue Farm → Planning. Account holds
+progression and permanent bonuses. Virtue Farm combines current upgrades,
+tabbed artifacts, expandable Common Research, fuel and existing flights.
+All three pages retain the compact two-column desktop layout and existing
+shared farm configuration, locks and calculations.
 A small Planning summary shows current Virtue, claimed/pending TE and the last
 backup timestamp. Focused validation is recorded at the end of this audit.
 Solver and game data remain unchanged; earlier UI, asset, import, updater and
@@ -936,5 +935,62 @@ Node release-state and prepare-publish guards pass; packaging verifies 164 runti
 files, ZIP integrity and one current audit. The established Windows workflow
 must validate hidden launcher, updater install/restart/rollback and public-feed
 archive/checksum checks before handover. Local PowerShell is unavailable.
+Solver worker SHA256:
+26a402fae2d31a8c270bf7fd6d03e0e0ebbda684095f4f5c1ad4cb5937b0625a.
+
+
+## Account, Virtue Farm and Planning — v0.8.10
+
+Account is the opening/import page. EID/identity preferences, Soul Eggs, permit,
+lifetime switches, Truth Egg Progress, Colleggtibles and Epic Research are here.
+Virtue Farm combines starting farm values, habs, fleet and Common Research in
+the left column, with artifacts, tank/fuel and existing flights in the right.
+Planning retains its existing goals, strategy, dates/events and planned missions.
+Navigation and Continue buttons follow Account → Virtue Farm → Planning. The
+Planning review button returns to Virtue Farm. Import backup/source information
+remains visible on Account and Virtue Farm; EID controls appear on Account.
+Help, README and flight/research import instructions match the new locations.
+
+Common Research now sits in a closed Review Research disclosure, retaining
+all original levels, tiers, cost previews, filters and completed-tier collapse.
+Artifact Current/Earnings/Delivery tabs show one existing set at a time in a
+compact two-column gear grid (one column on narrow phones). Accessible tablist,
+selected state, one tab stop, arrow/Home/End movement and labeled, focusable
+panels are provided. Tab switching is UI-only and does not change active set,
+gear, goals, saved data or result validity. Copying an alternate set retains
+its existing deep-copy behavior and selects Current for immediate review.
+Manual gear/image/socket choices and automatic inventory sets are unchanged.
+
+Existing account/farm lock groups and source provenance stay intact. A linked
+Edit Account Manually checkbox on the fuel panel controls the same existing
+account setting; it creates no new persisted permissions or solver inputs.
+Validation chooses the destination page, artifact tab or enclosing research
+disclosures/tier and focuses the visible control or corresponding edit toggle.
+Reset/Undo preserves the selected artifact tab. Update handoff captures/restores
+that UI selection; legacy artifacts/research page names route to the integrated
+Virtue Farm panels. Existing farm/plan schema and updater protocol are unchanged.
+
+Validation: npm ci/build, Node syntax, physical-preview, release-state and
+prepare-publish checks pass. All ten Chromium suites pass: page-navigation,
+visual-gear, physical-picker, farm-artwork, research-artwork, loadout-artwork,
+planning-clarity, ui-polish, timeline-readability and update-error. Navigation
+covers panel location/visibility, primary labels, keyboard tab movement,
+non-mutating tab review, copies/stones, shared goals/missions and exact values,
+save/load, cross-page validation, closed research, linked fuel locks,
+Reset/Undo selection, real protobuf/API EID sync and persistent identity.
+Actual browser updater capture/reload/restore retains the selected artifact
+tab and config; injected older artifacts/research snapshots route correctly.
+Existing tests retain actual solver execution/replay, timeline presentation,
+research/physical price previews, Standard/Pro Permit and image fallbacks.
+Paired-column and overflow checks pass from 1440px to 320px, with independent
+short-window sidebar and focus access. Desktop/mobile pages were inspected.
+The import-account suite still lacks its two existing fixture dependencies;
+live-account, Firefox and native screen-reader execution are not claimed.
+
+Packaging verifies 164 runtime files, ZIP integrity and one current audit.
+The established Windows workflow must pass hidden launcher, updater
+install/restart/rollback and public feed/download checksum verification before
+release handover. Local PowerShell is unavailable. Simulator, optimizer,
+worker, game data, import math, ship scheduling and updater source are unchanged.
 Solver worker SHA256:
 26a402fae2d31a8c270bf7fd6d03e0e0ebbda684095f4f5c1ad4cb5937b0625a.

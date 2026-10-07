@@ -76,11 +76,11 @@ const root = path.resolve(__dirname, "..");
     await page.waitForFunction(() => document.getElementById("planning-guidance").hidden);
     assert.match(await page.locator("#notice").innerText(), /Ready to plan/);
     // Artifact previews become stale immediately after an input changes.
-    await page.click('[data-tab="artifacts"]');
+    await page.evaluate(()=>VirtueApp.tab("artifacts"));
     assert.equal(await page.locator("#delivery-set-source").innerText(), "Starting Farm Preview");
     await page.check("#manualFarmArtifacts"); assert.equal(await page.locator("#delivery-set-source").innerText(), "Manual Override");
     await page.uncheck("#manualFarmArtifacts");
-    await page.click('[data-tab="farm"]'); await page.uncheck("#manualAccountData");
+    await page.click('[data-tab="account"]'); await page.uncheck("#manualAccountData");
     // Exercise the actual UI message handlers with deterministic worker events.
     // Search calculations remain untouched; a real worker is checked below.
     await page.evaluate(() => { window.realWorker = Worker; window.Worker = class { constructor() { window.testWorker = this; } postMessage(message) { this.lastMessage = message; } terminate() { this.terminated = true; } }; });
@@ -131,10 +131,10 @@ const root = path.resolve(__dirname, "..");
     assert.ok(await page.locator("#search-status").isHidden());
     const plan = await page.evaluate(() => ({ config: VirtueApp.getConfig(), result: VirtueApp.getResult() }));
     plan.result.artifactRecommendations = { delivery: plan.config.farm.loadouts.delivery };
-    await load({ version: 1, ...plan }); await page.click('[data-tab="artifacts"]');
+    await load({ version: 1, ...plan }); await page.evaluate(()=>VirtueApp.tab("artifacts"));
     assert.equal(await page.locator("#delivery-set-source").innerText(), "Calculated for This Plan");
     await page.click('[data-tab="planning"]'); await page.fill("#target", "26");
-    await page.click('[data-tab="artifacts"]');
+    await page.evaluate(()=>VirtueApp.tab("artifacts"));
     assert.equal(await page.locator("#delivery-set-source").innerText(), "Starting Farm Preview");
     await load({ version: 1, ...plan }); await page.click('[data-tab="results"]'); await page.click("#next-ascension");
     assert.equal(await page.locator('#starting-farm-card [data-source]').innerText(), "Projected from Plan");
@@ -144,7 +144,7 @@ const root = path.resolve(__dirname, "..");
     await page.screenshot({ path: path.join(out, "summaries-desktop.png"), fullPage: true });
     for (const width of [1440, 1280, 1050, 800, 500, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
-      for (const tab of ["farm", "planning", "artifacts", "results"]) { await page.click(`[data-tab="${tab}"]`); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), tab + " overflow at " + width); }
+      for (const tab of ["account", "farm", "planning", "results"]) { await page.click(`[data-tab="${tab}"]`); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), tab + " overflow at " + width); }
     }
     const offline = await browser.newPage(); await offline.goto("file://" + path.join(root, "index.html")); await offline.waitForFunction(() => !!globalThis.VirtueApp);
     assert.ok(await offline.locator("#epic-details").isVisible()); assert.ok(await offline.locator("#epic-fields").isHidden());

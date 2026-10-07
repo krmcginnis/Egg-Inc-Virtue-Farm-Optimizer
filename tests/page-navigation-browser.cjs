@@ -25,155 +25,58 @@ const root = path.resolve(__dirname, "..");
     page.on("pageerror", e => errors.push(e.message));
     await page.goto("http://127.0.0.1:" + server.address().port); await page.waitForFunction(() => !!globalThis.VirtueApp);
     const load = raw => page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Navigation.json")), raw);
+    const navigate=async name=>page.click(`[data-tab="${name}"]`);
+    assert.equal(await page.locator("#page-title").innerText(),"Account");
+    assert.deepEqual(await page.locator("nav [data-tab]").allTextContents(),["Account","Virtue Farm","Planning","Purchase Timeline","How It Works"]);
+    assert.ok(await page.locator("#eid").isVisible());assert.ok(await page.locator("#account-data-card").isVisible());assert.ok(await page.locator("#starting-farm-card").isHidden());
     assert.equal((await page.evaluate(()=>VirtueApp.getConfig())).plan.target,40);
-    assert.equal(await page.inputValue('#eventTimezone'),'Europe/Berlin');
-    await page.check('#manualAccountData');await page.fill('#claimed-0','5');
-    assert.equal((await page.evaluate(()=>VirtueApp.getConfig())).plan.target,45);
-    await page.click('[data-tab="planning"]');await page.fill('#target','49');
-    await page.click('[data-tab="farm"]');await page.fill('#claimed-0','8');
-    assert.equal((await page.evaluate(()=>VirtueApp.getConfig())).plan.target,49);
-    await page.click('#clear-data');
-    assert.equal((await page.evaluate(()=>VirtueApp.getConfig())).plan.target,40);
-    assert.equal(await page.inputValue('#eventTimezone'),'Europe/Berlin');
-    assert.equal(await page.locator("#page-title").innerText(), "Farm & Account");
-    assert.ok(await page.locator('#clear-data').evaluate(n => n.getBoundingClientRect().bottom >= document.getElementById('eid').getBoundingClientRect().bottom));
-    assert.ok(await page.locator("#eid").isVisible()); assert.ok(await page.locator("#account-data-card").isVisible());
-    assert.ok(await page.locator("#target").isHidden()); assert.ok(await page.locator("#ship-planning").isHidden()); assert.ok(await page.locator("#assumptions").isHidden());
-    assert.deepEqual(await page.locator('nav [data-tab]').allTextContents(), ['Farm & Account','Artifacts','Common Research','Planning','Purchase Timeline','How It Works']);
-    assert.equal(await page.locator('.side-note, #import-details, #import-details-summary, #import-note').count(), 0);
-    assert.ok(await page.locator('#eid').evaluate(n => n.closest('.page-heading') && n.getBoundingClientRect().top >= document.getElementById('page-title').getBoundingClientRect().bottom));
-    // Three review steps keep exact labels and never start a worker.
-    await page.getByRole("button", { name: "Continue to Artifacts", exact: true }).click();
-    assert.equal(await page.locator("#page-title").innerText(), "Artifacts");
-    assert.equal(await page.locator('[data-tab="artifacts"]').innerText(), "Artifacts");
-    assert.ok(await page.locator("#loadout-fields").isVisible());
-    assert.ok(await page.locator("#search-status").isHidden());
-    assert.ok(await page.locator("#copy-earnings").isDisabled());
-    assert.ok(await page.locator("#copy-delivery").isDisabled());
-    await page.getByRole("button", { name: "Continue to Common Research", exact: true }).click();
-    assert.equal(await page.locator("#page-title").innerText(), "Common Research");
-    assert.ok(await page.locator("#research-body").isVisible());
-    assert.ok(await page.locator("#search-status").isHidden());
-    await page.getByRole("button", { name: "Continue to Planning", exact: true }).click();
-    assert.equal(await page.locator("#page-title").innerText(), "Planning");
-    assert.equal(await page.locator('[data-tab="planning"]').getAttribute("aria-current"), "page");
-    assert.ok(await page.locator("#planning-card").isVisible()); assert.ok(await page.locator("#ship-planning").isVisible()); assert.ok(await page.locator("#planning-timing").isVisible()); assert.ok(await page.locator("#assumptions").isVisible());
-    assert.ok(await page.locator("#eid").isHidden()); assert.ok(await page.locator("#account-data-card").isHidden()); assert.ok(await page.locator("#search-status").isHidden());
-    assert.equal(await page.locator("#planning-backup-time").innerText(), "No Backup Loaded");
-    await page.click("#review-farm"); assert.equal(await page.locator("#page-title").innerText(), "Farm & Account");
-    const farm = blank(1791300600);
-    Object.assign(farm.farm, { cash: 1.23456789e12, soulEggs: 1e20, claimed: Array(5).fill(5), delivered: Array(5).fill(S.D.te[5]), proPermit: true, manualFarmData: true, manualAccountData: true });
-    Object.assign(farm.plan, { target: 40, maxSwitches: 12, strategy: "user", autoSequence: false, sequence: ["curiosity", "kindness", "integrity", "curiosity", "kindness", "resilience", "curiosity", "humility", "kindness", "curiosity", "integrity", "resilience", "humility"], c1MaxMinutes: 180, k1MaxMinutes: 240, minOfflineMinutes: 15, maxDays: 210, searchEffort: "quick", floors: [8, 8, 8, 8, 8], shiftSeconds: 12, actionSeconds: 1 });
-    await load(farm); await page.click('[data-tab="planning"]');
-    assert.match(await page.locator("#planning-virtue").innerText(), /Curiosity/);
-    assert.match(await page.locator("#planning-starting-te").innerText(), /25 Claimed\s+\+5 Pending/);
-    await page.fill("#target", "45"); await page.fill("#minOfflineMinutes", "20");
-    await page.click("#add-ship-1"); await page.click("#copy-ships");
-    const configured = await page.evaluate(() => VirtueApp.getConfig());
-    assert.equal(configured.plan.target, 45); assert.equal(configured.plan.minOfflineMinutes, 20);
-    assert.equal(configured.plan.ships.visits[0].missions.length, 1); assert.equal(configured.plan.ships.visits[1].missions.length, 1);
-    await page.click("#review-farm"); await page.fill("#cash", "1.564Q"); await page.evaluate(() => VirtueApp.refresh());
-    await page.click('[data-tab="planning"]');
-    assert.equal(await page.inputValue("#target"), "45"); assert.equal(await page.inputValue("#c1MaxMinutes"), "180"); assert.equal(await page.inputValue("#k1MaxMinutes"), "240");
-    assert.deepEqual((await page.evaluate(() => VirtueApp.getConfig())).plan, configured.plan);
-    // Save while Planning is hidden, then reload while account fields are hidden.
-    await page.click("#review-farm");
-    const savedDownload = page.waitForEvent("download"); await page.click("#save-file");
-    const download = await savedDownload, saved = JSON.parse(fs.readFileSync(await download.path(), "utf8"));
-    assert.equal(saved.farm.cash, 1.564e18); assert.deepEqual(saved.plan, configured.plan);
-    await page.click('[data-tab="planning"]'); await page.fill("#target", "46"); await load(saved); await page.click('[data-tab="planning"]');
-    assert.equal(await page.inputValue("#target"), "45"); assert.deepEqual((await page.evaluate(() => VirtueApp.getConfig())).plan, saved.plan);
-    // Real backup imports retain planning inputs and clearly distinguish a retained farm.
-    const lockedFarm = structuredClone(saved); lockedFarm.farm.manualFarmData = false; delete lockedFarm.uiProvenance;
-    await load(lockedFarm);
-    const backup = { game: { soulEggsD: 1e20, permitLevel: 1, epicResearch: S.D.epic.map(r => ({ id: r.id, level: r.levels })) }, virtue: { eovEarned: Array(5).fill(5), eggsDelivered: Array(5).fill(S.D.te[5]), shiftCount: 0, afx: {} }, settings: { lastBackupTime: 1791300600 }, artifactsDb: { missionInfos: [], virtueAfxDb: { inventoryItems: [], activeArtifacts: { slots: [] } } }, contracts: { archive: [] }, farms: [{ eggType: 1 }] };
-    await load({ backup }); await page.click('[data-tab="planning"]');
-    assert.equal(await page.locator('#planning-farm-summary [data-source="farm"]').innerText(), "Retained Farm");
-    assert.equal(await page.locator("#planning-backup-time").getAttribute("datetime"), new Date(1791300600 * 1000).toISOString());
-    assert.deepEqual((await page.evaluate(() => VirtueApp.getConfig())).plan, saved.plan);
-    const activeBackup = structuredClone(backup); activeBackup.farms = [{ eggType: 50, unclaimedCash: 1e12, habs: [0, 19, 19, 19], vehicles: [0], silosOwned: 1 }];
-    await load({ backup: activeBackup }); await page.click('[data-tab="planning"]');
-    assert.equal(await page.locator('#planning-farm-summary [data-source="farm"]').innerText(), "Imported Backup");
-    assert.equal((await page.evaluate(() => VirtueApp.getConfig())).plan.target, 45);
-    // Invalid planning input must not hide the starting-farm context or trap navigation.
-    await page.fill("#stagedSales", "0"); await page.evaluate(() => VirtueApp.refresh());
-    assert.match(await page.locator("#planning-starting-te").innerText(), /25 Claimed/);
-    await page.click("#review-inputs"); assert.equal(await page.locator("#page-title").innerText(), "Planning"); assert.equal(await page.evaluate(() => document.activeElement.id), "stagedSales");
-    await page.click("#review-farm"); assert.ok(await page.getByRole("button", { name: "Continue to Artifacts", exact: true }).isEnabled());
-    await page.click("#optimize"); assert.equal(await page.locator("#page-title").innerText(), "Artifacts"); await page.click("#optimize"); assert.equal(await page.locator("#page-title").innerText(), "Common Research"); assert.ok(await page.locator("#optimize").isEnabled()); await page.click("#optimize"); await page.fill("#stagedSales", "3"); await page.evaluate(() => VirtueApp.refresh());
-    // Copy each distinct alternate loadout (including stones) into Current, with no source aliasing.
-    const sets = structuredClone(saved);
-    const artifacts = S.D.artifacts.filter(a => a.slots > 0), stone = S.D.stones[0].id;
-    const makeSet = artifact => Array.from({length:4}, (_,i) => i === 0 ? {artifactId:artifact.id,stones:Array(artifact.slots).fill(stone)} : {artifactId:null,stones:[]});
-    sets.farm.loadouts = {current:makeSet(artifacts[0]),earnings:makeSet(artifacts[1]),delivery:makeSet(artifacts[2])};
-    sets.farm.activeSet = "delivery";
-    await load(sets); await page.click('[data-tab="artifacts"]');
-    assert.equal(await page.locator("#copy-earnings").innerText(), "Copy Earnings to Current");
-    assert.equal(await page.locator("#copy-delivery").innerText(), "Copy Delivery to Current");
-    const alternates = (await page.evaluate(() => VirtueApp.getConfig())).farm.loadouts;
-    for (const key of ["earnings", "delivery"]) {
-      await page.click("#copy-" + key);
-      const copied = (await page.evaluate(() => VirtueApp.getConfig())).farm;
-      assert.deepEqual(copied.loadouts.current, alternates[key]);
-      assert.deepEqual(copied.loadouts.earnings, alternates.earnings);
-      assert.deepEqual(copied.loadouts.delivery, alternates.delivery);
-      assert.equal(copied.activeSet, "current");
-    }
-    await page.selectOption("#artifact-current-0", "", {force:true}); await page.evaluate(() => VirtueApp.refresh());
-    assert.deepEqual((await page.evaluate(() => VirtueApp.getConfig())).farm.loadouts.delivery, alternates.delivery);
-    await page.click("#optimize"); await page.click("#optimize");
-    // Reset/Undo retains goals, missions and the Planning page; browser recovery is absent.
-    const beforeReset = await page.evaluate(() => VirtueApp.getConfig());
-    await page.click("#clear-data"); assert.equal(await page.locator("#page-title").innerText(), "Farm & Account");
-    await page.click("#undo-reset"); assert.equal(await page.locator("#page-title").innerText(), "Planning");
-    assert.deepEqual(await page.evaluate(() => VirtueApp.getConfig()), beforeReset);
-    assert.equal(await page.locator("#session-autosave").count(), 0);
-    assert.equal(await page.locator("#session-recovery").count(), 0);
-    await page.fill("#minOfflineMinutes", "21"); await page.evaluate(() => VirtueApp.refresh());
-    assert.equal(await page.evaluate(() => localStorage.getItem("virtue-optimizer.session.v1")), null);
-    const out = path.join(root, "tmp/page-navigation"); fs.mkdirSync(out, { recursive: true });
-    await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: path.join(out, "planning-desktop.png"), fullPage: true });
-    await page.click("#review-farm");
-    for (const id of ["colleggtibles-card", "epic-research-card"]) assert.equal(await page.locator("#" + id).evaluate(node => node.parentElement.id), "farm-state-column");
-    assert.ok(await page.locator("#col-fields select").first().isEnabled()); await page.uncheck("#manualAccountData"); assert.ok(await page.locator("#col-fields select").first().isDisabled()); assert.ok(await page.locator("#epic-fields input").first().isDisabled());
-    await page.screenshot({ path: path.join(out, "farm-account-desktop.png"), fullPage: true });
-    await page.locator("header").screenshot({path:path.join(out,"farm-header-desktop.png")});
-    for (const width of [1440, 1280, 1050, 1000, 800, 500, 390, 320]) {
-      await page.setViewportSize({ width, height: 1000 });
-      for (const section of ["farm", "planning", "research", "artifacts", "results", "help"]) {
-        await page.click(`[data-tab="${section}"]`);
-        assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), section + " overflow at " + width);
-        if (["farm", "planning"].includes(section) && width >= 1050) assert.ok(await page.locator('[data-page="' + section + '"] .farm-workspace').evaluate(node => { const [left, right] = [...node.children].map(n => n.getBoundingClientRect()); return left.right <= right.left + 1; }), section + " two-panel layout at " + width);
-      }
-    }
-    await page.click('[data-tab="farm"]'); await page.evaluate(()=>window.scrollTo(0,0));
-    await page.screenshot({path:path.join(out,"farm-account-mobile.png"),fullPage:true});
-    await page.locator("header").screenshot({path:path.join(out,"farm-header-mobile.png")});
-    // Exercise EID sync through the real protobuf/API path, including fleet rendering and identity preferences.
-    await page.click("#clear-data");
-    syncBackup = {...activeBackup,userName:"SyntheticTester"};
-    await page.click('[data-tab="farm"]');
-    await page.fill("#eid","EI0000000000000000");await page.click("#import-eid");
-    await page.waitForFunction(()=>document.getElementById("notice").textContent.startsWith("Account information and the current Virtue farm"));
-    assert.equal((await page.evaluate(()=>VirtueApp.getConfig())).plan.target,65);
-    assert.equal(await page.inputValue("#eventTimezone"),"Europe/Berlin");
-    assert.equal(syncPosts,1);assert.ok(await page.locator("#pick-vehicle-0").isVisible());
-    assert.equal(await page.inputValue("#eid"),"SyntheticTester");
-    assert.equal(await page.inputValue("#epic-hold_to_research"),"20");
-    assert.equal(await page.locator('#colleggtibles-card [data-source]').innerText(),"Imported Backup");
-    const autoSaved=await page.evaluate(()=>VirtueApp.getConfig());
-    assert.equal(autoSaved.plan.targetMode,'claimed-plus-40');
-    await load(autoSaved);assert.equal((await page.evaluate(()=>VirtueApp.getConfig())).plan.target,65);
-    const accountOnly=structuredClone(syncBackup);accountOnly.farms=[{eggType:1}];accountOnly.virtue.eovEarned[0]=6;
-    await load({backup:accountOnly});assert.equal((await page.evaluate(()=>VirtueApp.getConfig())).plan.target,66);
-    assert.equal(await page.inputValue('#eventTimezone'),'Europe/Berlin');
-    await page.click("#optimize");assert.equal(await page.locator("#page-title").innerText(),"Artifacts");
-    await page.click("#optimize");assert.equal(await page.locator("#page-title").innerText(),"Common Research");
-    await page.click("#optimize");assert.equal(await page.locator("#page-title").innerText(),"Planning");
-    await page.reload();await page.waitForFunction(()=>!!globalThis.VirtueApp);
-    assert.equal(await page.inputValue("#eid"),"SyntheticTester");
-    await page.locator("#eid").focus();assert.equal(await page.inputValue("#eid"),"EI0000000000000000");
+    await page.check("#manualAccountData");await page.fill("#claimed-0","5");assert.equal((await page.evaluate(()=>VirtueApp.getConfig())).plan.target,45);
+    await page.getByRole("button",{name:"Continue to Virtue Farm",exact:true}).click();
+    assert.equal(await page.locator("#page-title").innerText(),"Virtue Farm");
+    for(const id of ["starting-farm-card","hab-fields","vehicle-fields","artifacts-card","common-research-card","account-fuel-fields","flight-status"]) assert.ok(await page.locator("#"+id).isVisible(),id);
+    assert.ok(await page.locator("#eid").isHidden());assert.ok(await page.locator("#truth-egg-progress").isHidden());
+    assert.equal(await page.locator("#common-research-details").getAttribute("open"),null);
+    assert.ok(await page.locator("#current-loadout-fields").isVisible());assert.ok(await page.locator("#earnings-loadout-fields").isHidden());assert.ok(await page.locator("#delivery-loadout-fields").isHidden());
+    const beforeTabs=await page.evaluate(()=>VirtueApp.getConfig());
+    await page.locator("#loadout-tab-current").focus();await page.keyboard.press("ArrowRight");assert.equal(await page.evaluate(()=>document.activeElement.id),"loadout-tab-earnings");assert.ok(await page.locator("#earnings-loadout-fields").isVisible());
+    await page.keyboard.press("End");assert.ok(await page.locator("#delivery-loadout-fields").isVisible());await page.keyboard.press("Home");assert.ok(await page.locator("#current-loadout-fields").isVisible());
+    assert.deepEqual(await page.evaluate(()=>VirtueApp.getConfig()),beforeTabs);
+    await page.getByRole("button",{name:"Continue to Planning",exact:true}).click();assert.equal(await page.locator("#page-title").innerText(),"Planning");
+    assert.ok(await page.locator("#planning-card").isVisible());await page.click("#review-farm");assert.equal(await page.locator("#page-title").innerText(),"Virtue Farm");
+    const farm=blank(1791300623);Object.assign(farm.farm,{cash:1.23456789e12,soulEggs:1e20,claimed:Array(5).fill(5),delivered:Array(5).fill(S.D.te[5]),proPermit:true,manualFarmData:true,manualAccountData:true});
+    Object.assign(farm.plan,{target:45,maxSwitches:12,strategy:"user",autoSequence:false,sequence:["curiosity","kindness","integrity","curiosity","kindness","resilience","curiosity","humility","kindness","curiosity","integrity","resilience","humility"],floors:Array(5).fill(0),minOfflineMinutes:15});
+    const artifacts=S.D.artifacts.filter(a=>a.slots>0),stone=S.D.stones[0].id;
+    farm.farm.loadouts=Object.fromEntries(["current","earnings","delivery"].map((key,i)=>[key,[{artifactId:artifacts[i].id,stones:Array(artifacts[i].slots).fill(stone)}]]));
+    await load(farm);assert.equal(await page.locator("#page-title").innerText(),"Account");
+    await navigate("planning");await page.fill("#target","46");await page.click("#add-ship-1");await page.click("#copy-ships");
+    const plan=(await page.evaluate(()=>VirtueApp.getConfig())).plan;assert.equal(plan.ships.visits[0].missions.length,1);
+    await page.click("#review-farm");await page.fill("#cash","1.564Q");await page.evaluate(()=>VirtueApp.refresh());
+    await page.click("#loadout-tab-earnings");
+    const alternatives=(await page.evaluate(()=>VirtueApp.getConfig())).farm.loadouts;
+    for(const key of ["earnings","delivery"]){await page.click("#loadout-tab-"+key);await page.click("#copy-"+key);const f=(await page.evaluate(()=>VirtueApp.getConfig())).farm;assert.deepEqual(f.loadouts.current,alternatives[key]);assert.deepEqual(f.loadouts.earnings,alternatives.earnings);assert.deepEqual(f.loadouts.delivery,alternatives.delivery);assert.equal(f.activeSet,"current");assert.ok(await page.locator("#current-loadout-fields").isVisible());}
+    const savedDownload=page.waitForEvent("download");await page.click("#save-file");const download=await savedDownload,saved=JSON.parse(fs.readFileSync(await download.path(),"utf8"));assert.equal(saved.farm.cash,1.564e18);assert.deepEqual(saved.plan,plan);
+    await load(saved);assert.deepEqual((await page.evaluate(()=>VirtueApp.getConfig())).farm,saved.farm);assert.deepEqual((await page.evaluate(()=>VirtueApp.getConfig())).plan,saved.plan);
+    // Validation navigates to the correct page, hidden artifact tab and collapsed research.
+    await navigate("farm");await page.selectOption("#artifact-delivery-1",saved.farm.loadouts.delivery[0].artifactId,{force:true});await page.evaluate(()=>VirtueApp.refresh());await navigate("account");await page.click("#review-inputs");assert.equal(await page.locator("#page-title").innerText(),"Virtue Farm");assert.ok(await page.locator("#delivery-loadout-fields").isVisible());assert.equal(await page.evaluate(()=>document.activeElement.id),"pick-artifact-delivery-1");
+    await page.selectOption("#artifact-delivery-1","",{force:true});await page.evaluate(()=>VirtueApp.refresh());
+    await page.evaluate(()=>{document.getElementById("research-comfy_nests").value="999";VirtueApp.refresh();});await navigate("account");await page.click("#review-inputs");assert.ok(await page.locator("#common-research-details").evaluate(n=>n.open));assert.equal(await page.evaluate(()=>document.activeElement.id),"research-comfy_nests");await page.fill("#research-comfy_nests","0");await page.evaluate(()=>VirtueApp.refresh());
+    await navigate("account");await page.uncheck("#manualAccountData");await navigate("farm");assert.ok(await page.locator("#fuel-curiosity").isDisabled());await page.check("#manualAccountFuel");assert.ok(await page.locator("#fuel-curiosity").isEnabled());await navigate("account");assert.ok(await page.isChecked("#manualAccountData"));
+    await navigate("farm");await page.click("#loadout-tab-delivery");const beforeReset=await page.evaluate(()=>VirtueApp.getConfig());await page.click("#clear-data");assert.equal(await page.locator("#page-title").innerText(),"Account");await page.click("#undo-reset");assert.equal(await page.locator("#page-title").innerText(),"Virtue Farm");assert.equal(await page.locator("#loadout-tab-delivery").getAttribute("aria-selected"),"true");assert.deepEqual(await page.evaluate(()=>VirtueApp.getConfig()),beforeReset);
+    // Legacy update page names still route to the integrated controls.
+    await page.evaluate(()=>VirtueApp.tab("research"));assert.equal(await page.locator("#page-title").innerText(),"Virtue Farm");assert.ok(await page.locator("#common-research-details").evaluate(n=>n.open));await page.evaluate(()=>VirtueApp.tab("artifacts"));assert.ok(await page.locator("#artifacts-card").isVisible());
+    assert.ok(await page.locator("#review-inputs").isHidden(),"valid farm and missions before visual/layout checks");
+    await page.evaluate(()=>{document.getElementById("common-research-details").open=false;document.getElementById("col-details").open=false;document.getElementById("epic-details").open=false;});
+    const out=path.join(root,"tmp/page-navigation");fs.mkdirSync(out,{recursive:true});
+    for(const section of ["account","farm","planning"]){await navigate(section);await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:path.join(out,section+"-desktop.png"),fullPage:true});}
+    for(const width of [1440,1280,1050,1000,800,500,390,320]){await page.setViewportSize({width,height:1000});for(const section of ["account","farm","planning","results","help"]){await navigate(section);assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),section+" overflow "+width);if(["account","farm","planning"].includes(section)&&width>=1050)assert.ok(await page.locator(`[data-page="${section}"] .farm-workspace`).evaluate(n=>n.children[0].getBoundingClientRect().right<=n.children[1].getBoundingClientRect().left+1));}}
+    for(const section of ["account","farm"]){await navigate(section);await page.evaluate(()=>scrollTo(0,0));await page.screenshot({path:path.join(out,section+"-mobile.png"),fullPage:true});}
+    // Import still uses the real protobuf/API path and preserves identity preferences.
+    await page.setViewportSize({width:1440,height:1000});await page.click("#clear-data");
+    syncBackup={userName:"SyntheticTester",game:{soulEggsD:1e20,permitLevel:1,epicResearch:S.D.epic.map(r=>({id:r.id,level:r.levels}))},virtue:{eovEarned:Array(5).fill(5),eggsDelivered:Array(5).fill(S.D.te[5]),shiftCount:0,afx:{}},settings:{lastBackupTime:1791300600},artifactsDb:{missionInfos:[],virtueAfxDb:{inventoryItems:[],activeArtifacts:{slots:[]}}},contracts:{archive:[]},farms:[{eggType:50,unclaimedCash:1e12,habs:[0,19,19,19],vehicles:[0],silosOwned:1}]};
+    await page.fill("#eid","EI0000000000000000");await page.click("#import-eid");await page.waitForFunction(()=>document.getElementById("notice").textContent.startsWith("Account information and the current Virtue farm"));assert.equal(syncPosts,1);assert.equal(await page.inputValue("#eid"),"SyntheticTester");assert.equal((await page.evaluate(()=>VirtueApp.getConfig())).plan.target,65);assert.equal(await page.inputValue("#epic-hold_to_research"),"20");
+    await page.click("#optimize");assert.equal(await page.locator("#page-title").innerText(),"Virtue Farm");assert.ok(await page.locator("#pick-vehicle-0").isVisible());assert.ok(await page.locator("#pick-artifact-current-0").isDisabled());await page.click("#optimize");assert.equal(await page.locator("#page-title").innerText(),"Planning");
+    await page.reload();await page.waitForFunction(()=>!!globalThis.VirtueApp);assert.equal(await page.locator("#page-title").innerText(),"Account");assert.equal(await page.inputValue("#eid"),"SyntheticTester");await page.locator("#eid").focus();assert.equal(await page.inputValue("#eid"),"EI0000000000000000");
     assert.deepEqual(errors, []);
-    console.log("PASS Farm → Artifacts → Common Research → Planning, exact Continue labels/menu order, EID below heading, removed sidebar info/import details, real synthetic EID sync/identity, directional loadout copies with stones, left account panels, tier-compatible navigation and primary action, page-specific controls, live farm/TE/backup context, imported/retained labels, cross-page saved goals/ships/precision, import retention, error routing, Reset/Undo, browser recovery removal and two-panel layouts 1440–320px.");
+    console.log("PASS Account → Virtue Farm → Planning, integrated panel locations, keyboard loadout tabs, unchanged goals/gear/precision, copies and save/load, cross-page validation, research disclosure, linked fuel locks, Reset/Undo tab state, legacy page routing, real EID/protobuf import and persistent identity, 1440–320px paired-column layouts.");
   } finally { if (browser) await browser.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

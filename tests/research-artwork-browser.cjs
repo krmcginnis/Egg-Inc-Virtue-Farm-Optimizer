@@ -31,7 +31,7 @@ const root = path.resolve(__dirname, "..");
     await page.evaluate(() => new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(); image.onerror = reject; image.src = "assets/brand/research-icons.png"; }));
     const out = path.join(root, "tmp/research-artwork"); fs.mkdirSync(out, { recursive: true });
     await page.locator("#epic-fields").screenshot({ path: path.join(out, "epic-desktop.png") });
-    await page.click('[data-tab="research"]');
+    await page.evaluate(()=>VirtueApp.tab("research"));
     assert.equal(await page.locator('#research-body [id^="max-cost-"]').count(),56);
     assert.deepEqual(await page.locator('.research-tier').first().locator('th').allTextContents(),['Research','Level / Max','Next Cost','Cost to Max']);
     // Check displayed totals independently of the UI helper, including per-level rounding.
@@ -52,18 +52,18 @@ const root = path.resolve(__dirname, "..");
     await page.fill("#research-filter", "leafsprings"); assert.equal(await page.locator("#research-body tbody tr:visible").count(), 1);
     assert.equal(await page.locator('#research-body tbody tr:visible [data-research-icon]').getAttribute("data-research-icon"), "leafsprings");
     await page.locator("#research-body tbody tr:visible").screenshot({ path: path.join(out, "common-desktop.png") });
-    await page.click('[data-tab="farm"]'); await page.fill('#epic-cheaper_research','3'); await page.evaluate(()=>VirtueApp.refresh());
+    await page.click('[data-tab="account"]'); await page.fill('#epic-cheaper_research','3'); await page.evaluate(()=>VirtueApp.refresh());
     await checkCosts(await page.evaluate(()=>VirtueApp.getConfig()));
-    await page.click('[data-tab="research"]');
+    await page.evaluate(()=>VirtueApp.tab("research"));
     await page.fill("#research-filter", ""); await page.getByLabel(S.D.research[0].name + " current level", { exact: true }).fill("2"); await page.evaluate(() => VirtueApp.refresh());
     assert.equal((await page.evaluate(() => VirtueApp.getConfig())).farm.research[S.D.research[0].id], 2);
     await page.uncheck("#manualFarmResearch"); assert.ok(await page.locator("#research-" + S.D.research[0].id).isDisabled()); assert.ok(await page.locator("#research-body .research-icon").first().isVisible());
-    await page.click('[data-tab="farm"]'); await page.uncheck("#manualAccountData"); assert.ok(await page.locator("#epic-hold_to_hatch").isDisabled()); await page.locator("#epic-details>summary").click(); assert.ok(await page.locator("#epic-fields .research-icon").first().isVisible());
+    await page.click('[data-tab="account"]'); await page.uncheck("#manualAccountData"); assert.ok(await page.locator("#epic-hold_to_hatch").isDisabled()); await page.locator("#epic-details>summary").click(); assert.ok(await page.locator("#epic-fields .research-icon").first().isVisible());
     // Completed tiers default to closed; searching opens them temporarily and restores state.
     const complete = structuredClone(farm);
     for (const r of S.D.research.filter(r=>r.tier===1)) complete.farm.research[r.id]=r.levels;
     await page.evaluate(raw=>VirtueApp.loadFile(new File([JSON.stringify(raw)],"Maxed-Tier.json")),complete);
-    await page.click('[data-tab="research"]');
+    await page.evaluate(()=>VirtueApp.tab("research"));
     await checkCosts(await page.evaluate(()=>VirtueApp.getConfig()));
     for (const r of S.D.research.filter(r=>r.tier===1)) assert.equal(await page.locator('#max-cost-'+r.id).textContent(),'0');
     assert.equal(await page.locator('.research-tier[data-tier="1"]').getAttribute("open"),null);
@@ -91,7 +91,7 @@ const root = path.resolve(__dirname, "..");
     await page.evaluate(raw=>VirtueApp.loadFile(new File([JSON.stringify(raw)],"Saved-Tiers.json")),roundtrip);
     assert.deepEqual((await page.evaluate(()=>VirtueApp.getConfig())).farm.research,roundtrip.farm.research);
     assert.equal(await page.locator('.research-tier[data-tier="1"]').getAttribute("open"),null);
-    await page.click('[data-tab="research"]');
+    await page.evaluate(()=>VirtueApp.tab("research"));
     await page.screenshot({path:path.join(out,"tiers-desktop.png"),fullPage:true});
     await page.screenshot({path:path.join(out,"tiers-desktop-viewport.png")});
     await page.setViewportSize({width:390,height:1000});
@@ -123,7 +123,7 @@ const root = path.resolve(__dirname, "..");
     assert.deepEqual((await page.evaluate(() => VirtueApp.getResult())).actions, S.history(state));
     for (const width of [1440, 1280, 1000, 800, 500, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
-      for (const tab of ["farm", "research", "results"]) { await page.click(`[data-tab="${tab}"]`); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), tab + " overflow at " + width); }
+      for (const tab of ["account", "farm", "results"]) { await page.click(`[data-tab="${tab}"]`); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), tab + " overflow at " + width); }
     }
     const offline = await browser.newPage(); await offline.route("http://**/*", r => r.abort()); await offline.route("https://**/*", r => r.abort());
     await offline.goto("file://" + path.join(root, "index.html")); await offline.waitForFunction(() => !!globalThis.VirtueApp);

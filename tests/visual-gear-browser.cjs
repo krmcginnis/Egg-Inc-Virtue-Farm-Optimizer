@@ -16,7 +16,7 @@ const root=path.resolve(__dirname,"..");
     const url="http://127.0.0.1:"+server.address().port;
     await page.goto(url);await page.waitForFunction(()=>!!globalThis.VirtueApp);
     const farm=blank(Date.parse("2026-10-07T16:00:00Z")/1000);Object.assign(farm.farm,{claimed:Array(5).fill(5),manualFarmData:true,manualAccountData:true,proPermit:true});Object.assign(farm.plan,{target:25,strategy:"user",autoSequence:false,maxSwitches:0,sequence:["curiosity"]});
-    const load=async raw=>{await page.evaluate(raw=>VirtueApp.loadFile(new File([JSON.stringify(raw)],"Synthetic-Gear.json")),raw);await page.click('[data-tab="artifacts"]');};
+    const load=async raw=>{await page.evaluate(raw=>VirtueApp.loadFile(new File([JSON.stringify(raw)],"Synthetic-Gear.json")),raw);await page.evaluate(()=>VirtueApp.tab("artifacts"));};
     await load(farm);
     const choose=async(control,id)=>{await page.click("#pick-"+control);assert.ok(await page.locator("#gear-picker").isVisible());await page.locator(`#gear-picker [data-item-id="${id}"]`).click();await page.waitForFunction(()=>!document.getElementById("gear-picker").open);assert.equal(await page.inputValue("#"+control),id);};
     assert.equal(await page.locator('#current-loadout-fields .loadout-item-artwork').count(),4);
@@ -62,7 +62,7 @@ const root=path.resolve(__dirname,"..");
     await page.click('#pick-stone-current-0-0');await page.screenshot({path:path.join(out,'stone-popup-mobile.png')});await page.keyboard.press('Escape');
     await page.setViewportSize({width:1440,height:1000});await page.click('[data-tab="farm"]');
     await page.locator('header').screenshot({path:path.join(out,'header-desktop.png')});await page.locator('#hab-fields').screenshot({path:path.join(out,'habs-desktop.png')});
-    await page.selectOption('#proPermit','false');await page.click('[data-tab="artifacts"]');assert.equal(await page.locator('#current-loadout-fields .loadout-item-artwork').count(),2);
+    await page.click('[data-tab="account"]');await page.selectOption('#proPermit','false');await page.evaluate(()=>VirtueApp.tab("artifacts"));assert.equal(await page.locator('#current-loadout-fields .loadout-item-artwork').count(),2);
     // Searching/canceling does not dirty an existing replayed plan or change gear.
     const initial=S.prepare(farm),state=S.advance(initial.s,initial.c,initial.s.t+60,'Synthetic offline wait',true,'offline');
     const result={version:1,start:initial.s.t,end:state.t,seconds:60,target:25,actions:S.history(state),frontier:[],explored:0,method:'Synthetic fixture',termination:'complete'};
@@ -85,7 +85,7 @@ const root=path.resolve(__dirname,"..");
       assert.equal(await local.inputValue('#eventTimezone'),'America/Los_Angeles');await local.close();
     }
     const offline=await browser.newPage();await offline.route('http://**/*',r=>r.abort());await offline.route('https://**/*',r=>r.abort());
-    await offline.goto('file://'+path.join(root,'index.html'));await offline.waitForFunction(()=>!!globalThis.VirtueApp);await offline.check('#manualFarmData');await offline.click('[data-tab="artifacts"]');await offline.click('#pick-artifact-current-0');
+    await offline.goto('file://'+path.join(root,'index.html'));await offline.waitForFunction(()=>!!globalThis.VirtueApp);await offline.click('[data-tab="farm"]');await offline.check('#manualFarmData');await offline.evaluate(()=>VirtueApp.tab("artifacts"));await offline.click('#pick-artifact-current-0');
     await offline.locator('#gear-picker [data-item-id="puzzle-cube-4-3"]').click();assert.equal(await offline.locator('#loadout-card-current-0 .loadout-stone-socket').count(),3);
     assert.deepEqual(errors,[]);console.log('PASS image artifact/stone choices, 0–3 sockets, rarity/effects, clear/search/cancel, keyboard/focus, manual locks, duplicate-family review, save/load, permit changes, 1440–320px popups, offline choices, claimed+40 cap and IANA detection/saved-zone retention.');
   }finally{if(browser)await browser.close();await new Promise(resolve=>server.close(resolve));}

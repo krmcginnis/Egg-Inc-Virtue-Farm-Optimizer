@@ -16,7 +16,7 @@ const root = path.resolve(__dirname, "..");
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } }), errors = [];
     page.on("pageerror", e => errors.push(e.message));
     await page.goto("http://127.0.0.1:" + server.address().port); await page.waitForFunction(() => !!globalThis.VirtueApp);
-    const load = raw => page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Readability.json")), raw);
+    const load = async raw => { await page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Readability.json")), raw); await page.click(raw.result ? '[data-tab="results"]' : '[data-tab="farm"]'); };
     const farm = blank(1791244800);
     Object.assign(farm.farm, { cash: 1e18, soulEggs: 1e20, claimed: Array(5).fill(5), proPermit: true, manualFarmData: true, manualAccountData: true });
     farm.farm.habs[0] = 18; farm.farm.vehicles[0] = { id: 10, cars: 1 };
@@ -37,7 +37,7 @@ const root = path.resolve(__dirname, "..");
     await page.uncheck("#manualFarmData");
     assert.ok(await page.locator("#pick-hab-0").isDisabled());
     assert.ok(await page.locator('#hab-fields [data-farm-icon="hab:18"]').isVisible());
-    await page.check("#manualFarmData"); await page.click('[data-tab="artifacts"]');
+    await page.check("#manualFarmData"); await page.evaluate(()=>VirtueApp.tab("artifacts"));await page.click("#loadout-tab-earnings");
     await page.setViewportSize({ width: 1160, height: 1000 });
     assert.equal(await page.locator("#artifact-earnings-0-full-name").count(),0);
     assert.ok(await page.locator('#pick-artifact-earnings-0').isEnabled());
@@ -47,7 +47,7 @@ const root = path.resolve(__dirname, "..");
     assert.deepEqual((await page.evaluate(() => VirtueApp.getConfig())).farm.loadouts, saved.farm.loadouts);
     assert.deepEqual((await page.evaluate(() => VirtueApp.getConfig())).farm.habs, saved.farm.habs);
     const out = path.join(root, "tmp/timeline-readability"); fs.mkdirSync(out, { recursive: true });
-    await page.click('[data-tab="artifacts"]');
+    await page.evaluate(()=>VirtueApp.tab("artifacts"));await page.click("#loadout-tab-earnings");
     await page.locator("#earnings-loadout-fields").screenshot({ path: path.join(out, "long-names-desktop.png") });
     // Replayed actions deliberately span unsorted research purchases, a folded
     // short wait, both visible wait modes, and a final shift containing only a wait.
@@ -93,10 +93,10 @@ const root = path.resolve(__dirname, "..");
     await page.locator(".shift-summary").first().screenshot({ path: path.join(out, "timeline-desktop.png") });
     for (const width of [1440, 1280, 1050, 1000, 800, 500, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
-      for (const section of ["farm", "planning", "artifacts", "results"]) {
+      for (const section of ["account", "farm", "planning", "results"]) {
         await page.click(`[data-tab="${section}"]`);
         assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), section + " overflow at " + width);
-        if (section === "farm" && width >= 1050) assert.ok(await page.evaluate(() => document.getElementById("farm-state-column").getBoundingClientRect().right <= document.getElementById("account-information").getBoundingClientRect().left + 1), "two-panel layout at " + width);
+        if (section === "farm" && width >= 1050) assert.ok(await page.evaluate(() => document.getElementById("farm-state-column").getBoundingClientRect().right <= document.getElementById("farm-equipment-column").getBoundingClientRect().left + 1), "two-panel layout at " + width);
       }
       assert.ok(await page.locator(".loadout-item-name").evaluateAll(nodes => nodes.every(n => n.scrollWidth <= n.clientWidth + 1)), "long title overflow at " + width);
     }
