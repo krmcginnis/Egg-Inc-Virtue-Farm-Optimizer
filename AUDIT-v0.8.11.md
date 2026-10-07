@@ -7,6 +7,15 @@ five retries, and the pipeline hid that release as a draft. It remains untouched
 the new version runs the complete Windows pipeline and public verification again.
 Only release metadata and this record change in the retry.
 
+Publication is now verified. The original v0.8.11 Windows run also passed all
+build/native update checks, but its initial public check received HTTP 403 and
+left a draft. Recovery run 37563209722 verified that original commit and both
+unchanged asset digests, downloaded the draft and checked every app file on
+Windows, then published that same draft. The anonymous updater found v0.8.11,
+downloaded the complete archive and passed all file checksums. No assets were
+replaced and no new app version or runtime changes were introduced. The temporary
+recovery workflow was removed after success; the normal release pipeline remains.
+
 v0.8.10 reorganizes setup into Account → Virtue Farm → Planning. Account holds
 progression and permanent bonuses. Virtue Farm combines current upgrades,
 tabbed artifacts, expandable Common Research, fuel and existing flights.
