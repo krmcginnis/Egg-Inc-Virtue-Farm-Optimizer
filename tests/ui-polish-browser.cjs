@@ -81,8 +81,8 @@ const root = path.resolve(__dirname, "..");
       for (let i = 0; i < controls.length; i++) for (let j = i + 1; j < controls.length; j++) {
         const a = controls[i], b = controls[j]; assert.ok(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top, "Planning controls overlap at " + width);
       }
-      await page.click('[data-tab="planning"]'); await page.locator("#maxDays").focus();
-      const focused = await page.locator("#maxDays").boundingBox(), bar = await page.locator(".run-bar").boundingBox();
+      await page.click('[data-tab="planning"]'); await page.locator("#stagedSales").focus();
+      const focused = await page.locator("#stagedSales").boundingBox(), bar = await page.locator(".run-bar").boundingBox();
       assert.ok(focused.y + focused.height < bar.y, "Focused field obscured at " + width);
     }
     assert.deepEqual(errors, []);
