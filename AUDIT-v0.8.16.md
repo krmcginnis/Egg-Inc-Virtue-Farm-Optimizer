@@ -1363,3 +1363,22 @@ npm ci/build, release-state, prepare-publish and diff checks pass. Local packagi
 contains 169 runtime files and passes archive verification; current-version
 audit/title/sidebar metadata match v0.8.16. Windows and public-feed proof will
 be recorded after the automatic release checks complete.
+
+
+Windows release proof: app commit 21ecf184cb040c8d6da79d0aab6c1c9b9a775146;
+automatic Publish App Release run 37631628591 / job 112827100718 succeeds.
+The Windows build packages 169 runtime files. Archive guards, digest mismatch,
+rollback, exact backup restore, preserved user settings and stage tamper rejection
+pass. Native hidden CMD launch/reuse, update restart, startup-failure recovery
+and legacy-worker recovery pass. Windows PowerShell 5.1.26100.33438 anonymously
+reads the public feed, downloads v0.8.16 and verifies every app-file checksum.
+The public-feed check passes on the first attempt.
+
+The public release targets the exact app commit and contains both verified assets:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8,561,572 bytes; SHA256
+  5ed3665a1e4d9201f13c37980d7e40b3f0752a46c749f4ca6aea46015803f996.
+- update-manifest.json: 240 bytes; SHA256
+  3675cf27aa75e98a56387c2360c80587ec1656bb638f1803751bbca36667115f.
+
+This final proof is recorded after release verification without replacing or
+repackaging the immutable release assets.
