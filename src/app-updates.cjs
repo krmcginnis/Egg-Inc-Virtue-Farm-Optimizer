@@ -1,6 +1,6 @@
 'use strict';
 const VERSION = require('./version.cjs');
-const Recovery = require('./session-recovery.cjs');
+const Snapshot = require('./update-snapshot.cjs');
 const HANDOFF = 'virtue-optimizer.update-session.v1';
 const LAST_ERROR = 'virtue-optimizer.update-error.v1';
 function initialize({isBusy, capture, restore}) {
@@ -108,9 +108,9 @@ function initialize({isBusy, capture, restore}) {
       }
       if (!ready) throw Error('The update download timed out. Your installed app is unchanged.');
       const saved = capture();
-      if (!Recovery.valid(saved)) throw Error('The current session could not be preserved. Save your farm and plan before retrying.');
+      if (!Snapshot.valid(saved)) throw Error('The current session could not be preserved. Save your farm and plan before retrying.');
       try {
-        localStorage.setItem(HANDOFF, JSON.stringify({version:VERSION,snapshot:Recovery.sanitize(saved)}));
+        localStorage.setItem(HANDOFF, JSON.stringify({version:VERSION,snapshot:Snapshot.sanitize(saved)}));
       } catch { throw Error('Your browser cannot preserve this session for the restart. Save your farm and plan, then free some browser storage and retry.'); }
       message('Installing and restarting. Your farm and settings have been preserved...');
       // A connection interruption can occur after the helper accepts the restart.
@@ -146,7 +146,7 @@ function initialize({isBusy, capture, restore}) {
       if (state.pending) return;
       let saved;
       try { saved = JSON.parse(localStorage.getItem(HANDOFF)); } catch { }
-      if (saved && Recovery.valid(saved.snapshot)) {
+      if (saved && Snapshot.valid(saved.snapshot)) {
         try { restore(saved.snapshot, state.result?.message || 'Your session was restored after updating the app.'); localStorage.removeItem(HANDOFF); }
         catch { message('Your preserved session is still available. Restart the app or load your saved farm.', true); }
       }
