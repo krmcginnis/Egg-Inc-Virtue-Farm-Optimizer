@@ -1901,5 +1901,26 @@ days, 10 shifts at 158.8677 days, and 11 shifts at 158.8882 days. The faster
 case-specific, not a claim that every result improves or is globally optimal.
 Account data and saved farms are excluded from source and release assets.
 
-Native Windows publication and public-feed checks are pending. Release evidence
-will be recorded after the automatic workflow completes successfully.
+Native Windows publication and public-feed checks passed; completed release
+evidence follows.
+
+
+Native Windows publication is verified. GitHub Actions run 37702728478,
+job 113069764692, passed the new route/shift solver regressions, historical
+sale-plan/subscription tests, build/package checks, version/source guards,
+archive/digest/tamper rejection, installation, exact backup restore, hidden
+CMD launch, restart, startup-failure rollback, and legacy-worker restart.
+Windows PowerShell 5.1.26100.33438 then found v0.9.0 through the public updater,
+downloaded the complete release, and verified every app file checksum.
+
+Published source commit: 9d9640bee75b9ba9ad85125cbe615c6926adc759.
+Public release: 406249089, v0.9.0, with both assets uploaded:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8588280 bytes; SHA256
+  0e903b57a648a38927e1d84951eef5a066fafd2a8a888d616197e5890f9bfd54.
+- update-manifest.json: 239 bytes; SHA256
+  f1fcd183b15d750028e929a64f3ece49198ba23b825e1241308759b5099d6ce3.
+
+This same-version audit commit records completed verification without replacing
+or repackaging either immutable release asset. PowerShell-specific tests were
+unavailable in the local Linux environment; the native Windows workflow is the
+completed verification source for those checks.
