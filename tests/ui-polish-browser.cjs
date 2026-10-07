@@ -20,6 +20,7 @@ const root = path.resolve(__dirname, "..");
     assert.match(await page.locator("#fleet-status").innerText(), new RegExp(unlocked + " unlocked slots"));
     assert.ok(await page.locator("#cars-0").isHidden());
     assert.deepEqual((await page.evaluate(() => VirtueApp.getConfig())).farm.vehicles, farm.farm.vehicles);
+    assert.equal(await page.locator("#vehicle-0").getAttribute("aria-label"), "Fleet Slot 1 Vehicle"); assert.ok(await page.locator("#vehicle-0").evaluate(select => [...select.closest("label").childNodes].filter(node => node.nodeType === Node.TEXT_NODE).every(node => !node.textContent.trim())));
     await page.selectOption("#vehicle-0", "11"); await page.evaluate(() => VirtueApp.refresh());
     assert.ok(await page.getByLabel("Fleet Slot 1 Train Cars", { exact: true }).isVisible());
     await page.fill("#cars-0", "3"); await page.evaluate(() => VirtueApp.refresh());
@@ -81,8 +82,8 @@ const root = path.resolve(__dirname, "..");
       for (let i = 0; i < controls.length; i++) for (let j = i + 1; j < controls.length; j++) {
         const a = controls[i], b = controls[j]; assert.ok(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top, "Planning controls overlap at " + width);
       }
-      await page.click('[data-tab="planning"]'); await page.locator("#maxDays").focus();
-      const focused = await page.locator("#maxDays").boundingBox(), bar = await page.locator(".run-bar").boundingBox();
+      await page.click('[data-tab="planning"]'); await page.locator("#stagedSales").focus();
+      const focused = await page.locator("#stagedSales").boundingBox(), bar = await page.locator(".run-bar").boundingBox();
       assert.ok(focused.y + focused.height < bar.y, "Focused field obscured at " + width);
     }
     assert.deepEqual(errors, []);

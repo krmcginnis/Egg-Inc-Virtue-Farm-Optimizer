@@ -1,9 +1,10 @@
-# v0.8.0
+# v0.8.1
 
-- Farm & Account is the opening page for import, account data, progress, fuel, flights, and current farm equipment.
-- Planning is a separate page for goals, routes, limits, timing, and planned ships, with Assumptions below.
-- Both pages retain the compact two-panel desktop layout. Planning includes current Virtue, starting claimed/pending TE, and the last backup timestamp.
-- Continue to Planning and Review Farm make moving between the pages straightforward. Error review opens the relevant page.
-- Save Farm, import, Reset/Undo, recovery, and app updates preserve goals and ship schedules across both pages. Existing farm and plan files remain compatible.
-- Solver calculations and timeline/PDF content are unchanged.
+- Hold to Research now accepts the full 0–20 Epic Research range.
+- Shipping Fleet selectors no longer repeat the word “Vehicle” beside each vehicle.
+- The Artifact Inventory summary panel has been removed from Farm & Account; owned artifacts remain available under Artifacts & Stones.
+- Planning now keeps Maximum Research Sales with the main plan parameters. The editable Planning Limit field has been removed; planning uses the existing 366-day internal horizon.
+- C3 is labeled optional in the Wasmegg stage description because its usefulness depends on the selected research-sale count.
+- Persistent browser recovery/autosave has been removed. Save Farm and Save Plan remain the explicit ways to keep work between sessions; Update App still preserves the current session across its restart.
+- Solver routing, purchase behavior, timeline/PDF output, and update delivery behavior are otherwise unchanged.
 - Install through Update App → Update & Restart.

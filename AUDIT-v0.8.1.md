@@ -1,6 +1,6 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.0 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.1 — Release Audit
 
-v0.8.0 separates Farm & Account entry/review from Planning. Both pages retain
+v0.8.1 keeps the v0.8.0 Farm & Account / Planning split and applies a focused validation and UI cleanup. Both pages retain
 the compact two-panel desktop layout and share the existing farm configuration.
 A small Planning summary shows current Virtue, claimed/pending TE and the last
 backup timestamp. Focused validation is recorded at the end of this audit.
@@ -564,3 +564,36 @@ handover. Native screen-reader testing is not claimed.
 Local npm install/build, release-state and publish-plan guards pass. Original
 static input/select IDs and types match the previous release. The verified
 local package contains 164 runtime files and only the current audit.
+
+
+## Planning and account cleanup — v0.8.1
+
+Hold to Research now uses the current 20-level Epic Research range. Its 20
+catalog prices run from 5,000 through 20,000 Golden Eggs and total 249,991.
+This correction affects account validation/display only; Hold to Research does
+not change the optimizer's farm production model.
+
+Shipping Fleet selectors retain their native selects, artwork, values and
+accessible slot labels, but no longer repeat a visible “Vehicle” label inside
+each slot. The Farm & Account Artifact Inventory summary card is removed; the
+owned inventory itself remains available to automatic artifact selection and
+the Artifacts & Stones page.
+
+Planning groups Maximum Research Sales with Target Total Truth Eggs, Maximum
+New Switches and Start time. The editable Planning Limit field is removed.
+Newly gathered plans use the established 366-day internal ceiling, including
+old saved farms that previously carried a shorter maxDays value. C3 is described
+as optional in the stage guide because its usefulness depends on the research
+sales compared; solver routing and stage implementation are otherwise unchanged.
+
+Persistent browser recovery/autosave, its controls, local-storage session key,
+and recovery module are removed. Reset/Undo remains an in-memory current-session
+safety action. Save Farm and Save Plan remain the explicit persistence paths.
+Update App continues to use a separate one-time sanitized handoff only during
+the verified restart process; update rollback and restart behavior are unchanged.
+
+Regression coverage was updated for the removed recovery UI, the moved research
+sales control, planning error routing, focus/overflow behavior, and the 20-level
+Hold to Research input. The release workflow will rebuild the app/worker and run
+the established Windows release-state, publish-plan, updater, restart, rollback,
+archive and public-feed checks before publication.
