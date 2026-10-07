@@ -1,5 +1,9 @@
 # Egg Inc. Virtue Farm Optimizer v0.8.18 — Release Audit
 
+v0.8.18 compacts EID controls above the menu, shortens backup timestamps,
+standardizes brand/list punctuation, and expands Common Research by default.
+Current validation is in the v0.8.18 section below; prior evidence is historical.
+
 v0.8.17 moves EID loading and an unlabeled backup timestamp into the sidebar,
 with consistent headers across all pages. Current validation is in the v0.8.17
 section below; earlier evidence is historical.
@@ -1467,7 +1471,24 @@ three-or-more-item prose lists. Historical timeline presentation also normalizes
 Egg Inc. wording without changing recorded actions or calculations. Vendor/game
 reference data and source URLs retain their original content.
 
-Validation and Windows publication proof are recorded below after completion.
+Five Chromium suites pass at desktop widths 1440–1000px: page-navigation,
+research-artwork, import-account, equipment-flow, and timeline-readability.
+Checks verify EID-before-menu order, 32px input/arrow dimensions and alignment,
+consistent headers, persisted identity and actual protobuf imports, backup ISO
+metadata/timezone with no weekday or seconds, expanded Common Research, exact
+Tier 1 (Maxed) labels, maxed-tier collapse, temporary search disclosure and state
+restoration, manual edits, saved-farm round trips, and unchanged replay actions.
+Sidebar and research desktop screenshots are reviewed. Mobile layouts are not
+checked, as requested.
+
+npm ci/build, release-state, prepare-publish, syntax, and diff checks pass.
+Legacy brand presentation preserves existing periods and stored action fields.
+The v0.8.18 worker SHA256 is:
+b83d183827b276017ff669bad13e54abde1a633d0901bb3c8f33bc202ca3d2a1.
+Comparing against the packaged v0.8.17 worker proves its only byte difference
+is adding Oxford commas to the invalid-sequence error sentence. Parsing and
+all solver calculations are unchanged. No rate/catalog value changes are made.
+Windows publication and public-update-feed proof are recorded after completion.
 
 Local validation: npm ci/build and diff checks pass. Desktop Chromium
 page-navigation, import-account, and research-artwork suites pass at
@@ -1477,5 +1498,27 @@ backups, expanded research, tier-level (Maxed) labels, research filtering,
 manual locks, exact remaining costs, and saved-farm round trips.
 Shift-rates, physical-preview, timezones, opening-discount, release-state,
 and prepare-publish checks pass. No catalog/rate/purchase/search logic changes.
-Worker text changes only reflect the shared Egg Inc. wording normalization;
+The only worker change is Oxford commas in its invalid-sequence error message;
 recorded actions and numerical replay behavior remain unchanged.
+
+The update-error Chromium suite also passes dialog error handling, browser
+capture/reload/restore, selected artifact tab restoration, legacy page handoffs,
+and blocked-storage recovery. Current and historical branding normalization
+preserves existing periods and avoids double punctuation. Desktop screenshots
+of the loaded sidebar and expanded research with a maxed tier are reviewed.
+
+
+Windows release proof: app commit a15020b279d8b4258b5cc922db00c7d139c0caad;
+automatic Publish App Release run 37637643378 / job 112847946718 succeeds.
+The native Windows build packages 169 runtime files. Hidden CMD launch/reuse,
+install/restart, rollback, startup-failure recovery, legacy-worker recovery,
+archive guards, retained settings, and checksum validation pass. Windows
+PowerShell 5.1.26100.33438 finds v0.8.18 anonymously, downloads the complete
+archive, and verifies every app-file checksum on the first attempt.
+
+The public release is not a draft and targets the exact app commit above.
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8563642 bytes; sha256:a1a474dd10902f6e56cbdefa0628e64bdda796468d2c2a6bbc44f5b3ca3512c0.
+- update-manifest.json: 240 bytes; sha256:cdcc9a1f10ff1d2f79471a74e16af6b7643c0ed3aa4554b508c078cb22dd1de0.
+
+This same-version audit commit records verification without replacing or
+repackaging the immutable release assets.
