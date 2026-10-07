@@ -1,4 +1,4 @@
-# v0.8.10
+# v0.8.11
 
 - Review setup in Account → Virtue Farm → Planning order, with matching Continue buttons.
 - Keep identity/import, Soul Eggs, permit, switch history, TE progress, Colleggtibles and Epic Research on Account.

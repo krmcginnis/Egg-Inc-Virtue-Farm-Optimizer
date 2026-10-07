@@ -1,4 +1,11 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.10 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.11 — Release Audit
+
+v0.8.11 retries publication of the unchanged v0.8.10 app changes. The v0.8.10
+Windows run passed build, package, native hidden launch, installation, restart
+and rollback checks. Anonymous public-feed verification returned HTTP 403 after
+five retries, and the pipeline hid that release as a draft. It remains untouched;
+the new version runs the complete Windows pipeline and public verification again.
+Only release metadata and this record change in the retry.
 
 v0.8.10 reorganizes setup into Account → Virtue Farm → Planning. Account holds
 progression and permanent bonuses. Virtue Farm combines current upgrades,
