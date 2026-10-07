@@ -63,7 +63,7 @@ button{min-height:40px}
 
 .strategy-selection{grid-column:1/-1;min-width:0}.strategy-selection>.hint{margin:8px 0}.strategy-selection .planning-routing{margin:12px 0 4px;padding-top:12px}.stage-order{line-height:1.7;overflow-wrap:anywhere}.strategy-stages{margin:10px 0}.strategy-stages summary{cursor:pointer;color:var(--accent);font-size:13px;padding:5px 0}.strategy-stages ol{padding-left:21px;font-size:13px;line-height:1.6;color:var(--muted)}.strategy-stages li{margin:6px 0}.strategy-stages strong{color:#dce5f1}.strategy-selection .check input:disabled{opacity:1;cursor:default}
 
-/* Recovery and actual flight availability. */
+/* Actual flight availability. */
 .existing-flights{border-top:1px solid var(--line);margin-top:18px;padding-top:14px}.existing-flights h3{font-size:14px;margin:0 0 14px}#effort-help{font-size:11px;line-height:1.5}
 
 #flight-list{padding-left:18px;margin:8px 0}#flight-list:empty{display:none}#flight-list li{margin:7px 0;line-height:1.6}
