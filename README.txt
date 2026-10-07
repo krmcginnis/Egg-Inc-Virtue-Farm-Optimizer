@@ -1,9 +1,16 @@
-EGG INC. VIRTUE FARM OPTIMIZER 0.8.0 — PC EDITION
+EGG INC. VIRTUE FARM OPTIMIZER 0.8.6 — PC EDITION
 
 GET STARTED
 1. Extract the entire ZIP; open the Egg-Inc-Virtue-Farm-Optimizer folder.
 2. Double-click Start-Virtue-Optimizer.cmd. It opens the app in your browser.
-3. Keep the launcher window open for EID import and app updates. Close it to stop the local helper.
+3. The local helper runs in the background for EID import and updates. No
+   command window needs to stay open. The CMD launcher may flash briefly.
+   Closing the browser leaves the helper running until Windows signs out or
+   shuts down. Launching again reopens the same running installation.
+
+For startup troubleshooting, run Start-Virtue-Optimizer.cmd --console from a
+command prompt. This starts a visible helper; Ctrl+C stops that diagnostic run.
+Background startup errors appear in a Windows dialog.
 
 You can also double-click index.html for fully offline use. In that mode, enter
 farm values or load a JSON farm/backup. No installation, domain, Python or Node
@@ -54,7 +61,8 @@ Coop, Trike and one silo. Additional purchases require the matching Virtue.
 Enter your actual Soul Eggs before planning switches; clearing sets them to zero.
 Fresh farms use automatic online/offline waiting. Keep the starting silo refilled.
 
-Choose Continue to Planning or the Planning sidebar entry. Planning has goals,
+Choose Continue to Planning to review Artifacts first, then continue to Planning;
+you can also open Planning from the sidebar. Planning has goals,
 ship schedules, timing and assumptions, with a compact starting-farm summary.
 Save Farm includes values and settings from both pages.
 

@@ -602,5 +602,14 @@
     "localBuildAndPackaging": "passed: 164 runtime files",
     "releaseAndPublishGuards": "passed",
     "localUpdateCore": "blocked: pwsh unavailable; Windows release checks required"
+  },
+  "backgroundLauncher": {
+    "version": "0.8.6",
+    "localChecks": "Node syntax, release-state and prepare-publish guards passed",
+    "nativeWindowsTests": "tests/update-launch.cjs: actual CMD with spaces, hidden helper, repeat launch reuse, session identity, explicit-port duplicate rejection, successful update, rollback, legacy-worker hidden restart",
+    "requiredBeforeHandover": "Windows release workflow and public feed/checksums",
+    "localPowerShell": "unavailable",
+    "solverChanges": false,
+    "workerSHA256": "26a402fae2d31a8c270bf7fd6d03e0e0ebbda684095f4f5c1ad4cb5937b0625a"
   }
 }

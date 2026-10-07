@@ -1,6 +1,19 @@
-param([switch]$NoBrowser, [int]$Port = 0)
+param([switch]$NoBrowser, [int]$Port = 0, [switch]$Background, [switch]$Console)
 # Local app host, read-only Egg Inc proxy and user-requested app updater.
 $ErrorActionPreference = 'Stop'
+if ($env:OS -eq 'Windows_NT' -and -not $Console) { $Background = $true }
+# Background startup failures must remain visible even without a console.
+trap {
+    $startupFailure = $_
+    if ($Background -and $env:OS -eq 'Windows_NT') {
+        try {
+            Add-Type -AssemblyName System.Windows.Forms
+            [Windows.Forms.MessageBox]::Show(('The optimizer could not start. ' + $startupFailure.Exception.Message), 'Egg Inc. Virtue Farm Optimizer', 'OK', 'Error') | Out-Null
+        } catch { }
+    }
+    Write-Error $startupFailure -ErrorAction Continue
+    exit 1
+}
 if ($env:OS -eq 'Windows_NT' -and -not ('VirtueOptimizerSocketHandles' -as [type])) {
     Add-Type @'
 using System;
@@ -9,8 +22,18 @@ public static class VirtueOptimizerSocketHandles {
     [DllImport("kernel32.dll", SetLastError = true)]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static extern bool SetHandleInformation(IntPtr handle, uint mask, uint flags);
+    [DllImport("kernel32.dll")]
+    public static extern IntPtr GetConsoleWindow();
+    [DllImport("user32.dll")]
+    public static extern bool ShowWindow(IntPtr handle, int command);
 }
 '@
+}
+# Older updater workers launch the new helper without hidden-window flags.
+# Hide that console in place, preserving its PID for restart/rollback handling.
+if ($env:OS -eq 'Windows_NT' -and $Background) {
+    $consoleHandle = [VirtueOptimizerSocketHandles]::GetConsoleWindow()
+    if ($consoleHandle -ne [IntPtr]::Zero) { [VirtueOptimizerSocketHandles]::ShowWindow($consoleHandle, 0) | Out-Null }
 }
 function Protect-SocketHandle($Socket) {
     # Windows PowerShell/.NET Framework sockets can otherwise remain open in
@@ -24,6 +47,11 @@ $rootPath = $PSScriptRoot
 . (Join-Path $rootPath 'Update-Core.ps1')
 $appVersion = (Get-Content -LiteralPath (Join-Path $rootPath 'package.json') -Raw -Encoding UTF8 | ConvertFrom-Json).version
 $rootId = Get-UpdateHash (Join-Path $rootPath 'app.js')
+# Identify this installation without exposing its filesystem path over HTTP.
+$identityPath = [IO.Path]::GetFullPath($rootPath)
+if ($env:OS -eq 'Windows_NT') { $identityPath = $identityPath.ToUpperInvariant() }
+$identityHash = [Security.Cryptography.SHA256]::Create()
+try { $instanceId = ([BitConverter]::ToString($identityHash.ComputeHash([Text.Encoding]::UTF8.GetBytes($identityPath)))).Replace('-', '').ToLowerInvariant() } finally { $identityHash.Dispose() }
 $availableRelease = $null; $updateProcess = $null; $activeJob = $null
 $updatesRoot = Join-Path $rootPath '.updates'
 $activePath = Join-Path $rootPath '.update-active.json'
@@ -49,6 +77,24 @@ $requestedPort = $Port
 if ($requestedPort -ne 0 -and ($requestedPort -lt 8765 -or $requestedPort -gt 8790)) { throw 'Invalid app port.' }
 $firstPort = 8765; $lastPort = 8790
 if ($requestedPort) { $firstPort = $requestedPort; $lastPort = $requestedPort }
+if (-not $requestedPort -and $Background) {
+    # Reuse a healthy helper for this folder instead of accumulating hidden
+    # processes and changing the browser origin (and its EID preferences).
+    for ($candidate = $firstPort; $candidate -le $lastPort; $candidate++) {
+        $probe = [Net.Sockets.TcpClient]::new()
+        try {
+            $connection = $probe.ConnectAsync('127.0.0.1', $candidate)
+            if (-not $connection.Wait(100)) { continue }
+            $probe.Close()
+            $existingUrl = "http://127.0.0.1:$candidate"
+            $health = Invoke-RestMethod -Uri ($existingUrl + '/api/update/health') -TimeoutSec 2
+            if ($health.instanceId -ceq $instanceId -and $health.rootId -ceq $rootId -and $health.version -ceq $appVersion) {
+                if (-not $NoBrowser) { Start-Process $existingUrl }
+                exit 0
+            }
+        } catch { } finally { $probe.Dispose() }
+    }
+}
 for ($candidate = $firstPort; $candidate -le $lastPort; $candidate++) {
     try {
         $listener = [Net.Sockets.TcpListener]::new([Net.IPAddress]::Loopback, $candidate)
@@ -85,7 +131,7 @@ function Get-UpdateState {
         if ($updateProcess -and $updateProcess.HasExited -and $state.state -in @('downloading','verifying')) { $state = @{state='failed';message='The update download stopped. Try again.'} }
     }
     if (Test-Path -LiteralPath (Join-Path $rootPath '.update-result.json')) { try { $result = Read-UpdateJson (Join-Path $rootPath '.update-result.json') } catch { } }
-    return @{version=$appVersion;rootId=$rootId;repository=$repository;configured=[bool]$repository;job=$state;result=$result;pending=($state -and $state.state -eq 'installing')}
+    return @{version=$appVersion;rootId=$rootId;instanceId=$instanceId;repository=$repository;configured=[bool]$repository;job=$state;result=$result;pending=($state -and $state.state -eq 'installing')}
 }
 function Start-UpdateWorker([string]$Mode) {
     $executable = (Get-Process -Id $PID).Path
@@ -97,8 +143,8 @@ function Start-UpdateWorker([string]$Mode) {
     return Start-Process @options
 }
 Write-Host $appTitle -ForegroundColor Cyan
-Write-Host "Running on $baseUrl. Keep this window open for EID import and app updates."
-Write-Host 'Close this window or press Ctrl+C to stop. Farm files can also be opened offline.'
+Write-Host "Running on $baseUrl."
+if (-not $Background) { Write-Host 'Keep this diagnostic window open. Close it or press Ctrl+C to stop this helper.' }
 if (-not $NoBrowser) { Start-Process $baseUrl }
 try {
     while ($true) {

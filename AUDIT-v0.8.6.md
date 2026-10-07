@@ -1,6 +1,6 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.5 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.6 — Release Audit
 
-v0.8.5 keeps the Farm & Account / Planning split and adds an Artifacts review step, clearer account source labels, and compact common-research tiers. Both pages retain
+v0.8.6 runs the Windows helper in the background while retaining the Farm & Account / Artifacts / Planning flow, compact layout and unchanged solver. Both pages retain
 the compact two-panel desktop layout and share the existing farm configuration.
 A small Planning summary shows current Virtue, claimed/pending TE and the last
 backup timestamp. Focused validation is recorded at the end of this audit.
@@ -710,3 +710,44 @@ Local npm ci/build, release-state and prepare-publish checks pass. Packaging
 verifies 164 runtime files and one current audit. Local update-core execution
 is blocked because pwsh is unavailable; native Windows updater checks remain
 mandatory in the automatic publishing workflow.
+
+
+## Hidden Windows launcher — v0.8.6
+
+The existing CMD entry point now starts a separate Windows PowerShell helper
+with WindowStyle Hidden and exits. No persistent command window is needed for
+EID sync or updates. The CMD bootstrap can still flash briefly. An explicit
+--console diagnostic mode retains the visible helper and Ctrl+C shutdown.
+Background startup failures display a Windows error dialog instead of failing
+silently; normal request errors remain in the app.
+
+Windows update and rollback workers launch hidden helpers too. The helper also
+hides its console in place by default unless Console is specified, supporting
+first installation by an older updater worker that lacks hidden-window flags.
+Its PID, loopback listener, socket inheritance protection, update health check,
+local session token and restart/rollback policy are retained.
+
+Repeated normal launches probe the existing loopback port range and reuse only
+a healthy matching installation (hashed folder identity, app hash and version).
+This retains its port and browser EID preferences without accumulating helpers.
+Explicit-port launches still reject occupied ports as before. Probes are bounded;
+no filesystem path or additional account data is exposed in health responses.
+The hidden helper remains running when the browser closes and stops at Windows
+sign-out/shutdown. README and in-app help describe this behavior and diagnostics.
+No new managed file type or updater allowlist expansion is required.
+
+The Windows release test now launches the actual CMD file from a folder with
+spaces, checks the helper's hidden-window arguments/window handle, tests repeated
+background-launch reuse and unchanged session identity, and verifies hidden
+successful/rollback restarts. A third fixture simulates an older updater worker
+without hidden flags to exercise first-update compatibility. All fixtures retain
+private synthetic farm files and update-source settings. Tests reject a second
+helper bound explicitly to the live port. The automatic workflow must pass these
+native tests, core update rejection/install/rollback checks and anonymous public
+feed/archive checksum validation before handover.
+
+Local Node syntax, release-state and prepare-publish checks pass. Local Windows/
+PowerShell execution is unavailable; native behavior is checked in the existing
+Windows release workflow. The rebuilt solver worker remains byte-identical to
+v0.8.5: SHA256 26a402fae2d31a8c270bf7fd6d03e0e0ebbda684095f4f5c1ad4cb5937b0625a.
+No solver, farm/account import calculations, game data or UI layout changes.

@@ -9,7 +9,8 @@ function Start-UpdatedHelper([string]$Label) {
     $executable = (Get-Process -Id $PID).Path
     $scriptPath = Join-Path $AppRoot 'Local-Helper.ps1'
     $options = @{FilePath=$executable;ArgumentList=@('-NoProfile','-ExecutionPolicy','Bypass','-File',('"' + $scriptPath + '"'),'-NoBrowser','-Port',"$Port");PassThru=$true;RedirectStandardError=(Join-Path $JobRoot ($Label + '-error.log'))}
-    if ($env:OS -ne 'Windows_NT') { $options.RedirectStandardOutput = Join-Path $JobRoot ($Label + '.log') }
+    if ($env:OS -eq 'Windows_NT') { $options.WindowStyle = 'Hidden'; $options.ArgumentList += '-Background' }
+    else { $options.RedirectStandardOutput = Join-Path $JobRoot ($Label + '.log') }
     return Start-Process @options
 }
 function Wait-UpdatedHelper([string]$Version) {
@@ -38,7 +39,7 @@ try {
     if (-not $AppRoot -or $Port -lt 8765 -or $Port -gt 8790 -or $ParentProcessId -le 0) { throw 'Invalid app restart request.' }
     Set-State 'installing' 'Installing the update and restarting the app...'
     $parent = Get-Process -Id $ParentProcessId -ErrorAction SilentlyContinue
-    if ($parent -and -not $parent.WaitForExit(20000)) { throw 'The local app did not stop. Close its launcher window and try again.' }
+    if ($parent -and -not $parent.WaitForExit(20000)) { throw 'The local app did not stop. Restart Windows, then launch the app and try again.' }
     $oldVersion = (Read-UpdateJson (Join-Path $AppRoot 'package.json')).version
     $installed = $false; $newHelper = $null
     try {
@@ -65,7 +66,7 @@ try {
         Write-UpdateJson (Join-Path $AppRoot '.update-result.json') @{ok=$false;version=$oldVersion;message="The update failed; the previous app was restored. $failure"}
         $restored = Start-UpdatedHelper 'restored-helper'
         Set-State 'failed' "The update failed; the previous app was restored. $failure"
-        if (-not (Wait-UpdatedHelper $oldVersion)) { throw 'Close this window and launch Start-Virtue-Optimizer.cmd again. Your previous app files and farm data are retained.' }
+        if (-not (Wait-UpdatedHelper $oldVersion)) { throw 'Launch Start-Virtue-Optimizer.cmd again. Your previous app files and farm data are retained.' }
     }
 } catch {
     Set-State 'failed' $_.Exception.Message
