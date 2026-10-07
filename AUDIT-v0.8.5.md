@@ -1,6 +1,6 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.4 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.5 — Release Audit
 
-v0.8.1 keeps the v0.8.0 Farm & Account / Planning split and applies a focused validation and UI cleanup. Both pages retain
+v0.8.5 keeps the Farm & Account / Planning split and adds an Artifacts review step, clearer account source labels, and compact common-research tiers. Both pages retain
 the compact two-panel desktop layout and share the existing farm configuration.
 A small Planning summary shows current Virtue, claimed/pending TE and the last
 backup timestamp. Focused validation is recorded at the end of this audit.
@@ -654,3 +654,59 @@ and has its Fleet Slot accessible label after rendering; this defect would have
 failed that suite. The current automated release workflow does not execute the
 Playwright browser suites, which is why v0.8.3 packaging checks did not catch the
 UI regression. No solver code is changed.
+
+
+## Artifact review and compact research tiers — v0.8.5
+
+Continue to Planning on Farm & Account now opens Artifacts for current-loadout
+review; continuing from Artifacts opens Planning. Neither action starts a search.
+The page and sidebar use Artifacts. Copy Earnings to Current and Copy Delivery
+to Current copy the selected alternate set, including stones, into Current and
+select Current as the active starting set. Source sets remain independent.
+Existing manual farm editing locks still apply; the copy notice explains that
+the gear must be equipped in the game before using it as the starting set.
+
+Colleggtibles and Epic Research move into the left Farm & Account column while
+retaining their account editing toggle, disclosure behavior and saved values.
+The ambiguous Review Tiers badge is replaced by Partially Imported, Previous
+Values Retained, or Reconstructed from Totals, according to its actual source.
+Visible explanations describe missing/unmatched contract progress and retained
+values. Fully matched account imports still show Imported Backup. No import
+matching, bonus calculations or fallback rules changed.
+
+All 56 common researches appear in their 13 catalog tiers with native keyboard
+operable disclosures. Completed tiers start collapsed; incomplete tiers start
+open. Tier summaries show purchased/maximum levels and Maxed when appropriate.
+Compact rows retain original artwork, current-level inputs, maximum levels and
+next cost/locked state. Descriptions remain searchable, available on hover and
+associated with inputs for assistive technology. Filtering temporarily opens
+matching tiers; clearing restores previous disclosure states. Error review clears
+filters and opens the affected tier before focusing its input or edit toggle.
+Manual edits update totals without collapsing a focused tier. Saved research
+values, input IDs and validation limits are retained.
+
+Targeted Chromium suites pass page-navigation, planning-clarity,
+research-artwork, loadout-artwork and ui-polish. Coverage includes actual API/
+protobuf sync with a synthetic backup, fleet rendering, EID identity persistence,
+both navigation steps without a worker, distinct loadout copies with stones,
+source independence, account/farm locks, completed-tier collapse, filtering and
+restoration, invalid-field review, saved-value round trips, replayed worker plans,
+offline artwork/fallback and overflow checks from 1440 to 320 pixels. Desktop
+and mobile research screenshots and the two-panel farm layout were inspected.
+The older import-account-browser suite cannot start in this checkout because
+its import-tank-fixture.cjs and import-colleggtibles-fixture.cjs dependencies
+are absent; current self-contained suites exercise imports and the EID API.
+No live-account request or native screen-reader check is claimed.
+
+No solver, game data, import calculations, ship scheduling or updater source
+changed. Independently rebuilding the v0.8.4 worker from its clean Git tree
+produced bytes identical to this release's worker (SHA256
+26a402fae2d31a8c270bf7fd6d03e0e0ebbda684095f4f5c1ad4cb5937b0625a).
+Historical hashes above describe earlier catalog/build states. The standard
+Windows release workflow checks updater installation, restart, rollback,
+packaging and the anonymous public feed before handover.
+
+Local npm ci/build, release-state and prepare-publish checks pass. Packaging
+verifies 164 runtime files and one current audit. Local update-core execution
+is blocked because pwsh is unavailable; native Windows updater checks remain
+mandatory in the automatic publishing workflow.

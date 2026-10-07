@@ -343,3 +343,21 @@ aside>*{flex-shrink:0}
 .planning-farm-context time{font-size:12px}
 #planning-ships-column .ship-planning{margin-top:0}
 @media(max-width:500px){.planning-farm-context{grid-template-columns:repeat(2,minmax(0,1fr))}.planning-farm-context>div:last-child{grid-column:1/-1}.planning-farm-summary #review-farm{min-height:44px}}
+
+/* Compact common research, grouped in native tier disclosures. */
+.research-tier{border:1px solid var(--line);border-radius:7px;overflow:hidden;margin-top:10px}
+.research-tier>summary{display:flex;align-items:center;gap:12px;padding:12px;background:#213044;list-style:none}
+.research-tier>summary::-webkit-details-marker{display:none}
+.research-tier>summary:before{content:'▸';color:var(--accent)}
+.research-tier[open]>summary:before{content:'▾'}
+.research-tier-totals{margin-left:auto;color:var(--muted);font-size:11px;text-align:right}
+.research-tier.maxed .research-tier-totals{color:#8bd8bb}
+.research-tier table{table-layout:fixed}
+.research-tier th,.research-tier td{padding:8px 12px;vertical-align:middle}
+.research-tier th:nth-child(2){width:145px}.research-tier th:nth-child(3){width:120px}
+.research-tier tbody tr:last-child td{border-bottom:0}
+.research-tier .research-caption{min-width:0;overflow-wrap:anywhere}
+.research-level-value{display:flex;align-items:center;gap:6px;white-space:nowrap}
+.research-level-value input{width:70px;padding:6px 7px;font-size:12px}
+.research-level-value span,.research-cost{color:var(--muted);font-size:11px}
+@media(max-width:500px){.research-tier th,.research-tier td{padding:8px 6px}.research-tier th:nth-child(2){width:98px}.research-tier th:nth-child(3){width:70px}.research-level-value{gap:3px}.research-level-value input{width:49px;padding:6px 3px}.research-tier .research-icon{width:20px;height:20px}.research-tier .research-caption{gap:5px;font-size:11px}.research-cost{overflow-wrap:anywhere}}

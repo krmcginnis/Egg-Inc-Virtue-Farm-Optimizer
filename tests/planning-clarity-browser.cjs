@@ -55,8 +55,14 @@ const root = path.resolve(__dirname, "..");
     assert.equal(await page.locator('#account-data-card [data-source]').innerText(), "Imported Backup");
     const missingContracts = structuredClone(accountOnly); delete missingContracts.contracts;
     await load({ backup: missingContracts });
-    assert.equal(await page.locator('#colleggtibles-card [data-source]').innerText(), "Review Tiers");
+    assert.equal(await page.locator('#colleggtibles-card [data-source]').innerText(), "Previous Values Retained");
     assert.match(await page.locator("#col-note").innerText(), /progress was missing/);
+    assert.match(await page.locator("#col-note").innerText(), /bonuses were not refreshed/);
+    const partial = structuredClone(accountOnly);
+    partial.contracts.archive.push({contractIdentifier:"synthetic-unmapped-colleggtible",maxFarmSizeReached:1e10,timeAccepted:1791300600});
+    await load({backup:partial});
+    assert.equal(await page.locator('#colleggtibles-card [data-source]').innerText(), "Partially Imported");
+    assert.match(await page.locator("#col-note").innerText(), /earlier selections were kept/);
     const saved = await page.evaluate(() => VirtueApp.getConfig()); await load(saved);
     assert.deepEqual((await page.evaluate(() => VirtueApp.getConfig())).farm, saved.farm);
     // Invalid fields are linked directly, with closed details opened before review.

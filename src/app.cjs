@@ -19,7 +19,7 @@ const EID_KEY = "virtue-optimizer.eid.v1", EID_NAME_KEY = "virtue-optimizer.eid-
 let savedEid = "", savedEidName = "", eidDraft = "";
 let config = blankFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
 const effort = { quick: { width: 12, branches: 8, maxDepth: 500, maxMs: 1e4 }, balanced: { width: 32, branches: 12, maxDepth: 1200, maxMs: 45e3 }, thorough: { width: 72, branches: 20, maxDepth: 2200, maxMs: 18e4 } };
-const labels = { farm: "Farm & Account", planning: "Planning", research: "Farm Research", artifacts: "Artifacts & stones", results: "Purchase timeline", help: "How it works" };
+const labels = { farm: "Farm & Account", planning: "Planning", research: "Farm Research", artifacts: "Artifacts", results: "Purchase timeline", help: "How it works" };
 const colNames = { earnings: "Earnings", awayEarnings: "Away earnings", ihr: "Internal hatchery", elr: "Egg laying", shippingCap: "Shipping capacity", habCap: "Hab capacity", vehicleCost: "Vehicle cost", habCost: "Hab cost", researchCost: "Research cost" };
 function el(tag, text, cls) {
   const e = document.createElement(tag);
@@ -99,9 +99,9 @@ function tab(name, focusHeading = false) {
   if (focusHeading) $("page-title").focus({ preventScroll: true });
 }
 function updatePrimaryAction() {
-  const onFarm = document.querySelector('[data-tab="farm"]').classList.contains("active");
-  $("optimize").textContent = onFarm ? "Continue to Planning" : "Find Fastest Plan";
-  $("optimize").disabled = !!worker || !!importingBackup || (!onFarm && !!invalidField);
+  const reviewing = ["farm", "artifacts"].some(name => document.querySelector(`[data-tab="${name}"]`).classList.contains("active"));
+  $("optimize").textContent = reviewing ? "Continue to Planning" : "Find Fastest Plan";
+  $("optimize").disabled = !!worker || !!importingBackup || (!reviewing && !!invalidField);
 }
 function readNumber(id, name, min = 0, max = Infinity, integer = false) {
   try { return S.number(NumericInput.value($(id)), name, min, max, integer); }
@@ -229,8 +229,8 @@ function revealFleetField(node) {
 function reviewField(id) {
   const node = $(id);
   tab(node?.closest("[data-page]")?.dataset.page || "farm");
+  if (node?.closest(".research-tier") && $("research-filter").value) { $("research-filter").value = ""; filterResearch(); }
   for (let parent = node?.parentElement; parent; parent = parent.parentElement) if (parent.tagName === "DETAILS") parent.open = true;
-  if (node?.closest("tr")?.hidden) { $("research-filter").value = ""; filterResearch(); }
   if (node) {
     revealFleetField(node);
     const fields = node.closest(".account-value-fields"), toggles = fields?.disabled ? [...document.querySelectorAll('[aria-controls~="' + fields.id + '"]')] : [];
@@ -314,7 +314,9 @@ function updateDataSources() {
     if (manual) setSource(node, "Manual Override", "Manual editing is enabled. The solver uses the entered values.", "manual");
     else if (config.uiProvenance?.[group] === "manual") setSource(node, "Manually Edited", "Values were edited after loading and are now locked. Reimport to refresh them.", "manual");
     else if (config.uiProvenance?.[group] === "plan") setSource(node, "Projected from Plan", "Calculated for the next ascension from the completed plan; not a new game backup.");
-    else if (group === "colleggtibles" && (info?.colleggtibleSource === "partial" || info?.colleggtibleSource === "unavailable" || config.farm.colleggtibleTiersInferred)) setSource(node, "Review Tiers", "Some tiers were retained or reconstructed. Review the warning below.", "warning");
+    else if (group === "colleggtibles" && info?.colleggtibleSource === "partial") setSource(node, "Partially Imported", "Some contract records could not be matched. Imported bonuses are combined with retained selections; see the explanation below.", "warning");
+    else if (group === "colleggtibles" && info?.colleggtibleSource === "unavailable") setSource(node, "Previous Values Retained", "Contract progress was missing from the backup. These bonuses were not refreshed; see the explanation below.", "warning");
+    else if (group === "colleggtibles" && config.farm.colleggtibleTiersInferred) setSource(node, "Reconstructed from Totals", "Individual tiers were reconstructed from an older saved file's combined bonuses; see the explanation below.", "warning");
     else if (group === "flights" && info?.flightSource !== "backup") setSource(node, config.farm.shipFlights?.length ? "Retained Flights" : "Not Loaded", "Flight information was not supplied by the last import.");
     else if (group === "farm" && info?.scope === "account") setSource(node, "Retained Farm", "No active Virtue farm was found. Your starting farm was retained.");
     else if (info) setSource(node, "Imported Backup", "From the last loaded Egg Inc backup; check its timestamp above.", "imported");
@@ -427,31 +429,10 @@ function renderForm() {
   const colleggtibleSource = config.importInfo?.colleggtibleSource;
   $("col-note").textContent = [
     selected.inferred ? "Older files store combined bonuses only. These tiers were reconstructed to match; verify the individual selections. " + (Object.keys(selected.overrides).length ? "Custom totals are preserved until you change a colleggtible affecting that stat." : "") : "",
-    colleggtibleSource === "backup" ? "Colleggtible bonuses loaded from account contract progress." : colleggtibleSource === "partial" ? "Some contract records could not be matched. Recognized bonuses were loaded and previous selections retained; verify your tiers." : colleggtibleSource === "unavailable" ? "Contract progress was missing. Previous selections were retained; verify your tiers or sync the game and reload account data." : ""
+    colleggtibleSource === "backup" ? "Colleggtible bonuses loaded from account contract progress." : colleggtibleSource === "partial" ? "Some contract records could not be matched to Colleggtible eggs. Recognized bonuses were imported; earlier selections were kept for missing records. Compare the individual bonuses with the game, or sync the game and reload." : colleggtibleSource === "unavailable" ? "Contract progress was missing from the backup, so Colleggtible bonuses were not refreshed. Previous selections were retained. Sync the game and reload, or enter the bonuses manually." : ""
   ].filter(Boolean).join(" ");
   renderColleggtibleTotals(selected.tiers, selected.overrides);
-  $("research-body").replaceChildren(...D.research.map((r) => {
-    const tr = el("tr");
-    tr.dataset.search = (r.name + " " + r.description).toLowerCase();
-    tr.append(el("td", r.tier));
-    const desc = el("td", undefined, "research-description");
-    desc.append(ResearchIcons.caption(r.id, r.name));
-    desc.append(el("small", r.description));
-    tr.append(desc);
-    const td = el("td"), input = el("input");
-    input.id = "research-" + r.id;
-    input.type = "number";
-    input.min = "0";
-    input.max = r.levels;
-    NumericInput.write(input, f.research[r.id] || 0);
-    input.setAttribute("aria-label", r.name + " current level");
-    td.append(input);
-    tr.append(td, el("td", r.levels));
-    const cost = el("td");
-    cost.id = "cost-" + r.id;
-    tr.append(cost);
-    return tr;
-  }));
+  renderResearch();
   $("epic-fields").replaceChildren(...D.epic.map((r) => ResearchIcons.decorateLabel(field(r.name, "epic-" + r.id, f.epic?.[r.id] || 0, "number", { min: 0, max: r.levels }), r.id)));
   f.loadouts = f.loadouts || { current: [] };
   if (!f.loadouts.current) f.loadouts.current = structuredClone(f.loadouts[f.activeSet] || []);
@@ -757,6 +738,7 @@ function refresh() {
   $("sequence-budget").hidden = true;
   $("fit-sequence").hidden = true;
   try {
+    updateResearchSummaries();
     config = gather();
     if (!config.plan.autoSequence) {
       const route = Route.normalize(config.plan.sequence, config.farm.virtue), needed = route.length - 1, clipped = needed > config.plan.maxSwitches;
@@ -1563,19 +1545,80 @@ function copySet(key) {
   if (!$("manualFarmData").checked) return;
   try {
     config = gather();
-    config.farm.loadouts[key] = structuredClone(config.farm.loadouts.current);
+    config.farm.loadouts.current = structuredClone(config.farm.loadouts[key]);
+    config.farm.activeSet = "current";
+    $("activeSet").value = "current";
+    (config.uiProvenance ||= {}).farm = "manual";
     renderLoadouts();
     markInputsChanged();
     refresh();
-    show("Current loadout copied to " + key + ".");
+    show((key === "earnings" ? "Earnings" : "Delivery") + " loadout copied to Current. Equip these artifacts and stones in the game before starting the plan.");
   } catch (e) {
     show(e.message, true);
+  }
+}
+function renderResearch() {
+  const host = $("research-body");
+  host.replaceChildren();
+  for (const tier of [...new Set(D.research.map(r => r.tier))]) {
+    const items = D.research.filter(r => r.tier === tier), section = el("details", undefined, "research-tier");
+    section.dataset.tier = tier;
+    section.open = !items.every(r => config.farm.research[r.id] === r.levels);
+    const summary = el("summary"), label = el("span", "Tier " + tier), totals = el("span", undefined, "research-tier-totals");
+    summary.append(label, totals);
+    section.append(summary);
+    const table = el("table"), head = el("thead"), headings = el("tr"), body = el("tbody");
+    for (const name of ["Research", "Level / Max", "Next Cost"]) {
+      const th = el("th", name); th.scope = "col"; headings.append(th);
+    }
+    head.append(headings);
+    for (const r of items) {
+      const row = el("tr");
+      row.dataset.search = (r.name + " " + r.description).toLowerCase();
+      const name = el("td", undefined, "research-description"), caption = ResearchIcons.caption(r.id, r.name);
+      caption.title = r.description;
+      const description = el("span", r.description, "sr-only"); description.id = "description-" + r.id;
+      name.append(caption, description);
+      const level = el("td", undefined, "research-level"), input = el("input");
+      input.id = "research-" + r.id; input.type = "number"; input.min = "0"; input.max = r.levels;
+      NumericInput.write(input, config.farm.research[r.id] || 0);
+      input.setAttribute("aria-label", r.name + " current level");
+      input.setAttribute("aria-describedby", description.id);
+      const levels = el("div", undefined, "research-level-value");
+      levels.append(input, el("span", "/ " + r.levels)); level.append(levels);
+      const cost = el("td", undefined, "research-cost"); cost.id = "cost-" + r.id;
+      row.append(name, level, cost); body.append(row);
+    }
+    table.append(head, body); section.append(table); host.append(section);
+  }
+  updateResearchSummaries();
+}
+function updateResearchSummaries() {
+  for (const section of document.querySelectorAll(".research-tier")) {
+    const items = D.research.filter(r => String(r.tier) === section.dataset.tier);
+    const values = items.map(r => Number($("research-" + r.id).value));
+    const valid = values.every((n, i) => $("research-" + items[i].id).value.trim() !== "" && Number.isInteger(n) && n >= 0 && n <= items[i].levels);
+    const maxed = valid && values.every((n, i) => n === items[i].levels);
+    section.querySelector(".research-tier-totals").textContent = valid ? values.reduce((a, b) => a + b, 0) + " / " + items.reduce((sum, r) => sum + r.levels, 0) + " levels" + (maxed ? " · Maxed" : "") : "Check levels";
+    section.classList.toggle("maxed", maxed);
   }
 }
 function filterResearch() {
   const query = $("research-filter").value.trim().toLowerCase();
   let count = 0;
-  for (const tr of $("research-body").children) { tr.hidden = !tr.dataset.search.includes(query); if (!tr.hidden) count++; }
+  for (const section of document.querySelectorAll(".research-tier")) {
+    let matches = 0;
+    for (const row of section.querySelectorAll("tbody tr")) { row.hidden = !row.dataset.search.includes(query); if (!row.hidden) matches++; }
+    count += matches;
+    section.hidden = matches === 0;
+    if (query) {
+      if (section.dataset.beforeSearch === undefined) section.dataset.beforeSearch = String(section.open);
+      section.open = matches > 0;
+    } else if (section.dataset.beforeSearch !== undefined) {
+      section.open = section.dataset.beforeSearch === "true";
+      delete section.dataset.beforeSearch;
+    }
+  }
   $("research-count").textContent = query ? count + " of " + D.research.length + " research items" : D.research.length + " research items";
   $("research-empty").hidden = count !== 0;
   $("clear-research-filter").hidden = !query;
@@ -1583,7 +1626,8 @@ function filterResearch() {
 $("research-filter").oninput = filterResearch;
 $("clear-research-filter").onclick = () => { $("research-filter").value = ""; filterResearch(); $("research-filter").focus(); };
 $("optimize").onclick = () => {
-  if (document.querySelector('[data-tab="farm"]').classList.contains("active")) tab("planning", true);
+  if (document.querySelector('[data-tab="farm"]').classList.contains("active")) tab("artifacts", true);
+  else if (document.querySelector('[data-tab="artifacts"]').classList.contains("active")) tab("planning", true);
   else optimize();
 };
 $("review-farm").onclick = () => tab("farm", true);

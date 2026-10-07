@@ -1,10 +1,18 @@
 "use strict";
 const assert = require("node:assert/strict"), fs = require("node:fs"), path = require("node:path"), http = require("node:http");
 const { chromium } = require(process.env.PLAYWRIGHT_MODULE || "playwright");
-const blank = require("../src/blank-farm.cjs"), S = require("../src/simulator.cjs");
+const blank = require("../src/blank-farm.cjs"), S = require("../src/simulator.cjs"), A = require("../src/api.cjs");
 const root = path.resolve(__dirname, "..");
 (async () => {
-  const server = http.createServer((req, res) => {
+  let syncBackup, syncPosts = 0;
+  const server = http.createServer(async (req, res) => {
+    if (req.url === "/session.js") { res.setHeader("Content-Type", "text/javascript"); res.end('globalThis.VIRTUE_PROXY_TOKEN="synthetic-navigation";'); return; }
+    if (req.url === "/api/backup" && req.method === "POST") {
+      const chunks=[]; for await (const chunk of req) chunks.push(chunk);
+      const request=JSON.parse(Buffer.concat(chunks));
+      if (request.eid !== "EI0000000000000000" || req.headers["x-virtue-token"] !== "synthetic-navigation") {res.writeHead(400);res.end("Invalid synthetic request");return;}
+      syncPosts++; res.end(A.base64(A.Resp.encode(A.Resp.create({backup:syncBackup})).finish())); return;
+    }
     const name = new URL(req.url, "http://localhost").pathname.slice(1) || "index.html";
     if (name.includes("..") || !fs.existsSync(path.join(root, name))) { res.writeHead(404); res.end(); return; }
     res.setHeader("Content-Type", ({ ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".webp": "image/webp" })[path.extname(name)] || "text/html");
@@ -20,7 +28,14 @@ const root = path.resolve(__dirname, "..");
     assert.equal(await page.locator("#page-title").innerText(), "Farm & Account");
     assert.ok(await page.locator("#eid").isVisible()); assert.ok(await page.locator("#account-data-card").isVisible());
     assert.ok(await page.locator("#target").isHidden()); assert.ok(await page.locator("#ship-planning").isHidden()); assert.ok(await page.locator("#assumptions").isHidden());
-    // The initial primary action opens Planning without launching a worker.
+    // Farm entry continues through artifact verification before Planning; neither step starts a worker.
+    await page.getByRole("button", { name: "Continue to Planning", exact: true }).click();
+    assert.equal(await page.locator("#page-title").innerText(), "Artifacts");
+    assert.equal(await page.locator('[data-tab="artifacts"]').innerText(), "Artifacts");
+    assert.ok(await page.locator("#loadout-fields").isVisible());
+    assert.ok(await page.locator("#search-status").isHidden());
+    assert.ok(await page.locator("#copy-earnings").isDisabled());
+    assert.ok(await page.locator("#copy-delivery").isDisabled());
     await page.getByRole("button", { name: "Continue to Planning", exact: true }).click();
     assert.equal(await page.locator("#page-title").innerText(), "Planning");
     assert.equal(await page.locator('[data-tab="planning"]').getAttribute("aria-current"), "page");
@@ -67,7 +82,28 @@ const root = path.resolve(__dirname, "..");
     assert.match(await page.locator("#planning-starting-te").innerText(), /25 Claimed/);
     await page.click("#review-inputs"); assert.equal(await page.locator("#page-title").innerText(), "Planning"); assert.equal(await page.evaluate(() => document.activeElement.id), "stagedSales");
     await page.click("#review-farm"); assert.ok(await page.getByRole("button", { name: "Continue to Planning", exact: true }).isEnabled());
-    await page.click("#optimize"); await page.fill("#stagedSales", "3"); await page.evaluate(() => VirtueApp.refresh());
+    await page.click("#optimize"); assert.equal(await page.locator("#page-title").innerText(), "Artifacts"); await page.click("#optimize"); await page.fill("#stagedSales", "3"); await page.evaluate(() => VirtueApp.refresh());
+    // Copy each distinct alternate loadout (including stones) into Current, with no source aliasing.
+    const sets = structuredClone(saved);
+    const artifacts = S.D.artifacts.filter(a => a.slots > 0), stone = S.D.stones[0].id;
+    const makeSet = artifact => Array.from({length:4}, (_,i) => i === 0 ? {artifactId:artifact.id,stones:Array(artifact.slots).fill(stone)} : {artifactId:null,stones:[]});
+    sets.farm.loadouts = {current:makeSet(artifacts[0]),earnings:makeSet(artifacts[1]),delivery:makeSet(artifacts[2])};
+    sets.farm.activeSet = "delivery";
+    await load(sets); await page.click('[data-tab="artifacts"]');
+    assert.equal(await page.locator("#copy-earnings").innerText(), "Copy Earnings to Current");
+    assert.equal(await page.locator("#copy-delivery").innerText(), "Copy Delivery to Current");
+    const alternates = (await page.evaluate(() => VirtueApp.getConfig())).farm.loadouts;
+    for (const key of ["earnings", "delivery"]) {
+      await page.click("#copy-" + key);
+      const copied = (await page.evaluate(() => VirtueApp.getConfig())).farm;
+      assert.deepEqual(copied.loadouts.current, alternates[key]);
+      assert.deepEqual(copied.loadouts.earnings, alternates.earnings);
+      assert.deepEqual(copied.loadouts.delivery, alternates.delivery);
+      assert.equal(copied.activeSet, "current");
+    }
+    await page.selectOption("#artifact-current-0", ""); await page.evaluate(() => VirtueApp.refresh());
+    assert.deepEqual((await page.evaluate(() => VirtueApp.getConfig())).farm.loadouts.delivery, alternates.delivery);
+    await page.click("#optimize");
     // Reset/Undo retains goals, missions and the Planning page; browser recovery is absent.
     const beforeReset = await page.evaluate(() => VirtueApp.getConfig());
     await page.click("#clear-data"); assert.equal(await page.locator("#page-title").innerText(), "Farm & Account");
@@ -79,7 +115,10 @@ const root = path.resolve(__dirname, "..");
     assert.equal(await page.evaluate(() => localStorage.getItem("virtue-optimizer.session.v1")), null);
     const out = path.join(root, "tmp/page-navigation"); fs.mkdirSync(out, { recursive: true });
     await page.evaluate(() => window.scrollTo(0, 0)); await page.screenshot({ path: path.join(out, "planning-desktop.png"), fullPage: true });
-    await page.click("#review-farm"); await page.screenshot({ path: path.join(out, "farm-account-desktop.png"), fullPage: true });
+    await page.click("#review-farm");
+    for (const id of ["colleggtibles-card", "epic-research-card"]) assert.equal(await page.locator("#" + id).evaluate(node => node.parentElement.id), "farm-state-column");
+    assert.ok(await page.locator("#col-fields select").first().isEnabled()); await page.uncheck("#manualAccountData"); assert.ok(await page.locator("#col-fields select").first().isDisabled()); assert.ok(await page.locator("#epic-fields input").first().isDisabled());
+    await page.screenshot({ path: path.join(out, "farm-account-desktop.png"), fullPage: true });
     for (const width of [1440, 1280, 1050, 1000, 800, 500, 390, 320]) {
       await page.setViewportSize({ width, height: 1000 });
       for (const section of ["farm", "planning", "research", "artifacts", "results", "help"]) {
@@ -88,7 +127,21 @@ const root = path.resolve(__dirname, "..");
         if (["farm", "planning"].includes(section) && width >= 1050) assert.ok(await page.locator('[data-page="' + section + '"] .farm-workspace').evaluate(node => { const [left, right] = [...node.children].map(n => n.getBoundingClientRect()); return left.right <= right.left + 1; }), section + " two-panel layout at " + width);
       }
     }
+    // Exercise EID sync through the real protobuf/API path, including fleet rendering and identity preferences.
+    syncBackup = {...activeBackup,userName:"SyntheticTester"};
+    await page.click('[data-tab="farm"]');
+    await page.fill("#eid","EI0000000000000000");await page.click("#import-eid");
+    await page.waitForFunction(()=>document.getElementById("notice").textContent.startsWith("Account information and the current Virtue farm"));
+    assert.equal(syncPosts,1);assert.ok(await page.locator("#vehicle-0").isVisible());
+    assert.equal(await page.inputValue("#eid"),"SyntheticTester");
+    assert.equal(await page.inputValue("#epic-hold_to_research"),"20");
+    assert.equal(await page.locator('#colleggtibles-card [data-source]').innerText(),"Imported Backup");
+    await page.click("#optimize");assert.equal(await page.locator("#page-title").innerText(),"Artifacts");
+    await page.click("#optimize");assert.equal(await page.locator("#page-title").innerText(),"Planning");
+    await page.reload();await page.waitForFunction(()=>!!globalThis.VirtueApp);
+    assert.equal(await page.inputValue("#eid"),"SyntheticTester");
+    await page.locator("#eid").focus();assert.equal(await page.inputValue("#eid"),"EI0000000000000000");
     assert.deepEqual(errors, []);
-    console.log("PASS Farm & Account default, Planning navigation and primary action, page-specific controls, live farm/TE/backup context, imported/retained labels, cross-page saved goals/ships/precision, import retention, error routing, Reset/Undo, browser recovery removal and two-panel layouts 1440–320px.");
+    console.log("PASS Farm → Artifacts → Planning, real synthetic EID sync/identity, directional loadout copies with stones, left account panels, tier-compatible navigation and primary action, page-specific controls, live farm/TE/backup context, imported/retained labels, cross-page saved goals/ships/precision, import retention, error routing, Reset/Undo, browser recovery removal and two-panel layouts 1440–320px.");
   } finally { if (browser) await browser.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

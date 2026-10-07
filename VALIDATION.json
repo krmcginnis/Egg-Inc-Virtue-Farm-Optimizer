@@ -568,5 +568,39 @@
     "localBuildAndPackaging": "passed: 164 runtime files",
     "staticInputsAndTypesUnchanged": true,
     "releaseAndPublishGuards": "passed"
+  },
+  "artifactReviewAndResearchTiers": {
+    "version": "0.8.5",
+    "targetedBrowserChecks": [
+      "page-navigation",
+      "planning-clarity",
+      "research-artwork",
+      "loadout-artwork",
+      "ui-polish"
+    ],
+    "navigation": "Farm \u2192 Artifacts \u2192 Planning without starting a worker",
+    "loadoutCopy": "Earnings/Delivery \u2192 Current, including stones, independent sources, Current active, existing manual lock",
+    "accountPanels": "Colleggtibles and Epic Research in left column; account editing locks retained",
+    "colleggtibleSources": "matched, partial, unavailable labels and explanations checked",
+    "researchTiers": "13 tiers; 56 original inputs; maxed default collapse; search expansion/restoration; error review; save/load; keyboard disclosures",
+    "sync": "self-contained synthetic protobuf/API backup with actual EID import, fleet selectors and identity reload",
+    "layouts": [
+      1440,
+      1280,
+      1050,
+      1000,
+      800,
+      500,
+      390,
+      320
+    ],
+    "solverChanges": false,
+    "workerMatchesV084": true,
+    "workerSHA256": "26a402fae2d31a8c270bf7fd6d03e0e0ebbda684095f4f5c1ad4cb5937b0625a",
+    "existingImportSuite": "blocked: untracked synthetic fixture dependencies absent; self-contained navigation and planning suites validate imports",
+    "nativeWindowsAndPublicFeed": "Required automatic release checks",
+    "localBuildAndPackaging": "passed: 164 runtime files",
+    "releaseAndPublishGuards": "passed",
+    "localUpdateCore": "blocked: pwsh unavailable; Windows release checks required"
   }
 }
