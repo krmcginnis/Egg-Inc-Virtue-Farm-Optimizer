@@ -1,4 +1,4 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.1 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.2 — Release Audit
 
 v0.8.1 keeps the v0.8.0 Farm & Account / Planning split and applies a focused validation and UI cleanup. Both pages retain
 the compact two-panel desktop layout and share the existing farm configuration.
@@ -597,3 +597,17 @@ sales control, planning error routing, focus/overflow behavior, and the 20-level
 Hold to Research input. The release workflow will rebuild the app/worker and run
 the established Windows release-state, publish-plan, updater, restart, rollback,
 archive and public-feed checks before publication.
+
+
+## Public-feed retry — v0.8.2
+
+The v0.8.1 Windows build, packaging, updater and publication steps passed, but
+the immediate anonymous public-feed verification received HTTP 403 from GitHub.
+The workflow correctly returned that release to draft instead of leaving an
+unverified update public.
+
+v0.8.2 republishes the same app changes and retries the complete anonymous feed,
+archive download and checksum verification up to five times with short increasing
+delays. Any persistent failure still hides the release. This changes release
+verification only; app behavior, solver behavior and update verification rules
+are unchanged.
