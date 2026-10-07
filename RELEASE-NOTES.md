@@ -1,8 +1,8 @@
-# v0.8.16
+# v0.8.17
 
-- Remove redundant trailing decimal zeroes from ship gem costs and habitat capacities while preserving meaningful decimals.
-- Remove Additional Search Budget; new searches always use Balanced, including after loading older saved settings.
-- Remove the redundant Choose Truth Egg Sequence Automatically checkbox; Planning Strategy still controls automatic or user-selected visit order.
-- Add effect tooltips to all 22 Epic Research icons, with descriptions available to screen readers.
-- Preserve the compact desktop layout, existing solver calculations, and saved timeline replay.
+- Move EID loading into the left sidebar so it is available on every page.
+- Show only the backup date and time beneath the EID field, without a visible timestamp label.
+- Remove import/backup information from the Account and Virtue Farm headers; all pages now share the same header layout.
+- Keep Start from Scratch, Load Farm and Save Farm in the header, and Update App at the bottom of the sidebar.
+- Preserve EID/username persistence, import safety, the compact desktop farm panels, and all solver behavior.
 - Install through Update App → Update & Restart.

@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.16 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.17 — Release Audit
+
+v0.8.17 moves EID loading and an unlabeled backup timestamp into the sidebar,
+with consistent headers across all pages. Current validation is in the v0.8.17
+section below; earlier evidence is historical.
 
 v0.8.16 trims ship cost/hab capacity labels, fixes Balanced as the new-search
 default, removes redundant controls, and adds Epic Research effect tooltips.
@@ -1382,3 +1386,48 @@ The public release targets the exact app commit and contains both verified asset
 
 This final proof is recorded after release verification without replacing or
 repackaging the immutable release assets.
+
+
+## Sidebar account import and consistent headers — v0.8.17
+
+The existing EID field and green import arrow move below page navigation in the
+left sidebar. They remain available on Account, Virtue Farm, Planning, Purchase
+Timeline and How It Works. No API, identity storage, backup parsing or import
+transaction behavior changes. The saved username still appears at rest and the
+EID is selected on focus; Enter and the arrow use the existing import handler.
+Busy imports/searches retain their existing locks and stale-response protection.
+
+Only the backup date/time is shown beneath the EID, with no visible label.
+The time retains its ISO datetime attribute, selected event timezone, and a
+screen-reader-only description of its meaning. Undated backups retain the
+existing “not supplied” fallback; reset clears the prior time. Import/backup
+information and the redundant farm-label line are removed from the main header,
+including Virtue Farm. Existing source badges and import notices still identify
+imported, retained and manually edited data. File actions stay in every page's
+header. Update App remains at the sidebar bottom, with scrolling for short
+windows. The two farm columns and solver inputs/calculations remain unchanged.
+Sidebar EID and arrow heights align at 36px; timestamps wrap within the sidebar.
+Help and flight/research instructions now refer to the sidebar import.
+
+The legacy import-account browser suite is made self-contained with synthetic
+backup fixtures and uses the actual Account/Farm/Planning tabs when editing
+fields. Its stale reset-target expectation is updated to the established +40 TE
+default. No private account data is tracked. Affected browser suites check desktop
+widths 1440–1000px; mobile checks are not run at the user's request.
+
+Four desktop Chromium suites pass at widths 1440–1000px: page-navigation,
+import-account, physical-picker and planning-clarity. Checks verify equal header
+positions/heights on all five pages, aligned input/arrow geometry, global sidebar
+visibility, an actual protobuf import from Planning, identity persistence,
+account-only/full-farm imports, invalid-data atomicity, retained unfinished
+inputs, in-flight locks, reset/stale responses, saved-file privacy, timezone/ISO
+backup timestamps, missing-time handling, and retained two-column layouts.
+Desktop screenshots of the loaded sidebar and Account/Virtue Farm headers are
+reviewed. The update-error Chromium suite additionally passes real browser
+capture/reload/restore, legacy page handoffs and blocked-storage recovery.
+
+npm ci/build, release-state, prepare-publish and diff checks pass. Local packaging
+contains 169 runtime files and passes archive CRC/current-audit guards. The
+solver worker is byte-for-byte identical to v0.8.16:
+4c7950f0d1fd01da5189a6aed4a59806f05c5ea5823951e9c056bfda4d7da272.
+Windows release and public-feed proof are recorded after automatic verification.

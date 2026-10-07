@@ -98,8 +98,6 @@ function tab(name, focusHeading = false) {
     else x.removeAttribute("aria-current");
   });
   document.querySelectorAll("[data-page]").forEach((x) => x.hidden = x.dataset.page !== name);
-  document.querySelector(".import-controls").hidden = name !== "account";
-  document.querySelector(".import-status").hidden = !["account","farm"].includes(name);
   $("page-title").textContent = titleCase(labels[name]);
   updatePrimaryAction();
   window.scrollTo({ top: 0 });
@@ -484,13 +482,10 @@ function renderForm() {
     $("import-backup-time").textContent = hasBackupTime ? timestamp(backupTime, p.eventTimezone, true) : "not supplied";
     if (hasBackupTime) $("import-backup-time").dateTime = new Date(backupTime * 1000).toISOString();
     else $("import-backup-time").removeAttribute("datetime");
-    $("farm-source-note").hidden = true;
   } else {
     $("import-backup").hidden = true;
     $("import-backup-time").textContent = "";
     $("import-backup-time").removeAttribute("datetime");
-    $("farm-source-note").hidden = false;
-    $("farm-source-note").textContent = config.label || "";
   }
   if (config.draftInputs) restoreDraftInputs(config.draftInputs);
   updateAccountEditing();
@@ -767,7 +762,7 @@ function renderExistingFlights() {
     return el("li", (duration ? duration + " " : "") + ship + " · " + (Number.isFinite(f.returnAt) ? (f.returnAt <= start ? "ready to collect at plan start" : "returns " + timestamp(f.returnAt, zone, true)) : "return time unavailable"));
   }));
   $("flight-status").textContent = flights.length ? flights.length + " existing Virtue flight" + (flights.length === 1 ? "" : "s") + " accounted for." : source === "backup" ? "No active Virtue flights in the imported backup." : source === "unavailable" ? "Flight records were not included in this backup." : "No flight records loaded. Selected mission slots are assumed available.";
-  $("flight-help").textContent = source === "unavailable" ? "Sync the game and use the import arrow on Account to refresh flight information before relying on the ship schedule." : source === "backup" ? "Loaded automatically with your Egg Inc backup. Sync the game and use the import arrow on Account to refresh. Existing launches do not consume planned fuel again." : "Use the import arrow on Account to refresh current flights. Saved farms and previous plans retain their flight records.";
+  $("flight-help").textContent = source === "unavailable" ? "Sync the game and use the import arrow in the sidebar to refresh flight information before relying on the ship schedule." : source === "backup" ? "Loaded automatically with your Egg Inc backup. Sync the game and use the import arrow in the sidebar to refresh. Existing launches do not consume planned fuel again." : "Use the import arrow in the sidebar to refresh current flights. Saved farms and previous plans retain their flight records.";
 }
 function syncDefaultTarget() {
   if (config.plan.targetMode !== Defaults.targetMode) return;

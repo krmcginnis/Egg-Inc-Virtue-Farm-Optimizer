@@ -194,19 +194,19 @@ aside .update-app{display:flex;align-items:center;justify-content:center;gap:8px
 #stats .stat>span{grid-column:1/-1;display:block;font-size:11px;line-height:1.4}
 @media(max-width:500px){#stats .stat{grid-template-columns:minmax(0,1fr)}#stats .stat strong{text-align:left}}
 
-/* Compact account import beneath the page heading. */
-header{flex-wrap:wrap;align-items:center;gap:12px 18px}
+/* Account loading and backup time stay available beside every page. */
+header{flex-wrap:wrap;align-items:flex-end;gap:12px 18px}
+.page-heading{min-width:0}
 .header-actions{align-items:center;gap:10px;min-width:0}
-.page-heading .import-controls{flex-wrap:nowrap;gap:6px;width:244px;max-width:100%}
-.page-heading #eid{flex:1;min-width:0;width:0;height:44px;font-size:13px}
-.page-heading .import-arrow{padding:9px}
 .farm-file-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
-.import-status{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 16px;margin:-4px 0 12px;color:var(--muted);font-size:12px}
-.import-status:not(:has(>:not([hidden]))){display:none}
-.import-backup-time,.import-status time{color:#b6c4d7}
+.sidebar-account{margin:22px 0;border-top:1px solid var(--line);padding-top:16px;min-width:0}
+.sidebar-account h2{font-size:12px;margin:0 0 9px;color:#b6c4d7}
+.sidebar-account .import-controls{flex-wrap:nowrap;align-items:center;gap:5px;width:100%}
+.sidebar-account #eid{flex:1;min-width:0;width:0;height:36px;padding:8px;font-size:12px}
+.sidebar-account .import-arrow{flex:none;width:36px;height:36px;min-width:36px;min-height:36px;padding:6px}
+.sidebar-account #import-backup{display:block;margin-top:10px;font-size:11px;line-height:1.6;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
 @media(max-width:1100px){.header-actions{justify-content:flex-start}}
-@media(max-width:500px){.header-actions{width:100%}.page-heading .import-controls{width:100%}.farm-file-actions{width:100%}.import-status{gap:6px 12px}}
-@media print{.import-status{display:none}}
+@media(max-width:500px){.header-actions,.farm-file-actions{width:100%}}
 
 /* Visual loadouts retain the existing native selectors for manual editing. */
 .loadout-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;align-items:stretch}
@@ -358,15 +358,11 @@ aside>*{flex-shrink:0}
 .research-level-value span,.research-cost{color:var(--muted);font-size:11px}
 @media(max-width:500px){.research-tier th,.research-tier td{padding:8px 4px}.research-tier th{font-size:10px}.research-tier th:nth-child(2){width:75px}.research-tier th:nth-child(3),.research-tier th:nth-child(4){width:60px}.research-level-value{gap:3px}.research-level-value input{width:43px;padding:6px 3px;font-size:11px}.research-tier .research-icon{width:16px;height:16px}.research-tier .research-caption{gap:4px;font-size:11px}.research-level-value span,.research-cost{font-size:10px}.research-tier .research-cost{white-space:nowrap}}
 
-.page-heading{min-width:0}.page-heading .import-controls{margin-top:12px}
-header{align-items:flex-end}.header-actions{padding-top:0}
 .update-app{margin-top:auto}
 .research-tier th{overflow-wrap:anywhere}
-@media(max-width:500px){.header-actions{padding-top:0}.page-heading{width:100%}}
+@media(max-width:500px){.page-heading{width:100%}}
 @media(max-width:800px){.update-app{margin-top:14px}}
 
-/* File actions sit at the bottom of the header, beside its source/backup line. */
-.page-heading .import-status{margin:12px 0 0}
 .loadout-editors{display:none}
 button.loadout-item-artwork,button.loadout-stone-socket{padding:0;color:inherit}
 button.loadout-item-artwork:disabled,button.loadout-stone-socket:disabled{opacity:1;cursor:default}
