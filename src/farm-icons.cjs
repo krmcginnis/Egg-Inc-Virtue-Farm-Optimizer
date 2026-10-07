@@ -37,13 +37,15 @@ function caption(kind, id, text) {
   return group;
 }
 function decoratePicker(label, kind) {
-  const text = label.firstChild, select = label.querySelector("select"), group = document.createElement("span"), artwork = document.createElement("span"), name = document.createElement("span");
+  const select = label.querySelector("select"), first = label.firstChild, text = first?.nodeType === 3 ? first : null;
+  const group = document.createElement("span"), artwork = document.createElement("span"), name = document.createElement("span");
   label.dataset.farmPicker = kind;
   group.className = "farm-picker-caption";
   artwork.className = "farm-icon";
-  name.textContent = text.textContent;
+  name.textContent = text?.textContent || "";
   group.append(artwork, name);
-  label.replaceChild(group, text);
+  if (text) label.replaceChild(group, text);
+  else label.insertBefore(group, select);
   updatePicker(select);
   return label;
 }

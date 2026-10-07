@@ -1,4 +1,4 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.3 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.4 — Release Audit
 
 v0.8.1 keeps the v0.8.0 Farm & Account / Planning split and applies a focused validation and UI cleanup. Both pages retain
 the compact two-panel desktop layout and share the existing farm configuration.
@@ -632,3 +632,25 @@ validated as typed and never silently fall back to the previously saved account.
 Import browser regression coverage now exercises the actual backup request,
 username display, click-to-reveal behavior, EID persistence, and reset/reload
 behavior. Solver routing and optimization code are unchanged.
+
+
+## Fleet picker sync repair — v0.8.4
+
+The visible “Vehicle” label was removed in v0.8.2 by passing an empty label into
+the existing farm-artwork picker decorator. That decorator assumed the first
+child was always a text node. With an empty label, the first child was the native
+<select>, so decoration replaced the select itself with the artwork caption.
+renderForm then attempted to set Fleet Slot ARIA metadata on the missing select,
+producing the Firefox error “querySelector(...) is null” during EID sync.
+
+The decorator now distinguishes an optional text node from the actual native
+select. When visible label text is absent, it inserts the artwork caption before
+the select instead of replacing the select. Native vehicle controls, values,
+artwork updates and accessible Fleet Slot labels are therefore preserved while
+the redundant visible “Vehicle” word remains removed.
+
+The existing ui-polish browser regression already asserts that #vehicle-0 exists
+and has its Fleet Slot accessible label after rendering; this defect would have
+failed that suite. The current automated release workflow does not execute the
+Playwright browser suites, which is why v0.8.3 packaging checks did not catch the
+UI regression. No solver code is changed.
