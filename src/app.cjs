@@ -5,7 +5,7 @@ const upgradeStandardSequence = require("./sequence-upgrade.cjs"), Route = requi
 const T = require("./staged-route.cjs"), Model = require("./assumption-notices.cjs");
 const Strategy = require("./planning-strategy.cjs");
 const nextAscension = require("./next-ascension.cjs"), U = require("./shift-summary.cjs"), Q = require("./walkthrough-pdf.cjs"), N = require("./export-names.cjs"), V = require("./pdf-preview.cjs"), G = require("./guide-layout.cjs");
-const S = require("./simulator.cjs"), O = require("./optimizer.cjs"), I = require("./importer.cjs"), A = require("./api.cjs"), blankFarm = require("./blank-farm.cjs"), C = require("./colleggtibles.cjs");
+const S = require("./simulator.cjs"), O = require("./optimizer.cjs"), I = require("./importer.cjs"), A = require("./api.cjs"), C = require("./colleggtibles.cjs");
 const NumberFormat = require("./number-format.cjs"), NumericInput = require("./numeric-input.cjs");
 const ArtifactSets = require("./artifact-optimizer.cjs");
 const LoadoutCard = require("./loadout-card.cjs");
@@ -14,11 +14,12 @@ const ResearchIcons = require("./research-icons.cjs");
 const FarmIcons = require("./farm-icons.cjs");
 const SelectionReadout = require("./selection-readout.cjs");
 const AppUpdates = require("./app-updates.cjs");
+const Defaults = require("./ui-defaults.cjs");
 const remainingResearchCost = require("./research-cost-preview.cjs");
 const $ = (id) => document.getElementById(id), D = S.D;
 const EID_KEY = "virtue-optimizer.eid.v1", EID_NAME_KEY = "virtue-optimizer.eid-name.v1";
 let savedEid = "", savedEidName = "", eidDraft = "";
-let config = blankFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
+let config = Defaults.freshFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
 const effort = { quick: { width: 12, branches: 8, maxDepth: 500, maxMs: 1e4 }, balanced: { width: 32, branches: 12, maxDepth: 1200, maxMs: 45e3 }, thorough: { width: 72, branches: 20, maxDepth: 2200, maxMs: 18e4 } };
 const labels = { farm: "Farm & Account", planning: "Planning", research: "Common Research", artifacts: "Artifacts", results: "Purchase timeline", help: "How it works" };
 const colNames = { earnings: "Earnings", awayEarnings: "Away earnings", ihr: "Internal hatchery", elr: "Egg laying", shippingCap: "Shipping capacity", habCap: "Hab capacity", vehicleCost: "Vehicle cost", habCost: "Hab cost", researchCost: "Research cost" };
@@ -113,6 +114,8 @@ function clearFieldError() {
   if (invalidField) {
     const node = $(invalidField);
     node?.removeAttribute("aria-invalid");
+    $(node?.dataset.pickerId)?.removeAttribute("aria-invalid");
+    $(node?.dataset.pickerId)?.removeAttribute("aria-describedby");
     const descriptions = (node?.getAttribute("aria-describedby") || "").split(/\s+/).filter(id => id && id !== "field-error");
     if (descriptions.length) node.setAttribute("aria-describedby", descriptions.join(" "));
     else node?.removeAttribute("aria-describedby");
@@ -209,7 +212,9 @@ function fieldError(error) {
     node.setAttribute("aria-describedby", [node.getAttribute("aria-describedby"), "field-error"].filter(Boolean).join(" "));
     const hint = el("small", error.message, "field-error");
     hint.id = "field-error";
-    node.closest("label")?.append(hint);
+    const picker = $(node.dataset.pickerId);
+    if (picker) { picker.setAttribute("aria-invalid", "true"); picker.setAttribute("aria-describedby", "field-error"); picker.closest(".artifact-slot").append(hint); }
+    else node.closest("label")?.append(hint);
     revealFleetField(node);
   }
   $("review-inputs").hidden = false;
@@ -237,7 +242,7 @@ function reviewField(id) {
     revealFleetField(node);
     const fields = node.closest(".account-value-fields"), toggles = fields?.disabled ? [...document.querySelectorAll('[aria-controls~="' + fields.id + '"]')] : [];
     const toggle = toggles.find(x => x.closest("[data-page]") === node.closest("[data-page]")) || toggles[0];
-    const target = toggle || node;
+    const target = toggle || $(node.dataset.pickerId) || node;
     target.scrollIntoView({ block: "center" });
     target.focus({ preventScroll: true });
   }
@@ -362,7 +367,9 @@ function renderForm() {
   for (const k of ["proPermit", "videoDoubler"]) $(k).value = String(f[k] !== false);
   for (const k of ["target", "maxSwitches", "shiftSeconds", "actionSeconds"]) NumericInput.write($(k), p[k] ?? { maxSwitches: 12, shiftSeconds: 5, actionSeconds: 0 }[k]);
   $("start").value = dateLocal(p.start || Date.now() / 1e3);
-  $("eventTimezone").value = p.eventTimezone || "America/Los_Angeles";
+  const zone = p.eventTimezone || "America/Los_Angeles";
+  if (![...$("eventTimezone").options].some(o => o.value === zone)) $("eventTimezone").append(option(zone, zone.replaceAll("_", " ")));
+  $("eventTimezone").value = zone;
   $("sequence").value = typeof p.sequence === "string" ? p.sequence : (p.sequence ?? DEFAULT_ROUTE).map((x) => ({ curiosity: "C", integrity: "I", humility: "H", resilience: "R", kindness: "K" })[x] || x).join(" ");
   $("effort").value = p.searchEffort ?? "balanced";
   $("minOfflineMinutes").value = p.minOfflineMinutes ?? 1;
@@ -505,6 +512,10 @@ function currentFarmImport(backup) {
     draft = captureDraftInputs();
   }
   const next = I.importAll(backup, existing);
+  if (existing.plan.targetMode === Defaults.targetMode) {
+    next.plan.target = Defaults.target(next.farm.claimed);
+    next.plan.targetMode = Defaults.targetMode;
+  }
   if (existing.uiProvenance) {
     const retained = {};
     if (next.importInfo.scope === "account" && existing.uiProvenance.farm) retained.farm = existing.uiProvenance.farm;
@@ -609,7 +620,10 @@ function renderLoadouts() {
       const preview = el("div", void 0, "loadout-card"); preview.id = `loadout-card-${key}-${i}`;
       div.append(preview);
       const editors = el("div", void 0, "loadout-editors");
-      editors.append(selectField("Artifact " + (i + 1), `artifact-${key}-${i}`, [["", "Empty"], ...D.artifacts.map((a) => [a.id, a.label])], slot.artifactId));
+      const artifactField = selectField("Artifact " + (i + 1), `artifact-${key}-${i}`, [["", "Empty"], ...D.artifacts.map((a) => [a.id, a.label])], slot.artifactId);
+      artifactField.hidden = true;
+      artifactField.querySelector("select").setAttribute("aria-label", `Artifact ${i+1} in ${key === "earnings" ? "Research & Earnings" : key[0].toUpperCase()+key.slice(1)} Set`);
+      editors.append(artifactField);
       const stones = el("div", void 0, "stone-fields");
       stones.id = `stones-${key}-${i}`;
       editors.append(stones);
@@ -624,7 +638,8 @@ function renderLoadouts() {
 }
 function updateLoadoutCard(key, i) {
   const art = S.AMAP[$(`artifact-${key}-${i}`)?.value];
-  LoadoutCard.render($(`loadout-card-${key}-${i}`), art?.id, Array.from({length: art?.slots || 0}, (_, j) => $(`stone-${key}-${i}-${j}`)?.value || null));
+  const controls = {artifact:$(`artifact-${key}-${i}`), stones:Array.from({length:art?.slots || 0}, (_,j) => $(`stone-${key}-${i}-${j}`))};
+  LoadoutCard.render($(`loadout-card-${key}-${i}`), art?.id, controls.stones.map(control => control?.value || null), controls);
 }
 function updateArtifactNotes() {
   const manual = $("manualFarmData").checked, automatic = Array.isArray(config.farm.artifactInventory) && !manual;
@@ -656,7 +671,11 @@ function updateStartingGear(s, c) {
 function renderStones(key, i, values = []) {
   const art = S.AMAP[$(`artifact-${key}-${i}`).value], host = $(`stones-${key}-${i}`);
   host.replaceChildren();
-  for (let j = 0; j < (art?.slots || 0); j++) host.append(selectField("Stone " + (j + 1), `stone-${key}-${i}-${j}`, [["", "Empty"], ...D.stones.map((s) => [s.id, s.label])], values[j] || null));
+  for (let j = 0; j < (art?.slots || 0); j++) {
+    const field = selectField("Stone " + (j + 1), `stone-${key}-${i}-${j}`, [["", "Empty"], ...D.stones.map((s) => [s.id, s.label])], values[j] || null);
+    field.hidden = true; field.querySelector("select").setAttribute("aria-label", `Stone ${j+1} of Artifact ${i+1} in ${key === "earnings" ? "Research & Earnings" : key[0].toUpperCase()+key.slice(1)} Set`);
+    host.append(field);
+  }
   updateLoadoutCard(key, i);
 }
 function formLoadouts() {
@@ -675,7 +694,17 @@ function renderExistingFlights() {
   $("flight-status").textContent = flights.length ? flights.length + " existing Virtue flight" + (flights.length === 1 ? "" : "s") + " accounted for." : source === "backup" ? "No active Virtue flights in the imported backup." : source === "unavailable" ? "Flight records were not included in this backup." : "No flight records loaded. Selected mission slots are assumed available.";
   $("flight-help").textContent = source === "unavailable" ? "Sync the game and use the green import arrow to refresh flight information before relying on the ship schedule." : source === "backup" ? "Loaded automatically with your Egg Inc backup. Sync the game and use the green import arrow to refresh. Existing launches do not consume planned fuel again." : "Use the green import arrow to import current flight information automatically. Saved farms and previous plans retain their flight records.";
 }
+function syncDefaultTarget() {
+  if (config.plan.targetMode !== Defaults.targetMode) return;
+  const claimed = Array.from({length:5}, (_,i) => {
+    const value = $("claimed-"+i)?.value;
+    return value?.trim() ? Number(value) : NaN;
+  });
+  const target = Defaults.target(claimed);
+  if (target !== null) NumericInput.write($("target"), target);
+}
 function gather() {
+  syncDefaultTarget();
   const f = { ...config.farm };
   for (const id of Object.keys(editingGroups)) f[id] = $(id).checked;
   delete f.manualColleggtibles;
@@ -966,6 +995,7 @@ function renderResult() {
       return;
     }
     config = nextAscension(resultConfig, result);
+    config.plan.targetMode = Defaults.targetMode; config.plan.target = Defaults.target(config.farm.claimed);
     config.uiProvenance = {...config.uiProvenance, ...Object.fromEntries(["farm", "account", "progress", "fuel", "flights"].map(group => [group, "plan"]))};
     result = null;
     resultConfig = null;
@@ -1421,7 +1451,7 @@ $("clear-data").onclick = () => {
   worker?.terminate();
   worker = null;
   busy(false);
-  config = blankFarm();
+  config = Defaults.freshFarm();
   result = null;
   resultConfig = null;
   dirty = false;
@@ -1644,7 +1674,7 @@ $("review-inputs").onclick = reviewInputs;
 // Keep fixed controls from hiding focused fields at narrow widths or zoom.
 const runBar = document.querySelector(".run-bar");
 function keepFocusedControlVisible(target = document.activeElement) {
-  if (!target?.matches("input,select,button,summary,a") || runBar.contains(target) || !target.getClientRects().length) return;
+  if (!target?.matches("input,select,button,summary,a") || runBar.contains(target) || target.closest("dialog[open]") || !target.getClientRects().length) return;
   // The desktop sidebar scrolls independently and does not overlap the run bar.
   if (innerWidth > 800 && target.closest("aside")) return;
   const rect = target.getBoundingClientRect(), bar = runBar.getBoundingClientRect();
@@ -1708,7 +1738,7 @@ document.addEventListener("change", (e) => {
   }
 });
 document.addEventListener("input", (e) => {
-  if (!e.target.matches("input,select") || unsavedInputs.has(e.target.id)) return;
+  if (!e.target.matches("input,select") || unsavedInputs.has(e.target.id) || e.target.closest("#gear-picker")) return;
   if (Object.values(editingGroups).some(group => group.toggles.includes(e.target.id))) return;
   const group = e.target.closest("#account-basic-fields") ? "account"
     : e.target.closest("#account-progress-fields") ? "progress"
@@ -1717,6 +1747,7 @@ document.addEventListener("input", (e) => {
     : e.target.closest("#epic-fields") ? "epic"
     : e.target.closest("#farm-basic-fields,#hab-fields,#vehicle-fields,#research-fields,#current-loadout-fields,#starting-set-fields") ? "farm" : null;
   if (group) (config.uiProvenance ||= {})[group] = "manual";
+  if (e.target.id === "target") delete config.plan.targetMode;
   NumericInput.edited(e.target);
   markInputsChanged();
   clearTimeout(refreshTimer);

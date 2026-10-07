@@ -34,6 +34,7 @@ const root = path.resolve(__dirname, "..");
         const artwork = page.locator("#" + id).locator("..").locator(".farm-icon");
         assert.equal(await artwork.getAttribute("data-farm-icon"), kind + ":" + item.id);
         assert.equal(await artwork.getAttribute("aria-hidden"), "true");
+        if (kind === "hab") {const box=await artwork.boundingBox();assert.equal(box.width,56);assert.equal(box.height,56);assert.ok(await page.locator("#hab-0-full-name").count()===0);}
         assert.equal(await page.locator("#" + id).getAttribute("title"), item.name);
         assert.equal(await page.locator("#" + id + " option:checked").innerText(), item.name);
       }
@@ -87,6 +88,8 @@ const root = path.resolve(__dirname, "..");
     assert.deepEqual((await offline.evaluate(() => VirtueApp.getConfig())).farm.vehicles, saved.farm.vehicles);
     await page.route("**/farm-icons.png", route => route.abort()); await page.reload(); await page.waitForFunction(() => !!globalThis.VirtueApp); await load(saved);
     assert.ok(await page.getByRole("combobox", { name: "Habitat 1", exact: true }).isEnabled());
+    await page.waitForFunction(()=>document.documentElement.classList.contains("farm-artwork-unavailable"));
+    assert.equal(await page.locator("#hab-0").evaluate(n=>getComputedStyle(n).opacity),"1");
     assert.equal(await page.inputValue("#hab-0"), "18"); assert.equal(await page.locator("#vehicle-0 option:checked").innerText(), "Hyperloop Train");
     assert.deepEqual(errors, []);
     console.log("PASS all 32 catalog mappings and original pixels, live selected-item icons, native labels/values, empty slots, manual edit locks, saved-farm round trips, replayed timeline layers and Hyperloop cars, 1440–320px layouts, offline images and missing-art text fallback.");

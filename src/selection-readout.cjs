@@ -21,7 +21,7 @@ function refresh() {
   });
 }
 function attach(select) {
-  if (!/^(hab|vehicle|artifact|stone)-/.test(select.id)) return;
+  if (!/^vehicle-/.test(select.id)) return;
   const readout = document.createElement("span");
   readout.id = select.id + "-full-name";
   readout.className = "selected-value";

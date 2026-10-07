@@ -1,6 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.7 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.8 — Release Audit
 
-v0.8.7 aligns the sidebar and Continue actions with Farm & Account / Artifacts / Common Research / Planning, adds remaining research cost, and simplifies the import header. Farm & Account and Planning retain
+v0.8.8 adds image-driven artifact/stone editing, larger image-only hab tiles,
+lower farm file actions, claimed-TE + 40 targets and detected timezone defaults.
+Farm & Account and Planning retain
 the compact two-panel desktop layout and share the existing farm configuration.
 A small Planning summary shows current Virtue, claimed/pending TE and the last
 backup timestamp. Focused validation is recorded at the end of this audit.
@@ -100,7 +102,7 @@ Personal farms/plans are excluded from the app archive.
 | Colleggtibles | Owned tiers multiply within a stat; away bonuses of 3× and 2× compose to 6×. |
 | Earnings | Delivery × egg value × claimed-TE bonus × entered bonuses. No running-chicken bonus, boosts, gifts or drones. Offline adds away bonuses; standard permit applies its penalty. |
 | Breaks | Online, offline and purchase batches are compared. Offline minimum is at least one minute or the user's larger minimum. Ties favor fewer earning breaks. Maintained silos/video are assumed; silo refill check-ins are additional. |
-| Events | Default Pacific calendar: Monday 09:00–Tuesday 09:00 earnings ×2; Friday 09:00–Saturday 09:00 research ×0.3. Event timezone overrides change the schedule. Special events are not predicted. |
+| Events | New UI farms default to the browser-detected timezone; saved zones are retained. Monday 09:00–Tuesday 09:00 earnings ×2; Friday 09:00–Saturday 09:00 research ×0.3, in the selected timezone. The model fallback remains Pacific. Special events are not predicted. |
 | Purchases | Research rounds up; discounted hab/vehicle/car prices round down. Duplicate physical types affect prices. Calibration defaults to 1. |
 | Switches | Gems reset, upgrades/deliveries persist, Soul Egg balance decreases and prior-switch count increases. Entered maximum new switches and interaction time are enforced. |
 | Search | Every C1/K1 budget pair at 30-minute increments up to the selected maximum, capped at 300 minutes. No previous-plan incumbent. Caps include waits, interactions and fuel collection. Search is heuristic and does not prove a global optimum. |
@@ -801,3 +803,74 @@ checksums before release handover. Local PowerShell execution is unavailable.
 
 Local npm ci/build, release-state and prepare-publish guards pass. Packaging
 verifies 164 runtime files, archive integrity and one current audit.
+
+
+## Visual gear editing and detected defaults — v0.8.8
+
+Hab selectors now display 56-pixel artwork without visible item/slot names. The
+native select overlays each tile, retaining its values, Habitat N accessible
+name, keyboard operation and item-name tooltip/menu. Empty tiles remain labeled.
+Missing sprites or forced colors reveal the text control. Only hab picker
+artwork grows; vehicle and timeline artwork mappings and sizes remain unchanged.
+The three farm file actions align at the bottom right of the header beside the
+source/backup line, matching the requested screenshot. Narrow screens wrap them.
+The compact two-panel farm/account and planning layouts and review flow remain.
+
+Artifact images and empty placeholders are now buttons opening an illustrated
+catalog dialog. It supports filtering by name, tier/effect, selected-item state,
+rarity borders, readable names/effects/socket counts and Empty to clear. Each
+artifact displays exactly its catalog socket count, with independently clickable
+stone slots opening the stone catalog. Modal focus containment with explicit Tab/Shift+Tab edge wrapping, sticky
+controls, close/backdrop/Escape cancellation and focus restoration are provided,
+including replacing an artifact with a different socket count. Search and cancel
+do not change gear or invalidate an existing result. Missing images retain text.
+Manual-edit fieldsets still enforce the existing account/farm locks. Imported
+owned automatic sets remain previews until manual editing is enabled. Selection
+uses the existing value IDs, change/input processing, socket reset policy,
+permit limits, family validation and save schema. Review routes hidden-control
+errors to their visible image buttons, with visible and accessible error text.
+No ownership limits or new gear choices are imposed on existing manual overrides.
+
+New UI farms, Reset and Next Ascension default to currently claimed TE + 40,
+capped at 490. The default tracks claimed progress edits and active/account-only
+backup imports; pending TE are excluded. Entering a target switches to an explicit
+goal. Saved explicit goals remain unchanged. An optional targetMode property in
+the version-1 plan retains automatic intent through farm saving and updater
+handoffs. Importer's fresh-form detection recognizes this new default, retaining
+its previous initial import behavior. Production/import calculations are unchanged.
+
+The browser's Intl timezone is detected for new UI farms and Reset. As requested,
+it defaults both displayed dates and weekly event timing to that zone. Arbitrary
+valid detected/saved IANA zones are added to the existing selector. Saved zones
+remain selected; unavailable detection falls back to Pacific. Start input remains
+PC local time. This changes default inputs; event calendar math and explicit-zone
+interpretation remain unchanged.
+
+Targeted browser validation is recorded after the final checks below. Native
+screen-reader execution and live-account requests are not claimed. The old
+import-account suite still lacks its two fixture dependencies; self-contained
+suites cover synthetic backup and real protobuf/API sync. No solver, game data,
+ship scheduling, PDF or updater source changes. The solver worker SHA256 remains
+26a402fae2d31a8c270bf7fd6d03e0e0ebbda684095f4f5c1ad4cb5937b0625a.
+The established Windows workflow must pass hidden-launcher, core updater,
+install/restart/rollback, packaging and anonymous public-feed/archive verification
+before handover. Local native PowerShell execution is unavailable.
+
+
+Final local validation: npm ci/build, Node syntax, release-state and prepare-publish
+guards pass. All eight Chromium suites pass: visual-gear, page-navigation,
+loadout-artwork, farm-artwork, research-artwork, planning-clarity, ui-polish and
+timeline-readability. Checks include picture selection/clearing, catalog rarity,
+0/1/2/3 sockets, socket replacement, locked/manual/automatic sets, duplicate-family
+error review, keyboard/Escape/focus, non-mutating search/cancel, save/load,
+Standard/Pro Permit layouts, offline choices and missing-art fallback. Targets
+track claimed progress through manual edits, active/account-only synthetic import,
+saving/reloading, Reset and Next Ascension; explicit goals remain. Timezone checks
+cover UTC, New York, Berlin and India (including equivalent IANA aliases), while
+saved Pacific selections remain. Synthetic EID sync still uses the actual
+protobuf/API path. Existing worker replay, tiers/cost previews, timeline
+content, focus and 1440–320 pixel overflow/two-panel checks pass. Header, enlarged
+hab tiles, artifact cards and desktop/mobile artifact/stone popups were inspected.
+The generated solver worker checksum is unchanged.
+
+Packaging verifies 164 runtime files, archive integrity and one current audit.

@@ -1,4 +1,4 @@
-EGG INC. VIRTUE FARM OPTIMIZER 0.8.7 — PC EDITION
+EGG INC. VIRTUE FARM OPTIMIZER 0.8.8 — PC EDITION
 
 GET STARTED
 1. Extract the entire ZIP; open the Egg-Inc-Virtue-Farm-Optimizer folder.
@@ -64,7 +64,10 @@ Fresh farms use automatic online/offline waiting. Keep the starting silo refille
 Use Continue to Artifacts, then Continue to Common Research, then Continue to
 Planning. The sidebar follows the same review order. Common Research shows
 each item's next cost and total remaining cost at current discounts/sale prices.
-Tier prerequisites are not included in that item's remaining cost. Planning has goals,
+Tier prerequisites are not included in that item's remaining cost. The target
+defaults to claimed TE + 40 (up to 490), updating after import or manual progress
+edits until you enter your own target. Next Ascension starts with this default.
+Planning has goals,
 ship schedules, timing and assumptions, with a compact starting-farm summary.
 Save Farm includes values and settings from both pages.
 
@@ -105,7 +108,9 @@ Start from scratch includes the free Coop, Trike and one silo.
 
 Monday 09:00 to Tuesday 09:00: 2x earnings.
 Friday 09:00 to Saturday 09:00: research cost x0.30.
-The event timezone defaults to Pacific time and can be changed in the app.
+New farms default to the timezone detected by your browser for both weekly
+event times and displayed dates. Override Event Schedule Timezone in Planning
+as needed; saved farms and plans retain their selected zone.
 The start date/time uses your PC's local time.
 
 SEARCH QUALITY
@@ -780,3 +785,15 @@ The loaded backup timestamp remains visible. Press Enter in the ID field to load
 AUTOMATIC RELEASES (v0.7.4)
 New versions are built and validated automatically when the app version increases
 on the main GitHub branch. Install them with Update App as before.
+
+VISUAL GEAR PICKERS AND LOCAL DEFAULTS (v0.8.8)
+Hab tiles show larger artwork without repeating their names. Hover for the name;
+the native selection menu, keyboard controls and accessible slot labels remain.
+Start from Scratch, Load Farm and Save Farm sit at the bottom right of the header.
+On Artifacts, enable Edit Farm Manually and click an artifact image or empty slot
+for an illustrated chooser. Its actual number of stone sockets appears below;
+click any socket for an illustrated stone chooser. Search by name, tier or effect,
+select Empty to clear, or close/Escape to cancel. Catalog rarities, effects and
+socket counts are shown. Current, Research & Earnings and Delivery remain separate.
+Images work offline; readable item/effect text remains if an image cannot load.
+Manual gear retains the same legality checks, permit limits and saving behavior.

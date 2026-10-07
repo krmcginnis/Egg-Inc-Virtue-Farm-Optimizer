@@ -30,7 +30,7 @@ function importBackup(input,existing,now=Date.now()/1000,{scope='farm'}={}){
  // the separate fuel stock; its tankLevel may be absent or still zero.
  // Keep the old location only as a fallback for older JSON backups.
  const afx=b.virtue.afx||{},tankLevel=Math.min(7,Math.max(0,Number(b.artifacts?.tankLevel??afx.tankLevel??0))),fuelTank={capacity:Ships.TANKS[tankLevel],outputPerMinute:Ships.rateFor(Ships.TANKS[tankLevel]),amounts:Object.fromEntries(S.EGGS.map((egg,i)=>[egg,Number(afx.tankFuels?.[20+i]||0)]))};
- const fresh=!existing||existing.label?.startsWith('Blank farm')&&existing.plan?.target===1&&(existing.farm?.claimed||[]).every(n=>n===0);
+ const fresh=!existing||existing.label?.startsWith('Blank farm')&&(existing.plan?.target===1||existing.plan?.targetMode==='claimed-plus-40')&&(existing.farm?.claimed||[]).every(n=>n===0);
  const loadouts={current:loadout.slice(0,pro?4:2)};
  for(const key of ['earnings','delivery'])if(Array.isArray(existing?.farm?.loadouts?.[key])&&(!fresh||existing.farm.loadouts[key].some(s=>s.artifactId))){
   const old=existing.farm.loadouts[key];
