@@ -78,7 +78,7 @@ function importBackup(input,existing,now=Date.now()/1000,{scope='farm'}={}){
  warnings.push(accountOnly?'Account data was refreshed. Farm upgrades, equipped gear, gems, current Virtue, start time, and planning goals are retained.':'Farm data and equipped artifacts were refreshed; the plan starts now. Planning goals are retained.');
  if(scope==='auto'&&!activeFarm)warnings.push('Account information has been loaded, but no current Virtue farm was found.');
  warnings.push('Tank output uses the standard rate for the imported capacity; adjust it for auxiliary upgrades.');
- if(!b.artifactsDb)warnings.push('The backup did not include mission records. Sync the game and use the green import arrow to refresh existing Virtue flights.');
+ if(!b.artifactsDb)warnings.push('The backup did not include mission records. Sync the game, then press Enter in the sidebar EID field to refresh existing Virtue flights.');
  // Validate imported farm data independently of an unfinished planning draft.
  // Account-only loading must also work while the preserved farm is unfinished.
  const validationFarm=accountOnly?{...blankFarm(now).farm,...Object.fromEntries(ACCOUNT_KEYS.map(key=>[key,cfg.farm[key]]))}:cfg.farm;

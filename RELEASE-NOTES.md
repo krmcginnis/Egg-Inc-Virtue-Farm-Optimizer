@@ -1,8 +1,6 @@
-# v0.8.18
+# v0.8.19
 
-- Move EID loading above the page menu and reduce the input and arrow from 36px to 32px.
-- Show backup dates without weekdays or seconds, retaining the selected timezone.
-- Standardize Egg Inc. punctuation and use Oxford commas in app lists.
-- Expand Common Research by default; fully completed tiers start collapsed with (Maxed) after their names.
-- Preserve account import, saved farms, planning settings, and solver calculations.
+- Remove the EID import arrow; press Enter in the sidebar EID field to load or refresh your account.
+- Match the EID field font, width, and side padding to the page menu items.
+- Preserve saved EID/username display, backup timestamps, import safety, and solver behavior.
 - Install through Update App → Update & Restart.

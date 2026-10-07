@@ -1,4 +1,4 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.18 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.19 — Release Audit
 
 v0.8.18 compacts EID controls above the menu, shortens backup timestamps,
 standardizes brand/list punctuation, and expands Common Research by default.
@@ -1522,3 +1522,27 @@ The public release is not a draft and targets the exact app commit above.
 
 This same-version audit commit records verification without replacing or
 repackaging the immutable release assets.
+
+
+## Enter-only sidebar account loading — v0.8.19
+
+The import arrow and its styles/handler are removed. The existing Enter handler
+loads the account through the same API transaction. The EID field uses the menu
+font size (13px), weight (500), horizontal padding (17px), and full sidebar
+content width. Sidebar padding retains the same inset as menu selections.
+The field is disabled during imports/searches, with aria-busy on the field;
+the import handler also guards duplicate requests. Saved identity, username
+at rest/EID on focus, timestamp precision, and reset/stale-response behavior
+are preserved. Help and flight guidance now describe pressing Enter.
+
+Validation and Windows release proof follow after completion.
+
+Desktop Chromium page-navigation and import-account suites pass at 1440–1000px.
+Checks cover full menu-matching width/font, absent arrow, actual synthetic
+protobuf imports via Enter, duplicate-request guards, disabled input while
+loading, saved identity, click-to-reveal EID, backup time, unfinished drafts,
+invalid-data atomicity, reset/stale responses, save/load privacy, and page
+navigation. The loaded sidebar screenshot is visually reviewed. Mobile layouts
+are not checked, per the user's preference. The solver worker SHA256 remains
+b83d183827b276017ff669bad13e54abde1a633d0901bb3c8f33bc202ca3d2a1,
+identical to v0.8.18. No solver, game-data, or pricing logic changes.

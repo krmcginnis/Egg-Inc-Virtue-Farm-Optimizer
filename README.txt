@@ -38,7 +38,7 @@ continue to Virtue Farm to review current upgrades, gear, fuel, and flights, the
 continue to Planning. Save Farm and Save Plan remain portable backups. Reset
 offers Undo for the current session; browser recovery is not used.
 
-Enter your Egg Inc. ID and select the green arrow to load account information
+Enter your Egg Inc. ID and press Enter to load account information
 and the current Virtue farm from one backup request. If no Virtue farm is active,
 account information still loads, with a notice at the top. Existing starting
 farm values, equipped gear, and start time are kept in that case. A found farm
@@ -51,7 +51,7 @@ tabbed artifact sets, Common Research, fuel, and flights. Account imports lock a
 locks farm fields. Goals remain editable. Artifact sets unlock with Edit Farm Manually.
 
 Use Load farm for your saved farm or JSON
-backup, use the green import arrow, or enable manual editing to enter values.
+backup, use the EID field, or enable manual editing to enter values.
 Load farm also accepts saved plans and validates them by replaying purchases.
 The standard Switch Sequence is C K I C K R C H K C I R H. Older farms using
 the previous standard sequence are upgraded automatically while preserving your
@@ -778,7 +778,7 @@ app folder, replacing app files. Launch Start-Virtue-Optimizer.cmd again. Farm
 JSON files are not removed. Future updates use the button.
 
 COMPACT EGG INC. IMPORT (v0.7.3)
-The Egg Inc. ID field and green import arrow are below the Farm & Account heading.
+The Egg Inc. ID field are below the Farm & Account heading.
 The loaded backup timestamp remains visible. Press Enter in the ID field to load.
 
 AUTOMATIC RELEASES (v0.7.4)
@@ -839,9 +839,12 @@ VERSION 0.8.13 — OPENING DISCOUNTS AND SHIFT RATES
 
 
 VERSION 0.8.18 — SIDEBAR AND RESEARCH DISPLAY
-The Egg Inc. ID field is above the page menu, with a smaller field and green
-arrow. Backup dates omit weekdays and seconds, while timeline actions retain
+The Egg Inc. ID field is above the page menu, with a smaller field. Backup dates omit weekdays and seconds, while timeline actions retain
 precise timing. Common Research opens by default; fully maxed tiers start
 collapsed and show (Maxed) after their tier names. Imported levels, research
 costs, saved plans, and solver calculations are retained. UI prose and exported
 walkthroughs use Oxford commas for serial lists.
+
+VERSION 0.8.19 — ENTER TO LOAD ACCOUNT
+The sidebar EID field spans the same width as the menu items and uses the same
+13px font. Press Enter to load or refresh your account; the arrow is removed.
