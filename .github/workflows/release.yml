@@ -63,6 +63,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/research-sale-plans.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/route-solver.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python scripts/package.py

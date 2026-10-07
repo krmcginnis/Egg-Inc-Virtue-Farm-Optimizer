@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.23 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.9.0 — Release Audit
+
+v0.9.0 introduces the route-aware timing and purchase solver, preserves the
+legacy implementation, and returns distinct shift-count plans. Current validation is
+in the v0.9.0 section at the end; prior evidence is historical.
 
 v0.8.23 simplifies the Planning control order, removes prioritization/maxima,
 and sets the new-farm purchase-time default to 0.3 seconds. Current evidence
@@ -1826,3 +1830,76 @@ Public release: 406113108, v0.8.23, with both assets uploaded:
 
 This same-version audit commit records completed verification without replacing
 or repackaging either immutable release asset.
+
+
+## Route-aware solver and shift-count plans — v0.9.0
+
+The v0.8.23 optimizer is preserved byte-for-byte in optimizer-legacy.cjs
+(SHA-256 d7d27c4027c4efae20e5f0c9a1ce574061773ad3a3ef1d5d9fa450f981784e88).
+The adapter uses the new solver by default, supports legacySolver:true for
+developer rollback testing, and delegates unmarked historical action replay
+to the preserved implementation. Shared simulator changes are enabled only
+by the new solver version/route rules; rates and prices remain unchanged.
+
+Automatic Planning has a maximum-new-shifts ceiling (0–30, default 12).
+A bounded proposal search compares opening orders, upgrade revisits, shorter
+routes, delivery order, individual purchases, offline batches, and departures.
+Candidate routes include the former preset and its alternate ending but are
+not restricted to that sequence. Up to three best completed plans with distinct
+actual shift counts are returned, ranked by finish time, then shifts, then
+earning breaks. Each candidate is simulated with actual costs and permissions.
+The search is heuristic and bounded; it does not exhaust every farm order,
+research purchase combination, or event schedule, or prove global optimality.
+
+User sequences retain every transition until early target completion.
+Every C except the final C permits research; final C is delivery-only. Research
+windows include the current sale when active and the first three upcoming weekly
+sales. Earlier departures and purchase paths are compared; no C1/K1 duration
+maximum constrains the search. Old stage recipes provide paid, replayable
+candidates, including offline purchase batches, rather than forcing the new
+solver's visit durations. Physical upgrades on final I/K are compared with
+finishing without them, and earlier physical capacity can retain value for
+future research. Scoring projections never grant free research or physical
+upgrades to a real plan. Final visits focus on delivery and required missions.
+
+Currently owned inventory (or declared manual sets) supplies gear choices.
+Mission rewards and future artifact upgrades are not predicted. Integrity after
+the last Humility launch is a starting candidate, not a required final farm.
+Missions, fuel diversion, tank carry/reservation, and existing flights remain
+requirements. Saved rules record the actual route and allowed research window.
+Every result and every saved comparison alternative is fully replayed before
+use. Required purchase/shift interaction waits, prices, prerequisites, research
+deadlines, route order, shifts, floors, and final TE are validated.
+
+The timeline replaces sale-window selectors with clickable shift-count choices.
+Selecting a choice updates summaries, guides, actions, exports, and next
+ascension. JSON retains all choices; PDF and export filenames identify the
+selected shift count. All alternatives are replayed atomically before loading
+a saved file or update session. Historical sale comparisons and single plans
+remain supported without showing old sale selectors.
+
+Local validation includes route/shift ceiling and rank tests, zero-shift target
+completion, custom three-C paths, final-C research prohibition, manual floors,
+obsolete-cap import, calendar boundaries, future physical capacity scoring,
+marker-preserving replay, cancellation, and legacy replay. Existing independent
+sale, subscription-import, shift-rate/PDF, timezone, release-state, and staged
+publishing checks pass. The independent pinned reference audit passes 738 farm
+states, 13,980 research prices, 41,328 tier checks, 228 hab prices, 612 vehicle
+prices, 27 car prices, 240 colleggtible selections, and 132 ship checks, including
+all 56 common research items, 22 Epic research items, 171 artifacts, 30 stones,
+19 habs, and 12 vehicles. Maximum rate error excluding one-chicken rounding is
+1.02e-15; one state has a one-chicken rounding difference.
+
+Browser checks pass planning control visibility/retained ceilings, distinct plan
+selection, summaries/guides/timelines, JSON/PDF exports, all-plan save/load,
+update-session handoff, next ascension, corrupt-alternative atomic rejection,
+historical replay, EID/account imports, and desktop layouts at 1440–1000px.
+The private benchmark produced replay-valid plans with 12 shifts at 137.9048
+days, 10 shifts at 158.8677 days, and 11 shifts at 158.8882 days. The faster
+12-shift result matches the preserved solver benchmark, while the shorter
+10-shift plan correctly ranks ahead of the 11-shift plan. These figures are
+case-specific, not a claim that every result improves or is globally optimal.
+Account data and saved farms are excluded from source and release assets.
+
+Native Windows publication and public-feed checks are pending. Release evidence
+will be recorded after the automatic workflow completes successfully.

@@ -7,7 +7,8 @@ const codes=['C','I','H','R','K'];
 function ranges(values){
  const result=[];for(let i=0;i<values.length;i++){const begin=values[i];let end=begin;while(values[i+1]===end+1)end=values[++i];result.push(begin===end?String(begin):begin+'–'+end);}return result.join(', ');}
 function summarize(raw,result){
- const {s,c}=S.prepare(raw,{artifactReplay:true,artifactSets:S.recordedArtifactSets(result.actions),oneStartingSilo:result.initialSiloRule==='one'||result.actions.some(a=>a.initialSiloRule==='one')}),actions=result.actions,counters=Array(5).fill(0),groups=[];
+ const effective=result.solverVersion>=2?{...raw,plan:{...raw.plan,solverVersion:2}}:raw;
+ const {s,c}=S.prepare(effective,{artifactReplay:true,artifactSets:S.recordedArtifactSets(result.actions),oneStartingSilo:result.initialSiloRule==='one'||result.actions.some(a=>a.initialSiloRule==='one')}),actions=result.actions,counters=Array(5).fill(0),groups=[];
  let g,remainingSoul=s.soul,previousSwitchCount=s.shiftCount;function begin(egg,index,time,phase){if(!new RegExp('^'+codes[egg]+'[1-9][0-9]*$').test(phase||''))phase=null;g={egg,name:S.NAME[egg],phase:phase||codes[egg]+(++counters[egg]),start:time,end:time,firstIndex:index,lastIndex:index-1,soulCost:0,hasSwitch:false,onlineSeconds:0,offlineSeconds:0,interactionSeconds:0,offlineBreaks:0,fuelSeconds:0,activities:[]};if(phase)counters[egg]=Math.max(counters[egg]+1,Number(phase.slice(1)));groups.push(g);}
  const firstShift=actions.findIndex(a=>a.type==='shift'),openingActions=actions.slice(0,firstShift<0?actions.length:firstShift);
  if(actions[0]?.type!=='shift'||actions[0].t>result.start)begin(s.egg,0,result.start,openingActions.find(a=>a.phase)?.phase);

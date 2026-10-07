@@ -1,9 +1,10 @@
 "use strict";
 const Ships = require("./ships.cjs");
-const E = require("./opening-search.cjs"), titleCase = require("./ui-text.cjs"), DEFAULT_ROUTE = require("./default-route.cjs");
+const titleCase = require("./ui-text.cjs"), DEFAULT_ROUTE = require("./default-route.cjs");
 const upgradeStandardSequence = require("./sequence-upgrade.cjs"), Route = require("./switch-sequence.cjs");
-const T = require("./staged-route.cjs"), Model = require("./assumption-notices.cjs");
+const Model = require("./assumption-notices.cjs");
 const Strategy = require("./planning-strategy.cjs"), SalePlans = require("./research-sale-plans.cjs");
+const ShiftPlans = require("./shift-plans.cjs");
 const gemsText = require("./gems-text.cjs");
 const nextAscension = require("./next-ascension.cjs"), U = require("./shift-summary.cjs"), Q = require("./walkthrough-pdf.cjs"), N = require("./export-names.cjs"), V = require("./pdf-preview.cjs"), G = require("./guide-layout.cjs");
 const S = require("./simulator.cjs"), O = require("./optimizer.cjs"), I = require("./importer.cjs"), A = require("./api.cjs"), C = require("./colleggtibles.cjs");
@@ -53,9 +54,11 @@ function updateSequenceVisibility() {
   $("sequence").disabled = automatic;
   $("sequence").required = !automatic;
   $("wasmegg-sequence-description").hidden = strategy === "user";
+  $("automatic-shift-limit").hidden = !automatic;
+  $("maxShifts").disabled = !automatic;
   $("strategy-description").textContent = {
-    wasmegg: "Compares plans using 1, 2, and 3 research sales across your opening budgets. Select each plan on Purchase Timeline. I1 precedes K1 when Chicken Universes can finish in under one hour.",
-    user: "Enter your truth egg switch sequence below."
+    wasmegg: "Searches route order, research, and timing within your maximum new shifts. Shows up to three fastest plans using different shift counts.",
+    user: "Enter your truth egg switch sequence below. The solver preserves your order and chooses visit durations. Plans can stop early once the goal and missions are complete. The final C is delivery-only."
   }[strategy] || "Select a planning strategy.";
   $("routing-help").textContent = automatic ? "Choose User Selected Sequence to enter your own order." : "Your truth egg sequence controls the visit order.";
 }
@@ -394,9 +397,8 @@ function renderForm() {
   $("sequence").value = typeof p.sequence === "string" ? p.sequence : (p.sequence ?? DEFAULT_ROUTE).map((x) => ({ curiosity: "C", integrity: "I", humility: "H", resilience: "R", kindness: "K" })[x] || x).join(" ");
   $("minOfflineMinutes").value = p.minOfflineMinutes ?? 1;
   $("strategy").value = p.strategy || "wasmegg";
+  $("maxShifts").value = p.maxShifts ?? 12;
   $("autoTeAllocation").checked = p.autoTeAllocation ?? !(p.floors || []).some(n => Number(n) > 0);
-  $("c1MaxMinutes").value = E.maximum(S.number(p.c1MaxMinutes ?? 60));
-  $("k1MaxMinutes").value = E.maximum(S.number(p.k1MaxMinutes ?? 60));
   updateSequenceVisibility();
   for (const k of ["earningsScale", "researchCostScale"]) NumericInput.write($(k), f[k] ?? 1);
   const body = $("progress-body");
@@ -556,7 +558,7 @@ function currentFarmImport(backup) {
   return next;
 }
 function replaySavedResult(savedConfig, savedResult) {
-  return SalePlans.replay(savedConfig, savedResult, replaySingleResult);
+  return ShiftPlans.replay(savedConfig, savedResult, (raw,plan)=>SalePlans.replay(raw,plan,replaySingleResult));
 }
 function replaySingleResult(savedConfig, savedResult) {
   const verified = O.replay(savedConfig, savedResult.actions, true, {enforceOpeningCaps:savedResult.openingTimeLimits === true,oneStartingSilo:savedResult.initialSiloRule === "one" ? true : void 0});
@@ -817,12 +819,12 @@ function gather() {
   f.loadouts = formLoadouts();
   const autoTeAllocation = $("autoTeAllocation").checked;
   const manualFloors = Array.from({length:5}, (_, i) => autoTeAllocation ? retainedNumber("floor-" + i) : readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true));
-  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), saleComparisonVersion: 1, autoTeAllocation, manualFloors, maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: autoTeAllocation ? Array(5).fill(0) : manualFloors.slice() };
-  for (const key of ["maxSwitches", "stagedSales", "priority", "priorityMaxDays", "priorityMaxShifts"]) delete p[key];
+  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), solverVersion: 2, saleComparisonVersion: 1, autoTeAllocation, manualFloors, maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), initialPhysicalPurchases: false, floors: autoTeAllocation ? Array(5).fill(0) : manualFloors.slice() };
+  p.maxShifts=p.autoSequence?readNumber("maxShifts","Maximum new shifts",0,30,true):retainedNumber("maxShifts");
+  for (const key of ["maxSwitches", "stagedSales", "priority", "priorityMaxDays", "priorityMaxShifts", "c1MaxMinutes", "k1MaxMinutes"]) delete p[key];
   if (!p.autoSequence) try {
     Route.parse(p.sequence, {required: true});
   } catch (error) { error.fieldId = "sequence"; throw error; }
-  for (const id of ["c1MaxMinutes", "k1MaxMinutes"]) if (p[id] % 30) throw Object.assign(Error("Choose a maximum in 30-minute steps: 30, 60, 90, up to 300 minutes."), {fieldId:id});
   f.fuelTank = { capacity: readNumber("tankCapacity", "Tank capacity"), outputPerMinute: readNumber("tankOutput", "Tank output per minute", 1), amounts: Object.fromEntries(S.EGGS.map((egg) => [egg, readNumber("fuel-" + egg, egg + " fuel")])) };
   p.ships = { mode: "custom-two-visits", slots: readNumber("shipSlots", "Mission slots", 1, 3, true), visits: [1, 2].map((visit) => ({ missions: Array.from($("ship-missions-" + visit).children, (_, i) => ({ ship: $("ship-" + visit + "-" + i).value, duration: $("mission-" + visit + "-" + i).value, count: $("ship-count-" + visit + "-" + i).value.trim() === "" ? null : readNumber("ship-count-" + visit + "-" + i, "H" + visit + " launch count", 1, 1e6, true) })) })) };
   delete p.openingStepMinutes;
@@ -863,8 +865,7 @@ function refresh() {
     updateStartingGear(s, c);
     $("sequence-preview").hidden = c.autoSequence;
     $("sequence-preview").textContent = "Planned order: " + c.sequence.map((i) => ({ curiosity: "C", kindness: "K", integrity: "I", resilience: "R", humility: "H" })[S.EGGS[i]]).join(" ");
-    const c1Choices = E.budgets(c.c1MaxMinutes), k1Choices = E.budgets(c.k1MaxMinutes);
-    $("opening-combinations").textContent = T.canCompare(s, c) ? (c1Choices.length * k1Choices.length).toLocaleString() + " C1/K1 combinations" : "C1/K1 limits apply to the first visits on every route.";
+
     const warnings = Model.notices(s, c);
     $("farm-advisories").replaceChildren(...warnings.map((message) => el("p", message)));
     $("farm-advisories").hidden = !warnings.length;
@@ -1033,37 +1034,19 @@ function renderResult() {
   host.replaceChildren();
   $("empty-results").hidden = true;
   host.hidden = false;
-  if (r.researchSalePlans) {
-    const choices = el("section", undefined, "card research-sale-comparison");
-    choices.setAttribute("aria-labelledby", "research-sale-heading");
-    const heading = el("h2", "Research Sale Plans"); heading.id = "research-sale-heading";
-    choices.append(heading, el("p", "Select a plan to view its summary, Quick Guide, purchases, and exports. The fastest plan found is selected initially.", "hint"));
-    const row = el("div", undefined, "research-sale-options");
-    for (const entry of r.researchSalePlans) {
-      const button = el("button", undefined, "research-sale-option"); button.type = "button"; button.dataset.researchSales = entry.researchSales;
-      button.append(el("strong", entry.researchSales + " Research Sale" + (entry.researchSales === 1 ? "" : "s")));
-      button.setAttribute("aria-pressed", String(entry.researchSales === r.selectedResearchSales));
-      if (entry.status === "complete") {
-        button.append(el("span", duration(entry.plan.seconds) + " · " + entry.plan.switches + " switches"));
-        button.append(el("span", "Ends " + timestamp(entry.plan.end, zone), "research-sale-end"));
-        if (entry.researchSales === r.recommendedResearchSales) button.append(el("span", "Fastest Found", "research-sale-best"));
-        button.onclick = () => {
-          result = SalePlans.select(result, entry.researchSales);
-          if (!worker && !dirty) refresh(); else updateArtifactNotes();
-          renderResult();
-          host.querySelector(`[data-research-sales="${entry.researchSales}"]`).focus({preventScroll:true});
-        };
-      } else {
-        button.disabled = true;
-        button.append(el("span", entry.status === "not-completed" ? "Search Stopped" : "No Complete Plan"));
-        button.append(el("span", entry.error, "research-sale-end"));
-      }
-      row.append(button);
+  if(r.shiftPlans){
+    const choices=el("section",undefined,"card research-sale-comparison"),heading=el("h2","Plans by Shift Count"),row=el("div",undefined,"research-sale-options");
+    choices.append(heading,el("p","Up to three fastest complete plans with distinct shift counts. Finish time comes first; equal times favor fewer shifts.","hint"));
+    for(const entry of r.shiftPlans){
+      const button=el("button",undefined,"research-sale-option");button.type="button";button.dataset.shifts=entry.switches;button.setAttribute("aria-pressed",String(entry.switches===r.selectedSwitches));
+      button.append(el("strong",entry.switches+" New Shift"+(entry.switches===1?"":"s")),el("span",duration(entry.plan.seconds)),el("span","Ends "+timestamp(entry.plan.end,zone),"research-sale-end"));
+      if(entry.switches===r.recommendedSwitches)button.append(el("span","Fastest Found","research-sale-best"));
+      button.onclick=()=>{result=ShiftPlans.select(result,entry.switches);if(!worker&&!dirty)refresh();else updateArtifactNotes();renderResult();host.querySelector(`[data-shifts="${entry.switches}"]`).focus({preventScroll:true});};row.append(button);
     }
-    choices.append(row); host.append(choices);
+    choices.append(row);host.append(choices);
   }
   const card = el("div", void 0, "card result-summary"), head = el("div", void 0, "result-header");
-  head.append(el("h2", (r.researchSalePlans ? r.selectedResearchSales + " Research Sale" + (r.selectedResearchSales === 1 ? "" : "s") + " · " : "") + "Target " + r.target + " TE in " + duration(r.seconds)));
+  head.append(el("h2", "Target " + r.target + " TE in " + duration(r.seconds)));
   const tools = el("div", void 0, "inline");
   const txt = el("button", "Export Walkthrough", "secondary");
   txt.onclick = async () => {
@@ -1076,7 +1059,7 @@ function renderResult() {
     txt.textContent = "Creating PDF\u2026";
     try {
       const bytes = await Q.create(raw, r);
-      V.display(preview, bytes, N.pdf(raw, r.seconds, r.selectedResearchSales));
+      V.display(preview, bytes, N.pdf(raw, r.seconds, r.selectedResearchSales, r.selectedSwitches));
       show("PDF opened in a new tab with shift summaries and the quick guide.");
     } catch (e) {
       preview.close();
@@ -1088,7 +1071,7 @@ function renderResult() {
   };
   txt.title = "Open a PDF with shift summaries and the quick guide in a new tab";
   const json = el("button", "Save plan", "secondary");
-  json.onclick = () => saveBlob(N.plan(resultConfig, r.seconds, r.selectedResearchSales), JSON.stringify({ version: 1, config: resultConfig, result: r }, null, 2));
+  json.onclick = () => saveBlob(N.plan(resultConfig, r.seconds, r.selectedResearchSales, r.selectedSwitches), JSON.stringify({ version: 1, config: resultConfig, result: r }, null, 2));
   const expand = el("button", "Expand all", "secondary");
   expand.onclick = () => {
     const items = [...host.querySelectorAll(".timeline-group, .full-breakdown")], open = items.some(d => !d.open);
@@ -1121,15 +1104,16 @@ function renderResult() {
     };
   tools.append(txt, json, expand, next);
   head.append(tools);
-  card.append(head, el("p", "Starts " + timestamp(r.start, zone), "plan-start"), el("p", "Ends " + timestamp(r.end, zone), "plan-end"), el("p", r.switches + " new switches \xB7 " + num(r.soulCost) + " Soul Eggs spent"), el("p", waitTotals(summary.totals), "waiting-totals"), el("p", "Minimum offline break: " + (resultConfig.plan.minOfflineMinutes ?? 1) + " min. Finish time comes first; ties favor fewer earning breaks.", "hint"), el("p", "Validated by replay: purchases affordable, Virtue permissions enforced, target reached. Claim pending TE at ascension.", "hint"));
+  card.append(head, el("p", "Starts " + timestamp(r.start, zone), "plan-start"), el("p", "Ends " + timestamp(r.end, zone), "plan-end"), el("p", r.switches + " new switches \xB7 " + num(r.soulCost) + " Soul Eggs spent"), el("p", waitTotals(summary.totals), "waiting-totals"), el("p", "Minimum offline break: " + (resultConfig.plan.minOfflineMinutes ?? 1) + " min. Finish time comes first; ties favor fewer switches, then fewer earning breaks.", "hint"), el("p", "Validated by replay: purchases affordable, Virtue permissions enforced, target reached. Claim pending TE at ascension.", "hint"));
   const diagnostics = el("details", void 0, "search-details");
   diagnostics.append(el("summary", "Search Details"), el("p", r.method + " \xB7 " + r.explored.toLocaleString() + " states examined \xB7 " + r.termination + ".", "hint"));
+  if (r.solverVersion === 2) diagnostics.append(el("p", "Research allowed through " + timestamp(r.researchDeadline, zone) + "; " + r.actualResearchSales + " sales actually used. Visit durations are automatic.", "hint"));
   if (r.openingSearch) diagnostics.append(el("p", "Compared " + r.openingSearch.combinationsCompared + " of " + r.openingSearch.totalCombinations + " C1/K1 opening combinations at " + (r.openingSearch.stepMinutes || 30) + "-minute intervals" + (r.openingSearch.complete ? " (complete)." : " (stopped early)."), "hint"));
   if (r.waitingRoutesCompared > 1) diagnostics.append(el("p", "Compared individual purchase waits and offline batches across " + r.waitingRoutesCompared + " staged routes.", "hint"));
   const c1 = summary.shifts.find((s) => s.phase === "C1"), k1 = summary.shifts.find((s) => s.phase === "K1");
   if (c1 && k1 && r.openingTimeLimits) diagnostics.append(el("p", "Opening duration: C1 " + exactDuration(c1.seconds) + " (limit " + (resultConfig.plan.c1MaxMinutes ?? 60) + " min) \xB7 K1 " + exactDuration(k1.seconds) + " (limit " + (resultConfig.plan.k1MaxMinutes ?? 60) + " min).", "hint"));
   if (r.baselineSeconds) diagnostics.append(el("p", "No-upgrade comparison: " + duration(r.baselineSeconds) + " \u2192 " + duration(r.seconds) + ".", "hint"));
-  diagnostics.append(el("p", "Every smaller staged opening-budget option is retained. Saved plans never seed a search.", "hint"), el("p", "Online waits under 10 seconds are hidden; their time remains included.", "hint"));
+  diagnostics.append(el("p", "Purchase paths and departure times are compared along the selected route. Saved plans never seed a search.", "hint"), el("p", "Online waits under 10 seconds are hidden; their time remains included.", "hint"));
   card.append(diagnostics);
   const stale = el("div", "Inputs changed since this plan was generated. This timeline uses the saved inputs from its run. Re-run to update it.", "notice stale-plan");
   stale.id = "plan-stale";
@@ -1390,7 +1374,7 @@ function optimize() {
   if (importingBackup) return;
   if (!refresh()) return;
   const runConfig = structuredClone(config);
-  $("search-limits").textContent = "C1 ≤" + runConfig.plan.c1MaxMinutes + " min · K1 ≤" + runConfig.plan.k1MaxMinutes + " min · 30-minute opening intervals · " + (runConfig.plan.strategy === "wasmegg" ? "All eligible opening comparisons; no additional routing search." : "Balanced purchase search: " + exactDuration(searchOptions.maxMs / 1000) + " after eligible opening comparisons.");
+  $("search-limits").textContent = "Automatic purchase and departure timing · " + (runConfig.plan.autoSequence?"up to "+runConfig.plan.maxShifts+" new shifts":"entered route")+" · search budget " + exactDuration(searchOptions.maxMs / 1000) + ".";
   dirty = false;
   if ($("plan-stale")) { $("plan-stale").textContent = "A new search is running. This timeline is the previous plan; the completed search will replace it."; $("plan-stale").hidden = false; }
   show("Searching research orders and switch timing. You can keep using the interface.");
@@ -1425,7 +1409,14 @@ function optimize() {
         $("search-announcement").textContent = searchContext;
         return;
       }
-      if (p.phase === "openings") {
+      if (p.phase === "route-search") {
+        $("run-summary").textContent = "Finding Fastest Plan · " + p.stage;
+        searchContext = Number(p.explored || 0).toLocaleString() + " purchase states examined";
+        $("search-stage").textContent = p.stage + " · Purchases and Departure Timing";
+        $("search-openings").textContent = searchContext;
+        $("run-progress").removeAttribute("value");
+        $("run-progress").removeAttribute("aria-valuetext");
+      } else if (p.phase === "openings") {
         $("run-summary").textContent = "Checking Opening " + (p.openingCompared + 1) + " / " + p.openingTotal;
         searchContext = (p.researchSales ? p.researchSales + " research sale" + (p.researchSales === 1 ? "" : "s") + " · " : "") + "C1 ≤" + p.openingBudget.c1MaxMinutes + " min · K1 ≤" + p.openingBudget.k1MaxMinutes + " min";
         const egg = {C:"Curiosity", K:"Kindness", I:"Integrity", R:"Resilience", H:"Humility"}[p.stage?.[0]];
@@ -1508,7 +1499,7 @@ async function loadFile(file) {
       renderForm();
       renderResult();
       tab("results");
-      const oldLimits = !result.openingTimeLimits && U.openingViolations(config, result).length;
+      const oldLimits = result.solverVersion !== 2 && !result.openingTimeLimits && U.openingViolations(config, result).length;
       show(oldLimits ? "Saved plan loaded and replayed. This older plan exceeds the current C1/K1 limits. Re-run the planner to enforce them." : "Saved plan loaded and replayed.", !!oldLimits);
           return;
     }

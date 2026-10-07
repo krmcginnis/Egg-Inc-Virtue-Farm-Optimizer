@@ -17,7 +17,7 @@ const root = path.resolve(__dirname, "..");
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } }), errors = [];
     page.on("pageerror", e => errors.push(e.message));
     await page.goto("http://127.0.0.1:" + server.address().port); await page.waitForFunction(() => !!globalThis.VirtueApp);
-    assert.deepEqual(await page.locator('#strategy option').evaluateAll(nodes=>nodes.map(n=>[n.value,n.textContent])),[['wasmegg','Optimized Sequence'],['user','User Selected Sequence']]);
+    assert.deepEqual(await page.locator('#strategy option').evaluateAll(nodes=>nodes.map(n=>[n.value,n.textContent])),[['wasmegg','Automatic Planning'],['user','User Selected Sequence']]);
     assert.equal(await page.inputValue('#strategy'),'wasmegg');assert.equal(await page.locator('#effort,#autoSequence').count(),0);
     const load = async raw => { await page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Readability.json")), raw); await page.click(raw.result ? '[data-tab="results"]' : '[data-tab="farm"]'); };
     const farm = blank(1791244800);

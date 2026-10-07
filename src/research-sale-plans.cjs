@@ -14,6 +14,7 @@ function validate(result){
  for(const [i,entry] of entries.entries()){
   if(!entry||entry.researchSales!==COUNTS[i]||!['complete','unavailable','not-completed'].includes(entry.status))throw Error('Invalid research-sale option.');
   if(entry.status==='complete'&&(!entry.plan||entry.plan.researchSales!==entry.researchSales||!Array.isArray(entry.plan.actions)||entry.plan.researchSalePlans))throw Error('Invalid research-sale plan.');
+  if(entry.status==='complete'&&entry.plan.solverVersion===2){const p=entry.plan,m=p.actions[0]?.routeSearch;if(m?.version!==2||m.researchSales!==entry.researchSales||JSON.stringify(m.sequence)!==JSON.stringify(p.route)||p.openingTimeLimits!==false||!Number.isFinite(p.researchDeadline)||!Number.isInteger(p.actualResearchSales)||p.actualResearchSales<0||p.actualResearchSales>entry.researchSales)throw Error('Invalid route-search sale option.');}
  }
  if(!entries.some(e=>e.status==='complete'&&e.researchSales===result.selectedResearchSales))throw Error('The selected research-sale plan is missing.');
  if(!entries.some(e=>e.status==='complete'&&e.researchSales===result.recommendedResearchSales))throw Error('The recommended research-sale plan is missing.');

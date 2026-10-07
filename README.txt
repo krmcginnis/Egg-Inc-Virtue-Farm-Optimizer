@@ -898,3 +898,23 @@ and automatic/manual allocation behavior remain available.
 Seconds per Purchase defaults to 0.3 for new farms or missing form settings.
 Explicit saved timing values, including zero, retain their values. Older saved
 plans continue to replay with their original purchase timing.
+
+
+Route-Aware Solver — v0.9.0
+
+Automatic Planning compares farm orders, upgrade revisits, research, and timing
+within Maximum New Shifts (default 12). This is a ceiling. The timeline shows up
+to three fastest complete plans with different shift counts, ordered by finish
+time. Equal times favor fewer shifts, then fewer earning breaks. Every choice
+has a summary, Quick Guide, walkthrough export, and replayable saved timeline.
+Sale timing is compared internally; sale-window choices and C1/K1 time controls
+are removed.
+
+User Selected Sequence preserves the entered order and can stop early when the
+goal and configured missions are complete. The final C is delivery-only; three
+C visits permit research on the first two. Integrity after the final Humility
+launch is a candidate, but faster plans can finish elsewhere. Only currently
+owned gear is used; future mission rewards are not predicted. Fuel, flights,
+and configured launches remain requirements. The bounded search does not
+exhaust all possible routes or prove global optimality. The prior solver is
+retained for developer rollback and historical replay.

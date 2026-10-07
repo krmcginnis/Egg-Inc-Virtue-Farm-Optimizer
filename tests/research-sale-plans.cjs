@@ -1,8 +1,8 @@
 'use strict';
-const assert=require('node:assert/strict'),S=require('../src/simulator.cjs'),O=require('../src/optimizer.cjs'),T=require('../src/staged-route.cjs'),E=require('../src/opening-search.cjs'),W=require('../src/waiting-objective.cjs'),Plans=require('../src/research-sale-plans.cjs'),Route=require('../src/switch-sequence.cjs'),blank=require('../src/blank-farm.cjs');
+const assert=require('node:assert/strict'),S=require('../src/simulator.cjs'),O=require('../src/optimizer-legacy.cjs'),T=require('../src/staged-route.cjs'),E=require('../src/opening-search.cjs'),W=require('../src/waiting-objective.cjs'),Plans=require('../src/research-sale-plans.cjs'),Route=require('../src/switch-sequence.cjs'),blank=require('../src/blank-farm.cjs');
 // Synthetic fully upgraded farm: no account data or EID is included.
 function fixture(){
- const raw=blank(1791388800);
+ const raw=blank(1791388800);delete raw.plan.solverVersion;
  Object.assign(raw.farm,{cash:1e18,soulEggs:1e30,claimed:Array(5).fill(20),epic:Object.fromEntries(S.D.epic.map(r=>[r.id,r.levels])),habs:Array(4).fill(18),vehicles:Array.from({length:17},()=>({id:11,cars:1})),research:Object.fromEntries(S.D.research.map(r=>[r.id,r.levels])),proPermit:true,earningsMode:'online'});
  Object.assign(raw.plan,{saleComparisonVersion:1,target:140,maxSwitches:0,stagedSales:6,c1MaxMinutes:30,k1MaxMinutes:30});return raw;
 }

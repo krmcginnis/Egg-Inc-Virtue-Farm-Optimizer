@@ -10,7 +10,8 @@ module.exports=function nextAscension(config,result){
  if(result.actions.some(a=>a.type==='set'&&a.loadout)){next.farm.loadouts={...next.farm.loadouts,current:structuredClone(verified.c.loadouts[s.set])};next.farm.activeSet='current';}
  if(!config.farm.fuelTank&&!verified.c.ships.enabled)delete next.farm.fuelTank;
  const strategy=Strategy.selected(config.plan);
- next.plan={...next.plan,strategy,strategyVersion:2,c1MaxMinutes:E.maximum(verified.c.c1MaxMinutes),k1MaxMinutes:E.maximum(verified.c.k1MaxMinutes),start:s.t,target:Math.min(490,total+10),floors:Array(5).fill(0),maxSwitches:verified.c.maxSwitches,autoSequence:strategy!=='user',initialPhysicalPurchases:false,sequence:strategy==='user'?structuredClone(config.plan.sequence):[...DEFAULT_ROUTE]};
+ next.plan={...next.plan,strategy,strategyVersion:2,...(result.solverVersion>=2?{solverVersion:2}:{c1MaxMinutes:E.maximum(verified.c.c1MaxMinutes),k1MaxMinutes:E.maximum(verified.c.k1MaxMinutes)}),start:s.t,target:Math.min(490,total+10),floors:Array(5).fill(0),maxSwitches:verified.c.maxSwitches,autoSequence:strategy!=='user',initialPhysicalPurchases:false,sequence:strategy==='user'?structuredClone(config.plan.sequence):[...DEFAULT_ROUTE]};
+ if(result.solverVersion>=2){delete next.plan.c1MaxMinutes;delete next.plan.k1MaxMinutes;}
  delete next.plan.openingStepMinutes;
  if(next.plan.manualFloors)next.plan.manualFloors=Array(5).fill(0);
  S.prepare(next);return next;
