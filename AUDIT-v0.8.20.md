@@ -1645,5 +1645,34 @@ Release-state and prepare-publish checks cover the workflow/publication change.
 
 Local packaging passed (169 runtime files). Native update-core/update-launch
 checks require PowerShell, which is unavailable in this scratch environment;
-they will run in the Windows release job. Windows release and public updater
-verification will be recorded after publish.
+the Windows release job ran both successfully, as recorded below.
+
+
+Windows release proof — v0.8.20
+
+App source commit: fea8addc659221acf635aedcc24923502bb06f3a.
+Automatic run 37650365511 / job 112891808944 completed successfully using the
+fresh serialized queue. The new exact-sale regression suite passes on Windows.
+Packaging builds 169 runtime files. Native Windows checks pass version/source
+guards, malformed/tampered archives, checksum mismatches, installation and
+rollback, exact backup restore, retained user JSON/config, hidden CMD launch
+from a path with spaces, repeat-launch reuse, successful update/restart,
+startup-failure recovery, and legacy-worker recovery.
+
+The anonymous updater found v0.8.20, downloaded the complete public archive,
+and verified every app-file checksum on the first attempt using Windows
+PowerShell 5.1.26100.33438. The public latest release is not a draft and targets
+the exact source commit above (release ID 405946124).
+
+Published original assets:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8568907 bytes; SHA256
+  5a03bece6795ae0bc28a2aa6fbd29921a4cb1a65e2540b536a7d58effb05b75f.
+- update-manifest.json: 240 bytes; SHA256
+  3a30ee366e2f593b89f757bcbab531f06962704e992bd13b2a4cc36f91f7af8b.
+
+The generated solver worker's local SHA256 is
+0e629ed69a86efea7a57c48f81307be6044b6adc3b5749b0c3d17b70b418e271.
+Additional independent complete runs from Integrity, Humility, Resilience, and
+Kindness all retain three valid alternatives using 13 switches; the Curiosity
+fixture uses 12. This same-version audit commit records completed checks without
+replacing or repackaging either immutable release asset.
