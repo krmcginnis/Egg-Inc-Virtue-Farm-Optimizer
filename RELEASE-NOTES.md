@@ -1,6 +1,8 @@
-# v0.8.21
+# v0.8.22
 
-- Automatically set Video Doubler to Active (2×) when an imported backup reports an active ULTRA Pro subscription, including account-only EID imports.
-- Remove the optional label from C3 delivery research guidance.
-- Add Plan Prioritization with Minimize Time and Minimize Switches choices. Save the preference with farms and plans; solver behavior remains unchanged until a future update.
+- Show a required Maximum Time (Days) field for Minimize Time or Maximum Shifts for Minimize Switches. Preserve both values when changing priorities.
+- Add Automatically Determine Truth Egg Allocation beside the TE target, checked by default.
+- Hide per-Virtue TE minimums below the target until automatic allocation is unchecked. Retain entered minimums while automatic allocation is enabled, without applying them to the plan.
+- Preserve explicit per-Virtue goals in older files and keep the controls through saves, EID imports, and app updates.
+- Priority and maximum settings remain saved preferences for future solver work; search ranking and its existing horizon are unchanged.
 - Install through Update App → Update & Restart.

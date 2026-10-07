@@ -872,3 +872,17 @@ the optimized route and no longer carries an optional label.
 Planning now offers Minimize Time or Minimize Switches under Plan Prioritization.
 The choice is saved for a future update; current solver ranking still minimizes
 time. Older farm files default to Minimize Time.
+
+Conditional planning controls — v0.8.22
+-------------------------------------
+Minimize Time shows a required Maximum Time (Days) field; Minimize Switches
+shows a required Maximum Shifts field. Both values are retained when toggling
+priorities and are saved with farms and plans. These priority/maximum settings
+are prepared for future solver work; they do not change search ranking or its
+existing horizon in this release.
+
+Automatically Determine Truth Egg Allocation is checked by default beside the
+TE target. Uncheck it to display Per-Virtue TE Minimums below the target.
+Checking it again keeps the entered values but uses automatic allocation.
+Older files with explicit minimums open with manual allocation selected.
+Next Ascension continues to reset per-Virtue minimums, including retained values.

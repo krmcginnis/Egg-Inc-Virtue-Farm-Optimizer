@@ -59,6 +59,21 @@ function updateSequenceVisibility() {
   }[strategy] || "Select a planning strategy.";
   $("routing-help").textContent = automatic ? "Choose User Selected Sequence to enter your own order." : "Your truth egg sequence controls the visit order.";
 }
+function updatePlanControls() {
+  const time = $("planPriority").value !== "switches";
+  for (const [name, active] of [["Days", time], ["Shifts", !time]]) {
+    $("priority-" + name.toLowerCase() + "-field").hidden = !active;
+    $("priorityMax" + name).disabled = !active;
+    $("priorityMax" + name).required = active;
+  }
+  const automatic = $("autoTeAllocation").checked;
+  $("te-minimums").hidden = automatic;
+  $("goal-fields").disabled = automatic;
+}
+function retainedNumber(id) {
+  const value = NumericInput.value($(id));
+  return value === "" || !Number.isFinite(Number(value)) ? value : Number(value);
+}
 const num = NumberFormat.format;
 const compactNumber = value => num(value).replace(/\.0+(?=[A-Za-z]*$)/,"").replace(/(\.\d*[1-9])0+(?=[A-Za-z]*$)/,"$1");
 const fuelNumber = require('./fuel-format.cjs');
@@ -386,6 +401,9 @@ function renderForm() {
   $("minOfflineMinutes").value = p.minOfflineMinutes ?? 1;
   $("strategy").value = p.strategy || "wasmegg";
   $("planPriority").value = p.priority === "switches" ? "switches" : "time";
+  $("priorityMaxDays").value = p.priorityMaxDays ?? p.maxDays ?? 366;
+  $("priorityMaxShifts").value = p.priorityMaxShifts ?? p.maxSwitches ?? 12;
+  $("autoTeAllocation").checked = p.autoTeAllocation ?? !(p.floors || []).some(n => Number(n) > 0);
   $("c1MaxMinutes").value = E.maximum(S.number(p.c1MaxMinutes ?? 60));
   $("k1MaxMinutes").value = E.maximum(S.number(p.k1MaxMinutes ?? 60));
   updateSequenceVisibility();
@@ -424,7 +442,7 @@ function renderForm() {
     inp.type = "number";
     inp.min = "0";
     inp.max = "98";
-    NumericInput.write(inp, p.floors?.[i] || 0);
+    NumericInput.write(inp, (p.manualFloors ?? p.floors)?.[i] ?? 0);
     inp.setAttribute("aria-label", S.NAME[i] + " minimum final TE");
     goal.append(inp);
     $("goal-fields").append(goal);
@@ -806,7 +824,12 @@ function gather() {
   f.research = Object.fromEntries(D.research.map((r) => [r.id, readNumber("research-" + r.id, r.name, 0, r.levels, true)]));
   f.epic = Object.fromEntries(D.epic.map((r) => [r.id, readNumber("epic-" + r.id, r.name, 0, r.levels, true)]));
   f.loadouts = formLoadouts();
-  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), saleComparisonVersion: 1, priority: $("planPriority").value || "time", maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: Array.from({ length: 5 }, (_, i) => readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true)) };
+  const autoTeAllocation = $("autoTeAllocation").checked;
+  const manualFloors = Array.from({length:5}, (_, i) => autoTeAllocation ? retainedNumber("floor-" + i) : readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true));
+  const timePriority = $("planPriority").value !== "switches";
+  const priorityMaxDays = timePriority ? readNumber("priorityMaxDays", "Maximum time (days)", 1, 366, true) : retainedNumber("priorityMaxDays");
+  const priorityMaxShifts = timePriority ? retainedNumber("priorityMaxShifts") : readNumber("priorityMaxShifts", "Maximum shifts", 0, 30, true);
+  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), saleComparisonVersion: 1, priority: $("planPriority").value || "time", priorityMaxDays, priorityMaxShifts, autoTeAllocation, manualFloors, maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: autoTeAllocation ? Array(5).fill(0) : manualFloors.slice() };
   delete p.maxSwitches; delete p.stagedSales;
   if (!p.autoSequence) try {
     Route.parse(p.sequence, {required: true});
@@ -829,6 +852,7 @@ function stat(label, value, sub, egg) {
   return div;
 }
 function refresh() {
+  updatePlanControls();
   updateTimezoneHelp();
   document.querySelectorAll("[data-farm-picker] select").forEach(FarmIcons.updatePicker);
   SelectionReadout.refresh();
@@ -1802,6 +1826,7 @@ document.addEventListener("change", (e) => {
   ShipIcons.update(e.target);
   if (e.target.matches("select")) SelectionReadout.refresh();
   const id = e.target.id;
+  if (id === "planPriority" || id === "autoTeAllocation") updatePlanControls();
   const editingKey = Object.keys(editingGroups).find(key => editingGroups[key].toggles.includes(id));
   if (editingKey) {
     $(editingKey).checked = e.target.checked;

@@ -12,5 +12,6 @@ module.exports=function nextAscension(config,result){
  const strategy=Strategy.selected(config.plan);
  next.plan={...next.plan,strategy,strategyVersion:2,c1MaxMinutes:E.maximum(verified.c.c1MaxMinutes),k1MaxMinutes:E.maximum(verified.c.k1MaxMinutes),start:s.t,target:Math.min(490,total+10),floors:Array(5).fill(0),maxSwitches:verified.c.maxSwitches,autoSequence:strategy!=='user',initialPhysicalPurchases:false,sequence:strategy==='user'?structuredClone(config.plan.sequence):[...DEFAULT_ROUTE]};
  delete next.plan.openingStepMinutes;
+ if(next.plan.manualFloors)next.plan.manualFloors=Array(5).fill(0);
  S.prepare(next);return next;
 };

@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.21 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.22 — Release Audit
+
+v0.8.22 adds conditional priority maxima and a default automatic-TE-allocation
+checkbox with minimums revealed beneath the target. Current evidence appears
+in the v0.8.22 section at the end; older evidence is historical.
 
 v0.8.21 enables the imported video doubler for active ULTRA Pro accounts,
 removes the C3 optional label, and adds a saved Plan Prioritization preference.
@@ -1724,3 +1728,36 @@ Public release: 405970807, v0.8.21, with both assets uploaded:
 
 This same-version audit commit records completed verification without replacing
 or repackaging either immutable release asset.
+
+## Conditional planning controls — v0.8.22
+
+Minimize Time shows a required Maximum Time (Days) input; Minimize Switches
+shows a required Maximum Shifts input. The inactive input is hidden, disabled,
+and not validated. Both values are saved and retained when changing priority.
+Whole-day entries accept 1–366 days, matching the current horizon's range;
+shift entries accept 0–30 new shifts. New farms default to 366 days and 12 shifts;
+older files initialize from their saved horizon and switch allowance when present.
+The UI and help explicitly state that priority and maxima are saved for future
+solver work. They do not alter the existing search ranking, 366-day new-search
+horizon, or automatic full-route switch allowance in this release.
+
+Automatically Determine Truth Egg Allocation is checked beside the target for
+new farms. Unchecking it enables and reveals per-Virtue TE minimums directly
+under the target. Checked mode passes zero floors to the existing solver and
+retains manual entries separately; even an invalid hidden entry does not block
+automatic allocation. Unchecked mode validates and applies the entered floors.
+Legacy files with nonzero floors use manual allocation; zero floors default to
+automatic mode. Save/load, EID imports, and update recovery retain the controls.
+Next Ascension resets both effective and retained minima, preserving its existing
+reset policy and avoiding reuse of the previous ascension's manual goals.
+
+Local npm install/build and focused desktop planning-controls, planning-clarity,
+EID-import, and research-sale-plan browser suites passed. They cover required
+inputs, empty/invalid active fields, inactive-field retention, actual manual
+floor semantics, automatic allocation, saved files, legacy goals, real-worker
+sale alternatives, selected JSON/PDF exports, updater recovery, and next ascension.
+Automatic and manual layouts were visually reviewed across 1440–1000px desktops.
+The worker bundle SHA-256 remains byte-identical to v0.8.21:
+0e629ed69a86efea7a57c48f81307be6044b6adc3b5749b0c3d17b70b418e271.
+Native Windows installation/restart/rollback and public update-feed verification
+will be recorded after the release workflow completes.

@@ -14,7 +14,7 @@ function target(claimed) {
 }
 function freshFarm(start) {
   const farm = blankFarm(start);
-  Object.assign(farm.plan, {saleComparisonVersion:1, target:40, targetMode, eventTimezone:timezone(), eventTimezoneMode:"automatic"});
+  Object.assign(farm.plan, {saleComparisonVersion:1, target:40, targetMode, eventTimezone:timezone(), eventTimezoneMode:"automatic", priorityMaxDays:366, priorityMaxShifts:12, autoTeAllocation:true, manualFloors:Array(5).fill(0)});
   return farm;
 }
 module.exports = {timezone,target,targetMode,freshFarm};
