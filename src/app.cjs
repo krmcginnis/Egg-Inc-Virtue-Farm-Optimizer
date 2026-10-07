@@ -1490,7 +1490,7 @@ async function loadEidData() {
     $("empty-results").hidden = false;
     const message = next.importInfo.scope === "account" ? "Account information has been loaded, but no current Virtue farm was found. Your starting farm, start time and planning goals are retained." : "Account information and the current Virtue farm have been loaded. Your planning goals are retained.";
     show(message + (valid ? " Review backup age and assumptions before planning." : " Your draft is retained; review the marked inputs before planning."), !valid);
-    } catch (e) {
+  } catch (e) {
     if (epoch === loadEpoch) show(e.message, true);
   } finally {
     if (epoch === loadEpoch) { importingBackup = null; busy(!!worker); }
@@ -1590,7 +1590,7 @@ document.addEventListener("change", (e) => {
       if (previous !== ArtifactSets.signature(config.farm.loadouts)) markInputsChanged();
     }
     if (editingKey === "manualFarmData" && e.target.checked) $("starting-gear-controls").hidden = true;
-      return;
+    return;
   }
   if (id === "tankCapacity") NumericInput.write($("tankOutput"), Ships.rateFor(Number(e.target.value)));
   if (id.startsWith("col-egg-")) {
