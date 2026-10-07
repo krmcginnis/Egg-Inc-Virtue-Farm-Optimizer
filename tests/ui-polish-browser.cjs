@@ -20,6 +20,7 @@ const root = path.resolve(__dirname, "..");
     assert.match(await page.locator("#fleet-status").innerText(), new RegExp(unlocked + " unlocked slots"));
     assert.ok(await page.locator("#cars-0").isHidden());
     assert.deepEqual((await page.evaluate(() => VirtueApp.getConfig())).farm.vehicles, farm.farm.vehicles);
+    assert.equal(await page.locator("#vehicle-0").getAttribute("aria-label"), "Fleet Slot 1 Vehicle"); assert.ok(await page.locator("#vehicle-0").evaluate(select => [...select.closest("label").childNodes].filter(node => node.nodeType === Node.TEXT_NODE).every(node => !node.textContent.trim())));
     await page.selectOption("#vehicle-0", "11"); await page.evaluate(() => VirtueApp.refresh());
     assert.ok(await page.getByLabel("Fleet Slot 1 Train Cars", { exact: true }).isVisible());
     await page.fill("#cars-0", "3"); await page.evaluate(() => VirtueApp.refresh());
