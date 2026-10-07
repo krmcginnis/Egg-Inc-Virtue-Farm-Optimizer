@@ -1194,7 +1194,7 @@ increase higher vehicle types). Actual purchases and replay action order remain
 unchanged; the same presentation groups are used by the PDF.
 
 New UI farms use eventTimezoneMode=automatic and store a resolved IANA
- eventTimezone. Automatic resolves the device timezone for new searches; saved
+eventTimezone. Automatic resolves the device timezone for new searches; saved
 plans replay their captured resolved zone. Explicit zones in older farms remain
 selected. The menu includes every regional zone exposed by Intl, UTC and fixed
 UTC-12 through UTC+14 zones, plus Kolkata/Kathmandu aliases. Regional zones
@@ -1246,4 +1246,22 @@ simulation change is precise fractional-timezone event timing. The solver remain
 a heuristic search; this audit verifies calculations and replay, not global
 optimality. PDF text units remain readable words; its vehicle order is shared.
 
-Windows build, native launcher/updater and public-feed proof follow after publishing.
+Windows release proof: app commit 03522803623b0e17e990623df6ddfde629fd1b73;
+automatic Publish App Release run 37578025152 / job 112651184472 succeeds.
+The Windows build/package has 169 runtime files. Archive guards, seven bad archive
+cases, digest mismatch, rollback, exact backup restore, preserved user settings,
+and stage tamper checks pass. Actual CMD launches from paths with spaces,
+hidden/reused helpers, successful restart, startup-failure recovery and legacy
+worker recovery all pass. Windows PowerShell 5.1.26100.33438 anonymously reads
+the published feed, downloads the complete release and verifies every app-file
+checksum. The first feed attempt succeeds; no recovery workflow was needed.
+
+Published release v0.8.14 is public (not draft), targets the app commit above and
+contains exactly both verified uploaded assets:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8,558,921 bytes; SHA256
+  fe6963488d6ac8a9d506bd615840e226f1a379fc65e5b9b0d91902c664ae18ea.
+- update-manifest.json: 240 bytes; SHA256
+  c9758cd9744e3ccc980aa9e03a735786a3b48f00dcca0d2a28ef5bfacbcee0e7.
+
+This final audit proof is a same-version documentation commit after the immutable
+release assets were verified; it does not replace or repackage them.
