@@ -64,7 +64,7 @@ button{min-height:40px}
 .strategy-selection{grid-column:1/-1;min-width:0}.strategy-selection>.hint{margin:8px 0}.strategy-selection .planning-routing{margin:12px 0 4px;padding-top:12px}.stage-order{line-height:1.7;overflow-wrap:anywhere}.strategy-stages{margin:10px 0}.strategy-stages summary{cursor:pointer;color:var(--accent);font-size:13px;padding:5px 0}.strategy-stages ol{padding-left:21px;font-size:13px;line-height:1.6;color:var(--muted)}.strategy-stages li{margin:6px 0}.strategy-stages strong{color:#dce5f1}.strategy-selection .check input:disabled{opacity:1;cursor:default}
 
 /* Recovery and actual flight availability. */
-.session-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px 18px;margin:0 0 20px}.session-controls .check{margin:0}.session-controls small{font-size:11px;line-height:1.5}.existing-flights{border-top:1px solid var(--line);margin-top:18px;padding-top:14px}.existing-flights h3{font-size:14px;margin:0 0 14px}#effort-help{font-size:11px;line-height:1.5}#session-recovery[hidden]{display:none}@media print{.session-controls,#session-recovery{display:none}}
+.existing-flights{border-top:1px solid var(--line);margin-top:18px;padding-top:14px}.existing-flights h3{font-size:14px;margin:0 0 14px}#effort-help{font-size:11px;line-height:1.5}
 
 #flight-list{padding-left:18px;margin:8px 0}#flight-list:empty{display:none}#flight-list li{margin:7px 0;line-height:1.6}
 
@@ -97,7 +97,7 @@ h2{margin-bottom:10px}.hint{margin:8px 0;line-height:1.5}
 input,select{padding:7px 9px;min-height:36px}label{gap:5px}
 .fields,.four-fields{gap:10px}.spaced{margin-top:12px}
 .stat-grid{gap:10px;margin-bottom:12px}.stat{padding:12px}.stat strong{font-size:21px;margin:5px 0}
-.session-controls{margin-bottom:12px}.notice,.model-notices{margin-bottom:12px}
+.notice,.model-notices{margin-bottom:12px}
 
 .farm-workspace{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
 .farm-column,.farm-workspace .card{min-width:0}
