@@ -1,0 +1,100 @@
+name: Retry verified v0.8.13 publication
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/retry-v0-8-13.yml']
+  workflow_dispatch:
+concurrency:
+  group: publish-app-release
+  cancel-in-progress: false
+permissions:
+  contents: write
+  actions: read
+jobs:
+  retry:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: e9a783b19b024f94a17c0a624aedecedf557657f
+      - name: Verify original Windows checks and unchanged draft assets
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          . (Join-Path (Get-Location) 'Update-Core.ps1')
+          if ($env:GH_REPO -cne 'krmcginnis/Egg-Inc-Virtue-Farm-Optimizer') { throw 'Unexpected repository.' }
+          $jobJson = gh api "repos/$env:GH_REPO/actions/jobs/112642936790"
+          if ($LASTEXITCODE) { throw 'Cannot verify original Windows job.' }
+          $job = $jobJson | ConvertFrom-Json
+          foreach ($name in @('Build and verify release', 'Publish complete assets together')) {
+            $step = @($job.steps | Where-Object { $_.name -ceq $name })
+            if ($step.Count -ne 1 -or $step[0].conclusion -cne 'success') { throw "Original Windows verification did not pass: $name" }
+          }
+          $runJson = gh api "repos/$env:GH_REPO/actions/runs/37575363920"
+          if ($LASTEXITCODE) { throw 'Cannot verify original release commit.' }
+          $run = $runJson | ConvertFrom-Json
+          if ($run.head_sha -cne 'e9a783b19b024f94a17c0a624aedecedf557657f') { throw 'Original release commit mismatch.' }
+          $releaseJson = gh api "repos/$env:GH_REPO/releases/405403481"
+          if ($LASTEXITCODE) { throw 'Cannot read the existing draft.' }
+          $release = $releaseJson | ConvertFrom-Json
+          if (-not $release.draft -or $release.prerelease -or $release.tag_name -cne 'v0.8.13' -or $release.target_commitish -cne $run.head_sha) { throw 'Only the exact original draft can be retried.' }
+          $expected = @{
+            'Egg-Inc-Virtue-Farm-Optimizer.zip' = 'sha256:8596adf5b24bd6e2fd31511a30c8f88e3c9c62731a0cbddab8fe8004567a883a'
+            'update-manifest.json' = 'sha256:e9e91809b56666f061291c1327bead90d9b92443900d8e702016074ceade6659'
+          }
+          if (@($release.assets).Count -ne 2) { throw 'Unexpected release assets.' }
+          foreach ($name in $expected.Keys) {
+            $asset = @($release.assets | Where-Object { $_.name -ceq $name })
+            if ($asset.Count -ne 1 -or $asset[0].state -cne 'uploaded' -or $asset[0].digest -cne $expected[$name]) { throw "Original asset mismatch: $name" }
+          }
+          $validation = Join-Path $env:RUNNER_TEMP 'virtue-retry-private'
+          [IO.Directory]::CreateDirectory($validation) | Out-Null
+          gh release download v0.8.13 --dir $validation --pattern Egg-Inc-Virtue-Farm-Optimizer.zip --pattern update-manifest.json
+          if ($LASTEXITCODE) { throw 'Cannot download the original draft files.' }
+          foreach ($name in $expected.Keys) {
+            if ((Get-UpdateHash (Join-Path $validation $name)) -cne $expected[$name].Substring(7)) { throw "Downloaded original asset mismatch: $name" }
+          }
+          $manifest = Read-UpdateJson (Join-Path $validation 'update-manifest.json')
+          if ($manifest.schema -ne 1 -or $manifest.app -cne 'egg-inc-virtue-farm-optimizer' -or $manifest.version -cne '0.8.13' -or $manifest.archive -cne 'Egg-Inc-Virtue-Farm-Optimizer.zip' -or $manifest.size -ne 8548298 -or $manifest.sha256 -cne $expected['Egg-Inc-Virtue-Farm-Optimizer.zip'].Substring(7)) { throw 'Original manifest mismatch.' }
+          $verified = @{version='0.8.13';size=$manifest.size;sha256=$manifest.sha256;digest=$expected['Egg-Inc-Virtue-Farm-Optimizer.zip']}
+          Expand-VerifiedUpdate (Join-Path $validation $manifest.archive) (Join-Path $validation 'verified') $verified | Out-Null
+          Write-Host 'PASS: original Windows build/native update checks, exact draft commit, unchanged assets and every app file checksum.'
+      - name: Publish original draft and verify anonymous updater download
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          . (Join-Path (Get-Location) 'Update-Core.ps1')
+          $validation = Join-Path $env:RUNNER_TEMP 'virtue-retry-public'
+          [IO.Directory]::CreateDirectory($validation) | Out-Null
+          gh release edit v0.8.13 --draft=false --latest
+          if ($LASTEXITCODE) { throw 'Cannot publish the original draft.' }
+          try {
+            for ($attempt = 1; $attempt -le 4; $attempt++) {
+              try {
+                $release = Get-UpdateRelease $env:GH_REPO '0.0.0' $validation
+                if (-not $release.available -or $release.version -cne '0.8.13' -or $release.sha256 -cne '8596adf5b24bd6e2fd31511a30c8f88e3c9c62731a0cbddab8fe8004567a883a') { throw 'The anonymous updater did not find the exact expected release.' }
+                $archive = Join-Path $validation 'published.zip'
+                Save-UpdateDownload $release.url $archive $release.size
+                Expand-VerifiedUpdate $archive (Join-Path $validation 'verified') $release | Out-Null
+                Write-Host 'PASS: public updater feed, complete anonymous archive download and all app file checksums on Windows PowerShell.'
+                break
+              } catch {
+                Write-Host "Public check attempt $attempt failed: $($_.Exception.Message)"
+                if ($_.ErrorDetails.Message) { Write-Host $_.ErrorDetails.Message }
+                if ($_.Exception.Response) {
+                  foreach ($name in @('X-RateLimit-Remaining', 'X-RateLimit-Reset', 'Retry-After')) { Write-Host "$name : $($_.Exception.Response.Headers[$name])" }
+                }
+                if ($attempt -eq 4) { throw }
+                Start-Sleep -Seconds 60
+              }
+            }
+          } catch {
+            gh release edit v0.8.13 --draft=true
+            throw "Public verification failed; the original release is hidden again. $($_.Exception.Message)"
+          }
