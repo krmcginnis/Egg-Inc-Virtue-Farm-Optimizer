@@ -59,6 +59,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/prepare-publish.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/subscription-import.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/research-sale-plans.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build

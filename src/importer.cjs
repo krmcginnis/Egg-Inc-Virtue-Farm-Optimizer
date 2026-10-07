@@ -7,6 +7,7 @@ function specItem(spec,stone=false){if(!spec)return null;const name=typeof spec.
 function enumName(name){const schema=require('./proto-schema.json');return schema.nested.ei.nested.ArtifactSpec.nested.Name.values[name];}
 function importBackup(input,existing,now=Date.now()/1000,{scope='farm'}={}){
  const raw=camel(input),b=raw.backup||raw.response?.backup||raw;if(!b.virtue)throw Error('Backup has no Virtue progress.');
+ const ultraProActive=(b.subInfo?.subscriptionLevel===1||b.subInfo?.subscriptionLevel==='PRO')&&(b.subInfo?.status===1||b.subInfo?.status==='ACTIVE');
  const activeFarm=(b.farms||[]).find(f=>{const e=typeof f.eggType==='string'?({CURIOSITY:50,INTEGRITY:51,HUMILITY:52,RESILIENCE:53,KINDNESS:54}[f.eggType]):f.eggType;return e>=50&&e<=54;});
  const accountOnly=scope==='account'||scope==='auto'&&!activeFarm;
  if(!accountOnly&&!activeFarm)throw Error('No active Virtue farm in this backup. Open your Virtue farm in the game, sync, and retry. Automatic import can still load account information.');
@@ -45,7 +46,7 @@ function importBackup(input,existing,now=Date.now()/1000,{scope='farm'}={}){
   version:1,label:'Imported Egg Inc. Virtue farm',
   farm:{fuelTank,shipFlights,virtue:S.EGGS[eggId-50],claimed,delivered,research,epic,habs,vehicles,silos:Math.max(1,Number(farm.silosOwned||1)),cash,soulEggs:Number(b.game?.soulEggsD||b.game?.soulEggs||0),shiftCount:Number(b.virtue.shiftCount||0),proPermit:pro,videoDoubler:true,earningsMode:'offline',...retained,colleggtibles:colleggtibles.bonuses,colleggtibleTiers:colleggtibles.tiers,colleggtibleOverrides:colleggtibles.overrides,loadouts,activeSet:'current'},
   plan:{...structuredClone(existing?.plan||{}),start:now,target:!fresh&&existing?.plan?.target!==undefined?existing.plan.target:Math.min(490,claimed.reduce((a,b)=>a+b,0)+10),eventTimezone:existing?.plan?.eventTimezone||'America/Los_Angeles',maxDays:existing?.plan?.maxDays??90,maxSwitches:existing?.plan?.maxSwitches??12,sequence:structuredClone(existing?.plan?.sequence??DEFAULT_ROUTE),initialPhysicalPurchases:false,ships:{mode:'custom-two-visits',slots:existing?.plan?.ships?.slots??3,visits:Ships.plannedVisits(existing?.plan?.ships)}},
-  importInfo:{timestamp:backupTime,warnings,inventory,flightSource:b.artifactsDb?'backup':'unavailable',colleggtibleSource:colleggtibles.source,colleggtibleMatches:colleggtibles.matched,colleggtibleMappedContracts:colleggtibles.mapped,colleggtibleUnresolved:colleggtibles.unresolved,scope:accountOnly?'account':'farm',currentVirtueFarmFound:!!activeFarm,source:'Egg Inc. player backup'}
+  importInfo:{timestamp:backupTime,warnings,inventory,ultraProActive,flightSource:b.artifactsDb?'backup':'unavailable',colleggtibleSource:colleggtibles.source,colleggtibleMatches:colleggtibles.matched,colleggtibleMappedContracts:colleggtibles.mapped,colleggtibleUnresolved:colleggtibles.unresolved,scope:accountOnly?'account':'farm',currentVirtueFarmFound:!!activeFarm,source:'Egg Inc. player backup'}
  };
  if(accountOnly){
   const base=structuredClone(existing||blankFarm(now));
@@ -53,6 +54,9 @@ function importBackup(input,existing,now=Date.now()/1000,{scope='farm'}={}){
   cfg.plan={...base.plan,target:fresh?cfg.plan.target:base.plan.target};
   cfg.label='Imported Egg Inc. account data';
  }
+ // Apply after both retention paths, so a saved inactive setting cannot
+ // override an active ULTRA Pro subscription reported by the backup.
+ if(ultraProActive)cfg.farm.videoDoubler=true;
  cfg.farm.manualAccountData=false;
  cfg.farm.manualFarmData=accountOnly?existing?.farm?.manualFarmData===true:false;
  if(Array.isArray(db?.inventoryItems)){
@@ -72,7 +76,7 @@ function importBackup(input,existing,now=Date.now()/1000,{scope='farm'}={}){
  delete cfg.farm.manualEpicResearch;
  delete cfg.farm.colleggtibleTiersInferred;
  if(!cfg.farm.colleggtibleOverrides)delete cfg.farm.colleggtibleOverrides;
- if(!pro)warnings.push('Standard permit: 2 artifacts, 2 silos, and half offline earnings.');warnings.push('Imported values reflect the last saved backup. Population is treated as full. Video doubler is '+(cfg.farm.videoDoubler?'assumed active.':'configured inactive.'));
+ if(!pro)warnings.push('Standard permit: 2 artifacts, 2 silos, and half offline earnings.');warnings.push('Imported values reflect the last saved backup. Population is treated as full. '+(ultraProActive?'Video doubler is active (2×) from ULTRA Pro.':'Video doubler is '+(cfg.farm.videoDoubler?'assumed active.':'configured inactive.')));
  if(farm.activeBoosts?.length)warnings.push('Active boosts are not simulated.');
  if(b.virtue.afx?.fuelingEnabled||b.virtue.afx?.tankFillingEnabled)warnings.push('Fuel diversion is modeled only during listed ship-fueling steps; pause other fueling for the predicted delivery rate.');
  warnings.push(accountOnly?'Account data was refreshed. Farm upgrades, equipped gear, gems, current Virtue, start time, and planning goals are retained.':'Farm data and equipped artifacts were refreshed; the plan starts now. Planning goals are retained.');

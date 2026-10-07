@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.20 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.21 — Release Audit
+
+v0.8.21 enables the imported video doubler for active ULTRA Pro accounts,
+removes the C3 optional label, and adds a saved Plan Prioritization preference.
+Current evidence appears in the v0.8.21 section at the end; older evidence is historical.
 
 v0.8.20 removes the two maximum controls and retains independently replayed
 1-, 2-, and 3-research-sale alternatives for Optimized Sequence. Current evidence
@@ -1676,3 +1680,30 @@ Additional independent complete runs from Integrity, Humility, Resilience, and
 Kindness all retain three valid alternatives using 13 switches; the Curiosity
 fixture uses 12. This same-version audit commit records completed checks without
 replacing or repackaging either immutable release asset.
+
+## Active ULTRA Pro and plan preference — v0.8.21
+
+The importer checks both subscriptionLevel PRO and subscription status ACTIVE,
+using the decoded numeric or named enums, including snake_case JSON backups.
+It applies the 2× doubler after retained settings are merged. An unfinished form
+cannot restore an old inactive value over this automatic import setting.
+Account-only and full-farm imports are covered. Other subscription states retain
+the user's existing doubler selection; Pro Permit alone does not trigger it.
+Only an active-subscription boolean is saved as import metadata, not billing IDs.
+
+C3 is described as delivery research across the selected research-sale window,
+without an optional label. The stage calculations are unchanged.
+Plan Prioritization saves time or switches with farms, plans, app-update recovery,
+and next ascensions. Older files default to time. The help explicitly says this
+is saved for a future update: it does not change search ranking in this release.
+
+Local npm install/build and subscription-import, research-sale-plans,
+shift-rates/PDF, desktop EID-import, planning-clarity, research-sale selection,
+page-navigation, and update-error checks passed. The browser suites cover actual
+saved-file reloads and update recovery. Release-state and publish-plan checks
+passed for the added subscription regression in the Windows workflow.
+The new priority control was visually reviewed in the desktop Planning layout.
+The worker bundle SHA-256 remains identical to v0.8.20:
+0e629ed69a86efea7a57c48f81307be6044b6adc3b5749b0c3d17b70b418e271.
+Native Windows installation/restart/rollback and public update-feed verification
+will be recorded after the release workflow completes.

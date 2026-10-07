@@ -385,6 +385,7 @@ function renderForm() {
   $("sequence").value = typeof p.sequence === "string" ? p.sequence : (p.sequence ?? DEFAULT_ROUTE).map((x) => ({ curiosity: "C", integrity: "I", humility: "H", resilience: "R", kindness: "K" })[x] || x).join(" ");
   $("minOfflineMinutes").value = p.minOfflineMinutes ?? 1;
   $("strategy").value = p.strategy || "wasmegg";
+  $("planPriority").value = p.priority === "switches" ? "switches" : "time";
   $("c1MaxMinutes").value = E.maximum(S.number(p.c1MaxMinutes ?? 60));
   $("k1MaxMinutes").value = E.maximum(S.number(p.k1MaxMinutes ?? 60));
   updateSequenceVisibility();
@@ -538,9 +539,9 @@ function currentFarmImport(backup) {
     if (Object.keys(retained).length) next.uiProvenance = retained;
   }
   if (draft) {
-    draft.fields = Object.fromEntries(Object.entries(draft.fields).filter(([id]) => next.importInfo.scope === "account"
+    draft.fields = Object.fromEntries(Object.entries(draft.fields).filter(([id]) => !(next.importInfo.ultraProActive && id === "videoDoubler") && (next.importInfo.scope === "account"
       ? !["soulEggs", "shiftCount", "proPermit", "tankCapacity", "tankOutput", "manualAccountData", "manualAccountFuel", "manualColleggtibles", "manualEpicResearch"].includes(id) && !/^(fuel-|claimed-|delivered-|epic-|col-)/.test(id)
-      : id !== "start" && ($("planning-card").contains($(id)) || $("ship-planning").contains($(id)) || id.startsWith("floor-"))));
+      : id !== "start" && ($("planning-card").contains($(id)) || $("ship-planning").contains($(id)) || id.startsWith("floor-")))));
     next.draftInputs = draft;
   }
   return next;
@@ -805,7 +806,7 @@ function gather() {
   f.research = Object.fromEntries(D.research.map((r) => [r.id, readNumber("research-" + r.id, r.name, 0, r.levels, true)]));
   f.epic = Object.fromEntries(D.epic.map((r) => [r.id, readNumber("epic-" + r.id, r.name, 0, r.levels, true)]));
   f.loadouts = formLoadouts();
-  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), saleComparisonVersion: 1, maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: Array.from({ length: 5 }, (_, i) => readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true)) };
+  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), saleComparisonVersion: 1, priority: $("planPriority").value || "time", maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: Array.from({ length: 5 }, (_, i) => readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true)) };
   delete p.maxSwitches; delete p.stagedSales;
   if (!p.autoSequence) try {
     Route.parse(p.sequence, {required: true});

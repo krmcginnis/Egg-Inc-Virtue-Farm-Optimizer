@@ -861,3 +861,14 @@ Guide, purchase details, artifact recommendation, and export. Saved plans and
 updater recovery retain all alternatives and your selected choice. Next
 Ascension follows the selected plan. Legacy single-plan files still replay
 with their original constraints.
+
+Active ULTRA Pro and plan prioritization — v0.8.21
+------------------------------------------------
+EID/backup imports automatically set Video Doubler to Active (2×) for an active
+ULTRA Pro subscription, including account-only refreshes. Other subscription
+states retain the current selection. C3 delivery research is always included in
+the optimized route and no longer carries an optional label.
+
+Planning now offers Minimize Time or Minimize Switches under Plan Prioritization.
+The choice is saved for a future update; current solver ranking still minimizes
+time. Older farm files default to Minimize Time.
