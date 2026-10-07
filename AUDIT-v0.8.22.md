@@ -1760,4 +1760,21 @@ Automatic and manual layouts were visually reviewed across 1440–1000px desktop
 The worker bundle SHA-256 remains byte-identical to v0.8.21:
 0e629ed69a86efea7a57c48f81307be6044b6adc3b5749b0c3d17b70b418e271.
 Native Windows installation/restart/rollback and public update-feed verification
-will be recorded after the release workflow completes.
+passed, as recorded below.
+
+Native Windows publication is verified. GitHub Actions run 37672123560,
+job 112966250722, passed subscription and independent research-sale regressions,
+build/package checks, native hidden CMD launch, installation, restart,
+startup-failure rollback, and legacy-worker restart. Windows PowerShell
+5.1.26100.33438 then found v0.8.22 through the public updater, downloaded the
+complete release, and verified every app file checksum.
+
+Published source commit: 08956253e9472e59159bc1787bf3ec95c91a4aed.
+Public release: 406077536, v0.8.22, with both assets uploaded:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8572767 bytes; SHA256
+  77f38aee9935486a1d40c4ad26d95bf9ac85b44cbfa18391b26f6bd465feb895.
+- update-manifest.json: 240 bytes; SHA256
+  c69bab32c2bbb95b7066d2f3ad95b266e63b433e7fea37989641f4e9b68d9adf.
+
+This same-version audit commit records completed verification without replacing
+or repackaging either immutable release asset.
