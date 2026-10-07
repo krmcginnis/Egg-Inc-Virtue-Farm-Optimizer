@@ -3,7 +3,7 @@ const Ships = require("./ships.cjs");
 const E = require("./opening-search.cjs"), titleCase = require("./ui-text.cjs"), DEFAULT_ROUTE = require("./default-route.cjs");
 const upgradeStandardSequence = require("./sequence-upgrade.cjs"), Route = require("./switch-sequence.cjs");
 const T = require("./staged-route.cjs"), Model = require("./assumption-notices.cjs");
-const Strategy = require("./planning-strategy.cjs");
+const Strategy = require("./planning-strategy.cjs"), SalePlans = require("./research-sale-plans.cjs");
 const gemsText = require("./gems-text.cjs");
 const nextAscension = require("./next-ascension.cjs"), U = require("./shift-summary.cjs"), Q = require("./walkthrough-pdf.cjs"), N = require("./export-names.cjs"), V = require("./pdf-preview.cjs"), G = require("./guide-layout.cjs");
 const S = require("./simulator.cjs"), O = require("./optimizer.cjs"), I = require("./importer.cjs"), A = require("./api.cjs"), C = require("./colleggtibles.cjs");
@@ -54,7 +54,7 @@ function updateSequenceVisibility() {
   $("sequence").required = !automatic;
   $("wasmegg-sequence-description").hidden = strategy === "user";
   $("strategy-description").textContent = {
-    wasmegg: "Uses the stage order below, comparing opening budgets and research sales. I1 precedes K1 when Chicken Universes can finish in under one hour.",
+    wasmegg: "Compares plans using 1, 2, and 3 research sales across your opening budgets. Select each plan on Purchase Timeline. I1 precedes K1 when Chicken Universes can finish in under one hour.",
     user: "Enter your truth egg switch sequence below."
   }[strategy] || "Select a planning strategy.";
   $("routing-help").textContent = automatic ? "Choose User Selected Sequence to enter your own order." : "Your truth egg sequence controls the visit order.";
@@ -148,8 +148,8 @@ function validationField(error) {
     [/Soul Eggs|next switch costs/i, "soulEggs"],
     [/All Epic Research levels are zero/i, "epic-hold_to_hatch"],
     [/Per-Virtue minimums/i, "target"], [/Silos/i, "silos"],
-    [/Maximum.*switch|switch.*budget/i, "maxSwitches"],
-    [/sequence|before H|Humility visit|unreachable/i, $("strategy").value === "user" ? "sequence" : "maxSwitches"],
+    [/Maximum.*switch|switch.*budget/i, "sequence"],
+    [/sequence|before H|Humility visit|unreachable/i, $("strategy").value === "user" ? "sequence" : "strategy"],
     [/Tank capacity|fuel.*capacity/i, "tankCapacity"],
     [/start date|timestamp/i, "start"]
   ]) if (test.test(message)) return id;
@@ -175,14 +175,14 @@ function showPlanningGuidance(message, fromSearch = false, inputsChanged = false
     detail = "Review the mission slots and launch counts for each Humility visit.";
     targets = [[field || "shipSlots", "Review Planned Ships"]];
   } else if (/sequence|switch.*budget|Maximum.*switch|unreachable/i.test(message)) {
-    detail = "Check the switch limit and visit order. A user sequence may be truncated by the maximum number of new switches.";
-    targets = [[field || "maxSwitches", "Review Switch Settings"]];
+    detail = "Check the visit order. User Selected Sequence uses the full entered route, up to 30 switches.";
+    targets = [[field || "strategy", "Review Routing Settings"]];
   } else if (/no egg production/i.test(message)) {
     detail = "Review the starting habs and vehicles. A fresh farm uses the free Coop, Trike, and one silo.";
     targets = [["hab-0", "Review Habitats"], ["vehicle-0", "Review Shipping Fleet"]];
   } else if (fromSearch) {
-    detail = /^Under the entered farm settings/.test(message) ? "Review the imported values or lower the target. This limit was checked with an optimistic production estimate." : "No complete plan was found within the fixed planning horizon. Review the switch limit and visit order. A failed heuristic search does not prove the goal is impossible.";
-    targets = [["maxSwitches", "Review Switch Limit"]];
+    detail = /^Under the entered farm settings/.test(message) ? "Review the imported values or lower the target. This limit was checked with an optimistic production estimate." : "No complete plan was found within the fixed planning horizon. Review the visit order and target. A failed heuristic search does not prove the goal is impossible.";
+    targets = [["strategy", "Review Routing Settings"]];
   } else {
     detail = "Correct the marked value, then try planning again. Your other inputs are retained.";
     targets = [[field, "Review Input"]];
@@ -376,7 +376,7 @@ function renderForm() {
   EggIcons.decorateLabel($("virtue").closest("label"), f.virtue);
   for (const k of ["cash", "soulEggs", "shiftCount", "silos", "earningsMode"]) NumericInput.write($(k), k === "silos" ? Math.max(1, f[k] ?? 1) : f[k]);
   for (const k of ["proPermit", "videoDoubler"]) $(k).value = String(f[k] !== false);
-  for (const k of ["target", "maxSwitches", "shiftSeconds", "actionSeconds"]) NumericInput.write($(k), p[k] ?? { maxSwitches: 12, shiftSeconds: 5, actionSeconds: 0 }[k]);
+  for (const k of ["target", "shiftSeconds", "actionSeconds"]) NumericInput.write($(k), p[k] ?? { shiftSeconds: 5, actionSeconds: 0 }[k]);
   $("start").value = dateLocal(p.start || Date.now() / 1e3);
   const zone = p.eventTimezoneMode === Zones.automatic || !p.eventTimezone ? Zones.automatic : p.eventTimezone;
   if (![...$("eventTimezone").options].some(o => o.value === zone)) $("eventTimezone").append(option(zone, Zones.label(zone)));
@@ -385,7 +385,6 @@ function renderForm() {
   $("sequence").value = typeof p.sequence === "string" ? p.sequence : (p.sequence ?? DEFAULT_ROUTE).map((x) => ({ curiosity: "C", integrity: "I", humility: "H", resilience: "R", kindness: "K" })[x] || x).join(" ");
   $("minOfflineMinutes").value = p.minOfflineMinutes ?? 1;
   $("strategy").value = p.strategy || "wasmegg";
-  $("stagedSales").value = p.stagedSales ?? 3;
   $("c1MaxMinutes").value = E.maximum(S.number(p.c1MaxMinutes ?? 60));
   $("k1MaxMinutes").value = E.maximum(S.number(p.k1MaxMinutes ?? 60));
   updateSequenceVisibility();
@@ -547,6 +546,9 @@ function currentFarmImport(backup) {
   return next;
 }
 function replaySavedResult(savedConfig, savedResult) {
+  return SalePlans.replay(savedConfig, savedResult, replaySingleResult);
+}
+function replaySingleResult(savedConfig, savedResult) {
   const verified = O.replay(savedConfig, savedResult.actions, true, {enforceOpeningCaps:savedResult.openingTimeLimits === true,oneStartingSilo:savedResult.initialSiloRule === "one" ? true : void 0});
   return {...savedResult,actions:S.history(verified.s),start:verified.c.start,end:verified.s.t,seconds:verified.s.t - verified.c.start,switches:verified.s.stage,soulCost:verified.s.lost,target:verified.c.target,finalTE:S.teByEgg(verified.s,verified.c),pendingTE:S.totalTE(verified.s,verified.c) - verified.c.claimedTotal,finalCash:verified.s.cash,finalStats:S.stats(verified.s,verified.c),validatedReplay:true};
 }
@@ -803,7 +805,8 @@ function gather() {
   f.research = Object.fromEntries(D.research.map((r) => [r.id, readNumber("research-" + r.id, r.name, 0, r.levels, true)]));
   f.epic = Object.fromEntries(D.epic.map((r) => [r.id, readNumber("epic-" + r.id, r.name, 0, r.levels, true)]));
   f.loadouts = formLoadouts();
-  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), maxSwitches: readNumber("maxSwitches", "Maximum switches", 0, 30, true), maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), stagedSales: readNumber("stagedSales", "Maximum research sales", 1, 6, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: Array.from({ length: 5 }, (_, i) => readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true)) };
+  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), saleComparisonVersion: 1, maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: Array.from({ length: 5 }, (_, i) => readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true)) };
+  delete p.maxSwitches; delete p.stagedSales;
   if (!p.autoSequence) try {
     Route.parse(p.sequence, {required: true});
   } catch (error) { error.fieldId = "sequence"; throw error; }
@@ -834,16 +837,13 @@ function refresh() {
   updateSequenceVisibility();
   updatePlanningContext();
   $("sequence-budget").hidden = true;
-  $("fit-sequence").hidden = true;
   try {
     updateResearchSummaries();
     config = gather();
     if (!config.plan.autoSequence) {
-      const route = Route.normalize(config.plan.sequence, config.farm.virtue), needed = route.length - 1, clipped = needed > config.plan.maxSwitches;
+      const route = Route.normalize(config.plan.sequence, config.farm.virtue), needed = route.length - 1;
       $("sequence-budget").hidden = false;
-      $("sequence-budget").textContent = "Full sequence: " + needed + " new switches from " + S.NAME[S.EGGS.indexOf(config.farm.virtue)] + "." + (clipped ? " Current limit: " + config.plan.maxSwitches + "; later visits are excluded." : "");
-      $("fit-sequence").hidden = !clipped;
-      $("fit-sequence").disabled = needed > 30;
+      $("sequence-budget").textContent = "Full sequence: " + needed + " new switches from " + S.NAME[S.EGGS.indexOf(config.farm.virtue)] + ".";
     }
     const { s, c } = S.prepare(config), r = S.stats(s, c), pending = S.totalTE(s, c) - c.claimedTotal;
     populateAutomaticSets(s, c);
@@ -1020,8 +1020,37 @@ function renderResult() {
   host.replaceChildren();
   $("empty-results").hidden = true;
   host.hidden = false;
+  if (r.researchSalePlans) {
+    const choices = el("section", undefined, "card research-sale-comparison");
+    choices.setAttribute("aria-labelledby", "research-sale-heading");
+    const heading = el("h2", "Research Sale Plans"); heading.id = "research-sale-heading";
+    choices.append(heading, el("p", "Select a plan to view its summary, Quick Guide, purchases, and exports. The fastest plan found is selected initially.", "hint"));
+    const row = el("div", undefined, "research-sale-options");
+    for (const entry of r.researchSalePlans) {
+      const button = el("button", undefined, "research-sale-option"); button.type = "button"; button.dataset.researchSales = entry.researchSales;
+      button.append(el("strong", entry.researchSales + " Research Sale" + (entry.researchSales === 1 ? "" : "s")));
+      button.setAttribute("aria-pressed", String(entry.researchSales === r.selectedResearchSales));
+      if (entry.status === "complete") {
+        button.append(el("span", duration(entry.plan.seconds) + " · " + entry.plan.switches + " switches"));
+        button.append(el("span", "Ends " + timestamp(entry.plan.end, zone), "research-sale-end"));
+        if (entry.researchSales === r.recommendedResearchSales) button.append(el("span", "Fastest Found", "research-sale-best"));
+        button.onclick = () => {
+          result = SalePlans.select(result, entry.researchSales);
+          if (!worker && !dirty) refresh(); else updateArtifactNotes();
+          renderResult();
+          host.querySelector(`[data-research-sales="${entry.researchSales}"]`).focus({preventScroll:true});
+        };
+      } else {
+        button.disabled = true;
+        button.append(el("span", entry.status === "not-completed" ? "Search Stopped" : "No Complete Plan"));
+        button.append(el("span", entry.error, "research-sale-end"));
+      }
+      row.append(button);
+    }
+    choices.append(row); host.append(choices);
+  }
   const card = el("div", void 0, "card result-summary"), head = el("div", void 0, "result-header");
-  head.append(el("h2", "Target " + r.target + " TE in " + duration(r.seconds)));
+  head.append(el("h2", (r.researchSalePlans ? r.selectedResearchSales + " Research Sale" + (r.selectedResearchSales === 1 ? "" : "s") + " · " : "") + "Target " + r.target + " TE in " + duration(r.seconds)));
   const tools = el("div", void 0, "inline");
   const txt = el("button", "Export Walkthrough", "secondary");
   txt.onclick = async () => {
@@ -1034,7 +1063,7 @@ function renderResult() {
     txt.textContent = "Creating PDF\u2026";
     try {
       const bytes = await Q.create(raw, r);
-      V.display(preview, bytes, N.pdf(raw, r.seconds));
+      V.display(preview, bytes, N.pdf(raw, r.seconds, r.selectedResearchSales));
       show("PDF opened in a new tab with shift summaries and the quick guide.");
     } catch (e) {
       preview.close();
@@ -1046,7 +1075,7 @@ function renderResult() {
   };
   txt.title = "Open a PDF with shift summaries and the quick guide in a new tab";
   const json = el("button", "Save plan", "secondary");
-  json.onclick = () => saveBlob(N.plan(resultConfig, r.seconds), JSON.stringify({ version: 1, config: resultConfig, result: r }, null, 2));
+  json.onclick = () => saveBlob(N.plan(resultConfig, r.seconds, r.selectedResearchSales), JSON.stringify({ version: 1, config: resultConfig, result: r }, null, 2));
   const expand = el("button", "Expand all", "secondary");
   expand.onclick = () => {
     const items = [...host.querySelectorAll(".timeline-group, .full-breakdown")], open = items.some(d => !d.open);
@@ -1055,7 +1084,7 @@ function renderResult() {
   };
   const next = el("button", "Start next ascension", "secondary");
   next.id = "next-ascension";
-  next.disabled = dirty || r.target >= 490;
+  next.disabled = !!worker || !!importingBackup || dirty || r.target >= 490;
   next.onclick = () => {
     if (worker) {
       show("Stop or finish the current search before starting the next ascension.", true);
@@ -1385,7 +1414,7 @@ function optimize() {
       }
       if (p.phase === "openings") {
         $("run-summary").textContent = "Checking Opening " + (p.openingCompared + 1) + " / " + p.openingTotal;
-        searchContext = "C1 ≤" + p.openingBudget.c1MaxMinutes + " min · K1 ≤" + p.openingBudget.k1MaxMinutes + " min";
+        searchContext = (p.researchSales ? p.researchSales + " research sale" + (p.researchSales === 1 ? "" : "s") + " · " : "") + "C1 ≤" + p.openingBudget.c1MaxMinutes + " min · K1 ≤" + p.openingBudget.k1MaxMinutes + " min";
         const egg = {C:"Curiosity", K:"Kindness", I:"Integrity", R:"Resilience", H:"Humility"}[p.stage?.[0]];
         $("search-stage").textContent = /^[CKIRH]\d$/.test(p.stage) ? p.stage + " · " + egg + " Complete" : p.stage === "opening" ? "Opening Visits Complete" : p.stage;
         $("search-openings").textContent = p.openingCompared + " / " + p.openingTotal + " completed · checking " + (p.openingCompared + 1);
@@ -1517,17 +1546,6 @@ $("load-file").onclick = () => $("file-input").click();
 $("file-input").onchange = (e) => {
   if (e.target.files[0]) loadFile(e.target.files[0]);
   e.target.value = "";
-};
-$("fit-sequence").onclick = () => {
-  try {
-    const needed = Route.normalize($("sequence").value, $("virtue").value).length - 1;
-    if (needed > 30) throw Error("The full sequence exceeds the 30-switch limit. Shorten it first.");
-    $("maxSwitches").value = needed;
-    markInputsChanged();
-    if (refresh()) show("Maximum New Switches set to " + needed + " for the full sequence." + (dirty ? " Re-run the planner to update the timeline." : ""));
-  } catch (e) {
-    show(e.message, true);
-  }
 };
 $("clear-data").onclick = () => {
   let saved;

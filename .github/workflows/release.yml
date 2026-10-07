@@ -11,7 +11,9 @@ on:
         type: boolean
         default: false
 concurrency:
-  group: publish-app-release
+  # Isolate the recovered v0.8.19 run that GitHub still reports as queued.
+  # Keep subsequent releases serialized within the new queue.
+  group: publish-app-release-v2
   cancel-in-progress: false
 permissions:
   contents: write
@@ -56,6 +58,8 @@ jobs:
           node tests/release-state.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/prepare-publish.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/research-sale-plans.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

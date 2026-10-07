@@ -2,7 +2,7 @@
 const formatNumber=require('./number-format.cjs').format;
 const S=require('./simulator.cjs'),F=require('./feasibility.cjs'),T=require('./staged-route.cjs'),B=require('./offline-batch.cjs'),U=require('./shift-summary.cjs');const {D,stats,clone,teByEgg,totalTE,reached,advance,buy,afford,allowed,price,at,history}=S;
 const W=require('./waiting-objective.cjs');
-const E=require('./opening-search.cjs'),Ships=require('./ships.cjs');
+const E=require('./opening-search.cjs'),Ships=require('./ships.cjs'),SalePlans=require('./research-sale-plans.cjs');
 function remainingEggs(s,c){return c.autoSequence&&s.stage<c.maxSwitches?[0,1,2,3,4]:c.autoSequence?[s.egg]:c.sequence.slice(s.stage);}
 function finishHere(s,c){if(c.ships?.enabled&&!s.shipsDone){if(s.egg!==2)return null;try{s=Ships.launch(s,c);}catch{return null;}if(!s.shipsDone)return null;}const te=teByEgg(s,c);if(c.floors.some((n,i)=>i!==s.egg&&n>te[i]))return null;const needed=Math.max(c.floors[s.egg],c.target-te.reduce((sum,n,i)=>sum+(i===s.egg?0:n),0));if(needed>98)return null;if(needed<=te[s.egg])return reached(s,c)?s:null;const r=stats(s,c);if(r.delivery<=0)return null;const t=s.t+Math.max(0,D.te[needed-1]-s.eggs[s.egg])/r.delivery+0.001;if(t>S.visitDeadline(s,c))return null;return advance(s,c,t,'Deliver enough eggs to reach the Truth Egg target');}
 // A feasible completion using the current rate and the remaining sequence, without upgrades.
@@ -130,10 +130,11 @@ function seedCycles(initial,c,consider,deadline,cancelled,collect){
 async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  const {s:initial,c}=S.prepare(raw,{enforceOpeningCaps:true,oneStartingSilo:true});c.c1MaxMinutes=E.maximum(c.c1MaxMinutes);c.k1MaxMinutes=E.maximum(c.k1MaxMinutes);const width=S.number(options.width??32,'Search width',4,512,true);const branches=S.number(options.branches??12,'Branch count',4,56,true);const maxDepth=S.number(options.maxDepth??700,'Search depth',1,3000,true);const maxMs=S.number(options.maxMs??45000,'Search time',100,600000);
  const feasibility=F.assess(initial,c);if(feasibility.impossible)throw Error(F.message(feasibility,c));
- let best=null,baseline=tail(initial,c),frontier=[];const started=Date.now(),bests=[];let explored=0;
+ let best=null,baseline=tail(initial,c);const started=Date.now(),bests=[];let explored=0;
  function consider(s){if(!s||!reached(s,c))return;const shifts=s.stage;const old=bests[shifts];if(W.better(s,old))bests[shifts]=s;if(W.better(s,best))best=s;}
  if(c.strategy!=='wasmegg'){consider(baseline);consider(finishHere(initial,c));}else if(reached(initial,c))consider(initial);let beam=[initial];
  let waitingRoutesCompared=0,openingSearch=null;
+ const compareSales=raw.plan?.saleComparisonVersion===1&&c.strategy==='wasmegg'&&!reached(initial,c),saleBests=new Map(),saleErrors=new Map();
  if(T.canCompare(initial,c)&&!reached(initial,c)){let stagedError='';const policies=c.earningsMode==='offline'&&stats(initial,c).offline>stats(initial,c).online&&!options.disableOfflineBatches?[null,'short-online','all-waits']:[null];
   const c1Budgets=options.disableOpeningSearch?[c.c1MaxMinutes]:E.budgets(c.c1MaxMinutes),k1Budgets=options.disableOpeningSearch?[c.k1MaxMinutes]:E.budgets(c.k1MaxMinutes);
   openingSearch={c1Budgets,k1Budgets,combinationsCompared:0,totalCombinations:c1Budgets.length*k1Budgets.length,uniqueRoutesCompared:0,stepMinutes:c.openingStepMinutes};
@@ -146,12 +147,12 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
     const stagedCache={opening:openings[policyIndex].get(c1MaxMinutes),suffixes:suffixes[policyIndex]},stageConfig={...c,c1MaxMinutes,k1MaxMinutes,batchOffline:!!batchMode,batchMode};
     for(let sales=1;sales<=c.stagedSales;sales++){if(cancelled())break;
      try{let candidate=T.run(initial,stageConfig,sales,completionGoals,phase=>{
-      progress({depth:0,explored,elapsedMs:Date.now()-started,bestSeconds:best?best.t-c.start:null,beam:1,phase:'openings',openingCompared:openingSearch.combinationsCompared,openingTotal:openingSearch.totalCombinations,openingBudget:{c1MaxMinutes,k1MaxMinutes},stage:phase,phaseLabel:'C1 ≤'+c1MaxMinutes+' min · K1 ≤'+k1MaxMinutes+' min · '+phase+(batchMode?' · '+(batchMode==='all-waits'?'combined offline breaks':'offline batches'):'')});
+      progress({depth:0,explored,elapsedMs:Date.now()-started,bestSeconds:best?best.t-c.start:null,beam:1,researchSales:sales,phase:'openings',openingCompared:openingSearch.combinationsCompared,openingTotal:openingSearch.totalCombinations,openingBudget:{c1MaxMinutes,k1MaxMinutes},stage:phase,phaseLabel:'C1 ≤'+c1MaxMinutes+' min · K1 ≤'+k1MaxMinutes+' min · '+phase+(batchMode?' · '+(batchMode==='all-waits'?'combined offline breaks':'offline batches'):'')});
       if(cancelled())throw Error('Cancelled');
      },stagedCache);
      explored+=history(candidate).length;waitingRoutesCompared++;if(!stagedCache.reusedSuffix)openingSearch.uniqueRoutesCompared++;
-     candidate={...candidate,routeStrategy:'Optimized Sequence',researchSales:sales,waitingPolicy:batchMode==='all-waits'?'Compare combined online and offline purchase waits':batchMode?'Compare short online purchase batches':'Compare individual purchases'};consider(candidate);
-     }catch(e){stagedError=e.message;if(!stagedCache.prefix)break;}
+     candidate={...candidate,routeStrategy:'Optimized Sequence',researchSales:sales,waitingPolicy:batchMode==='all-waits'?'Compare combined online and offline purchase waits':batchMode?'Compare short online purchase batches':'Compare individual purchases'};consider(candidate);if(W.better(candidate,saleBests.get(sales)))saleBests.set(sales,candidate);
+     }catch(e){stagedError=e.message;saleErrors.set(sales,e.message);if(!stagedCache.prefix)break;}
      await new Promise(resolve=>setTimeout(resolve,0));
     }
    }
@@ -205,11 +206,25 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  if(!best&&stats(initial,c).delivery===0&&!c.initialPhysicalPurchases)throw Error('This farm has no egg production. Enter your existing habs and vehicles, or use Start from scratch to begin with the free Coop and Trike.');
  if(!best&&c.maxSwitches>0&&S.shiftCost(initial)>initial.soul)throw Error('No feasible plan found: the next switch costs '+formatNumber(S.shiftCost(initial))+' Soul Eggs but the farm has '+formatNumber(initial.soul)+'. Enter your actual Soul Eggs, or use a target reachable on the current Virtue.');
  if(!best)throw Error('No feasible plan found within the search and planning limits. '+(require('./assumption-notices.cjs').startingGear(initial,c)||'Check C1/K1 maximum times, planning days, search effort, or allowed switches.'));
- const constraints={enforceOpeningCaps:true,oneStartingSilo:true},simplified=best.routeStrategy?{s:best,actions:history(best)}:simplify(raw,history(best),constraints);const actions=simplified.actions.map((a,i)=>i===0?{...a,initialSiloRule:'one'}:a);const checked=replay(raw,actions,false,constraints);const finalStats=stats(checked.s,checked.c);best={...simplified.s,stage:best.stage,routeStrategy:best.routeStrategy,researchSales:best.researchSales,waitingPolicy:best.waitingPolicy,openingBudgets:best.openingBudgets,fromIncumbent:best.fromIncumbent};
- frontier=bests.filter(Boolean).map(s=>({switches:s.stage,seconds:s.t-c.start,soulCost:s.lost})).sort((a,b)=>a.switches-b.switches);
- // Remove solutions dominated by fewer switches and no longer completion time.
- frontier=frontier.filter((x,i,arr)=>!arr.some((y,j)=>j!==i&&y.switches<=x.switches&&y.seconds<=x.seconds&&(y.switches<x.switches||y.seconds<x.seconds)));
- const result={version:1,initialSiloRule:'one',openingTimeLimits:true,objective:'Minimum time to claimed + pending TE target in this ascension',method:best.routeStrategy||'Heuristic beam search; fastest plan found, not a proof of global optimality',researchSales:best.researchSales||null,waitingPolicy:best.waitingPolicy||'Compare individual purchases and offline batches',waitingRoutesCompared,openingSearch,openingBudgets:best.openingBudgets||null,termination:cancelled()?'cancelled with best plan':termination,explored,elapsedMs:Date.now()-started,start:c.start,end:best.t,seconds:best.t-c.start,switches:best.stage,soulCost:best.lost,target:c.target,finalTE:teByEgg(best,c),pendingTE:totalTE(best,c)-c.claimedTotal,finalCash:best.cash,finalStats,actions,frontier,baselineSeconds:baseline?baseline.t-c.start:null,sourceCommit:D.commit,validatedReplay:true,artifactRecommendations:best.artifactRecommendations||null,artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions)};
- return {...result,summary:U.summarize(raw,result)};
+ function finalize(best){
+  const constraints={enforceOpeningCaps:true,oneStartingSilo:true},simplified=best.routeStrategy?{s:best,actions:history(best)}:simplify(raw,history(best),constraints);const actions=simplified.actions.map((a,i)=>i===0?{...a,initialSiloRule:'one'}:a);const checked=replay(raw,actions,false,constraints);const finalStats=stats(checked.s,checked.c);best={...simplified.s,stage:best.stage,routeStrategy:best.routeStrategy,researchSales:best.researchSales,waitingPolicy:best.waitingPolicy,openingBudgets:best.openingBudgets,fromIncumbent:best.fromIncumbent};
+  let frontier=bests.filter(Boolean).map(s=>({switches:s.stage,seconds:s.t-c.start,soulCost:s.lost})).sort((a,b)=>a.switches-b.switches);
+  // Remove solutions dominated by fewer switches and no longer completion time.
+  frontier=frontier.filter((x,i,arr)=>!arr.some((y,j)=>j!==i&&y.switches<=x.switches&&y.seconds<=x.seconds&&(y.switches<x.switches||y.seconds<x.seconds)));
+  const result={version:1,initialSiloRule:'one',openingTimeLimits:true,objective:'Minimum time to claimed + pending TE target in this ascension',method:best.routeStrategy||'Heuristic beam search; fastest plan found, not a proof of global optimality',researchSales:best.researchSales||null,waitingPolicy:best.waitingPolicy||'Compare individual purchases and offline batches',waitingRoutesCompared,openingSearch,openingBudgets:best.openingBudgets||null,termination:cancelled()?'cancelled with best plan':termination,explored,elapsedMs:Date.now()-started,start:c.start,end:best.t,seconds:best.t-c.start,switches:best.stage,soulCost:best.lost,target:c.target,finalTE:teByEgg(best,c),pendingTE:totalTE(best,c)-c.claimedTotal,finalCash:best.cash,finalStats,actions,frontier,baselineSeconds:baseline?baseline.t-c.start:null,sourceCommit:D.commit,validatedReplay:true,artifactRecommendations:best.artifactRecommendations||null,artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions)};
+  return {...result,summary:U.summarize(raw,result)};
+ }
+ if(compareSales){
+  const entries=SalePlans.COUNTS.map(sales=>{
+   const candidate=saleBests.get(sales);
+   if(candidate){try{return {researchSales:sales,status:'complete',plan:finalize(candidate)};}catch(e){saleErrors.set(sales,e.message);}}
+   return {researchSales:sales,status:cancelled()?'not-completed':'unavailable',error:cancelled()?'Search stopped before a complete plan was found.':saleErrors.get(sales)||'No feasible plan found within the opening and planning limits.'};
+  });
+  const available=entries.filter(e=>e.status==='complete');
+  if(!available.length)throw Error('No research-sale plan passed replay validation.');
+  const chosen=available.reduce((a,b)=>W.better(saleBests.get(b.researchSales),saleBests.get(a.researchSales))?b:a);
+  return SalePlans.select({researchSalePlans:entries},chosen.researchSales);
+ }
+ return finalize(best);
 }
 module.exports={solve,replay,finishHere,tail,candidates,rateGain,simplify,seedCycles,completionGoals};

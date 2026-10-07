@@ -47,7 +47,9 @@ function prepare(raw,opts={}){
  let egg=EGGS.indexOf(f.virtue);if(egg<0)throw Error('Select an active Virtue.');
  const automatic=Strategy.automatic(p);
  let sequence=Route.normalize(automatic&&p.strategyVersion>=2?undefined:p.sequence,f.virtue,{required:p.strategy==='user'});const fullSequence=sequence.slice();
- const maxSwitches=number(p.maxSwitches??12,'Maximum additional switches',0,30,true);sequence=sequence.slice(0,maxSwitches+1);
+ // New searches derive their full route allowance. Unflagged saved plans must
+ // still replay with the exact switch and sale limits under which they ran.
+ const maxSwitches=number(p.saleComparisonVersion===1?(automatic?Route.defaultSwitches(f.virtue):fullSequence.length-1):(p.maxSwitches??12),'Maximum additional switches',0,30,true);sequence=sequence.slice(0,maxSwitches+1);
  const research=f.research||{};for(const k of Object.keys(research))if(!(k in RMAP))throw Error('Unknown research: '+k);
  const r=D.research.map(r=>number(research[r.id]??0,r.name+' level',0,r.levels,true));
  // A persisted game farm must satisfy tier prerequisites for purchased levels.
@@ -60,7 +62,7 @@ function prepare(raw,opts={}){
  const floors=(p.floors||[0,0,0,0,0]).map((n,i)=>number(n,NAME[i]+' minimum TE',0,98,true));if(floors.length!==5)throw Error('Use five per-Virtue minimum TE values.');
  const target=number(p.target??claimed.reduce((a,b)=>a+b,0)+10,'Target total TE',0,490,true);if(floors.reduce((a,b)=>a+b,0)>target)throw Error('Per-Virtue minimums exceed the overall target.');
  const c={start,end:start+maxDays*86400,claimed,claimedTotal:claimed.reduce((a,b)=>a+b,0),target,floors,epic,col,loadouts,mods,pro,sequence:sequence.map(e=>EGGS.indexOf(e)),zone:p.eventTimezone||'America/Los_Angeles',maxSwitches,enforceOpeningCaps:opts.enforceOpeningCaps===true,
- autoSequence:automatic,strategy:p.strategy||'auto',stagedSales:number(p.stagedSales??3,'Maximum research sales',1,6,true),openingStepMinutes:30,c1MaxMinutes:number(p.c1MaxMinutes??60,'C1 maximum minutes',1,1440,true),k1MaxMinutes:number(p.k1MaxMinutes??60,'K1 maximum minutes',1,1440,true),offlineMinSeconds:60*number(p.minOfflineMinutes??1,'Minimum offline break minutes',1,1440,true),initialPhysicalPurchases:false,video:f.videoDoubler!==false?2:1,earningsMode:f.earningsMode||'offline',shiftSeconds:number(p.shiftSeconds??5,'Seconds per switch',0,3600),actionsSeconds:number(p.actionSeconds??0,'Seconds per purchase',0,3600),
+ autoSequence:automatic,strategy:p.strategy||'auto',stagedSales:number(p.saleComparisonVersion===1?3:(p.stagedSales??3),'Maximum research sales',1,6,true),openingStepMinutes:30,c1MaxMinutes:number(p.c1MaxMinutes??60,'C1 maximum minutes',1,1440,true),k1MaxMinutes:number(p.k1MaxMinutes??60,'K1 maximum minutes',1,1440,true),offlineMinSeconds:60*number(p.minOfflineMinutes??1,'Minimum offline break minutes',1,1440,true),initialPhysicalPurchases:false,video:f.videoDoubler!==false?2:1,earningsMode:f.earningsMode||'offline',shiftSeconds:number(p.shiftSeconds??5,'Seconds per switch',0,3600),actionsSeconds:number(p.actionSeconds??0,'Seconds per purchase',0,3600),
  researchCostScale:number(f.researchCostScale??1,'Research cost calibration',.000001,1000000),earningsScale:number(f.earningsScale??1,'Earnings calibration',.000001,1000000)};
  if(!opts.artifactReplay&&f.manualFarmData!==true&&Array.isArray(f.artifactInventory))c.artifactModel=Artifacts.compile(f.artifactInventory,pro,c.earningsMode);
  c.ships=Ships.prepare(f,p,number);

@@ -468,3 +468,11 @@ aside .update-app{margin-top:auto}
 .shift-max-rates,.shift-max-rates dt,.shift-max-rates dd{text-align:left}
 .shift-duration .icon-amount,.shift-cost .icon-amount{--unit-size:18px}
 @media(max-width:500px){.shift-max-rates>div{display:block}.shift-max-rates dd{margin:3px 0 0;text-align:left}}
+
+/* Complete research-sale alternatives, with one active plan below. */
+.research-sale-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.research-sale-option{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;color:#cbd8e9;background:#223043;border:1px solid var(--line);padding:15px;line-height:1.45}
+.research-sale-option strong{font-size:15px}.research-sale-option span{font-size:12px}
+.research-sale-option[aria-pressed="true"]{border-color:var(--accent);background:#234337;color:#c9f4e3}
+.research-sale-option .research-sale-end{color:var(--muted);font-size:11px}
+.research-sale-option .research-sale-best{color:#8be7bc;font-weight:650}

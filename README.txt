@@ -1,4 +1,4 @@
-EGG INC. VIRTUE FARM OPTIMIZER 0.8.12 — PC EDITION
+EGG INC. VIRTUE FARM OPTIMIZER 0.8.20 — PC EDITION
 
 GET STARTED
 1. Extract the entire ZIP; open the Egg-Inc-Virtue-Farm-Optimizer folder.
@@ -54,8 +54,8 @@ Use Load farm for your saved farm or JSON
 backup, use the EID field, or enable manual editing to enter values.
 Load farm also accepts saved plans and validates them by replaying purchases.
 The standard Switch Sequence is C K I C K R C H K C I R H. Older farms using
-the previous standard sequence are upgraded automatically while preserving your
-switch limit. Other custom sequences and saved plan walkthroughs are preserved.
+the previous standard sequence are upgraded automatically. New searches use
+the full route; other custom sequences and saved plan walkthroughs are preserved.
 
 Start from scratch enables automatic Virtue routing and begins with the free
 Coop, Trike and one silo. Additional purchases require the matching Virtue.
@@ -63,7 +63,8 @@ Enter your actual Soul Eggs before planning switches; clearing sets them to zero
 Fresh farms use automatic online/offline waiting. Keep the starting silo refilled.
 
 Use Continue to Virtue Farm, then Continue to Planning. Review artifacts and
-expand Common Research on Virtue Farm before planning. Common Research shows
+review Common Research on Virtue Farm before planning. Research opens by default;
+fully maxed tiers start collapsed and show (Maxed). Common Research shows
 each item's next cost and total remaining cost at current discounts/sale prices.
 Tier prerequisites are not included in that item's remaining cost. The target
 defaults to claimed TE + 40 (up to 490), updating after import or manual progress
@@ -72,12 +73,13 @@ Planning has goals,
 ship schedules and timing, with a compact starting-farm summary. Assumptions
 are on How It Works. Save Farm includes settings from all three pages.
 
-Set your total TE goal and switch budget. Automatic routing searches repeated
-research, shipping and habitat visits. Select User Selected Sequence to enter
-your own order. The menu sets automatic visits for the two automatic modes. Click
-Find Fastest Plan. The output lists individual research levels, habitat and
-shipping purchases, waits, artifact set changes and switches. Open a PDF
-walkthrough or save a plan that can be loaded and replayed later.
+Set your total TE goal and opening time limits. Optimized Sequence compares
+1, 2, and 3 research-sale plans and derives the switches needed for its route.
+Select User Selected Sequence to enter your own full order (up to 30 switches).
+Click Find Fastest Plan. Purchase Timeline shows clickable research-sale choices,
+with the fastest plan found selected initially. Each choice shows its own plan
+summary, Quick Guide, purchases, and walkthrough export. Save Plan retains all
+alternatives and your selected choice for replay when loaded later.
 
 C = Curiosity (research), I = Integrity (habs), K = Kindness (vehicles),
 R = Resilience (silos), H = Humility (artifacts and ships).
@@ -121,12 +123,14 @@ cannot fit the entered time limit. It grants instant equipment, continuous
 optimistic upper bound, not a promise of an achievable plan. Epic Research
 persists across ascensions; enter your owned levels after clearing farm data.
 
-This is a heuristic beam-search optimizer. It returns the fastest feasible plan
-found within the fixed sequence or automatically searched routes, time limit, and
-switch budget. It is not a
-proof of global optimality. Thorough mode searches longer for user sequences.
-Every final timeline is replayed to
-check affordability, research prerequisites, permissions, Soul Egg costs and goal.
+Optimized Sequence retains the best complete plan for each of the three sale
+counts across opening budgets and waiting policies. User Selected Sequence uses
+the full entered route and an additional Balanced heuristic purchase search.
+This is not a proof of global optimality. Every completed alternative is replayed
+to check affordability, research prerequisites, permissions, Soul Egg costs, and
+the target. Sale counts set the C3 research window through the corresponding
+upcoming weekly sale; research may finish earlier and finish times may tie.
+Stopped searches retain only complete alternatives from the current run.
 
 VALIDATION
 - Simulator matches the saved v1.5 workbook rates and Friday research pricing.
@@ -848,3 +852,12 @@ walkthroughs use Oxford commas for serial lists.
 VERSION 0.8.19 — ENTER TO LOAD ACCOUNT
 The sidebar EID field spans the same width as the menu items and uses the same
 13px font. Press Enter to load or refresh your account; the arrow is removed.
+
+VERSION 0.8.20 — SELECTABLE RESEARCH-SALE PLANS
+Maximum New Switches and Maximum Research Sales are removed from Planning.
+Optimized Sequence compares 1, 2, and 3 research-sale plans, with clickable
+choices on Purchase Timeline. Switching choices updates the summary, Quick
+Guide, purchase details, artifact recommendation, and export. Saved plans and
+updater recovery retain all alternatives and your selected choice. Next
+Ascension follows the selected plan. Legacy single-plan files still replay
+with their original constraints.

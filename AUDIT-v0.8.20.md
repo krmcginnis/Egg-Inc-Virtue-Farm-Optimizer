@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.19 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.20 — Release Audit
+
+v0.8.20 removes the two maximum controls and retains independently replayed
+1-, 2-, and 3-research-sale alternatives for Optimized Sequence. Current evidence
+appears in the v0.8.20 section at the end; older evidence is historical.
 
 v0.8.18 compacts EID controls above the menu, shortens backup timestamps,
 standardizes brand/list punctuation, and expands Common Research by default.
@@ -1575,3 +1579,71 @@ v0.8.19 is public and latest, with these original assets:
 
 This same-version audit/cleanup commit records proof without repackaging the
 immutable release assets. The normal release workflow remains unchanged.
+
+
+## Selectable research-sale plans — v0.8.20
+
+Planning no longer exposes Maximum New Switches or Maximum Research Sales.
+New configurations carry saleComparisonVersion:1. The simulator derives the
+optimized route's required switches from the starting Virtue (12 from Curiosity,
+13 from other Virtues) and compares exactly the three existing staged sale
+horizons. User Selected Sequence uses its full entered route, up to the existing
+30-switch safety bound, and retains its extra Balanced purchase search. Old
+configurations without the flag retain their original limits for saved replay.
+
+The staged search keeps the best complete candidate for each sale count across
+all eligible C1/K1 budget pairs and waiting policies. Each alternative undergoes
+full independent replay with opening caps and the initial-silo rule. Ranking
+still minimizes finish time, then earning breaks, then switches. The fastest
+complete alternative is selected initially. Research-sale counts describe the
+C3 build deadline through the corresponding upcoming weekly sale; the stage
+engine can finish research earlier, and separate options can share a finish
+time. This change preserves the stage engine, game data, prices, and event rules;
+it changes solver result retention and presentation rather than those rules.
+
+Clickable timeline choices replace the displayed plan, including its summary,
+Quick Guide, individual purchases, dates, rates, and artifact recommendation.
+JSON Save Plan retains all alternatives, the selected count, and recommended
+count. Every available alternative is replayed before a saved comparison is
+loaded; a corrupt non-selected plan rejects the import without changing the
+current session. PDF export labels the selected count, and filenames distinguish
+sale options even when their durations tie. Next Ascension uses the selected
+plan's end state. Updater handoff retains choices and the selection. Legacy
+single-plan files and targets already available to claim keep their single-plan
+view. A stopped search retains only complete new-run alternatives; incomplete
+or unavailable choices are disabled and labeled honestly.
+
+Local validation passed:
+- npm ci and npm run build.
+- tests/research-sale-plans.cjs: independent uncached exact-sale simulations,
+  complete per-sale action replay, full allowance from every starting Virtue,
+  all three offline waiting policies, actual research purchases,
+  a larger opening grid retaining each horizon's best candidate, saved choice
+  replay, corrupt alternatives, cancellation, unavailable options, custom full
+  routes, already-reached targets, and original single-plan compatibility.
+- tests/research-sale-plans-browser.cjs: actual worker output, choice switching,
+  summaries/Quick Guides/shift timestamps, no changed input state, actual JSON
+  download and PDF preview, selected-count filenames, save/load, update recovery,
+  next ascension, atomic invalid import, and disabled incomplete options.
+- Existing planning-clarity, timeline-readability, page-navigation,
+  import-account, update-error, and desktop-only ui-polish browser suites.
+- Opening discount, shift rate/PDF, timezone, physical-preview, release-state,
+  and prepare-publish checks.
+- Independent pinned Wasmegg reference-math audit: 738 states, 13,980 research
+  prices, 41,328 tier checks, 228 hab prices, 612 vehicle prices, 27 car prices,
+  240 Colleggtible selections, and 132 ship checks. Non-hab-rounding relative
+  error stays <=1.02e-15; known hab rounding differs by at most one chicken.
+
+Desktop screenshots at 1440, 1280, 1050, and 1000 pixels and the selected
+three-sale PDF were visually reviewed. No mobile checks were performed.
+
+The recovered v0.8.19 run 37642386015 still reports queued with no job, despite
+cancellation. Release serialization moves to publish-app-release-v2 so this
+stale queue cannot block new releases; subsequent releases remain serialized.
+The Windows build now also runs the new independent sale-plan regression suite.
+Release-state and prepare-publish checks cover the workflow/publication change.
+
+Local packaging passed (169 runtime files). Native update-core/update-launch
+checks require PowerShell, which is unavailable in this scratch environment;
+they will run in the Windows release job. Windows release and public updater
+verification will be recorded after publish.

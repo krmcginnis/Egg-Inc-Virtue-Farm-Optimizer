@@ -71,7 +71,7 @@ const root = path.resolve(__dirname, "..");
     const checkbox = await page.locator("#manualFarmData").boundingBox(); assert.ok(checkbox.height <= 20);
     // Exercise all planning-bar controls together, as they appear during a search.
     await page.evaluate(() => { document.getElementById("stop").hidden = false; document.getElementById("review-inputs").hidden = false; document.getElementById("run-progress").hidden = false; document.getElementById("run-summary").textContent = "Checking Opening 100 / 100"; document.getElementById("run-detail").textContent = "C1: 300m · K1: 300m · Best so far: 137d 18h · Searching for 59s"; });
-    for (const [width, height] of [[1366, 768], [1100, 620], [1050, 620], [900, 600], [800, 600], [683, 384], [390, 600], [320, 600]]) {
+    for (const [width, height] of [[1366, 768], [1100, 620], [1050, 620], [900, 600], [800, 600], [683, 384], [390, 600], [320, 600]].filter(([width]) => !process.env.DESKTOP_ONLY || width >= 1000)) {
       await page.setViewportSize({ width, height });
       for (const section of ["account", "farm", "planning", "results", "help"]) {
         await page.click(`[data-tab="${section}"]`);
@@ -82,11 +82,11 @@ const root = path.resolve(__dirname, "..");
       for (let i = 0; i < controls.length; i++) for (let j = i + 1; j < controls.length; j++) {
         const a = controls[i], b = controls[j]; assert.ok(a.right <= b.left || b.right <= a.left || a.bottom <= b.top || b.bottom <= a.top, "Planning controls overlap at " + width);
       }
-      await page.click('[data-tab="planning"]'); await page.locator("#stagedSales").focus();
-      const focused = await page.locator("#stagedSales").boundingBox(), bar = await page.locator(".run-bar").boundingBox();
+      await page.click('[data-tab="planning"]'); await page.locator("#k1MaxMinutes").focus();
+      const focused = await page.locator("#k1MaxMinutes").boundingBox(), bar = await page.locator(".run-bar").boundingBox();
       assert.ok(focused.y + focused.height < bar.y, "Focused field obscured at " + width);
     }
     assert.deepEqual(errors, []);
-    console.log("PASS fleet visibility/unlocks, hidden-value round trips and correction, Hyperloop controls and edit locks, short-window sidebar/update access, independent focus scrolling, checkbox sizing and planning controls at 1366–320px including desktop zoom.");
+    console.log("PASS fleet visibility/unlocks, hidden-value round trips and correction, Hyperloop controls and edit locks, short-window sidebar/update access, independent focus scrolling, checkbox sizing and planning controls at tested viewport widths; desktop-only mode honors DESKTOP_ONLY.");
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });
