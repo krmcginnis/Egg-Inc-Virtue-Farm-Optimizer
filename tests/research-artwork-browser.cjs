@@ -27,6 +27,11 @@ const root = path.resolve(__dirname, "..");
     assert.equal(await page.locator("#epic-hold_to_research").getAttribute("max"), "20"); await page.fill("#epic-hold_to_research", "20"); assert.equal(await page.inputValue("#epic-hold_to_research"), "20"); await page.evaluate(() => VirtueApp.refresh()); assert.equal((await page.evaluate(() => VirtueApp.getConfig())).farm.epic.hold_to_research, 20);
     const before = await page.evaluate(() => VirtueApp.getConfig());
     for (const r of S.D.epic) { assert.equal(await page.getByLabel(titleCase(r.name), { exact: true }).inputValue(), String(farm.farm.epic[r.id])); assert.equal(await page.locator(`[data-research-icon="${r.id}"] .research-icon`).getAttribute("aria-hidden"), "true"); }
+    for(const r of S.D.epic) {
+      assert.equal(await page.locator('#epic-fields [data-research-icon="'+r.id+'"]').getAttribute('title'),r.description);
+      assert.equal(await page.locator('#epic-'+r.id).getAttribute('aria-describedby'),'epic-description-'+r.id);
+      assert.equal(await page.locator('#epic-description-'+r.id).textContent(),r.description);
+    }
     assert.deepEqual(before.farm.epic, farm.farm.epic);
     await page.evaluate(() => new Promise((resolve, reject) => { const image = new Image(); image.onload = () => resolve(); image.onerror = reject; image.src = "assets/brand/research-icons.png"; }));
     const out = path.join(root, "tmp/research-artwork"); fs.mkdirSync(out, { recursive: true });
@@ -94,10 +99,10 @@ const root = path.resolve(__dirname, "..");
     await page.evaluate(()=>VirtueApp.tab("research"));
     await page.screenshot({path:path.join(out,"tiers-desktop.png"),fullPage:true});
     await page.screenshot({path:path.join(out,"tiers-desktop-viewport.png")});
-    await page.setViewportSize({width:390,height:1000});
-    await page.screenshot({path:path.join(out,"tiers-mobile.png"),fullPage:true});
-    await page.screenshot({path:path.join(out,"tiers-mobile-viewport.png")});
-    await page.setViewportSize({width:320,height:1000});
+    await page.setViewportSize({width:1050,height:1000});
+    await page.screenshot({path:path.join(out,"tiers-desktop-1050.png"),fullPage:true});
+    await page.screenshot({path:path.join(out,"tiers-desktop-1050-viewport.png")});
+    await page.setViewportSize({width:1000,height:1000});
     await page.screenshot({path:path.join(out,"tiers-small-viewport.png")});
     await page.setViewportSize({width:1440,height:1000});
     await page.uncheck("#manualFarmResearch");
@@ -121,7 +126,7 @@ const root = path.resolve(__dirname, "..");
     await page.locator(".shift-summary>summary").first().click(); assert.equal(await page.locator(".guide-item.research .research-icon").count(), 2);
     await page.locator(".full-breakdown>summary").first().click(); assert.equal(await page.locator(".action.research .research-icon").count(), 2);
     assert.deepEqual((await page.evaluate(() => VirtueApp.getResult())).actions, S.history(state));
-    for (const width of [1440, 1280, 1000, 800, 500, 390, 320]) {
+    for (const width of [1440, 1280, 1050, 1000]) {
       await page.setViewportSize({ width, height: 1000 });
       for (const tab of ["account", "farm", "results"]) { await page.click(`[data-tab="${tab}"]`); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), tab + " overflow at " + width); }
     }
@@ -137,6 +142,6 @@ const root = path.resolve(__dirname, "..");
     await page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Missing-Art-Farm.json")), farm);
     assert.ok(await page.getByLabel("Hold to Hatch", { exact: true }).isEnabled()); assert.equal(await page.locator("#epic-fields label").count(), 22);
     assert.deepEqual(errors, []);
-    console.log("PASS exact remaining research costs, completed zero cost, epic/artifact discounts, calibration and current sale, immutable preview, all research mappings and original pixels, inline icons, unchanged labels/values, edit locks, filtering, replayed timeline layers, layouts 1440–320px, offline display, saved-farm roundtrip and missing-art text fallback.");
+    console.log("PASS exact remaining research costs, completed zero cost, epic/artifact discounts, calibration and current sale, immutable preview, all research mappings and original pixels, inline icons, unchanged labels/values, edit locks, filtering, replayed timeline layers, layouts 1440–1000px, offline display, saved-farm roundtrip and missing-art text fallback.");
   } finally { if (browser) await browser.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

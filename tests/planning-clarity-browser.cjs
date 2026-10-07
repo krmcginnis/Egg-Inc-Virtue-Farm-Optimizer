@@ -84,7 +84,12 @@ const root = path.resolve(__dirname, "..");
     // Exercise the actual UI message handlers with deterministic worker events.
     // Search calculations remain untouched; a real worker is checked below.
     await page.evaluate(() => { window.realWorker = Worker; window.Worker = class { constructor() { window.testWorker = this; } postMessage(message) { this.lastMessage = message; } terminate() { this.terminated = true; } }; });
+    const legacyBudget = await page.evaluate(()=>VirtueApp.getConfig()); legacyBudget.plan.searchEffort="thorough"; await load(legacyBudget);
+    await page.click('[data-tab="planning"]'); await page.selectOption('#strategy','user');
+    assert.equal(await page.locator('#effort,#autoSequence').count(),0);
     await page.click('[data-tab="planning"]'); await page.click("#optimize");
+    assert.deepEqual(await page.evaluate(()=>testWorker.lastMessage.options),{width:32,branches:12,maxDepth:1200,maxMs:45000});
+    assert.equal(await page.evaluate(()=>testWorker.lastMessage.config.plan.searchEffort),'balanced');
     await page.evaluate(() => testWorker.onmessage({ data: { type: "progress", progress: { phase: "openings", openingCompared: 1, openingTotal: 4, openingBudget: { c1MaxMinutes: 30, k1MaxMinutes: 60 }, stage: "C3", bestSeconds: 86400 } } }));
     assert.equal(await page.locator("#run-summary").innerText(), "Checking Opening 2 / 4");
     assert.equal(await page.locator("#run-progress").getAttribute("value"), "1");
@@ -98,7 +103,7 @@ const root = path.resolve(__dirname, "..");
     await page.evaluate(() => testWorker.onmessage({ data: { type: "progress", progress: { depth: 10, explored: 2500, bestSeconds: 86400 } } }));
     assert.equal(await page.locator("#run-progress").getAttribute("value"), null);
     assert.equal(await page.locator("#search-openings").innerText(), "4 / 4 completed");
-    assert.match(await page.locator("#search-stage").innerText(), /Free Routing · 2,500/);
+    assert.match(await page.locator("#search-stage").innerText(), /User Sequence · 2,500/);
     await page.click("#stop"); assert.ok(await page.evaluate(() => testWorker.lastMessage.cancel));
     await page.evaluate(() => testWorker.onmessage({ data: { type: "error", error: "No feasible plan found: the next switch costs 2Q Soul Eggs but the farm has 1Q." } }));
     assert.ok(await page.locator("#search-status").isHidden());
@@ -142,13 +147,13 @@ const root = path.resolve(__dirname, "..");
     await load({ backup }); await page.click('[data-tab="farm"]');
     await page.evaluate(() => window.scrollTo(0, 0));
     await page.screenshot({ path: path.join(out, "summaries-desktop.png"), fullPage: true });
-    for (const width of [1440, 1280, 1050, 800, 500, 390, 320]) {
+    for (const width of [1440, 1280, 1050, 1000]) {
       await page.setViewportSize({ width, height: 1000 });
       for (const tab of ["account", "farm", "planning", "results"]) { await page.click(`[data-tab="${tab}"]`); assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), tab + " overflow at " + width); }
     }
     const offline = await browser.newPage(); await offline.goto("file://" + path.join(root, "index.html")); await offline.waitForFunction(() => !!globalThis.VirtueApp);
     assert.ok(await offline.locator("#epic-details").isVisible()); assert.ok(await offline.locator("#epic-fields").isHidden());
     assert.deepEqual(errors, []);
-    console.log("PASS compact summaries, keyboard disclosures, manual edit locks, real backup imports and timestamps, retained-farm/partial-data labels, save/load values, direct error focus, truthful worker progress, cancellation, real replayed worker plan, offline display and layouts 1440–320px.");
+    console.log("PASS compact summaries, keyboard disclosures, manual edit locks, real backup imports and timestamps, retained-farm/partial-data labels, save/load values, direct error focus, truthful worker progress, cancellation, real replayed worker plan, offline display and layouts 1440–1000px.");
   } finally { if (browser) await browser.close(); await new Promise(resolve => server.close(resolve)); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

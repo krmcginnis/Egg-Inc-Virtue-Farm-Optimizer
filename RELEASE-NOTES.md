@@ -1,9 +1,8 @@
-# v0.8.15
+# v0.8.16
 
-- Normalize gem, Virtue egg, and Soul Egg artwork by visible bounds, fixing inconsistent apparent sizes caused by transparent padding.
-- Center unit images beside their numbers in timeline summaries, Quick Guide, and all purchase pickers.
-- Increase hab, vehicle, and ship cost/fuel/purchase-time details to 13px with more spacing.
-- Keep ship fuels on one line using shorter labels with redundant trailing zeroes removed; retain the same numeric values and accessible quantities.
-- Widen the ship selection dialog slightly while retaining the compact farm layout and smaller ship images.
-- Desktop checks pass; solver and rates are unchanged.
+- Remove redundant trailing decimal zeroes from ship gem costs and habitat capacities while preserving meaningful decimals.
+- Remove Additional Search Budget; new searches always use Balanced, including after loading older saved settings.
+- Remove the redundant Choose Truth Egg Sequence Automatically checkbox; Planning Strategy still controls automatic or user-selected visit order.
+- Add effect tooltips to all 22 Epic Research icons, with descriptions available to screen readers.
+- Preserve the compact desktop layout, existing solver calculations, and saved timeline replay.
 - Install through Update App → Update & Restart.

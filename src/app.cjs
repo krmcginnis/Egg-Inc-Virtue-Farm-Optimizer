@@ -26,7 +26,7 @@ const $ = (id) => document.getElementById(id), D = S.D;
 const EID_KEY = "virtue-optimizer.eid.v1", EID_NAME_KEY = "virtue-optimizer.eid-name.v1";
 let savedEid = "", savedEidName = "", eidDraft = "";
 let config = Defaults.freshFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
-const effort = { quick: { width: 12, branches: 8, maxDepth: 500, maxMs: 1e4 }, balanced: { width: 32, branches: 12, maxDepth: 1200, maxMs: 45e3 }, thorough: { width: 72, branches: 20, maxDepth: 2200, maxMs: 18e4 } };
+const searchOptions = { width: 32, branches: 12, maxDepth: 1200, maxMs: 45e3 };
 let activeLoadoutTab = "current";
 const labels = { account: "Account", farm: "Virtue Farm", planning: "Planning", results: "Purchase timeline", help: "How it works" };
 const colNames = { earnings: "Earnings", awayEarnings: "Away earnings", ihr: "Internal hatchery", elr: "Egg laying", shippingCap: "Shipping capacity", habCap: "Hab capacity", vehicleCost: "Vehicle cost", habCost: "Hab cost", researchCost: "Research cost" };
@@ -49,7 +49,6 @@ function show(message, error = false) {
 }
 function updateSequenceVisibility() {
   const strategy = $("strategy").value, automatic = strategy !== "user";
-  $("autoSequence").checked = automatic;
   $("fixed-sequence").hidden = automatic;
   $("sequence").disabled = automatic;
   $("sequence").required = !automatic;
@@ -59,10 +58,9 @@ function updateSequenceVisibility() {
     user: "Enter your truth egg switch sequence below."
   }[strategy] || "Select a planning strategy.";
   $("routing-help").textContent = automatic ? "Choose User Selected Sequence to enter your own order." : "Your truth egg sequence controls the visit order.";
-  $("effort").disabled = strategy === "wasmegg";
-  $("effort-help").textContent = strategy === "wasmegg" ? "All eligible openings are compared; this extra budget is unused." : "Extra search runs after all opening comparisons.";
 }
 const num = NumberFormat.format;
+const compactNumber = value => num(value).replace(/\.0+(?=[A-Za-z]*$)/,"").replace(/(\.\d*[1-9])0+(?=[A-Za-z]*$)/,"$1");
 const fuelNumber = require('./fuel-format.cjs');
 function duration(n) {
   if (!Number.isFinite(n)) return "\u2014";
@@ -185,9 +183,8 @@ function showPlanningGuidance(message, fromSearch = false, inputsChanged = false
     detail = "Review the starting habs and vehicles. A fresh farm uses the free Coop, Trike, and one silo.";
     targets = [["hab-0", "Review Habitats"], ["vehicle-0", "Review Shipping Fleet"]];
   } else if (fromSearch) {
-    detail = /^Under the entered farm settings/.test(message) ? "Review the imported values or lower the target. This limit was checked with an optimistic production estimate." : "No complete plan was found within the fixed planning horizon. Review the switch limit" + ($("strategy").value === "wasmegg" ? "." : ", or try a larger additional search budget.") + " A failed heuristic search does not prove the goal is impossible.";
+    detail = /^Under the entered farm settings/.test(message) ? "Review the imported values or lower the target. This limit was checked with an optimistic production estimate." : "No complete plan was found within the fixed planning horizon. Review the switch limit and visit order. A failed heuristic search does not prove the goal is impossible.";
     targets = [["maxSwitches", "Review Switch Limit"]];
-    if ($("strategy").value !== "wasmegg") targets.push(["effort", "Review Search Budget"]);
   } else {
     detail = "Correct the marked value, then try planning again. Your other inputs are retained.";
     targets = [[field, "Review Input"]];
@@ -388,7 +385,6 @@ function renderForm() {
   $("eventTimezone").value = zone;
   updateTimezoneHelp();
   $("sequence").value = typeof p.sequence === "string" ? p.sequence : (p.sequence ?? DEFAULT_ROUTE).map((x) => ({ curiosity: "C", integrity: "I", humility: "H", resilience: "R", kindness: "K" })[x] || x).join(" ");
-  $("effort").value = p.searchEffort ?? "balanced";
   $("minOfflineMinutes").value = p.minOfflineMinutes ?? 1;
   $("strategy").value = p.strategy || "wasmegg";
   $("stagedSales").value = p.stagedSales ?? 3;
@@ -460,7 +456,14 @@ function renderForm() {
   ].filter(Boolean).join(" ");
   renderColleggtibleTotals(selected.tiers, selected.overrides);
   renderResearch();
-  $("epic-fields").replaceChildren(...D.epic.map((r) => ResearchIcons.decorateLabel(field(r.name, "epic-" + r.id, f.epic?.[r.id] || 0, "number", { min: 0, max: r.levels }), r.id)));
+  $("epic-fields").replaceChildren(...D.epic.map((r) => {
+    const label = ResearchIcons.decorateLabel(field(r.name, "epic-" + r.id, f.epic?.[r.id] || 0, "number", { min: 0, max: r.levels }), r.id);
+    label.querySelector("[data-research-icon]").title = r.description;
+    const description = el("span", r.description, "sr-only"); description.id = "epic-description-" + r.id;
+    const input = label.querySelector("input"); input.setAttribute("aria-label",titleCase(r.name)); input.setAttribute("aria-describedby",description.id);
+    label.append(description);
+    return label;
+  }));
   f.loadouts = f.loadouts || { current: [] };
   if (!f.loadouts.current) f.loadouts.current = structuredClone(f.loadouts[f.activeSet] || []);
   for (const key of ["earnings", "delivery"]) if (!f.loadouts[key]) f.loadouts[key] = structuredClone(f.loadouts.current);
@@ -594,10 +597,10 @@ function shipChoiceDescriptions(visit, index) {
     for (const i of displayEggOrder.filter(i=>mission.fuel[i])) {
       const quantity=num(mission.fuel[i]),amount=Units.amount(S.EGGS[i],quantity);
       // Remove only redundant trailing zeroes; retain the rounded numeric value.
-      amount.firstElementChild.textContent=quantity.replace(/\.0+(?=[A-Za-z]*$)/,"").replace(/(\.\d*[1-9])0+(?=[A-Za-z]*$)/,"$1");
+      amount.firstElementChild.textContent=compactNumber(mission.fuel[i]);
       fuel.append(amount);
     }
-    return Units.lines(Units.amount("gem",num(mission.cost)),fuel,estimate);
+    return Units.lines(Units.amount("gem",compactNumber(mission.cost)),fuel,estimate);
   };
 }
 function renderShipMissions(visit, missions) {
@@ -805,7 +808,7 @@ function gather() {
   f.research = Object.fromEntries(D.research.map((r) => [r.id, readNumber("research-" + r.id, r.name, 0, r.levels, true)]));
   f.epic = Object.fromEntries(D.epic.map((r) => [r.id, readNumber("epic-" + r.id, r.name, 0, r.levels, true)]));
   f.loadouts = formLoadouts();
-  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), maxSwitches: readNumber("maxSwitches", "Maximum switches", 0, 30, true), maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: $("effort").value, minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), stagedSales: readNumber("stagedSales", "Maximum research sales", 1, 6, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: Array.from({ length: 5 }, (_, i) => readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true)) };
+  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), maxSwitches: readNumber("maxSwitches", "Maximum switches", 0, 30, true), maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), stagedSales: readNumber("stagedSales", "Maximum research sales", 1, 6, true), c1MaxMinutes: readNumber("c1MaxMinutes", "C1 maximum minutes", 30, 300, true), k1MaxMinutes: readNumber("k1MaxMinutes", "K1 maximum minutes", 30, 300, true), initialPhysicalPurchases: false, floors: Array.from({ length: 5 }, (_, i) => readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true)) };
   if (!p.autoSequence) try {
     Route.parse(p.sequence, {required: true});
   } catch (error) { error.fieldId = "sequence"; throw error; }
@@ -858,7 +861,7 @@ function refresh() {
     $("farm-advisories").replaceChildren(...warnings.map((message) => el("p", message)));
     $("farm-advisories").hidden = !warnings.length;
     renderColleggtibleTotals(config.farm.colleggtibleTiers, config.farm.colleggtibleOverrides);
-    $("stats").replaceChildren(stat("Truth Eggs", c.claimedTotal + " + " + pending, "claimed + pending", "truth"), stat("Egg delivery / hour", num(r.delivery * 3600), r.bottleneck + " limited \xB7 headroom " + num(r.headroom * 3600) + "/hr"), stat("Normal earnings / hour", num(r.earning * 3600), c.earningsMode + " \xB7 before weekly event"), stat("Habitat capacity", num(r.hab), "Silo coverage: " + duration(r.siloHours * 3600)));
+    $("stats").replaceChildren(stat("Truth Eggs", c.claimedTotal + " + " + pending, "claimed + pending", "truth"), stat("Egg delivery / hour", num(r.delivery * 3600), r.bottleneck + " limited \xB7 headroom " + num(r.headroom * 3600) + "/hr"), stat("Normal earnings / hour", num(r.earning * 3600), c.earningsMode + " \xB7 before weekly event"), stat("Habitat capacity", compactNumber(r.hab), "Silo coverage: " + duration(r.siloHours * 3600)));
     for (let i = 0; i < 5; i++) $("pending-" + i).textContent = String(Math.max(0, S.countTE(s.eggs[i]) - c.claimed[i]));
     for (const research of D.research) {
       const i = S.RMAP[research.id];
@@ -1350,7 +1353,7 @@ function optimize() {
   if (importingBackup) return;
   if (!refresh()) return;
   const runConfig = structuredClone(config);
-  $("search-limits").textContent = "C1 ≤" + runConfig.plan.c1MaxMinutes + " min · K1 ≤" + runConfig.plan.k1MaxMinutes + " min · 30-minute opening intervals · " + (runConfig.plan.strategy === "wasmegg" ? "All eligible opening comparisons; no additional routing search." : "Additional routing budget: " + exactDuration(effort[$("effort").value].maxMs / 1000) + " after eligible opening comparisons.");
+  $("search-limits").textContent = "C1 ≤" + runConfig.plan.c1MaxMinutes + " min · K1 ≤" + runConfig.plan.k1MaxMinutes + " min · 30-minute opening intervals · " + (runConfig.plan.strategy === "wasmegg" ? "All eligible opening comparisons; no additional routing search." : "Balanced purchase search: " + exactDuration(searchOptions.maxMs / 1000) + " after eligible opening comparisons.");
   dirty = false;
   if ($("plan-stale")) { $("plan-stale").textContent = "A new search is running. This timeline is the previous plan; the completed search will replace it."; $("plan-stale").hidden = false; }
   show("Searching research orders and switch timing. You can keep using the interface.");
@@ -1449,7 +1452,7 @@ function optimize() {
     $("run-summary").textContent = "Worker error";
     $("run-detail").textContent = "Review inputs and try the search again";
     };
-  worker.postMessage({ config: runConfig, options: { ...effort[$("effort").value] } });
+  worker.postMessage({ config: runConfig, options: { ...searchOptions } });
 }
 async function loadFile(file) {
   const epoch = loadEpoch;
@@ -1548,7 +1551,6 @@ $("clear-data").onclick = () => {
   dirty = false;
   $("file-input").value = "";
   $("research-filter").value = "";
-  $("effort").value = "balanced";
   $("run-summary").textContent = "";
   $("run-detail").textContent = "";
   $("result-content").replaceChildren();
@@ -1856,7 +1858,7 @@ FarmIcons.configure((kind,slot) => {
     const {s,c} = S.prepare(gather());
     return item => {
       const preview = PhysicalPreview.describe(s,c,kind,slot,item.id);
-      return Units.lines(num(preview.capacity)+(kind === "hab" ? " cap" : "/hr")+(item.id === 11 && kind === "vehicle" ? " · "+preview.cars+" car"+(preview.cars === 1 ? "" : "s") : ""),Units.amount("gem",num(preview.cost)),purchaseTime(preview.seconds));
+      return Units.lines((kind === "hab" ? compactNumber(preview.capacity) : num(preview.capacity))+(kind === "hab" ? " cap" : "/hr")+(item.id === 11 && kind === "vehicle" ? " · "+preview.cars+" car"+(preview.cars === 1 ? "" : "s") : ""),Units.amount("gem",num(preview.cost)),purchaseTime(preview.seconds));
     };
   } catch { return () => "Complete farm and planning inputs to see estimates"; }
 });

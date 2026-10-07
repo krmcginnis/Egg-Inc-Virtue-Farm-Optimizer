@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.15 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.16 — Release Audit
+
+v0.8.16 trims ship cost/hab capacity labels, fixes Balanced as the new-search
+default, removes redundant controls, and adds Epic Research effect tooltips.
+Current validation is in the v0.8.16 section below; earlier evidence is historical.
 
 v0.8.15 fixes visible unit artwork sizing/alignment and increases picker detail
 sizes. Current validation appears in the v0.8.15 section below; prior evidence
@@ -1319,3 +1323,43 @@ The public release targets the exact app commit and contains both verified asset
 
 This final audit proof is recorded after release verification without replacing
 or repackaging the immutable release assets.
+
+
+## Number labels, Balanced search and Epic tooltips — v0.8.16
+
+Ship gem costs and habitat capacities now remove only redundant decimal zeroes
+from the existing rounded number format (19.000T → 19T, 9.700B → 9.7B).
+Hab choices and the starting-farm habitat capacity use the same compact format.
+Original amounts, purchase estimates, game rates and saved values are unchanged.
+Ship fuels continue using the same compact labels and accessible quantities.
+
+Additional Search Budget and Choose Truth Egg Sequence Automatically are removed
+from Planning. The strategy selector still selects Optimized Sequence or User
+Selected Sequence. New searches always save/send Balanced: width 32, branches 12,
+maxDepth 1200, maxMs 45000. Loading a legacy Thorough setting does not change this.
+Optimized Sequence still checks all eligible opening comparisons without timed
+extra purchase search. The simulator still accepts old search-effort fields for
+saved timeline replay. Error guidance and How It Works no longer refer to the
+removed budget control. Legacy updater handoff fields remain compatible.
+
+All 22 Epic icons/captions use the pinned game-data effect descriptions as native
+hover tooltips, like Common Research. Each input has an explicit accessible name
+and an associated hidden effect description. Manual edit locks and values remain
+unchanged.
+
+Five affected Chromium suites pass at desktop widths 1440–1000px:
+planning-clarity, research-artwork, equipment-flow, physical-picker and
+timeline-readability. Checks cover legacy Thorough → Balanced worker options,
+removed controls, automatic/user routes, actual completed worker replay,
+all Epic tooltips/descriptions, research edit locks and label accessibility,
+ship costs retaining meaningful decimals, hab capacities, layout fit, symbol
+alignment and saved-farm round trips. Desktop screenshots of Epic fields,
+ship costs and habitat choices are reviewed; no mobile checks are run.
+The solver worker remains byte-for-byte identical to v0.8.15:
+4c7950f0d1fd01da5189a6aed4a59806f05c5ea5823951e9c056bfda4d7da272.
+No solver, game catalog or simulation source changes are made in this release.
+
+npm ci/build, release-state, prepare-publish and diff checks pass. Local packaging
+contains 169 runtime files and passes archive verification; current-version
+audit/title/sidebar metadata match v0.8.16. Windows and public-feed proof will
+be recorded after the automatic release checks complete.

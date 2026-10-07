@@ -1,6 +1,6 @@
 "use strict";
 const assert=require("node:assert/strict"),fs=require("node:fs"),path=require("node:path"),http=require("node:http");
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE || "playwright"),blank=require("../src/blank-farm.cjs"),S=require("../src/simulator.cjs"),Defaults=require("../src/ui-defaults.cjs");
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE || "playwright"),blank=require("../src/blank-farm.cjs"),S=require("../src/simulator.cjs"),Defaults=require("../src/ui-defaults.cjs"),Preview=require("../src/physical-preview.cjs"),Num=require("../src/number-format.cjs");
 const root=path.resolve(__dirname,"..");
 (async()=>{
   assert.equal(Defaults.target([98,98,98,98,98]),490);assert.equal(Defaults.target([10,20,30,40,50]),190);assert.equal(Defaults.target([NaN,0,0,0,0]),null);
@@ -25,10 +25,12 @@ const root=path.resolve(__dirname,"..");
     for(const kind of ["hab","vehicle"]){
       await page.click("#pick-"+kind+"-0");
       const items=kind==="hab" ? S.D.habs : S.D.vehicles;
+      const prepared=S.prepare(initial);
       assert.equal(await page.locator("#gear-picker .farm-choice").count(),items.length);
       for(const item of items){
         const row=page.locator(`#gear-picker [data-item-id="${item.id}"]`);
         assert.ok(await row.locator(`[data-farm-icon="${kind}:${item.id}"]`).isVisible());
+        if(kind==="hab"){const capacity=Preview.describe(prepared.s,prepared.c,kind,0,item.id).capacity,formatted=Num.format(capacity),number=Number.parseFloat(formatted.replaceAll(",","")),suffix=formatted.replace(/^[\d.,]+/,"");assert.equal(await row.locator(".picker-detail-line").first().textContent(),String(number)+suffix+" cap");}
         assert.ok(await row.locator('[data-unit-icon="gem"] img').isVisible());assert.doesNotMatch(await row.innerText(),/gems|to afford|Affordable now/);if(!item.id)assert.match(await row.innerText(),/~<1/);
       }
       await page.getByRole("searchbox",{name:"Filter items"}).fill(kind==="hab" ? "portal" : "hyperloop");
