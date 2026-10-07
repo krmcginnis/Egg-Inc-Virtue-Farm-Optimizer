@@ -1,7 +1,9 @@
-# Egg Inc. Virtue Farm Optimizer v0.8.8 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.8.9 — Release Audit
 
-v0.8.8 adds image-driven artifact/stone editing, larger image-only hab tiles,
-lower farm file actions, claimed-TE + 40 targets and detected timezone defaults.
+v0.8.9 adds illustrated hab/vehicle catalogs with current-farm capacity,
+slot-specific prices and current-rate affordability estimates, smaller picker
+artwork, C K I R H fuel/progress ordering, bottom sidebar alignment and a draft
+start-date/time dialog with explicit Ok confirmation.
 Farm & Account and Planning retain
 the compact two-panel desktop layout and share the existing farm configuration.
 A small Planning summary shows current Virtue, claimed/pending TE and the last
@@ -874,3 +876,65 @@ hab tiles, artifact cards and desktop/mobile artifact/stone popups were inspecte
 The generated solver worker checksum is unchanged.
 
 Packaging verifies 164 runtime files, archive integrity and one current audit.
+
+
+## Physical image choices, ordering and date confirmation — v0.8.9
+
+Click any hab or fleet image/Empty placeholder to open the shared illustrated
+chooser. Choices use a compact vertical image/name/details row matching the
+provided screenshot, plus search, selected state and Empty. Closed selectors
+show images, with accessible slot/current-item names and item-name tooltips.
+Missing sprites and forced colors retain readable names and the same controls.
+Manual farm locks, fleet unlock visibility, Hyperloop car inputs, existing IDs,
+round-trip values, validation review and unchanged saved schema remain intact.
+Hab picker artwork is 42px (56px reduced by 25%); vehicle picker artwork is
+18px square or 36×21px wide (24px or 48×28px reduced by 25%). Timeline artwork
+sizes and asset pixels are unchanged.
+
+Capacity uses simulator.stats on a cloned state containing only the candidate
+item, incorporating current research, portal/hover/Hyperloop factors, current
+artifact modifiers, Epic Research and Colleggtibles. Vehicle rates show eggs/hour;
+an already selected Hyperloop retains its current car count, while a new train
+shows one car, stated beside its rate. Prices use simulator.price for the
+specific replaced slot, including other copies and existing discounts.
+Affordability subtracts current cash and divides by current event earnings in
+the selected earnings mode. It is explicitly a current-rate estimate, assuming
+full habs, maintained silos and no future events or purchases. Zero-income farms
+show No current income, affordable items show Affordable now, and estimates
+beyond a year use a concise >1 year label. Invalid required inputs show unavailable
+estimates rather than stale values. This preview does not execute purchases or
+predict new upgrade routes.
+
+Fuel inputs now stack vertically and Truth Egg Progress follows C K I R H.
+Underlying game-data indices, saved fuel keys, claimed/delivery arrays and
+solver ordering remain unchanged. Per-Virtue goal order is retained.
+The sidebar's specific margin rule now puts Update App at the bottom in desktop
+windows; independent scrolling keeps it reachable in short windows. Mobile
+navigation retains its existing layout.
+
+Click Start or Choose Date & Time to open a PC-local date/time dialog. Edits stay
+in the dialog until the bottom-right Ok button commits both values; Cancel,
+Escape and backdrop dismiss without changing the plan. Required-date/time
+validation, Enter confirmation, Tab wrapping and restored focus are provided.
+Typing in the original minute-precision start input remains supported. An
+unchanged minute retains the exact original saved seconds. Draft modal fields
+are excluded from plan invalidation and update handoff capture.
+
+Validation: npm ci/build, physical-preview unit checks and all nine Chromium
+suites pass, including new physical-picker checks. Coverage includes every
+hab/vehicle row, calculated portal/hover/train/epic/duplicate-price factors,
+zero cash/income, immutable preview state, filtering/cancel/focus/locks,
+Hyperloop cars, save/load, exact image sizes, egg DOM order/vertical stacking,
+bottom sidebar alignment, date commit/cancel/required validation/second precision
+and 1440–320px layouts. Existing suites retain actual synthetic protobuf/API
+imports, worker execution and action replay. Catalog and worker SHA256 remain
+unchanged. Screenshots of desktop/mobile choosers and date panel were inspected.
+The standalone import-account suite still lacks its two existing fixtures.
+Native Firefox, live-account and screen-reader execution are not claimed.
+
+Node release-state and prepare-publish guards pass; packaging verifies 164 runtime
+files, ZIP integrity and one current audit. The established Windows workflow
+must validate hidden launcher, updater install/restart/rollback and public-feed
+archive/checksum checks before handover. Local PowerShell is unavailable.
+Solver worker SHA256:
+26a402fae2d31a8c270bf7fd6d03e0e0ebbda684095f4f5c1ad4cb5937b0625a.

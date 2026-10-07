@@ -12,6 +12,9 @@ const LoadoutCard = require("./loadout-card.cjs");
 const EggIcons = require("./egg-icons.cjs");
 const ResearchIcons = require("./research-icons.cjs");
 const FarmIcons = require("./farm-icons.cjs");
+const PhysicalPreview = require("./physical-preview.cjs");
+const DatePicker = require("./date-picker.cjs");
+const displayEggOrder = [0,4,1,3,2];
 const SelectionReadout = require("./selection-readout.cjs");
 const AppUpdates = require("./app-updates.cjs");
 const Defaults = require("./ui-defaults.cjs");
@@ -213,7 +216,7 @@ function fieldError(error) {
     const hint = el("small", error.message, "field-error");
     hint.id = "field-error";
     const picker = $(node.dataset.pickerId);
-    if (picker) { picker.setAttribute("aria-invalid", "true"); picker.setAttribute("aria-describedby", "field-error"); picker.closest(".artifact-slot").append(hint); }
+    if (picker) { picker.setAttribute("aria-invalid", "true"); picker.setAttribute("aria-describedby", "field-error"); (picker.closest(".artifact-slot") || picker.closest("label"))?.append(hint); }
     else node.closest("label")?.append(hint);
     revealFleetField(node);
   }
@@ -281,7 +284,6 @@ function selectField(label, id, opts, value) {
   s.append(...opts.map(([v, t]) => option(v, t)));
   s.value = value === null ? "" : String(value);
   l.append(s);
-  SelectionReadout.attach(s);
   return l;
 }
 function renderColleggtibleTotals(tiers, overrides) {
@@ -382,7 +384,7 @@ function renderForm() {
   const body = $("progress-body");
   body.replaceChildren();
   $("goal-fields").replaceChildren();
-  for (let i = 0; i < 5; i++) {
+  for (const i of displayEggOrder) {
     const tr = el("tr");
     const virtue = el("td");
     virtue.append(EggIcons.caption(S.EGGS[i], S.NAME[i], "egg-label progress-egg"));
@@ -419,6 +421,7 @@ function renderForm() {
     $("goal-fields").append(goal);
     body.append(tr);
   }
+  for (let i = 0; i < 5; i++) $("goal-fields").append($("floor-"+i).closest("label"));
   $("hab-fields").replaceChildren(...f.habs.map((v, i) => FarmIcons.decoratePicker(selectField("Habitat " + (i + 1), "hab-" + i, [["", "Empty"], ...D.habs.map((x) => [x.id, x.name])], v), "hab")));
   $("vehicle-fields").replaceChildren(...f.vehicles.map((v, i) => {
     const div = el("div", void 0, "fleet-slot");
@@ -451,7 +454,7 @@ function renderForm() {
   const tank = f.fuelTank || {}, capacity = tank.capacity ?? 2e9, capacities = Ships.TANKS.includes(capacity) ? Ships.TANKS : [...Ships.TANKS, capacity];
   select("tankCapacity", capacities.map((n) => [n, fuelNumber(n)]), capacity);
   NumericInput.write($("tankOutput"), tank.outputPerMinute ?? Ships.rateFor(capacity), fuelNumber);
-  $("fuel-fields").replaceChildren(...S.EGGS.map((egg, i) => EggIcons.decorateLabel(field(S.NAME[i] + " Fuel", "fuel-" + egg, tank.amounts?.[egg] ?? 0, "text", {}, fuelNumber), egg)));
+  $("fuel-fields").replaceChildren(...displayEggOrder.map(i => { const egg = S.EGGS[i]; return EggIcons.decorateLabel(field(S.NAME[i] + " Fuel", "fuel-" + egg, tank.amounts?.[egg] ?? 0, "text", {}, fuelNumber), egg); }));
   $("shipSlots").value = p.ships?.slots ?? 3;
   renderExistingFlights();
   const visits = Ships.plannedVisits(p.ships, result?.actions);
@@ -478,7 +481,7 @@ function renderForm() {
 }
 const unsavedInputs = /* @__PURE__ */ new Set(["eid", "file-input", "research-filter", "update-repository"]);
 function captureDraftInputs() {
-  return { version: 1, fields: Object.fromEntries([...document.querySelectorAll("input[id],select[id]")].filter((node) => !unsavedInputs.has(node.id)).map((node) => [node.id, node.type === "checkbox" ? { checked: node.checked } : { value: NumericInput.draft(node) }])) };
+  return { version: 1, fields: Object.fromEntries([...document.querySelectorAll("input[id],select[id]")].filter((node) => !unsavedInputs.has(node.id) && !node.closest("dialog")).map((node) => [node.id, node.type === "checkbox" ? { checked: node.checked } : { value: NumericInput.draft(node) }])) };
 }
 function restoreDraftInputs(draft) {
   if (draft.version !== 1 || !draft.fields || typeof draft.fields !== "object") return;
@@ -1738,7 +1741,7 @@ document.addEventListener("change", (e) => {
   }
 });
 document.addEventListener("input", (e) => {
-  if (!e.target.matches("input,select") || unsavedInputs.has(e.target.id) || e.target.closest("#gear-picker")) return;
+  if (!e.target.matches("input,select") || unsavedInputs.has(e.target.id) || e.target.closest("#gear-picker,#date-picker")) return;
   if (Object.values(editingGroups).some(group => group.toggles.includes(e.target.id))) return;
   const group = e.target.closest("#account-basic-fields") ? "account"
     : e.target.closest("#account-progress-fields") ? "progress"
@@ -1759,6 +1762,16 @@ document.addEventListener("input", (e) => {
     }
   }, 300);
 });
+FarmIcons.configure((kind,slot) => {
+  try {
+    const {s,c} = S.prepare(gather());
+    return item => {
+      const preview = PhysicalPreview.describe(s,c,kind,slot,item.id);
+      return num(preview.capacity)+(kind === "hab" ? " cap" : "/hr")+" · "+num(preview.cost)+" gems · "+(preview.seconds === 0 ? "Affordable now" : Number.isFinite(preview.seconds) ? (preview.seconds > 365*86400 ? ">1 year to afford" : "~"+duration(preview.seconds)+" to afford") : "No current income")+(item.id === 11 && kind === "vehicle" ? " · "+preview.cars+" car"+(preview.cars === 1 ? "" : "s") : "");
+    };
+  } catch { return () => "Complete farm and planning inputs to see estimates"; }
+});
+DatePicker.bind($("start"));
 EggIcons.decorateStatic();
 renderForm();
 try {

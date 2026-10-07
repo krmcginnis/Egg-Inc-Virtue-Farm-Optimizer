@@ -30,21 +30,21 @@ const root = path.resolve(__dirname, "..");
     await load(farm);
     for (const [kind, items, id] of [["hab", S.D.habs, "hab-0"], ["vehicle", S.D.vehicles, "vehicle-0"]]) {
       for (const item of items) {
-        await page.selectOption("#" + id, String(item.id));
+        await page.selectOption("#" + id, String(item.id), {force:true});
         const artwork = page.locator("#" + id).locator("..").locator(".farm-icon");
         assert.equal(await artwork.getAttribute("data-farm-icon"), kind + ":" + item.id);
         assert.equal(await artwork.getAttribute("aria-hidden"), "true");
-        if (kind === "hab") {const box=await artwork.boundingBox();assert.equal(box.width,56);assert.equal(box.height,56);assert.ok(await page.locator("#hab-0-full-name").count()===0);}
-        assert.equal(await page.locator("#" + id).getAttribute("title"), item.name);
+        if (kind === "hab") {const box=await artwork.boundingBox();assert.equal(box.width,42);assert.equal(box.height,42);assert.ok(await page.locator("#hab-0-full-name").count()===0);}
+        assert.equal(await page.locator("#pick-" + id).getAttribute("title"), item.name);
         assert.equal(await page.locator("#" + id + " option:checked").innerText(), item.name);
       }
     }
-    await page.selectOption("#hab-1", "18"); await page.selectOption("#hab-2", "17");
-    await page.selectOption("#hab-3", "16"); await page.selectOption("#vehicle-1", "10");
+    await page.selectOption("#hab-1", "18", {force:true}); await page.selectOption("#hab-2", "17", {force:true});
+    await page.selectOption("#hab-3", "16", {force:true}); await page.selectOption("#vehicle-1", "10", {force:true});
     await page.fill("#cars-0", "10"); await page.evaluate(() => VirtueApp.refresh());
     const saved = await page.evaluate(() => VirtueApp.getConfig());
     await page.uncheck("#manualFarmData");
-    assert.ok(await page.getByRole("combobox", { name: "Habitat 1", exact: true }).isDisabled());
+    assert.ok(await page.locator("#pick-hab-0").isDisabled());
     assert.ok(await page.getByLabel("Fleet Slot 1 Vehicle", { exact: true }).isDisabled());
     assert.ok(await page.locator('#hab-fields [data-farm-icon="hab:18"]').first().isVisible());
     const locked = await page.evaluate(() => VirtueApp.getConfig()); await load(locked);
@@ -52,7 +52,7 @@ const root = path.resolve(__dirname, "..");
     assert.deepEqual((await page.evaluate(() => VirtueApp.getConfig())).farm.vehicles, saved.farm.vehicles);
     const out = path.join(root, "tmp/farm-artwork"); fs.mkdirSync(out, { recursive: true });
     await page.locator("#hab-fields").scrollIntoViewIfNeeded(); await page.screenshot({ path: path.join(out, "farm-desktop.png") });
-    await page.check("#manualFarmData"); await page.selectOption("#hab-0", "");
+    await page.check("#manualFarmData"); await page.selectOption("#hab-0", "", {force:true});
     assert.ok(await page.locator('#hab-0').locator('..').locator('.farm-icon').isHidden());
     assert.equal(await page.inputValue("#hab-0"), "");
     // Replay small synthetic plans to exercise all three purchase-timeline layers.
@@ -87,9 +87,10 @@ const root = path.resolve(__dirname, "..");
     await offline.evaluate(asset => new Promise((resolve, reject) => { const image = new Image(); image.onload = resolve; image.onerror = reject; image.src = asset; }), catalog.asset);
     assert.deepEqual((await offline.evaluate(() => VirtueApp.getConfig())).farm.vehicles, saved.farm.vehicles);
     await page.route("**/farm-icons.png", route => route.abort()); await page.reload(); await page.waitForFunction(() => !!globalThis.VirtueApp); await load(saved);
-    assert.ok(await page.getByRole("combobox", { name: "Habitat 1", exact: true }).isEnabled());
+    assert.ok(await page.locator("#pick-hab-0").isEnabled());
     await page.waitForFunction(()=>document.documentElement.classList.contains("farm-artwork-unavailable"));
-    assert.equal(await page.locator("#hab-0").evaluate(n=>getComputedStyle(n).opacity),"1");
+    assert.equal(await page.locator("#pick-hab-0 .farm-picker-name").innerText(),"Chicken Universe");
+    assert.ok(await page.locator("#pick-hab-0 .farm-picker-name").isVisible());
     assert.equal(await page.inputValue("#hab-0"), "18"); assert.equal(await page.locator("#vehicle-0 option:checked").innerText(), "Hyperloop Train");
     assert.deepEqual(errors, []);
     console.log("PASS all 32 catalog mappings and original pixels, live selected-item icons, native labels/values, empty slots, manual edit locks, saved-farm round trips, replayed timeline layers and Hyperloop cars, 1440–320px layouts, offline images and missing-art text fallback.");

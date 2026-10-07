@@ -365,22 +365,6 @@ header{align-items:flex-end}.header-actions{padding-top:0}
 @media(max-width:500px){.header-actions{padding-top:0}.page-heading{width:100%}}
 @media(max-width:800px){.update-app{margin-top:14px}}
 
-/* Hab artwork is the closed picker; names remain in the native menu and tooltip. */
-[data-farm-picker="hab"]{position:relative;min-height:80px;display:flex;align-items:center;justify-content:center;border:1px solid #3b4a5f;border-radius:7px;background:#101925}
-[data-farm-picker="hab"] .farm-picker-caption{height:80px;justify-content:center}
-[data-farm-picker="hab"] .farm-icon{width:56px;height:56px;flex-basis:56px}
-[data-farm-picker="hab"] .farm-picker-caption>span:nth-child(2){display:none}
-[data-farm-picker="hab"] select{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
-[data-farm-picker="hab"] select:disabled{cursor:default}
-[data-farm-picker="hab"]:focus-within{outline:2px solid var(--accent);outline-offset:2px}
-[data-farm-picker="hab"]::after{content:"⌄";position:absolute;right:7px;bottom:5px;pointer-events:none;color:var(--muted)}
-.hab-empty-caption{display:none;color:var(--muted);font-size:12px}
-[data-farm-picker="hab"][data-empty="true"] .hab-empty-caption{display:inline}
-.farm-artwork-unavailable [data-farm-picker="hab"] select{position:static;opacity:1}
-.farm-artwork-unavailable [data-farm-picker="hab"] .farm-picker-caption{display:none}
-.farm-artwork-unavailable [data-farm-picker="hab"]{min-height:44px}
-@media(forced-colors:active){[data-farm-picker="hab"] select{position:static;opacity:1}[data-farm-picker="hab"] .farm-picker-caption{display:none}}
-
 /* File actions sit at the bottom of the header, beside its source/backup line. */
 .page-heading .import-status{margin:12px 0 0}
 .loadout-editors{display:none}
@@ -400,3 +384,26 @@ button.loadout-item-artwork:disabled,button.loadout-stone-socket:disabled{opacit
 .gear-choice-empty{border-style:dashed;min-height:140px}
 @media(max-width:600px){.gear-picker{padding:14px}.gear-picker-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.gear-picker-heading h2{font-size:15px}}
 .gear-picker-controls{position:sticky;top:0;background:#17212f;z-index:1;padding-bottom:4px}
+
+/* Image choices share the accessible gear dialog and native saved values. */
+[data-farm-picker] .farm-image-picker{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;min-height:64px;padding:8px;background:#101925;border:1px solid #3b4a5f}
+.farm-picker-name{display:none}
+[data-farm-picker][data-empty="true"] .farm-picker-name,.farm-artwork-unavailable .farm-picker-name{display:inline;font-size:12px;overflow-wrap:anywhere}
+.farm-artwork-unavailable .farm-image-picker .farm-icon{display:none}
+.farm-choice-list{grid-template-columns:minmax(0,1fr)}
+.farm-choice-list .farm-choice{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;text-align:left;gap:14px;padding:10px 14px;min-height:64px}
+.farm-choice-copy{display:flex;flex-direction:column;gap:5px;min-width:0}
+.farm-choice-copy small{line-height:1.5;overflow-wrap:anywhere}
+.gear-picker:has(.farm-choice-list){width:min(550px,calc(100vw - 32px))}
+.farm-workspace .fuel-tank-inputs #fuel-fields{grid-template-columns:minmax(0,1fr);gap:9px}
+#fuel-fields>label{display:grid;grid-template-columns:minmax(0,1fr) minmax(100px,1fr);align-items:center}
+aside .update-app{margin-top:auto}
+@media(max-width:800px){aside .update-app{margin-top:14px}}
+.date-picker{width:min(450px,calc(100vw - 32px))}
+.date-picker-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+.date-picker-launch{align-self:flex-start;padding:8px 12px}
+#start::-webkit-calendar-picker-indicator{display:none}
+@media(forced-colors:active){.farm-picker-name{display:inline}.farm-image-picker{border:1px solid ButtonText}}
+
+.farm-choice-list .gear-choice-empty{min-height:44px;padding:10px}
+.farm-choice-copy .gear-choice-name{font-size:14px;font-weight:650}

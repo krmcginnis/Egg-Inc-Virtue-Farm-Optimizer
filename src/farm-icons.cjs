@@ -1,5 +1,6 @@
 "use strict";
-// Decorative artwork only. Native selects and raw plan actions remain unchanged.
+// Farm choices use image buttons; hidden native values keep the saved schema.
+// Timeline artwork and raw plan actions remain unchanged.
 const catalog = require("../assets/brand/farm-icons.json"), data = require("./game-data.json");
 let checkedArtwork = false;
 function applyIcon(node, kind, id, large = false) {
@@ -14,7 +15,7 @@ function applyIcon(node, kind, id, large = false) {
     node.removeAttribute("title");
     return;
   }
-  const wide = asset.sourceWidth / asset.sourceHeight >= 48 / 28, width = large ? 56 : wide ? 48 : 24, height = large ? 56 : wide ? 28 : 24, scale = width / catalog.iconSize;
+  const wide = asset.sourceWidth / asset.sourceHeight >= 48 / 28, width = large ? 42 : wide ? 48 : 24, height = large ? 42 : wide ? 28 : 24, scale = width / catalog.iconSize;
   node.dataset.wide = String(wide);
   node.dataset.farmIcon = key;
   node.title = asset.name;
@@ -37,23 +38,37 @@ function caption(kind, id, text) {
   group.append(name);
   return group;
 }
+let describeChoices;
+function configure(callback) { describeChoices = callback; }
+function pickerImage(kind, id) {
+  const artwork = document.createElement("span");
+  applyIcon(artwork, kind, id, kind === "hab");
+  // Farm picker sizes are 25% smaller; timeline artwork keeps its original size.
+  const wide = artwork.dataset.wide === "true";
+  const width = kind === "hab" ? 42 : wide ? 36 : 18, height = kind === "hab" ? 42 : wide ? 21 : 18;
+  artwork.style.width = width+"px"; artwork.style.height = height+"px"; artwork.style.flexBasis = width+"px";
+  if (kind === "vehicle") {
+    const asset = catalog.icons[kind+":"+id], scale = width/catalog.iconSize;
+    if (asset) { artwork.style.backgroundSize = catalog.width*scale+"px "+catalog.height*scale+"px";
+      artwork.style.backgroundPosition = -asset.x*scale+"px "+(-asset.y*scale-(width-height)/2)+"px"; }
+  }
+  return artwork;
+}
 function decoratePicker(label, kind) {
-  const select = label.querySelector("select"), first = label.firstChild, text = first?.nodeType === 3 ? first : null;
-  const group = document.createElement("span"), artwork = document.createElement("span"), name = document.createElement("span");
+  const select = label.querySelector("select"), name = label.firstChild?.textContent || "";
+  select.setAttribute("aria-label", kind === "hab" ? name : "Fleet Slot "+(Number(select.id.split("-")[1])+1)+" Vehicle");
   label.dataset.farmPicker = kind;
-  group.className = "farm-picker-caption";
-  artwork.className = "farm-icon";
-  name.textContent = text?.textContent || "";
-  group.append(artwork, name);
-  if (text) label.replaceChild(group, text);
-  else label.insertBefore(group, select);
-  if (kind === "hab") {
-    select.setAttribute("aria-label", name.textContent);
-    const empty = document.createElement("span"); empty.className = "hab-empty-caption"; empty.textContent = "Empty"; group.append(empty);
-    if (!checkedArtwork) {
-      checkedArtwork = true;
-      const probe = new Image(); probe.onerror = () => document.documentElement.classList.add("farm-artwork-unavailable"); probe.src = catalog.asset;
-    }
+  for (const node of [...label.childNodes]) if (node !== select) node.remove();
+  select.hidden = true;
+  const button = document.createElement("button"); button.className = "farm-image-picker secondary";
+  label.append(button);
+  require("./gear-picker.cjs").bind(button, select, kind, item => pickerImage(kind,item.id), () => ({
+    items:kind === "hab" ? data.habs : data.vehicles, plural:kind === "hab" ? "habitats" : "vehicles",
+    describe:describeChoices?.(kind,Number(select.id.split("-")[1])) || (() => "Complete farm inputs to see estimates")
+  }));
+  if (!checkedArtwork) {
+    checkedArtwork = true;
+    const probe = new Image(); probe.onerror = () => document.documentElement.classList.add("farm-artwork-unavailable"); probe.src = catalog.asset;
   }
   updatePicker(select);
   return label;
@@ -61,11 +76,12 @@ function decoratePicker(label, kind) {
 function updatePicker(select) {
   if (select?.tagName !== "SELECT") return;
   const label = select.closest("[data-farm-picker]");
-  if (label) {
-    applyIcon(label.querySelector(".farm-icon"), label.dataset.farmPicker, select.value, label.dataset.farmPicker === "hab");
-    label.dataset.empty = String(!select.value);
-    select.title = catalog.icons[label.dataset.farmPicker + ":" + select.value]?.name || "Empty";
-  }
+  if (!label) return;
+  const button = label.querySelector(".farm-image-picker"), name = select.selectedOptions[0]?.textContent || "Empty";
+  const fallback = document.createElement("span"); fallback.className = "farm-picker-name"; fallback.textContent = name;
+  button.replaceChildren(pickerImage(label.dataset.farmPicker,select.value),fallback);
+  label.dataset.empty = String(!select.value);
+  button.title = name; button.setAttribute("aria-label", "Choose "+select.getAttribute("aria-label")+": "+name);
 }
 function activityCaption(activity) {
   if (activity.kind === "physical") {
@@ -79,4 +95,4 @@ function activityCaption(activity) {
 function actionCaption(action, text) {
   return caption(action.type, action.type === "car" ? "hyperloop" : action.id, text);
 }
-module.exports = { decoratePicker, updatePicker, activityCaption, actionCaption };
+module.exports = { configure, decoratePicker, updatePicker, activityCaption, actionCaption };

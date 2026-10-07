@@ -53,22 +53,35 @@ function choose(value) {
 function render() {
   if (!active) return;
   const query = search.value.trim().toLowerCase();
-  const items = (active.kind === "artifact" ? D.artifacts : D.stones).filter(item => (item.label+" "+item.effect).toLowerCase().includes(query));
+  const items = (active.catalog?.items || (active.kind === "artifact" ? D.artifacts : D.stones)).filter(item => ((item.label || item.name || "")+" "+(item.effect || "")).toLowerCase().includes(query));
+  grid.classList.toggle("farm-choice-list", !!active.catalog);
   grid.replaceChildren();
   const empty = element("button", "Empty", "gear-choice gear-choice-empty"); empty.type = "button";
   empty.dataset.itemId = ""; empty.setAttribute("aria-pressed", String(!active.control.value)); empty.onclick = () => choose(""); grid.append(empty);
   for (const item of items) {
     const button = element("button", undefined, "gear-choice"); button.type = "button";
-    button.dataset.itemId = item.id; button.dataset.rarity = String(item.rarity || 0);
+    button.dataset.itemId = item.id;
+    if (active.catalog) {
+      const detail = active.catalog.describe(item);
+      button.classList.add("farm-choice");
+      button.setAttribute("aria-label", item.name+" · "+detail);
+      button.setAttribute("aria-pressed", String(active.control.value === String(item.id)));
+      const copy = element("span", undefined, "farm-choice-copy");
+      copy.append(element("span", item.name, "gear-choice-name"), element("small", detail));
+      button.append(active.image(item), copy);
+      button.onclick = () => choose(item.id); grid.append(button); continue;
+    }
+    button.dataset.rarity = String(item.rarity || 0);
     button.setAttribute("aria-label", titleCase(item.label)+" · "+item.effect+(active.kind === "artifact" ? " · "+item.slots+" stone slots" : ""));
     button.setAttribute("aria-pressed", String(active.control.value === item.id));
     button.append(active.image(item, 64, "gear-choice-image"), element("span", titleCase(item.label), "gear-choice-name"), element("small", item.effect));
     if (active.kind === "artifact") button.append(element("small", item.slots+" stone slot"+(item.slots===1 ? "" : "s")));
     button.onclick = () => choose(item.id); grid.append(button);
   }
-  count.textContent = items.length ? items.length+" matching "+(active.kind === "artifact" ? "artifacts" : "stones") : "No matches. Try another name or effect.";
+  count.textContent = items.length ? items.length+" matching "+(active.catalog?.plural || (active.kind === "artifact" ? "artifacts" : "stones")) : "No matches. Try another name or effect.";
+  if (active.catalog) count.textContent += " · Current research and bonuses. ETA assumes full habs, maintained silos and unchanged current earnings; excludes future events and purchases.";
 }
-function bind(button, control, kind, image) {
+function bind(button, control, kind, image, catalog) {
   initialize();
   const label = control.getAttribute("aria-label");
   button.id = "pick-"+control.id; control.dataset.pickerId = button.id;
@@ -76,7 +89,8 @@ function bind(button, control, kind, image) {
   button.setAttribute("aria-label", "Choose "+label+": "+(control.selectedOptions[0]?.textContent || "Empty"));
   button.onclick = () => {
     if (control.matches(":disabled")) return;
-    initialize(); active = {control,kind,image}; search.value = "";
+    initialize(); active = {control,kind,image,catalog:typeof catalog === "function" ? catalog() : catalog}; search.value = "";
+    search.placeholder = active.catalog ? "Find by name…" : "Find by name, tier or effect…";
     heading.textContent = "Choose "+label; render(); dialog.showModal(); search.focus();
   };
 }

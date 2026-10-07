@@ -157,7 +157,7 @@ const root = path.resolve(__dirname, "..");
     await page.waitForFunction(()=>document.getElementById("notice").textContent.startsWith("Account information and the current Virtue farm"));
     assert.equal((await page.evaluate(()=>VirtueApp.getConfig())).plan.target,65);
     assert.equal(await page.inputValue("#eventTimezone"),"Europe/Berlin");
-    assert.equal(syncPosts,1);assert.ok(await page.locator("#vehicle-0").isVisible());
+    assert.equal(syncPosts,1);assert.ok(await page.locator("#pick-vehicle-0").isVisible());
     assert.equal(await page.inputValue("#eid"),"SyntheticTester");
     assert.equal(await page.inputValue("#epic-hold_to_research"),"20");
     assert.equal(await page.locator('#colleggtibles-card [data-source]').innerText(),"Imported Backup");
