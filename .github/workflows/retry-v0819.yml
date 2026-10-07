@@ -1,117 +1,71 @@
-name: Recover v0.8.19 Release
+name: Verify and Publish Existing v0.8.19
 on:
   push:
     branches: [main]
     paths: ['.github/workflows/retry-v0819.yml']
 concurrency:
-  group: publish-app-release-recovery-v0.8.19
+  group: verify-existing-release-v0819
   cancel-in-progress: false
 permissions:
   contents: write
+  actions: read
 jobs:
   release:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           ref: 4bd2a35aa0397f8ecbcbac2ef4f97568bdb17eea
-      - name: Determine release intent
-        id: intent
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_REPOSITORY: ${{ github.repository }}
-          RELEASE_EVENT: workflow_dispatch
-          RELEASE_REF_TYPE: ${{ github.ref_type }}
-          RELEASE_REF_NAME: ${{ github.ref_name }}
-          RELEASE_BEFORE: ${{ github.event.before }}
-          RELEASE_VERIFY_ONLY: ${{ inputs.verify_only || false }}
-        run: node scripts/release-state.cjs
-      - uses: actions/setup-node@v4
-        if: steps.intent.outputs.build == 'true'
-        with:
-          node-version: '22'
-          cache: npm
-      - uses: actions/setup-python@v5
-        if: steps.intent.outputs.build == 'true'
-        with:
-          python-version: '3.12'
-      - name: Build and verify release
-        if: steps.intent.outputs.build == 'true'
-        shell: pwsh
-        env:
-          RELEASE_REPOSITORY: ${{ github.repository }}
-          RELEASE_REF_TYPE: ${{ github.ref_type }}
-          RELEASE_REF_NAME: ${{ github.ref_name }}
-        run: |
-          npm ci
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/release-state.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/prepare-publish.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          npm run build
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          python scripts/package.py
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/update-core.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/update-launch.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          if ($env:RELEASE_REF_TYPE -eq 'tag' -and $env:RELEASE_REF_NAME -cne "v$version") { throw 'Release tag must match package.json version.' }
-      - name: Publish complete assets together
-        if: steps.intent.outputs.publish == 'true'
-        shell: pwsh
-        env:
-          GH_TOKEN: ${{ github.token }}
-          GH_REPO: ${{ github.repository }}
-          RELEASE_COMMIT: 4bd2a35aa0397f8ecbcbac2ef4f97568bdb17eea
-        run: |
-          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          gh release view "v$version" *> $null
-          if ($LASTEXITCODE -eq 0) { throw 'This version is already published. Increment the version before releasing.' }
-          gh release create "v$version" tmp/release/Egg-Inc-Virtue-Farm-Optimizer.zip tmp/release/update-manifest.json --target $env:RELEASE_COMMIT --title "Egg Inc. Virtue Farm Optimizer v$version" --notes-file RELEASE-NOTES.md --draft
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          gh release edit "v$version" --draft=false --latest
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-      - name: Verify published update feed on Windows
-        if: steps.intent.outputs.publish == 'true'
+      - name: Verify immutable release and publish
         shell: powershell
         env:
-          RELEASE_REPOSITORY: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           $ErrorActionPreference = 'Stop'
           . (Join-Path (Get-Location) 'Update-Core.ps1')
-          $validation = Join-Path $env:RUNNER_TEMP 'virtue-public-feed'
+          $job = gh api repos/$env:GH_REPO/actions/jobs/112872926817 | ConvertFrom-Json
+          if ($LASTEXITCODE) { throw 'Prior Windows job could not be checked.' }
+          if ($job.head_sha -cne '7a07a109fc4686e34a9e6fd9160d40746c70fee1') { throw 'Unexpected verification job commit.' }
+          $build = @($job.steps | Where-Object { $_.name -eq 'Build and verify release' -and $_.conclusion -eq 'success' })
+          if ($build.Count -ne 1) { throw 'Prior native Windows checks must pass.' }
+          $release = gh api repos/$env:GH_REPO/releases/405909361 | ConvertFrom-Json
+          if ($LASTEXITCODE) { throw 'Draft release could not be checked.' }
+          if ($release.tag_name -cne 'v0.8.19' -or $release.target_commitish -cne '4bd2a35aa0397f8ecbcbac2ef4f97568bdb17eea') { throw 'Unexpected release commit or version.' }
+          if ($release.assets.Count -ne 2) { throw 'Expected exactly two immutable assets.' }
+          $zip = @($release.assets | Where-Object { $_.name -ceq 'Egg-Inc-Virtue-Farm-Optimizer.zip' })
+          $meta = @($release.assets | Where-Object { $_.name -ceq 'update-manifest.json' })
+          if ($zip.Count -ne 1 -or $zip[0].digest -cne 'sha256:a5aa17edd430cb250dd5e0bff4c8809ae54dd69d8e04c2a6fcc7855408db5f38' -or $zip[0].size -ne 8564543) { throw 'Archive changed.' }
+          if ($meta.Count -ne 1 -or $meta[0].digest -cne 'sha256:73feb3b2354cf69bba7f9524e9eef9749600bb93e57d0be3df4b240dd216cb46') { throw 'Manifest changed.' }
+          $validation = Join-Path $env:RUNNER_TEMP 'virtue-republish-v0819'
           [IO.Directory]::CreateDirectory($validation) | Out-Null
+          gh release download v0.8.19 --dir $validation --pattern Egg-Inc-Virtue-Farm-Optimizer.zip --pattern update-manifest.json
+          if ($LASTEXITCODE) { throw 'Authenticated draft download failed.' }
+          $archive = Join-Path $validation 'Egg-Inc-Virtue-Farm-Optimizer.zip'
+          $manifestPath = Join-Path $validation 'update-manifest.json'
+          Assert-UpdateDigest $zip[0] $archive
+          Assert-UpdateDigest $meta[0] $manifestPath
+          $manifest = Read-UpdateJson $manifestPath
+          if ($manifest.version -cne '0.8.19' -or $manifest.size -ne $zip[0].size -or ('sha256:' + $manifest.sha256) -cne $zip[0].digest) { throw 'Manifest does not match immutable archive.' }
+          Expand-VerifiedUpdate $archive (Join-Path $validation 'draft-verified') $manifest | Out-Null
+          gh release edit v0.8.19 --draft=false --latest
+          if ($LASTEXITCODE) { throw 'Publishing the original draft failed.' }
           try {
-            $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-            $release = $null
-            $lastFailure = $null
             for ($attempt = 1; $attempt -le 5; $attempt++) {
               try {
-                $release = Get-UpdateRelease $env:RELEASE_REPOSITORY '0.0.0' $validation
-                if (-not $release.available -or $release.version -cne $version) { throw 'The published release was not found by the updater at the expected version.' }
-                $archive = Join-Path $validation 'published.zip'
-                Save-UpdateDownload $release.url $archive $release.size
-                Expand-VerifiedUpdate $archive (Join-Path $validation 'verified') $release | Out-Null
-                $lastFailure = $null
+                $public = Get-UpdateRelease $env:GH_REPO '0.0.0' $validation
+                if (-not $public.available -or $public.version -cne '0.8.19' -or $public.sha256 -cne $manifest.sha256) { throw 'Unexpected public updater version or digest.' }
+                $publicArchive = Join-Path $validation 'public.zip'
+                Save-UpdateDownload $public.url $publicArchive $public.size
+                Expand-VerifiedUpdate $publicArchive (Join-Path $validation 'public-verified') $public | Out-Null
+                Write-Host 'PASS anonymous updater download and every app-file checksum; original assets unchanged.'
                 break
               } catch {
-                $lastFailure = $_.Exception
-                if ($attempt -ge 5) { throw }
+                if ($attempt -eq 5) { throw }
                 Start-Sleep -Seconds (5 * $attempt)
               }
             }
-            if ($lastFailure) { throw $lastFailure }
-            Write-Host "PASS: public update feed, complete release download and all app file checksums on Windows PowerShell $($PSVersionTable.PSVersion)."
           } catch {
-            $failure = $_.Exception.Message
-            $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-            gh release edit "v$version" --draft=true
-            throw "Published feed validation failed after retries; release hidden again. $failure"
+            gh release edit v0.8.19 --draft=true
+            throw
           }
