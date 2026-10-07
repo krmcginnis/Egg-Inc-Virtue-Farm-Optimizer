@@ -1546,3 +1546,32 @@ navigation. The loaded sidebar screenshot is visually reviewed. Mobile layouts
 are not checked, per the user's preference. The solver worker SHA256 remains
 b83d183827b276017ff669bad13e54abde1a633d0901bb3c8f33bc202ca3d2a1,
 identical to v0.8.18. No solver, game-data, or pricing logic changes.
+
+
+Windows release proof — v0.8.19
+
+The original source commit is 4bd2a35aa0397f8ecbcbac2ef4f97568bdb17eea.
+Its initial automatic run 37642386015 remained queued without creating a job,
+and GitHub rejected retries as already running even after user cancellation.
+Recovery run 37644874697 / job 112872926817 checked out the exact app commit,
+built 169 runtime files, and passed native Windows launcher/reuse, update restart,
+rollback, startup-failure recovery, legacy-worker recovery, archive validation,
+and settings preservation checks. It uploaded both release assets, but the
+anonymous feed check received HTTP 403 after retries and hid the draft.
+
+Verification-only recovery run 37645556531 / job 112875260137 verified the
+prior successful Windows build step and the exact original draft release ID
+405909361, target commit, and both asset digests. It downloaded the draft using
+authentication, verified the manifest/archive and every app-file checksum,
+published that same release, and passed the anonymous updater's full download
+and app-file checksums. No asset was replaced, no app version changed, and the
+temporary recovery workflow is removed after success.
+
+v0.8.19 is public and latest, with these original assets:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8564543 bytes; SHA256
+  a5aa17edd430cb250dd5e0bff4c8809ae54dd69d8e04c2a6fcc7855408db5f38.
+- update-manifest.json: 240 bytes; SHA256
+  73feb3b2354cf69bba7f9524e9eef9749600bb93e57d0be3df4b240dd216cb46.
+
+This same-version audit/cleanup commit records proof without repackaging the
+immutable release assets. The normal release workflow remains unchanged.
