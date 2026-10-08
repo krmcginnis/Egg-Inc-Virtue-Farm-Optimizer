@@ -2095,3 +2095,22 @@ result and the replay-verified 10-shift result. The UI and export code did not
 change. Browser regressions passed for v0.9.2; they were not rerun here because
 the browser download endpoint returned an unavailable-page response rather
 than an archive. Native Windows and public updater checks are pending.
+
+
+Native Windows and public updater verification passed in GitHub Actions run
+37714635514, job 113108206354. The new neighboring-count recovery regressions,
+all route and historical-sale checks, subscriptions, release guards, packaging,
+archive/digest/tamper rejection, installation/backup restore, hidden CMD launch,
+restart, startup-failure rollback, and legacy-worker restart passed. Windows
+PowerShell 5.1.26100.33438 downloaded the complete public v0.9.3 release through
+the updater and verified every app file checksum.
+
+Published source commit: c40ce020c0d1a167dc525fd65bc566d22baac472.
+Public release: 406325505, v0.9.3, with both assets uploaded:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8593224 bytes; SHA256
+  c04283bb15fa66cede10b5876b0bb94a1751df5813cf0755686e206dbce78721.
+- update-manifest.json: 239 bytes; SHA256
+  ba8e30858c603b8f5f57692c44ffa2d7578f411740d3d9f42755dab471e7b2a4.
+
+This same-version audit update records completed verification without replacing
+or repackaging the immutable release assets.
