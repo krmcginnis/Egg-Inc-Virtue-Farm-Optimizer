@@ -1,6 +1,7 @@
 'use strict';
 const Route=require('./switch-sequence.cjs'),Ships=require('./ships.cjs'),Artifacts=require('./artifact-optimizer.cjs');
 const Strategy=require('./planning-strategy.cjs');
+const Sleep=require('./sleep-schedule.cjs');
 const D=require('./game-data.json'),C=require('./colleggtibles.cjs');
 const EGGS=['curiosity','integrity','humility','resilience','kindness'];
 const NAME=['Curiosity','Integrity','Humility','Resilience','Kindness'];
@@ -69,6 +70,7 @@ function prepare(raw,opts={}){
  if(!['auto','wasmegg','user','free'].includes(c.strategy))throw Error('Select a valid planning strategy.');if(c.strategy==='wasmegg'&&!c.autoSequence)throw Error('Enable automatic visits for Optimized Sequence.');
  if(!['quick','balanced','thorough'].includes(p.searchEffort??'balanced'))throw Error('Select a valid search effort.');
  if(!['offline','online'].includes(c.earningsMode))throw Error('Earnings mode must be offline or online.');c.calendar=calendar(start,c.end,c.zone);
+ c.sleep=Sleep.forPlan(p,start,c.end);
  const enteredSilos=number(f.silos??1,'Silos',0,pro?10:2,true);
  // Old saved timelines used zero silos and must replay with their original
  // purchase counts. Fresh searches use the game's free starting silo.
@@ -133,7 +135,14 @@ function recordedArtifactSets(actions){const sets={};for(const a of actions.filt
 function record(s,action){return {...s,path:{prev:s.path,action},depth:s.depth+1};}
 const OFFLINE_MIN_SECONDS=60;
 function offlineMinimum(c){return Math.max(OFFLINE_MIN_SECONDS,c.offlineMinSeconds??OFFLINE_MIN_SECONDS);}
-function visitDeadline(s,c){return c.enforceOpeningCaps&&s.openingFirst?Math.min(c.end,s.visitStart+(s.egg===0?c.c1MaxMinutes:c.k1MaxMinutes)*60):c.end;}
+function visitDeadline(s,c){return c.enforceOpeningCaps&&s.openingFirst?Math.min(c.end,Sleep.activeDeadline(c.sleep,s.visitStart,(s.egg===0?c.c1MaxMinutes:c.k1MaxMinutes)*60)):c.end;}
+function interactionReady(s,c,duration=0,log=true,strict=c.shipReplay&&c.sleepReplay!==false){
+ const t=Sleep.nextActive(c.sleep,s.t,duration);
+ if(t===s.t)return s;
+ if(strict)throw Error('Interaction overlaps scheduled sleep hours.');
+ return advance(s,c,t,'Sleep hours; resume interactions at wake time',log,'auto');
+}
+function productionEnd(s,c,seconds){return c.sleep?Sleep.productionEnd(c.sleep,s.t,seconds,stats(s,c).siloHours*3600):s.t+seconds;}
 function checkVisitTime(s,c,to){if(to>visitDeadline(s,c)+1e-5)throw Error((s.egg===0?'C1':'K1')+' exceeds its maximum time of '+(s.egg===0?c.c1MaxMinutes:c.k1MaxMinutes)+' minutes.');}
 function advance(s,c,to,reason='Accumulate cash and deliver eggs',log=true,mode='auto'){
  if(to<s.t-1e-5||!Number.isFinite(to)||to>c.end+1e-5)throw Error('Wait exceeds the planning limit.');
@@ -141,11 +150,12 @@ function advance(s,c,to,reason='Accumulate cash and deliver eggs',log=true,mode=
  const dt=Math.max(0,to-s.t),r=stats(s,c);
  if(mode==='auto')mode=c.earningsMode==='offline'&&dt>=offlineMinimum(c)&&r.offline>r.online?'offline':'online';
  if(!['online','offline'].includes(mode)||mode==='offline'&&(c.earningsMode!=='offline'||dt<offlineMinimum(c)))throw Error('Offline earnings require an uninterrupted wait of at least '+offlineMinimum(c)+' seconds.');
- let n=clone(s),t=s.t;const rate=mode==='offline'?r.offline:r.online;
- while(t<to-1e-7){const ev=at(c,t),next=Math.min(to,ev.next);n.cash+=(next-t)*rate*ev.earnings;t=next;}
- n.eggs[s.egg]+=dt*r.delivery;n.t=to;
+ let n=clone(s),t=s.t,forcedOfflineSeconds=0,productionSeconds=0;const rate=mode==='offline'?r.offline:r.online,coverage=r.siloHours*3600;
+ while(t<to-1e-7){const ev=at(c,t),next=Math.min(to,ev.next,Sleep.productionBoundary(c.sleep,t,coverage)),asleep=Sleep.sleeping(c.sleep,t),productive=Sleep.producing(c.sleep,t,coverage);
+  if(productive){n.cash+=(next-t)*(asleep?r.offline:rate)*ev.earnings;productionSeconds+=next-t;}if(asleep&&mode==='online')forcedOfflineSeconds+=next-t;t=next;}
+ n.eggs[s.egg]+=(c.sleep?productionSeconds:dt)*r.delivery;n.t=to;
  if(!Number.isFinite(n.cash)||n.eggs.some(x=>!Number.isFinite(x)))throw Error('Simulation exceeds the number range.');
- if(log&&dt>0)n=record(n,{type:'wait',t:s.t,end:to,egg:s.egg,reason,earningsMode:mode,eggsGained:n.eggs[s.egg]-s.eggs[s.egg],cashGained:n.cash-s.cash});return n;
+ if(log&&dt>0)n=record(n,{type:'wait',t:s.t,end:to,egg:s.egg,reason,earningsMode:mode,eggsGained:n.eggs[s.egg]-s.eggs[s.egg],cashGained:n.cash-s.cash,...(c.sleep?{sleepSeconds:Sleep.seconds(c.sleep,s.t,to),forcedOfflineSeconds,siloEmptySeconds:Math.max(0,dt-productionSeconds)}: {})});return n;
 }
 function isUnlocked(s,i){const r=D.research[i];return r.tier===1||D.research.reduce((sum,x,j)=>sum+(x.tier<r.tier?s.r[j]:0),0)>=D.tierUnlock[r.tier-1];}
 function allowed(s,c,a){
@@ -154,10 +164,11 @@ function allowed(s,c,a){
 function price(s,c,a){const r=costModifiers(s,c);switch(a.type){case 'ship-cost':return Ships.mission(a.ship,a.duration,c.ships.ftl).cost;case 'research':return Math.ceil(D.research[a.i].virtue_prices[s.r[a.i]]*r.researchMult*at(c,s.t).sale);case 'hab':return Math.floor(D.habs[a.id].virtueCost[s.h.filter((id,i)=>i!==a.slot&&id===a.id).length]*r.habCostMult);case 'vehicle':return Math.floor(D.vehicles[a.id].virtueCost[s.v.filter((v,i)=>i!==a.slot&&v.id===a.id).length]*r.vehicleCostMult);case 'car':return Math.floor(D.cars[s.v[a.slot].cars]*r.vehicleCostMult);case 'silo':return s.silos===0?0:1e8*s.silos**(3*s.silos+15);default:return 0;}}
 function shiftCost(s){const basis=s.soul*(.02*(s.shiftCount/120)**3+.0001);return 1e11+.6*basis+(.4*basis)**.9;}
 function mutate(s,c,a){const n=clone(s);switch(a.type){case 'research':n.r[a.i]++;break;case 'hab':n.h[a.slot]=a.id;break;case 'vehicle':n.v[a.slot]={id:a.id,cars:1};break;case 'car':n.v[a.slot].cars++;break;case 'silo':n.silos++;break;case 'set':n.set=a.set;break;case 'shift':{const cost=shiftCost(s);if(s.soul+Math.max(1,s.soul)*1e-12<cost)throw Error('Not enough Soul Eggs for the next switch.');n.soul-=cost;n.lost+=cost;n.shiftCount++;n.cash=0;n.stage++;n.egg=a.egg;const bit=a.egg===0?1:a.egg===4?2:0;n.openingFirst=!!bit&&!(s.openingMask&bit);n.openingMask=(s.openingMask||0)|bit;n.visitStart=s.t;break;}}return n;}
-function buy(s,c,a,log=true){if(a.type==='fuel-dump')return Ships.trim(s,c,log);if(a.type==='fuel')return Ships.store(s,c,number(a.amount,'Stored fuel amount'),log);if(a.type==='ship-run'||a.type==='ship-visit')return Ships.launch(s,c.shipReplay?{...c,shipLaunchOrder:a.launchOrder??'optimized'}:c,log);if(!c.shipReplay){if(a.type==='shift')s=Ships.beforeShift(s,c,log);if(!c.deferShips&&s.egg===2&&Ships.pending(s,c)&&Ships.ready(s,c))s=Ships.launch(s,c,log);}if(!allowed(s,c,a))throw Error('Action is unavailable on this Virtue or its prerequisites are unmet.');if(a.type==='research'&&c.routeResearchRule&&s.t+c.actionsSeconds>c.researchDeadline+1e-6)throw Error('Research purchase exceeds its sale window.');const cost=price(s,c,a);if(!Number.isFinite(cost)||cost<0)throw Error('Purchase has no valid price.');if(cost>s.cash+Math.max(1,cost)*1e-12)throw Error('Purchase is not affordable.');const before=stats(s,c);let n=mutate(s,c,a);n.cash=Math.max(0,n.cash-cost);const after=stats(n,c);
+function buy(s,c,a,log=true){if(a.type==='fuel-dump')return Ships.trim(s,c,log);if(a.type==='fuel')return Ships.store(s,c,number(a.amount,'Stored fuel amount'),log);if(a.type==='ship-run'||a.type==='ship-visit')return Ships.launch(s,c.shipReplay?{...c,shipLaunchOrder:a.launchOrder??'optimized'}:c,log);if(!c.shipReplay){if(a.type==='shift')s=Ships.beforeShift(s,c,log);if(!c.deferShips&&s.egg===2&&Ships.pending(s,c)&&Ships.ready(s,c))s=Ships.launch(s,c,log);}s=interactionReady(s,c,a.type==='shift'?c.shiftSeconds:c.actionsSeconds,log);if(!allowed(s,c,a))throw Error('Action is unavailable on this Virtue or its prerequisites are unmet.');if(a.type==='research'&&c.routeResearchRule&&s.t+c.actionsSeconds>c.researchDeadline+1e-6)throw Error('Research purchase exceeds its sale window.');const cost=price(s,c,a);if(!Number.isFinite(cost)||cost<0)throw Error('Purchase has no valid price.');if(cost>s.cash+Math.max(1,cost)*1e-12)throw Error('Purchase is not affordable.');const before=stats(s,c);let n=mutate(s,c,a);n.cash=Math.max(0,n.cash-cost);const after=stats(n,c);
  if(log)n=record(n,{...a,type:a.type,t:s.t,egg:a.type==='shift'?a.egg:s.egg,fromEgg:s.egg,cost,from:a.type==='research'?s.r[a.i]:undefined,to:a.type==='research'?n.r[a.i]:undefined,fromCars:a.type==='car'?s.v[a.slot].cars:undefined,toCars:a.type==='car'?n.v[a.slot].cars:undefined,bank:n.cash,soulCost:a.type==='shift'?s.soul-n.soul:0,before:{delivery:before.delivery,laying:before.laying,shipping:before.shipping,earning:before.earning},after:{delivery:after.delivery,laying:after.laying,shipping:after.shipping,earning:after.earning}});
  const dt=a.type==='shift'?c.shiftSeconds:c.actionsSeconds;if(dt&&n.t+dt>c.end)throw Error('Action interaction time exceeds the planning limit.');if(dt)n=advance(n,c,n.t+dt,a.type==='shift'?'Switch overhead; habitats fill immediately':'Purchase interaction time',log,'online');if(!c.shipReplay&&a.type==='shift'&&!c.deferShips&&n.egg===2&&Ships.pending(n,c)&&Ships.ready(n,c))n=Ships.launch(n,c,log);return n;}
 function afford(s,c,a){
+ if(c.sleep)return affordWithSleep(s,c,a);
  if(!allowed(s,c,a))return null;const firstCost=price(s,c,a);if(firstCost<=s.cash+Math.max(1,firstCost)*1e-12)return s;
  const r=stats(s,c),latest=Math.min(c.end,visitDeadline(s,c)-c.actionsSeconds);let best=null;
  // Compare staying online with leaving for a full minute (or longer). Scan
@@ -176,5 +187,31 @@ function afford(s,c,a){
  }
  return best;
 }
+function affordWithSleep(start,c,a){
+ if(!allowed(start,c,a))return null;
+ const duration=a.type==='shift'?c.shiftSeconds:c.actionsSeconds;
+ const latest=Math.min(c.end,visitDeadline(start,c),a.type==='research'&&c.routeResearchRule?c.researchDeadline:Infinity)-duration;
+ let s;try{s=interactionReady(start,c,duration);}catch{return null;}
+ if(s.t>latest||!allowed(s,c,a))return null;
+ const first=price(s,c,a);if(first<=s.cash+Math.max(1,first)*1e-12)return s;
+ const r=stats(s,c);let best=null;
+ for(const mode of ['online','offline']){
+  if(mode==='offline'&&(c.earningsMode!=='offline'||r.offline<=r.online))continue;
+  const minimum=s.t+(mode==='offline'?offlineMinimum(c):0);let t=s.t,cash=s.cash;
+  for(let guard=0;guard<c.calendar.length+c.sleep.intervals.length*3+4&&t<latest;guard++){
+   if(best&&t>=best.t)break;
+   const coverage=r.siloHours*3600,ev=at(c,t),end=Math.min(ev.next,Sleep.productionBoundary(c.sleep,t,coverage),latest),rate=Sleep.producing(c.sleep,t,coverage)?(Sleep.sleeping(c.sleep,t)||mode==='offline'?r.offline:r.online):0;
+   const income=rate*ev.earnings,cost=price({...s,t},c,a);
+   if(income>0){const ready=Sleep.nextActive(c.sleep,Math.max(minimum,t+Math.max(0,cost-cash)/income+.001),duration);
+    if(ready<=end&&(!best||ready<best.t)){
+     const n=advance(s,c,ready,mode==='offline'?'Go offline, then return to collect earnings':'Accumulate cash online',true,mode),actual=price(n,c,a);
+     if(allowed(n,c,a)&&actual<=n.cash+Math.max(1,actual)*1e-12){best=n;break;}
+    }
+   }
+   if(end<=t)break;cash+=(end-t)*income;t=end;
+  }
+ }
+ return best;
+}
 function history(s){const a=[];for(let p=s.path;p;p=p.prev)a.push(p.action);return a.reverse();}
-module.exports={researchNeeded,earningScore,artifactChoices,artifactAction,recordedArtifactSets,D,EGGS,NAME,RMAP,AMAP,SMAP,number,clone,mul,countTE,teByEgg,totalTE,reached,modifiers,validateLoadout,calendar,at,prepare,stats,OFFLINE_MIN_SECONDS,offlineMinimum,visitDeadline,checkVisitTime,advance,isUnlocked,allowed,price,shiftCost,mutate,buy,afford,history,record};
+module.exports={researchNeeded,earningScore,artifactChoices,artifactAction,recordedArtifactSets,D,EGGS,NAME,RMAP,AMAP,SMAP,number,clone,mul,countTE,teByEgg,totalTE,reached,modifiers,validateLoadout,calendar,at,prepare,stats,OFFLINE_MIN_SECONDS,offlineMinimum,visitDeadline,checkVisitTime,interactionReady,productionEnd,advance,isUnlocked,allowed,price,shiftCost,mutate,buy,afford,history,record};

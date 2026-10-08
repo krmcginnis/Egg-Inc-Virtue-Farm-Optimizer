@@ -11,6 +11,6 @@ function notices(s,c){
  const gear=startingGear(s,c);if(gear)out.push(gear);
  return out;
 }
-function maintenance(s,c,finalStats){const first=S.stats(s,c).siloHours,last=finalStats?.siloHours??first;return (first?'Refill silos within '+formatHours(first)+' initially':'No silo coverage at the start')+(last!==first?'; final coverage '+formatHours(last):'')+'. Long waits include routine silo refills; these check-ins are not counted as earning breaks. Maintain the selected video doubler and follow listed fueling steps.';}
+function maintenance(s,c,finalStats){const first=S.stats(s,c).siloHours,last=finalStats?.siloHours??first;return (first?'Refill silos within '+formatHours(first)+' initially':'No silo coverage at the start')+(last!==first?'; final coverage '+formatHours(last):'')+(c.sleep?'. Refill silos before bed; sleeping production pauses when coverage runs out. Awake long waits include routine silo refills;':'. Long waits include routine silo refills;')+' these check-ins are not counted as earning breaks. Maintain the selected video doubler and follow listed fueling steps.';}
 function formatHours(hours){const minutes=Math.round(hours*60);return [Math.floor(minutes/60)?Math.floor(minutes/60)+'h':'',minutes%60?minutes%60+'m':''].filter(Boolean).join(' ')||'0m';}
 module.exports={notices,maintenance,startingGear};

@@ -4,7 +4,7 @@ function canonical(value){
  if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])]));
  return value;
 }
-function key(raw){return JSON.stringify(canonical({farm:raw?.farm,plan:raw?.plan}));}
+function key(raw){const plan={...raw?.plan};if(!plan.sleep||plan.sleep.enabled===false)delete plan.sleep;return JSON.stringify(canonical({farm:raw?.farm,plan}));}
 function restore(raw,incumbent,replay){
  try{if(!incumbent?.config||!incumbent.result||key(raw)!==key(incumbent.config))return [];}catch{return [];}
  if(incumbent.result.shiftPlans!==undefined&&!Array.isArray(incumbent.result.shiftPlans))return [];

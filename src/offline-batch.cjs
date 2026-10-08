@@ -1,13 +1,14 @@
 'use strict';
 const S=require('./simulator.cjs');
 const W=require('./waiting-objective.cjs');
+const Sleep=require('./sleep-schedule.cjs');
 // Compare a sequence of short online cash waits with one uninterrupted offline
 // break. Rates stay at the pre-purchase values for that entire break.
 function costOf(s,c,actions,t){let n={...S.clone(s),t},total=0;for(const a of actions){if(!S.allowed(n,c,a))return Infinity;total+=S.price(n,c,a);n=S.mutate(n,c,a);}return total;}
 function fundTime(s,c,actions,latest){
- const rate=S.stats(s,c).offline,minimum=s.t+S.offlineMinimum(c);let t=s.t,cash=s.cash;
- while(t<latest){const ev=S.at(c,t),end=Math.min(ev.next,latest),cost=costOf(s,c,actions,t),ready=Math.max(minimum,t+Math.max(0,cost-cash)/(rate*ev.earnings)+.001);
-  if(ready<=end)return ready;if(end<=t)break;cash+=(end-t)*rate*ev.earnings;t=end;
+ const r=S.stats(s,c),rate=r.offline,coverage=r.siloHours*3600,minimum=s.t+S.offlineMinimum(c);let t=s.t,cash=s.cash;
+ while(t<latest){const ev=S.at(c,t),end=Math.min(ev.next,latest,Sleep.productionBoundary(c.sleep,t,coverage)),income=Sleep.producing(c.sleep,t,coverage)?rate*ev.earnings:0,cost=costOf(s,c,actions,t),ready=Math.max(minimum,t+(cost<=cash?0:income>0?(cost-cash)/income:Infinity)+.001);
+  if(ready<=end)return ready;if(end<=t)break;cash+=(end-t)*income;t=end;
  }return null;
 }
 function compareShortOnline(s,c,actions,deadline=c.end){

@@ -13,6 +13,7 @@ const ArtifactSets = require("./artifact-optimizer.cjs");
 const LoadoutCard = require("./loadout-card.cjs");
 const EggIcons = require("./egg-icons.cjs");
 const Units = require("./unit-icons.cjs"), Zones = require("./timezones.cjs");
+const Sleep = require("./sleep-schedule.cjs");
 const ResearchIcons = require("./research-icons.cjs");
 const FarmIcons = require("./farm-icons.cjs");
 const ShipIcons = require("./ship-icons.cjs");
@@ -91,7 +92,7 @@ function exactDuration(n) {
   return [d ? d + "d" : "", h ? h + "h" : "", m ? m + "m" : "", sec ? sec + "s" : ""].filter(Boolean).join(" ") || "0s";
 }
 function waitTotals(t) {
-  return "Online waiting " + exactDuration(t.onlineSeconds) + " \xB7 Offline " + exactDuration(t.offlineSeconds) + " (" + t.offlineBreaks + " breaks)" + (t.interactionSeconds ? " \xB7 Interactions " + exactDuration(t.interactionSeconds) : "") + (t.fuelSeconds ? " \xB7 Fueling " + exactDuration(t.fuelSeconds) : "");
+  return "Online waiting " + exactDuration(t.onlineSeconds) + " \xB7 Offline " + exactDuration(t.offlineSeconds) + " (" + t.offlineBreaks + " breaks)" + (t.interactionSeconds ? " \xB7 Interactions " + exactDuration(t.interactionSeconds) : "") + (t.fuelSeconds ? " \xB7 Fueling " + exactDuration(t.fuelSeconds) : "") + (t.sleepSeconds ? " \xB7 Sleep included " + exactDuration(t.sleepSeconds) : "") + (t.siloEmptySeconds ? " \xB7 Silos empty during sleep " + exactDuration(t.siloEmptySeconds) : "");
 }
 function dateLocal(t) {
   const d = new Date(t * 1e3);
@@ -392,6 +393,9 @@ function renderForm() {
   const zone = p.eventTimezoneMode === Zones.automatic || !p.eventTimezone ? Zones.automatic : p.eventTimezone;
   if (![...$("eventTimezone").options].some(o => o.value === zone)) $("eventTimezone").append(option(zone, Zones.label(zone)));
   $("eventTimezone").value = zone;
+  $("sleepEnabled").checked = p.sleep?.enabled === true;
+  $("sleepStart").value = p.sleep?.start ?? "23:00";
+  $("sleepEnd").value = p.sleep?.end ?? "07:00";
   updateTimezoneLabel();
   $("sequence").value = typeof p.sequence === "string" ? p.sequence : (p.sequence ?? DEFAULT_ROUTE).map((x) => ({ curiosity: "C", integrity: "I", humility: "H", resilience: "R", kindness: "K" })[x] || x).join(" ");
   $("minOfflineMinutes").value = p.minOfflineMinutes ?? 1;
@@ -580,6 +584,8 @@ function restoreUpdateSnapshot(saved, message = "Session restored.") {
 function updateTimezoneLabel() {
   const zone = $("eventTimezone").value;
   $("eventTimezone").title = Zones.label(Zones.resolve(zone));
+  $("sleep-settings").hidden = !$("sleepEnabled").checked;
+  for (const id of ["sleepStart", "sleepEnd"]) $(id).disabled = !$("sleepEnabled").checked;
 }
 function purchaseTime(seconds) {
   return seconds === null ? "Complete farm inputs for estimate" : seconds === 0 ? "~<1" : Number.isFinite(seconds) ? seconds > 365*86400 ? ">1 year" : "~"+duration(seconds) : "No current income";
@@ -803,6 +809,11 @@ function gather() {
   const manualFloors = Array.from({length:5}, (_, i) => autoTeAllocation ? retainedNumber("floor-" + i) : readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true));
   const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), solverVersion: 2, saleComparisonVersion: 1, autoTeAllocation, manualFloors, maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), initialPhysicalPurchases: false, floors: autoTeAllocation ? Array(5).fill(0) : manualFloors.slice() };
   p.maxShifts=p.autoSequence?readNumber("maxShifts","Maximum new shifts",0,30,true):retainedNumber("maxShifts");
+  p.sleep = {enabled:$("sleepEnabled").checked,start:$("sleepStart").value,end:$("sleepEnd").value};
+  if(p.sleep.enabled){
+    for(const [key,id,label] of [["start","sleepStart","Sleep start"],["end","sleepEnd","Wake time"]])try{Sleep.minutes(p.sleep[key],label);}catch(error){error.fieldId=id;throw error;}
+    if(p.sleep.start===p.sleep.end)throw Object.assign(Error("Sleep start and wake time must differ."),{fieldId:"sleepEnd"});
+  }
   for (const key of ["maxSwitches", "stagedSales", "priority", "priorityMaxDays", "priorityMaxShifts", "c1MaxMinutes", "k1MaxMinutes"]) delete p[key];
   if (!p.autoSequence) try {
     Route.parse(p.sequence, {required: true});
@@ -987,7 +998,7 @@ function actionLabel(a) {
     case "ship-run":
       return "Launch " + a.count + " planned ships";
     case "wait":
-      return (a.earningsMode === "offline" ? "Go offline for " : "Wait online for ") + duration(a.end - a.t);
+      return (a.sleepSeconds >= a.end-a.t-0.01 ? "Sleep for " : a.sleepSeconds > 0 ? "Wait (includes sleep) for " : a.earningsMode === "offline" ? "Go offline for " : "Wait online for ") + duration(a.end - a.t);
     default:
       return a.type;
   }
@@ -1072,7 +1083,8 @@ function renderResult() {
     };
   tools.append(txt, json, expand, next);
   head.append(tools);
-  card.append(head, el("p", "Starts " + timestamp(r.start, zone), "plan-start"), el("p", "Ends " + timestamp(r.end, zone), "plan-end"), el("p", r.switches + " new switches \xB7 " + num(r.soulCost) + " Soul Eggs spent"), el("p", waitTotals(summary.totals), "waiting-totals"), el("p", "Minimum offline break: " + (resultConfig.plan.minOfflineMinutes ?? 1) + " min. Finish time comes first; ties favor fewer switches, then fewer earning breaks.", "hint"), el("p", "Validated by replay: purchases affordable, Virtue permissions enforced, target reached. Claim pending TE at ascension.", "hint"));
+  card.append(head, el("p", "Starts " + timestamp(r.start, zone), "plan-start"), el("p", "Ends " + timestamp(r.end, zone), "plan-end"), el("p", r.switches + " new switches \xB7 " + num(r.soulCost) + " Soul Eggs spent"), el("p", waitTotals(summary.totals), "waiting-totals"), el("p", "Minimum offline break: " + (resultConfig.plan.minOfflineMinutes ?? 1) + " min. Finish time comes first; ties favor fewer switches, more silo coverage, and fewer earning breaks.", "hint"), el("p", "Validated by replay: purchases affordable, Virtue permissions enforced, target reached. Claim pending TE at ascension.", "hint"));
+  if(resultConfig.plan.sleep?.enabled){const sleep=resultConfig.plan.sleep;card.append(el("p","Sleep: "+sleep.start+"–"+sleep.end+" · "+zone+". Interactions occur while awake. Production pauses when silo coverage runs out; the target can be reached during sleep while silos are covered.","hint sleep-plan-note"));}
   const diagnostics = el("details", void 0, "search-details");
   diagnostics.append(el("summary", "Search Details"), el("p", r.method + " \xB7 " + r.explored.toLocaleString() + " states examined \xB7 " + r.termination + ".", "hint"));
   if (r.solverVersion === 2) diagnostics.append(el("p", "Research allowed through " + timestamp(r.researchDeadline, zone) + "; " + r.actualResearchSales + " sales actually used. Visit durations are automatic.", "hint"));
@@ -1180,7 +1192,7 @@ function renderResult() {
           const schedule = el("details", void 0, "ship-launch-schedule");
           schedule.append(el("summary", "Launch Schedule \xB7 " + run.launches.length + " Ships"));
           for (const [i, launch] of run.launches.entries()) schedule.append(el("p", i + 1 + ". " + launch.label + " \xB7 Slot " + launch.slot + " \xB7 " + timestamp(launch.t, zone, true)));
-          for (const pause of run.waits || []) if (pause.mode === "offline" || pause.seconds >= 10) schedule.append(el("p", (pause.mode === "offline" ? "Offline " : "Online ") + exactDuration(pause.seconds) + " \xB7 " + pause.reason + " \xB7 Resume " + timestamp(pause.end, zone, true)));
+          for (const pause of run.waits || []) if (pause.mode === "offline" || pause.seconds >= 10) schedule.append(el("p", (pause.sleepSeconds > 0 || /^Sleep hours/.test(pause.reason) ? "Wait including sleep " : pause.mode === "offline" ? "Offline " : "Online ") + exactDuration(pause.seconds) + " \xB7 " + pause.reason + (Sleep.sleeping(initial.c.sleep,pause.end) ? " \xB7 Wait Ends " : " \xB7 Resume ") + timestamp(pause.end, zone, true)));
           details.append(schedule);
         }
         details.append(el("p", "Final launches complete at " + timestamp(run.end, zone, true) + ". Final ships return later; the plan does not wait for them."));
@@ -1188,11 +1200,13 @@ function renderResult() {
       }
       if (step.hiddenOnlineSeconds || step.interactionSeconds) block.append(el("p", [step.hiddenOnlineSeconds ? "Brief online waits included: " + exactDuration(step.hiddenOnlineSeconds) : "", step.interactionSeconds ? "Interactions: " + exactDuration(step.interactionSeconds) : ""].filter(Boolean).join(" \xB7 "), "guide-overhead"));
       if (step.break) {
-        const pause = step.break, breakBox = el("div", void 0, "guide-break " + pause.mode), breakHeading = el("div", void 0, "guide-break-heading"), resume = el("time", "Resume " + timestamp(pause.end, zone, true), "guide-resume");
+        const pause = step.break, breakBox = el("div", void 0, "guide-break " + pause.mode), breakHeading = el("div", void 0, "guide-break-heading"), resume = el("time", (Sleep.sleeping(initial.c.sleep,pause.end) ? "Wait Ends " : "Resume ") + timestamp(pause.end, zone, true), "guide-resume");
         resume.dateTime = new Date(pause.end * 1e3).toISOString();
-        breakHeading.append(el("b", pause.mode === "fuel" ? "Fuel Collection" : pause.mode === "offline" ? "Offline Break" : "Online Wait"), el("strong", exactDuration(pause.seconds), "guide-break-duration"));
+        breakHeading.append(el("b", pause.mode === "fuel" ? "Fuel Collection" : pause.sleepSeconds >= pause.seconds-0.01 ? "Sleep" : pause.sleepSeconds > 0 ? "Wait Including Sleep" : pause.mode === "offline" ? "Offline Break" : "Online Wait"), el("strong", exactDuration(pause.seconds), "guide-break-duration"));
         breakBox.append(breakHeading, resume, el("span", "Starts " + timestamp(pause.start, zone)));
         if (pause.reason) breakBox.append(el("small", pause.reason));
+        if (pause.siloEmptySeconds > 0) breakBox.append(el("small", "Production paused after silos emptied: " + exactDuration(pause.siloEmptySeconds) + "."));
+        if (pause.sleepSeconds > 0) breakBox.append(el("small", "Sleep included: " + exactDuration(pause.sleepSeconds) + ". Refill silos before bed."));
         block.append(breakBox);
       }
       guide.append(block);

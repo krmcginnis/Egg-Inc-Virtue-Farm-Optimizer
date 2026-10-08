@@ -4,7 +4,7 @@ const S=require('./simulator.cjs'),F=require('./feasibility.cjs'),T=require('./s
 const W=require('./waiting-objective.cjs');
 const E=require('./opening-search.cjs'),Ships=require('./ships.cjs'),SalePlans=require('./research-sale-plans.cjs');
 function remainingEggs(s,c){return c.autoSequence&&s.stage<c.maxSwitches?[0,1,2,3,4]:c.autoSequence?[s.egg]:c.sequence.slice(s.stage);}
-function finishHere(s,c){if(c.ships?.enabled&&!s.shipsDone){if(s.egg!==2)return null;try{s=Ships.launch(s,c);}catch{return null;}if(!s.shipsDone)return null;}const te=teByEgg(s,c);if(c.floors.some((n,i)=>i!==s.egg&&n>te[i]))return null;const needed=Math.max(c.floors[s.egg],c.target-te.reduce((sum,n,i)=>sum+(i===s.egg?0:n),0));if(needed>98)return null;if(needed<=te[s.egg])return reached(s,c)?s:null;const r=stats(s,c);if(r.delivery<=0)return null;const t=s.t+Math.max(0,D.te[needed-1]-s.eggs[s.egg])/r.delivery+0.001;if(t>S.visitDeadline(s,c))return null;return advance(s,c,t,'Deliver enough eggs to reach the Truth Egg target');}
+function finishHere(s,c){if(c.ships?.enabled&&!s.shipsDone){if(s.egg!==2)return null;try{s=Ships.launch(s,c);}catch{return null;}if(!s.shipsDone)return null;}const te=teByEgg(s,c);if(c.floors.some((n,i)=>i!==s.egg&&n>te[i]))return null;const needed=Math.max(c.floors[s.egg],c.target-te.reduce((sum,n,i)=>sum+(i===s.egg?0:n),0));if(needed>98)return null;if(needed<=te[s.egg])return reached(s,c)?s:null;const r=stats(s,c);if(r.delivery<=0)return null;const t=S.productionEnd(s,c,Math.max(0,D.te[needed-1]-s.eggs[s.egg])/r.delivery)+0.001;if(t>S.visitDeadline(s,c))return null;return advance(s,c,t,'Deliver enough eggs to reach the Truth Egg target');}
 // A feasible completion using the current rate and the remaining sequence, without upgrades.
 // Allocate optional TE to the cheapest marginal threshold, then visit the required Virtues.
 function completionGoals(s,c){
@@ -35,7 +35,7 @@ function tailPlain(s,c){
  }
 
  let n=s;for(let ri=0;ri<route.length;ri++){const e=route[ri];if(n.egg!==e){try{n=buy(n,c,{type:'shift',egg:e});}catch{return null;}}
-  const required=e===2&&!n.shipsDone?0:goal[e]===te[e]?0:Math.max(0,D.te[goal[e]-1]-n.eggs[e]);const dt=required/rate;
+  const required=e===2&&!n.shipsDone?0:goal[e]===te[e]?0:Math.max(0,D.te[goal[e]-1]-n.eggs[e]);const dt=c.sleep?S.productionEnd(n,c,required/rate)-n.t:required/rate;
   if(dt>0){if(n.t+dt+.001>S.visitDeadline(n,c)){if(n.openingFirst&&route.slice(ri+1).includes(e))continue;return null;}n=advance(n,c,n.t+dt+.001,'Collect '+S.NAME[e]+' Truth Egg milestones');}if(reached(n,c))return n;
  }return null;
 }
@@ -192,7 +192,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    const ev=at(c,s.t);const times=new Set([ev.next]);const sale=c.calendar.find(e=>e.t>s.t+1e-6&&e.sale===.3);if(sale)times.add(sale.t);
    for(const t of times)if(t<=S.visitDeadline(s,c)&&(!best||t<best.t))add(advance(s,c,t,'Wait for the weekly event boundary'));
    // TE milestones are strategic departure times even when rates/costs do not change.
-   const te=teByEgg(s,c);if(te[s.egg]<98&&r.delivery>0){for(const jump of [1,3,8]){const target=Math.min(98,te[s.egg]+jump);const dt=Math.max(0,D.te[target-1]-s.eggs[s.egg])/r.delivery+.001;const t=s.t+dt;if(t<=S.visitDeadline(s,c)&&(!best||t<best.t))add(advance(s,c,t,'Reach '+target+' '+S.NAME[s.egg]+' TE before reassessing'));}}
+   const te=teByEgg(s,c);if(te[s.egg]<98&&r.delivery>0){for(const jump of [1,3,8]){const target=Math.min(98,te[s.egg]+jump);const dt=Math.max(0,D.te[target-1]-s.eggs[s.egg])/r.delivery+.001;const t=S.productionEnd(s,c,dt);if(t<=S.visitDeadline(s,c)&&(!best||t<best.t))add(advance(s,c,t,'Reach '+target+' '+S.NAME[s.egg]+' TE before reassessing'));}}
   }
   for(const arr of groups.values())for(const n of arr)next.push(n);
   if(!next.length){termination='search exhausted';break;}

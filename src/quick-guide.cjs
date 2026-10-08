@@ -25,7 +25,7 @@ function build(actions,{start,end,silos=0}){
   case 'ship-visit':g.activities.push({kind:'ship',label:'No Ships Planned for H'+a.visit});break;
    case 'ship-run':if(g.activities.length||research.size||habs.size||vehicles.size||cars.size||sets.size||silos!==siloStart){finish(a.t);begin(a.t);}g.shipRun=a;for(const m of a.batches)g.activities.push({kind:'ship',label:'Launch '+m.label,value:'× '+m.count});g.end=a.end;finish(a.end);begin(a.end);break;
   case 'wait':{const seconds=a.end-a.t;if(/^(Purchase interaction time|Switch overhead)/.test(a.reason||''))g.interactionSeconds+=seconds;
-   else if(a.earningsMode==='offline'||seconds>=10){finish(a.t,{start:a.t,end:a.end,seconds,mode:a.earningsMode==='offline'?'offline':'online',reason:a.reason});begin(a.end);}
+   else if(a.earningsMode==='offline'||a.sleepSeconds>0||seconds>=10){finish(a.t,{start:a.t,end:a.end,seconds,mode:a.earningsMode==='offline'?'offline':'online',reason:a.reason,...(a.sleepSeconds>0?{sleepSeconds:a.sleepSeconds,forcedOfflineSeconds:a.forcedOfflineSeconds||0,siloEmptySeconds:a.siloEmptySeconds||0}:{})});begin(a.end);}
    else g.hiddenOnlineSeconds+=seconds;
    break;}
  }}

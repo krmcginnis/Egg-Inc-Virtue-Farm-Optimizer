@@ -2,6 +2,7 @@
 // Wasmegg stage proposals (source commit 9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67)
 // are executed with this app's prices, permissions, interaction time and offline rules.
 const S=require('./simulator.cjs'),A=require('./artifact-optimizer.cjs'),R=require('./wasmegg-stage-engine.cjs'),B=require('./offline-batch.cjs'),W=require('./waiting-objective.cjs'),Ships=require('./ships.cjs'),Route=require('./switch-sequence.cjs');
+const Sleep=require('./sleep-schedule.cjs');
 const fleet=['vehicle_reliablity','excoskeletons','traffic_management','egg_loading_bots','autonomous_vehicles'];
 const tiers=new Map(R.allPossibleTiers.map(t=>[t.afx_id+':'+t.afx_level,t]));
 function refLoadout(slots){return (slots||[]).filter(x=>x.artifactId).map(slot=>{const a=S.AMAP[slot.artifactId],t=tiers.get(a.afxId+':'+a.afxLevel);return {...slot,stones:(slot.stones||[]).slice(),artifactId:t.family.id+'-'+t.tier_number+'-'+a.rarity};});}
@@ -34,10 +35,19 @@ function adapt(s,c){
 function tag(s,base,phase){const actions=[];for(let p=s.path;p&&p!==base;p=p.prev)actions.push(p.action);let path=base;for(const a of actions.reverse())path={prev:path,action:{...a,phase:a.phase||phase}};return {...s,path,phase};}
 function proposalPurchase(p){const x=p.payload||{};switch(p.type){case 'buy_research':return {type:'research',i:S.RMAP[x.researchId]};case 'buy_hab':return {type:'hab',slot:x.slotIndex,id:x.habId};case 'buy_vehicle':return {type:'vehicle',slot:x.slotIndex,id:x.vehicleId};case 'buy_train_car':return {type:'car',slot:x.slotIndex};case 'buy_silo':return {type:'silo'};default:return null;}}
 function step(start,c,phase,egg,runner,limit=Infinity,buildEnd){
- let n=start;let deadline=Math.min(c.end,start.t+limit);const base=start.path;
- if(phase==='C1'&&n.egg!==egg){const before=n.t;n=S.buy(n,c,{type:'shift',egg});if(Number.isFinite(limit))deadline=Math.min(c.end,deadline+(n.t-before-c.shiftSeconds));}
- const {state,context}=adapt(n,c),proposal=runner?runner(state,context,buildEnd):{actions:[]};
- if(n.egg!==egg){const before=n.t;n=S.buy(n,c,{type:'shift',egg});if(Number.isFinite(limit))deadline=Math.min(c.end,deadline+(n.t-before-c.shiftSeconds));}
+ let n=start;let deadline=Math.min(c.end,phase!=='C3'&&(buildEnd===undefined||c.sleepBudget)?Sleep.activeDeadline(c.sleep,start.t,limit):start.t+limit);const base=start.path;
+ function shifted(before){if(Number.isFinite(limit))deadline=Math.min(c.end,c.sleep&&(buildEnd===undefined||c.sleepBudget)?Sleep.activeDeadline(c.sleep,n.t-c.shiftSeconds,limit):deadline+(n.t-before-c.shiftSeconds));}
+ if(phase==='C1'&&n.egg!==egg){const before=n.t;n=S.buy(n,c,{type:'shift',egg});shifted(before);}
+ const {state,context}=adapt(n,c);let proposal=runner?runner(state,context,buildEnd):{actions:[]};
+ if(n.egg!==egg){const before=n.t;n=S.buy(n,c,{type:'shift',egg});shifted(before);}
+ // The historical R recipe aims for 24 hours. With scheduled sleep, seed
+ // only paid coverage for the longest remaining night within the horizon.
+ // The general search can still compare other silo counts and R durations.
+ if(c.sleep&&phase==='R1'){
+  const perSilo=(60+6*c.epic.silo_capacity)*60,needed=Math.ceil(Sleep.requiredCoverage(c.sleep,n.t,c.end)/perSilo);
+  const count=Math.max(0,Math.min(c.pro?10:2,needed)-n.silos);
+  proposal={actions:Array.from({length:count},()=>({type:'buy_silo'}))};
+ }
  let couplingCheckpoint=null;
  for(let pi=0;pi<proposal.actions.length;pi++){const p=proposal.actions[pi],a=proposalPurchase(p);
   // Use actual event boundaries. Generic cash waits are replaced by afford().
@@ -69,7 +79,7 @@ function milestone(start,c,id,deadline){let n=start;const i=S.RMAP[id],target=S.
  let a={type:'research',i};if(!S.isUnlocked(n,i)){const before=S.stats(n,c);let best=null,score=-1;for(let j=0;j<S.D.research.length;j++){const r=S.D.research[j],x={type:'research',i:j};if(r.tier>=target.tier||!S.allowed(n,c,x))continue;const cost=S.price(n,c,x),gain=S.stats(S.mutate(n,c,x),c).earning/Math.max(1,before.earning)-1,value=(.05+Math.log1p(Math.max(0,gain)))/(1+cost/Math.max(1,before.eventEarning));if(value>score){best=x;score=value;}}if(!best)break;a=best;}
  const ready=S.afford(n,c,a);if(!ready||ready.t+c.actionsSeconds>deadline)break;n=S.buy(ready,c,a);
  }return n;}
-function waitGoal(n,c,goal,phase){const base=n.path,te=S.teByEgg(n,c)[n.egg];if(goal>te){const r=S.stats(n,c),dt=Math.max(0,S.D.te[goal-1]-n.eggs[n.egg])/r.delivery+.001;if(!Number.isFinite(dt)||n.t+dt>c.end)throw Error('Staged route exceeds the planning limit.');n=S.advance(n,c,n.t+dt,'Collect '+S.NAME[n.egg]+' share of the Truth Egg target');}return tag(n,base,phase);}
+function waitGoal(n,c,goal,phase){const base=n.path,te=S.teByEgg(n,c)[n.egg];if(goal>te){const r=S.stats(n,c),dt=(c.sleep?S.productionEnd(n,c,Math.max(0,S.D.te[goal-1]-n.eggs[n.egg])/r.delivery)-n.t:Math.max(0,S.D.te[goal-1]-n.eggs[n.egg])/r.delivery)+.001;if(!Number.isFinite(dt)||n.t+dt>c.end)throw Error('Staged route exceeds the planning limit.');n=S.advance(n,c,n.t+dt,'Collect '+S.NAME[n.egg]+' share of the Truth Egg target');}return tag(n,base,phase);}
 // Share purchase rules with fixed routes only when their upgrade visits match.
 // The final TE visits may be reordered or omitted; never insert a fixed visit.
 function supportsFixed(initial,c){
@@ -88,7 +98,7 @@ function run(initial,c,saleCount,goalsFor,checkpoint=()=>{},cache={}){
  let n=cache.prefix;if(!n){if(!opening.c1){opening.c1=step(initial,c,'C1',0,(s,ctx)=>R.runC1(s,ctx,c.c1MaxMinutes*60),c.c1MaxMinutes*60);opening.speculative=null;try{opening.speculative=step(opening.c1,c,'I1',1,R.runI1);}catch{}}n=opening.c1;checkpoint('C1',n);
  const speculative=opening.speculative;
  if(c.autoSequence?speculative&&speculative.t-n.t<3600:c.sequence[n.stage+1]===1){n=speculative||step(n,c,'I1',1,R.runI1);checkpoint('I1',n);n=step(n,c,'K1',4,(s,ctx)=>R.runK1(s,ctx,c.k1MaxMinutes*60),c.k1MaxMinutes*60);}else{n=step(n,c,'K1',4,(s,ctx)=>R.runK1(s,ctx,c.k1MaxMinutes*60),c.k1MaxMinutes*60);checkpoint('K1',n);n=step(n,c,'I1',1,R.runI1);}checkpoint('opening',n);
- let c2Start=n.t;const c2Base=n.path;n=step(n,c,'C2',0,R.runC2,14400);const c2Shift=S.history(n).findLast(a=>a.type==='shift'&&a.phase==='C2');if(c2Shift)c2Start=c2Shift.t; for(const id of fleet)n=milestone(n,c,id,Math.min(c.end,c2Start+14400));if(!fleet.every(id=>n.r[S.RMAP[id]]===S.D.research[S.RMAP[id]].levels))throw Error('Cannot finish fleet research within the C2 budget.');const gc=n;n=milestone(n,c,'micro_coupling',Math.min(c.end,c2Start+14400));if(n.r[S.RMAP.micro_coupling]===gc.r[S.RMAP.micro_coupling])n=gc;n=tag(n,c2Base,'C2');checkpoint('C2',n);n=step(n,c,'K2',4,R.runK2);checkpoint('K2',n);n=step(n,c,'R1',3,R.runR1,3600);checkpoint('R1',n);cache.prefix=n;}
+ let c2Start=n.t;const c2Base=n.path;n=step(n,c,'C2',0,R.runC2,14400);const c2Shift=S.history(n).findLast(a=>a.type==='shift'&&a.phase==='C2');if(c2Shift)c2Start=c2Shift.t; for(const id of fleet)n=milestone(n,c,id,Math.min(c.end,Sleep.activeDeadline(c.sleep,c2Start,14400)));if(!fleet.every(id=>n.r[S.RMAP[id]]===S.D.research[S.RMAP[id]].levels))throw Error('Cannot finish fleet research within the C2 budget.');const gc=n;n=milestone(n,c,'micro_coupling',Math.min(c.end,Sleep.activeDeadline(c.sleep,c2Start,14400)));if(n.r[S.RMAP.micro_coupling]===gc.r[S.RMAP.micro_coupling])n=gc;n=tag(n,c2Base,'C2');checkpoint('C2',n);n=step(n,c,'K2',4,R.runK2);checkpoint('K2',n);n=step(n,c,'R1',3,R.runR1,3600);checkpoint('R1',n);cache.prefix=n;}
  // Exact, complete states only: differing cash, event time, delivered eggs or
  // offline-break count cannot share a continuation. Every stored prefix was
  // generated under a pair of budgets within the user's ceilings.

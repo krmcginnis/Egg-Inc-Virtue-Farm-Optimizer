@@ -33,6 +33,12 @@ shift counts, sorted by finish time, with fewer shifts preferred when times tie.
 Each choice has its own summary, Quick Guide, and JSON/PDF exports. Saved plans
 retain every choice; historical single plans and sale comparisons still replay.
 
+After finding the fastest plans, the solver compares extra paid silo purchases
+on existing Resilience visits. It prefers up to eight silos (two with a standard
+permit) when they add no completion time or shifts. Fewer silos are kept when
+additional purchases would delay the plan. Costs, interaction time, sleep hours,
+sale timing, and delivery are simulated again before accepting the purchases.
+
 User Selected Sequence preserves the entered order and can stop early once the
 TE goal and required missions are complete. Every final Curiosity visit is
 for delivery only. Owned inventory and configured launches are included;
@@ -43,3 +49,30 @@ search does not exhaust every possible route or prove global optimality.
 The v0.8.23 solver remains in `src/optimizer-legacy.cjs`, with historical replay
 routed through it. Developers can use `legacySolver: true` when calling solve
 for rollback testing.
+
+## Sleep hours
+
+Planning can optionally block game interactions during a daily sleep window.
+Set Sleep Start and Wake Time. Sleep uses the Event Schedule Timezone beside
+Plan Start; Automatic uses your PC timezone. Sleep is disabled by default.
+The timezone menu contains common regional choices with UTC offsets, plus
+your PC timezone. Uncommon saved selections are retained when files are loaded.
+
+Purchases, shifts, fuel setup, ship collection, and launches must fit while
+awake. Passive delivery, earnings, ship travel, and fuel transfers continue.
+Sleeping uses offline earnings even with Online Only selected. Voluntary
+offline breaks still obey Minimum Offline Break. Refill silos before bed;
+production pauses during sleep once current silo coverage expires, then resumes
+at wake time. Awake waits retain the routine-refill assumption, and the selected
+video doubler is still assumed maintained. The target can be passively reached
+during covered sleep; claim pending TE when awake. Daily boundaries follow local
+daylight saving changes.
+
+The solver simulates these constraints while comparing paid plans. Timeline,
+Quick Guide, saved plans, and PDF exports include the sleep timing. Changing
+sleep settings requires a new search.
+Sleep-enabled R seeds buy coverage for the longest remaining night within the
+planning horizon, including daylight saving changes, rather than automatically
+buying 24 hours. Purchases still require Resilience, available cash, and the
+permit's silo limit. Before enough coverage is bought, empty-silo hours reduce
+cash, delivered eggs, and farm-produced fuel in funding and completion estimates.

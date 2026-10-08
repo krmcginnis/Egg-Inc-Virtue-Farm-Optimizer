@@ -8,8 +8,10 @@ const Strategy=require('./planning-strategy.cjs'),Summary=require('./shift-summa
 const Automatic=require('./automatic-routes.cjs'),ShiftPlans=require('./shift-plans.cjs');
 const {Checkpoints}=require('./search-checkpoints.cjs'),Lookahead=require('./purchase-lookahead.cjs');
 const Breakpoints=require('./research-breakpoints.cjs'),Incumbents=require('./plan-incumbents.cjs');
+const Sleep=require('./sleep-schedule.cjs');
 const Schedules=require('./schedule-proposals.cjs');
-function better(a,b){if(!a)return false;if(!b)return true;if(a.t<b.t-1e-6)return true;if(a.t>b.t+1e-6)return false;return a.stage<b.stage||a.stage===b.stage&&W.offlineBreaks(a)<W.offlineBreaks(b);}
+const Comfort=require('./silo-comfort.cjs');
+function better(a,b){if(!a)return false;if(!b)return true;if(a.t<b.t-1e-6)return true;if(a.t>b.t+1e-6)return false;if(a.stage!==b.stage)return a.stage<b.stage;if(Comfort.preferred(a,b))return true;if(Comfort.preferred(b,a))return false;return W.offlineBreaks(a)<W.offlineBreaks(b);}
 const VERSION=2,letters=['C','I','H','R','K'];
 
 function routes(raw){
@@ -76,6 +78,10 @@ function scored(s,c,policy='balanced'){
    value=Math.max(capacity,Math.max(0,Math.log(finalRate/Math.max(1e-300,now.delivery))))*5;
    if(a.type==='set'&&Ships.pending(s,c))value+=buyingPower;
   }
+  if(a.type==='silo'&&c.sleep){
+   const span=c.end-s.t,availableBefore=Sleep.productiveSeconds(c.sleep,s.t,c.end,now.siloHours*3600),availableAfter=Sleep.productiveSeconds(c.sleep,s.t,c.end,after.siloHours*3600);
+   if(span>0)value+=5*Math.log(availableAfter/Math.max(1e-300,availableBefore));
+  }
   const score=value/(1+wait/60+cost/Math.max(1,now.eventEarning*3600));
   return {a,score,cost,wait};
  }).filter(x=>Number.isFinite(x.score)&&x.score>0).sort((a,b)=>b.score-a.score||a.cost-b.cost);
@@ -121,7 +127,7 @@ function tag(s,base,label){
 function recipe(s,c,kind,limit=Infinity,cache,checkpoint=()=>{},forcePhysical=true){
  const runner=kind==='C1'?(s,ctx)=>Recipes.runC1(s,ctx,limit):kind==='K1'?(s,ctx)=>Recipes.runK1(s,ctx,limit):
   kind==='C3'?(s,ctx)=>Recipes.runC3(s,ctx,c.researchDeadline):Recipes['run'+kind];
- const run=()=>Staged.step(s,c,forcePhysical&&['I1','K2'].includes(kind)?kind:'Candidate',s.egg,runner,limit,c.researchDeadline);
+ const run=()=>Staged.step(s,c.sleep&&kind!=='C3'?{...c,sleepBudget:true}:c,forcePhysical&&['I1','K2'].includes(kind)?kind:'Candidate',s.egg,runner,limit,c.researchDeadline);
  return cache?cache.run(s,c,['recipe',kind,limit,forcePhysical],run,checkpoint,true,true):run();
 }
 function seedRoute(initial,c,minutes,checkpoint=()=>{},cache){
@@ -145,6 +151,14 @@ function seedRouteUncached(initial,c,minutes,checkpoint,cache){
    else if(!first)n=recipe(n,local,'C2',14400,cache,checkpoint);
   }else if(n.egg===1)n=recipe(n,c,'I1',Infinity,cache,checkpoint);
   else if(n.egg===4)n=recipe(n,c,first?'K1':'K2',first?timing.vehicles*60:Infinity,cache,checkpoint);
+  else if(n.egg===3&&c.sleep){
+   // A silo is a production upgrade when sleep outlasts current coverage.
+   // Seed a paid coverage build; the beam still compares shorter R visits.
+   const longest=Sleep.requiredCoverage(c.sleep,n.t,c.end),until=Math.min(c.end,Sleep.activeDeadline(c.sleep,n.t,3600));
+   while(S.stats(n,c).siloHours*3600<longest&&S.allowed(n,c,{type:'silo'})){
+    checkpoint();const a={type:'silo'},ready=S.afford(n,c,a);if(!ready||ready.t+c.actionsSeconds>until)break;n=S.buy(ready,c,a);
+   }
+  }
   else if(n.egg===2){
    const projected=S.clone(n);if(!timing.currentGear&&future(n,c,4))for(const v of projected.v)if(v.id===11)v.cars=S.stats(n,c).trainLength;
    const set=S.artifactChoices(projected,c).reduce((a,b)=>S.stats({...projected,set:b},c).delivery>S.stats({...projected,set:a},c).delivery?b:a,n.set);
@@ -457,11 +471,19 @@ function replay(raw,actions,record=false,options={}){
  const {s:initial,c}=prepare(raw,marker.sequence,marker.researchSales,{artifactReplay:true,artifactSets:S.recordedArtifactSets(actions)});let s=initial;
  for(let index=0;index<actions.length;index++){const action=actions[index];
   const overhead=action.type==='shift'?c.shiftSeconds:['research','hab','vehicle','car','silo','set'].includes(action.type)?c.actionsSeconds:0;
+  if(c.sleep&&!['wait','ship-run'].includes(action.type))Sleep.assertActive(c.sleep,action.t,overhead);
   if(overhead>0){const next=actions[index+1];if(next?.type!=='wait'||next.earningsMode!=='online'||Math.abs(next.t-action.t)>.01||next.end+1e-6<action.t+overhead)throw Error('Timeline omits required interaction time.');}
   if(Math.abs(action.t-s.t)>.01)throw Error('Timeline action has inconsistent time.');
   if(action.type==='research'&&action.t+c.actionsSeconds>c.researchDeadline+1e-6)throw Error('Research interaction exceeds its sale window.');
   if(action.type==='wait')s=S.advance(s,c,action.end,action.reason,record,action.earningsMode||'auto');
-  else s=S.buy(s,{...c,actionsSeconds:action.type==='ship-run'?c.actionsSeconds:0,shiftSeconds:0,shipReplay:true},action,record);
+  else {
+   const shipCheck=!!c.sleep&&action.type==='ship-run',base=s.path;
+   s=S.buy(s,{...c,actionsSeconds:action.type==='ship-run'?c.actionsSeconds:0,shiftSeconds:0,shipReplay:true},action,record||shipCheck);
+   if(shipCheck){const actual=s.path.action;
+    if(Math.abs(action.end-s.t)>.01||JSON.stringify(action.interactions)!==JSON.stringify(actual.interactions)||JSON.stringify(action.launches)!==JSON.stringify(actual.launches))throw Error('Ship interaction schedule differs from its sleep-aware replay.');
+    if(!record)s={...s,path:base,depth:s.depth-1};
+   }
+  }
  }
  if(!complete(s,c))throw Error('Replayed plan did not reach the requested target.');
  if(record){let verified=S.history(s);if(!verified.length)verified=[actions[0]];s={...s,path:null};for(let i=0;i<verified.length;i++){const a=verified[i],original=actions.find(x=>x.type===a.type&&Math.abs(x.t-a.t)<.01);s=S.record(s,{...a,...(original?.phase?{phase:original.phase}:{}),...(i===0?{routeSearch:marker,initialSiloRule:'one'}:{})});}}
@@ -480,12 +502,12 @@ function finalize(raw,best,c,route,count,control,termination){
  actions=actions.map((a,i)=>i===0?{...a,initialSiloRule:'one',routeSearch:{version:VERSION,sequence:route,researchSales:count}}:a);
  const checked=replay(raw,actions,false),s=checked.s;
  const result={version:1,solverVersion:VERSION,initialSiloRule:'one',openingTimeLimits:false,
-  objective:'Minimum completion time to the TE target; equal times favor fewer shifts',method:'Bounded farm-order, purchase, and departure search; fastest plans found, not a proof of global optimality',
+  objective:'Minimum completion time to the TE target; equal times favor fewer shifts, then silo coverage up to eight silos',method:'Bounded farm-order, purchase, and departure search; fastest plans found, not a proof of global optimality',
   researchSales:count,actualResearchSales:usedSales(actions,c),researchDeadline:c.researchDeadline,route:route.slice(),
   termination,explored:control.explored,elapsedMs:Date.now()-control.started,start:c.start,end:s.t,seconds:s.t-c.start,switches:s.stage,soulCost:s.lost,target:c.target,
   finalTE:S.teByEgg(s,c),pendingTE:S.totalTE(s,c)-c.claimedTotal,finalCash:s.cash,finalStats:S.stats(s,c),actions,
   frontier:[{switches:s.stage,seconds:s.t-c.start,soulCost:s.lost}],sourceCommit:S.D.commit,validatedReplay:true,
-  artifactRecommendations:best.artifactRecommendations||null,artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions),search:{automaticVisitTiming:true,routesCompared:control.routesCompared,statesExamined:control.explored,continuationsCompared:control.continuationsCompared,
+  artifactRecommendations:best.artifactRecommendations||null,...(best.siloComfort?{siloComfort:best.siloComfort}:{}),artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions),search:{automaticVisitTiming:true,routesCompared:control.routesCompared,statesExamined:control.explored,continuationsCompared:control.continuationsCompared,
    checkpoints:control.checkpoints?.summary(),lookaheadNodes:control.lookaheadNodes,lookaheadChains:control.lookaheadChains,lookaheadComparisons:control.lookaheadComparisons,
    openingComparisons:control.openingComparisons,conservativeComparisons:control.conservativeComparisons,physicalComparisons:control.physicalComparisons,deliveryResearchComparisons:control.deliveryResearchComparisons,recoveryComparisons:control.recoveryComparisons,breakpointAnchors:control.breakpointAnchors,breakpointComparisons:control.breakpointComparisons,retainedPlans:control.retainedPlans}};
  return {...result,summary:Summary.summarize(raw,result)};
@@ -691,6 +713,18 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  if(!recommended)throw Error(entries.find(e=>e.error)?.error||'No feasible plan found within the route and search budget.');
  if(options.returnComparisons!==true){
   const top=[...byShift.values()].sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0).slice(0,3);
+  if(!cancelled()){
+   // Keep the main search budget intact; cap final comfort comparisons at 5 s.
+   const comfortDeadline=Date.now()+Math.min(5000,maxMs*.05);
+   progress({phase:'route-search',stage:'Silos',phaseLabel:'Checking extra silo coverage without delaying completion',elapsedMs:Date.now()-started,explored:control.explored});
+   for(const item of top){
+    if(cancelled()||Date.now()>=comfortDeadline)break;
+    const fresh=prepare(raw,item.route,item.count,{artifactReplay:true,artifactSets:item.context.loadouts});
+    item.state=Comfort.improve(fresh.s,item.context,item.state,{checkpoint:()=>{if(cancelled()||Date.now()>=comfortDeadline)throw Error('Silo comfort comparison interrupted');}});
+    await control.yield();
+   }
+   top.sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0);
+  }
   const shiftPlans=top.map(item=>({switches:item.state.stage,plan:finalize(raw,item.state,item.context,item.route,item.count,control,cancelled()?'cancelled with best plans':'route comparison complete')}));
   return ShiftPlans.select({shiftPlans,recommendedSwitches:shiftPlans[0].switches},shiftPlans[0].switches);
  }

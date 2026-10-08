@@ -21,6 +21,7 @@ class Checkpoints {
    pro:c.pro,video:c.video,earningsMode:c.earningsMode,earningsScale:c.earningsScale,
    researchCostScale:c.researchCostScale,offlineMinSeconds:c.offlineMinSeconds,
    actionsSeconds:c.actionsSeconds,shiftSeconds:c.shiftSeconds,calendar:c.calendar,
+   sleep:c.sleep?[c.sleep.start,c.sleep.end,c.sleep.timezone]:undefined,
    routeResearchRule:c.routeResearchRule,researchDeadline:c.researchDeadline,
    researchAllowed:s.stage<c.finalCStage,enforceOpeningCaps:c.enforceOpeningCaps,
    c1MaxMinutes:c.c1MaxMinutes,k1MaxMinutes:c.k1MaxMinutes,

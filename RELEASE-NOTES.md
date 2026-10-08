@@ -1,3 +1,13 @@
+# v0.9.8
+
+- Add optional daily Sleep Hours using the Event Schedule Timezone beside Plan Start. Purchases, shifts, fuel setup, and ship handling are scheduled while awake, including daylight saving changes.
+- Use offline earnings during sleep. When silo coverage expires, earnings, Truth Egg delivery, and farm-produced fuel pause until wake; stored fuel transfers and ship travel continue. Refill silos before bed.
+- Compare paid silo coverage for remaining nights and extra purchases up to eight silos on existing Resilience visits. Accept comfort upgrades only when they add no completion time or shifts, respecting permit limits and preserving existing greater coverage.
+- Include sleep timing in saved plans, the timeline, Quick Guide, and PDF. Retain historical behavior with sleep disabled.
+- Shorten the timezone menu to common regional choices with UTC offsets, while retaining the PC timezone and uncommon saved selections.
+- Keep the normal 90-second search budget. Local baseline comparisons retained the previous verified completion times for 12-, 11-, and 10-shift plans.
+- Install through Update App → Update & Restart, then configure Sleep Hours and rerun the planner.
+
 # v0.9.7
 
 - Compare paid research departures before long cash waits alongside tier, fleet-slot, train-length, and production-bottleneck changes. Judge each through a complete plan with independently funded vehicle investment.

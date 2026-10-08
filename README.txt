@@ -176,6 +176,9 @@ Lifetime delivery fields accept and display case-sensitive game notation, such a
 WALKTHROUGH
 Levels of the same research within a batch purchased at the same instant are shown as one level range, with their combined cost. Waits and switches remain separate; saved plans retain every individual purchase for replay validation.
 
+SILO COMFORT PURCHASES
+After finding the fastest plans, the solver compares extra paid silo purchases on existing Resilience visits. It prefers up to eight silos (two with a standard permit) when purchases add no completion time or shifts. Fewer silos remain when additional purchases would delay completion. Actual prices, interaction time, sleep hours, sale timing, and delivery are reexecuted before accepting a plan. Existing coverage above eight is preserved.
+
 ONLINE AND OFFLINE WAITS
 Automatic online + offline compares the fastest online purchase time against an offline break of at least 60 seconds. Away bonuses apply to the whole eligible offline break. Purchases and switch interaction time earn online income. gems collected on return can fund multiple research levels immediately. The detailed timeline identifies online/offline waits; online waits under 10 seconds are omitted from that display. The PDF summary includes total online and offline waiting for each shift. Online-only mode remains available. Offline breaks assume maintained silo coverage.
 
@@ -197,7 +200,7 @@ K3: new train cars, then Kindness's TE share.
 C4/I2/R2/H2: wait for each remaining Virtue's TE share.
 
 PLANNING ASSUMPTIONS
-Habitats stay full; estimates are most reliable at approximately 100 TE or more. Artifacts do not improve during a plan. There are no sleep periods. Silo/video coverage must be maintained. Each plan covers one ascension. Start next ascension immediately begins at the prior plan's finish, preserving claimed TE, lifetime deliveries, Epic Research, artifacts, remaining Soul Eggs and total shifts, while resetting gems and common farm upgrades. Review these inputs before running the next plan. Actual results may vary.
+Habitats stay full; estimates are most reliable at approximately 100 TE or more. Artifacts do not improve during a plan. Optional Sleep Hours postpone purchases, shifts, and ship handling until awake, while passive earnings, delivery, ship travel, and fuel transfers continue. Sleep uses offline earnings even with Online Only selected. Sleep uses the Event Schedule Timezone beside Plan Start; Automatic uses your PC timezone. The timezone menu lists common regional choices with UTC offsets, plus your PC timezone, and retains uncommon saved selections. Refill silos before bed; production pauses when silo coverage runs out during sleep, then resumes at wake time. Sleep-enabled R seeds buy paid silo coverage for the longest remaining night within the planning horizon, including daylight saving changes, subject to the permit limit. Awake waits assume routine silo refills, and video coverage must be maintained. The target may be reached passively during covered sleep; claim pending TE when awake. Each plan covers one ascension. Start next ascension immediately begins at the prior plan's finish, preserving claimed TE, lifetime deliveries, Epic Research, artifacts, remaining Soul Eggs and total shifts, while resetting gems and common farm upgrades. Review these inputs before running the next plan. Actual results may vary.
 
 Wasmegg-Staged-Plan.json is a newly generated, replay-validated fixed-stage plan for the supplied max-Epic farm.
 
