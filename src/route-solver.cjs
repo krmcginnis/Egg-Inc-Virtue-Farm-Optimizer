@@ -7,6 +7,7 @@ const Recipes=require('./wasmegg-stage-engine.cjs');
 const Strategy=require('./planning-strategy.cjs'),Summary=require('./shift-summary.cjs'),F=require('./feasibility.cjs');
 const Automatic=require('./automatic-routes.cjs'),ShiftPlans=require('./shift-plans.cjs');
 const {Checkpoints}=require('./search-checkpoints.cjs'),Lookahead=require('./purchase-lookahead.cjs');
+const Schedules=require('./schedule-proposals.cjs');
 function better(a,b){if(!a)return false;if(!b)return true;if(a.t<b.t-1e-6)return true;if(a.t>b.t+1e-6)return false;return a.stage<b.stage||a.stage===b.stage&&W.offlineBreaks(a)<W.offlineBreaks(b);}
 const VERSION=2,letters=['C','I','H','R','K'];
 
@@ -131,19 +132,20 @@ function seedRoute(initial,c,minutes,checkpoint=()=>{},cache){
 function seedRouteUncached(initial,c,minutes,checkpoint,cache){
  // A paid, replayable starting candidate for every route. These sampled
  // departures do not constrain the subsequent search's visit durations.
+ const timing=typeof minutes==='number'?{research:minutes,vehicles:minutes}:minutes;
  c={...c,stagedShips:false,batchOffline:c.earningsMode==='offline',batchMode:'all-waits'};let n=initial,best=null;
  try{for(let stage=initial.stage;stage<c.sequence.length;stage++){
   checkpoint();if(complete(n,c))return better(n,best)?n:best;
   const base=n.path,label=phase(n,c),first=c.sequence.slice(0,stage).every(e=>e!==n.egg);
   if(n.egg===0&&stage<c.finalCStage&&n.t<c.researchDeadline){
    const local=researchContext(n,c);
-   if(first)n=recipe(n,local,'C1',minutes*60,cache,checkpoint);
+   if(first)n=recipe(n,local,'C1',timing.research*60,cache,checkpoint);
    if(stage===c.finalResearchStage&&n.t<c.researchDeadline)n=recipe(n,local,'C3',c.researchDeadline-n.t,cache,checkpoint);
    else if(!first)n=recipe(n,local,'C2',14400,cache,checkpoint);
   }else if(n.egg===1)n=recipe(n,c,'I1',Infinity,cache,checkpoint);
-  else if(n.egg===4)n=recipe(n,c,first?'K1':'K2',first?minutes*60:Infinity,cache,checkpoint);
+  else if(n.egg===4)n=recipe(n,c,first?'K1':'K2',first?timing.vehicles*60:Infinity,cache,checkpoint);
   else if(n.egg===2){
-   const projected=S.clone(n);if(future(n,c,4))for(const v of projected.v)if(v.id===11)v.cars=S.stats(n,c).trainLength;
+   const projected=S.clone(n);if(!timing.currentGear&&future(n,c,4))for(const v of projected.v)if(v.id===11)v.cars=S.stats(n,c).trainLength;
    const set=S.artifactChoices(projected,c).reduce((a,b)=>S.stats({...projected,set:b},c).delivery>S.stats({...projected,set:a},c).delivery?b:a,n.set);
    if(set!==n.set)n=S.buy(n,{...c,deferShips:true},S.artifactAction(set,c));
    if(Ships.pending(n,c))n=Ships.launch(n,c);
@@ -212,17 +214,19 @@ async function unlockDepartures(states,c,deadline,control){
  return proposed;
 }
 
-function researchPrefixes(initial,c,actions){
+function purchasePrefixes(initial,c,actions,include){
  let n=initial;const states=[initial];
  for(const action of actions){
   if(action.type==='wait')n=S.advance(n,c,action.end,action.reason,true,action.earningsMode||'auto');
   else n=S.buy(n,{...c,actionsSeconds:action.type==='ship-run'?c.actionsSeconds:0,shiftSeconds:0,shipReplay:true},action);
   // Wait records include the full purchase interaction. Never branch from
   // an instant between paying and completing that interaction.
-  if(n.egg===0&&n.stage<c.finalCStage&&(action.type==='wait'||c.actionsSeconds===0&&action.type!=='shift'))states.push(n);
+  if(include(n)&&(action.type==='wait'||c.actionsSeconds===0&&action.type!=='shift'))states.push(n);
  }
- return states;
+ return states.filter(include);
 }
+function researchPrefixes(initial,c,actions){return purchasePrefixes(initial,c,actions,n=>n.egg===0&&n.stage<c.finalCStage);}
+function physicalPrefixes(initial,c,actions){return purchasePrefixes(initial,c,actions,n=>[1,4].includes(n.egg)&&n.stage<c.finalResearchStage);}
 async function comparePurchaseChains(states,c,deadline,control){
  if(!control.lookahead)return;
  const anchors=Lookahead.anchors(states,c);
@@ -238,6 +242,84 @@ async function comparePurchaseChains(states,c,deadline,control){
     let next=state;if(leave&&state.stage+1<c.sequence.length)next=S.buy(state,c,{type:'shift',egg:c.sequence[state.stage+1]});
     const result=seedRoute(next,c,180,()=>{if(control.cancelled()||Date.now()>=end)throw Error('Unlock continuation interrupted');},control.checkpoints);
     control.lookaheadComparisons++;control.continuationsCompared++;if(result)control.consider(result);
+   }catch{}
+   await control.yield();
+  }
+ }
+}
+
+// Rank investment checkpoints by the delivery they can support after the
+// route's remaining paid physical/gear visits. This is only a selection
+// heuristic; every candidate below must complete the real remaining route.
+function deliveryPotential(s,c){
+ const n=S.clone(s);
+ if(future(s,c,1))n.h=[18,18,18,18];
+ if(future(s,c,4)){const r=S.stats(n,c);n.v=n.v.map((v,i)=>({id:i<r.slots?11:null,cars:r.trainLength}));}
+ const sets=future(s,c,2)?S.artifactChoices(n,c):[n.set];
+ return Math.max(...sets.map(set=>S.stats({...n,set},c).delivery));
+}
+function deliveryEstimate(s,c){
+ const elapsed=s.t-c.start,remaining=estimate(s,c)-elapsed;
+ if(!Number.isFinite(remaining))return Infinity;
+ return elapsed+remaining*S.stats(s,c).delivery/Math.max(1e-300,deliveryPotential(s,c));
+}
+async function comparePhysicalInvestments(states,c,deadline,control){
+ const groups=new Map();for(const n of states){const group=groups.get(n.stage)||[];group.push(n);groups.set(n.stage,group);}
+ // Work backward: fleet capacity just before research directly determines
+ // buying power there. Earlier I/K alternatives remain separate comparisons.
+ const visits=[...groups.values()].reverse();
+ for(let i=0;i<visits.length;i++){
+  if(control.cancelled()||Date.now()>=deadline)break;
+  const candidates=visits[i].slice(),end=Date.now()+Math.max(1,(deadline-Date.now())/(visits.length-i));
+  const last=candidates.at(-1),local={...c,end:Math.min(c.end,c.researchDeadline)};
+  if(last.t<local.end){
+   const traceEnd=Date.now()+Math.max(1,(end-Date.now())*.15);
+   candidates.push(...await trace(last,local,'fleet',false,traceEnd,control));
+  }
+  const ranked=candidates.map(state=>({state,value:deliveryEstimate(state,c)})).sort((a,b)=>a.value-b.value);
+  // Earliest, last paid, best projected delivery, and beam diversity. Never
+  // discard all the shorter investments in favor of a fully maxed farm.
+  const trials=[...new Set([candidates[0],last,...ranked.slice(0,2).map(x=>x.state),...prune(candidates,c,4)])].slice(0,6);
+  for(const state of trials){
+   if(control.cancelled()||Date.now()>=end)break;
+   for(const minutes of [180,60]){
+    if(control.cancelled()||Date.now()>=end)break;
+    try{
+     const next=S.buy(state,c,{type:'shift',egg:c.sequence[state.stage+1]});
+     const completed=seedRoute(next,c,minutes,()=>{if(control.cancelled()||Date.now()>=end)throw Error('Physical continuation interrupted');},control.checkpoints);
+     control.physicalComparisons++;control.continuationsCompared++;if(completed)control.consider(completed);
+    }catch{}
+    await control.yield();
+   }
+  }
+ }
+}
+async function compareDeliveryResearch(states,c,deadline,control){
+ const final=states.filter(n=>n.stage===c.finalResearchStage);if(!final.length)return;
+ const ranked=final.map(state=>({state,value:deliveryEstimate(state,c)})).sort((a,b)=>a.value-b.value);
+ const anchors=[...new Set([final.at(-1),...ranked.slice(0,2).map(x=>x.state),
+  ...c.calendar.filter(e=>e.sale===.3).map(e=>final.find(n=>n.t>=e.t)).filter(Boolean)])].slice(0,6);
+ for(let ai=0;ai<anchors.length;ai++){
+  if(control.cancelled()||Date.now()>=deadline)break;
+  const state=anchors[ai],end=Date.now()+Math.max(1,(deadline-Date.now())/(anchors.length-ai)),local={...c,end:Math.min(c.end,c.researchDeadline)};
+  const production=S.D.research.map((r,i)=>({r,i})).filter(({r,i})=>
+   ['egg_laying_rate','hab_capacity','shipping_capacity','fleet_size'].some(k=>r.categories.includes(k))&&S.allowed(state,local,{type:'research',i}));
+  const rate=deliveryPotential(state,c),upgrades=production.map(({i})=>{
+   const a={type:'research',i},gain=deliveryPotential(S.mutate(state,c,a),c)/Math.max(1e-300,rate)-1;
+   return {a,gain,cost:S.price(state,local,a)};
+  }).filter(x=>x.gain>0).sort((a,b)=>b.gain/(1+b.cost/Math.max(1,S.stats(state,c).eventEarning*86400))-a.gain/(1+a.cost/Math.max(1,S.stats(state,c).eventEarning*86400)));
+  const trials=[state];
+  for(const {a} of upgrades.slice(0,4))try{
+   const ready=S.afford(state,local,a);if(ready&&ready.t+local.actionsSeconds<=local.end)trials.push(tag(S.buy(ready,local,a),state.path,phase(state,c)));
+  }catch{}
+  // Compare finishing the build now and each paid production upgrade. Income
+  // alone cannot justify spending gems that could improve months of delivery.
+  for(const n of trials)for(const currentGear of [false,true]){
+   if(control.cancelled()||Date.now()>=end)break;
+   try{
+    const next=S.buy(n,c,{type:'shift',egg:c.sequence[n.stage+1]});
+    const completed=seedRoute(next,c,{research:180,vehicles:180,currentGear},()=>{if(control.cancelled()||Date.now()>=end)throw Error('Delivery research continuation interrupted');},control.checkpoints);
+    control.deliveryResearchComparisons++;control.continuationsCompared++;if(completed)control.consider(completed);
    }catch{}
    await control.yield();
   }
@@ -388,7 +470,8 @@ function finalize(raw,best,c,route,count,control,termination){
   finalTE:S.teByEgg(s,c),pendingTE:S.totalTE(s,c)-c.claimedTotal,finalCash:s.cash,finalStats:S.stats(s,c),actions,
   frontier:[{switches:s.stage,seconds:s.t-c.start,soulCost:s.lost}],sourceCommit:S.D.commit,validatedReplay:true,
   artifactRecommendations:best.artifactRecommendations||null,artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions),search:{automaticVisitTiming:true,routesCompared:control.routesCompared,statesExamined:control.explored,continuationsCompared:control.continuationsCompared,
-   checkpoints:control.checkpoints?.summary(),lookaheadNodes:control.lookaheadNodes,lookaheadChains:control.lookaheadChains,lookaheadComparisons:control.lookaheadComparisons}};
+   checkpoints:control.checkpoints?.summary(),lookaheadNodes:control.lookaheadNodes,lookaheadChains:control.lookaheadChains,lookaheadComparisons:control.lookaheadComparisons,
+   openingComparisons:control.openingComparisons,conservativeComparisons:control.conservativeComparisons,physicalComparisons:control.physicalComparisons,deliveryResearchComparisons:control.deliveryResearchComparisons,recoveryComparisons:control.recoveryComparisons}};
  return {...result,summary:Summary.summarize(raw,result)};
 }
 async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
@@ -396,8 +479,9 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  if(Strategy.automatic(raw.plan||{}))Automatic.limit(raw);
  const routeOptions=options.returnComparisons===true&&Strategy.automatic(raw.plan||{})?presetRoutes(raw):routes(raw),started=Date.now(),maxMs=S.number(options.maxMs??45000,'Search time',100,600000);
  const width=Math.min(16,S.number(options.width??12,'Search width',4,512,true));
- const entries=[],byShift=new Map(),byRoute=new Map(),control={started,width,explored:0,routesCompared:0,continuationsCompared:0,
+ const entries=[],byShift=new Map(),byRoute=new Map(),searchContexts=[],control={started,width,explored:0,routesCompared:0,continuationsCompared:0,
   checkpoints:options.disableCheckpoints?null:new Checkpoints(),lookahead:!options.disableLookahead,lookaheadNodes:0,lookaheadChains:0,lookaheadComparisons:0,
+  openingComparisons:0,conservativeComparisons:0,physicalComparisons:0,deliveryResearchComparisons:0,recoveryComparisons:0,
   cancelled,yield:()=>new Promise(r=>setTimeout(r,0))};let recommended=null,overall=null,retained=null;
  for(const count of options.returnComparisons===true?Plans.COUNTS:[3]){
   if(cancelled()){entries.push({researchSales:count,status:'not-completed',error:'Search stopped before this sale option completed.'});continue;}
@@ -415,6 +499,54 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
   // Exclude impossible proposals before dividing CPU time; otherwise routes
   // that cannot satisfy fuel/floors consume a share of every earlier slice.
   for(const route of routeOptions){try{const {s:initial,c}=prepare(raw,route,count),report=F.assess(initial,c);if(report.impossible)throw Error(F.message(report,c));contexts.push({route,initial,c});}catch(e){lastError=e.message;}}
+  searchContexts.push(...contexts.map(item=>({...item,count})));
+  const sampled=new Set();
+  if(options.returnComparisons!==true&&!options.disableLegacyBaseline&&!options.disableOpeningPortfolio&&maxMs>=5000){
+   // Reserve a shared opening portfolio BEFORE the thin route beams. One
+   // expensive first candidate must not hide every other C1/K1 combination.
+   // Both physical orders get the same trials, interleaved for fairness.
+   const openings=(Strategy.automatic(raw.plan||{})?contexts.filter(x=>Staged.supportsFixed(x.initial,x.c)&&x.route.at(-1)==='integrity').slice(0,2):contexts.slice(0,1));
+   const openingDeadline=Math.min(deadline,started+maxMs*.28);
+   const reference=Schedules.earningReference(raw),item=openings[0];
+   if(reference&&item&&!options.disableScheduleProposals&&Date.now()<openingDeadline){
+    const proposed=prepare(reference,item.route,count),opening={};
+    control.context=item.c;control.route=item.route;
+    for(const [c1MaxMinutes,k1MaxMinutes] of [[180,180],[180,120]]){
+     if(cancelled()||Date.now()>=openingDeadline)break;
+     try{
+      const check=()=>{if(cancelled()||Date.now()>=openingDeadline)throw Error('Schedule proposal interrupted');};
+      const candidate=Staged.supportsFixed(proposed.s,proposed.c)?Staged.run(proposed.s,{...proposed.c,enforceOpeningCaps:true,c1MaxMinutes,k1MaxMinutes,batchOffline:proposed.c.earningsMode==='offline',batchMode:'all-waits'},count,L.completionGoals,check,{opening}):seedRoute(proposed.s,proposed.c,{research:c1MaxMinutes,vehicles:k1MaxMinutes},check);
+      if(!candidate)continue;
+      const actions=S.history(candidate);for(const [key,slots] of Object.entries(S.recordedArtifactSets(actions))){
+       if(item.c.loadouts[key]&&JSON.stringify(item.c.loadouts[key])!==JSON.stringify(slots))throw Error('Proposed artifact snapshot conflicts with actual gear.');
+       item.c.loadouts[key]=slots;item.c.mods[key]=S.modifiers(slots);
+      }
+      for(const compress of [false,true]){
+       if(cancelled()||Date.now()>=openingDeadline)break;
+       const executed=Schedules.execute(item.initial,item.c,actions,{compress,checkpoint:()=>{if(cancelled()||Date.now()>=openingDeadline)throw Error('Schedule execution interrupted');}});
+       if(!executed)continue;
+       const checked=S.history(executed).map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:VERSION,sequence:item.route,researchSales:count}});
+       replay(raw,checked);control.conservativeComparisons++;control.consider(executed);
+      }
+     }catch{}
+     await control.yield();
+    }
+   }
+   const openingCaches=new Map();
+   for(const [c1MaxMinutes,k1MaxMinutes] of [[180,180],[180,120],[60,60],[30,30],[60,180],[180,60],[300,300]])for(const item of openings){
+    if(cancelled()||Date.now()>=openingDeadline)break;
+    control.context=item.c;control.route=item.route;
+    progress({phase:'route-search',stage:'Opening',phaseLabel:'Comparing research, habs, and vehicles',explored:control.explored,elapsedMs:Date.now()-started});await control.yield();
+    try{
+     let cache=openingCaches.get(item);if(!cache){cache=new Map();openingCaches.set(item,cache);}
+     const opening=cache.get(c1MaxMinutes)||{};cache.set(c1MaxMinutes,opening);
+     const check=()=>{if(cancelled()||Date.now()>=openingDeadline)throw Error('Opening portfolio interrupted');};
+     const candidate=Staged.supportsFixed(item.initial,item.c)?Staged.run(item.initial,{...item.c,enforceOpeningCaps:true,c1MaxMinutes,k1MaxMinutes,batchOffline:item.c.earningsMode==='offline',batchMode:'all-waits'},count,L.completionGoals,check,{opening}):seedRoute(item.initial,item.c,{research:c1MaxMinutes,vehicles:k1MaxMinutes},check,control.checkpoints);
+     if(!candidate)continue;
+     control.openingComparisons++;control.consider(candidate);sampled.add(item);
+    }catch{}
+   }
+  }
   for(const item of contexts){
    if(cancelled())break;
    const {route,initial,c}=item;
@@ -425,7 +557,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    // The old stage recipe is only a feasible baseline when the route matches.
    // It never substitutes a route, sets visit limits on the new search, or
    // seeds from an earlier saved plan. General routes need no stage recipe.
-   if(!options.disableLegacyBaseline&&Staged.supportsFixed(initial,c)&&Date.now()<routeDeadline){
+   if(!sampled.has(item)&&!options.disableLegacyBaseline&&Staged.supportsFixed(initial,c)&&Date.now()<routeDeadline){
     const baselineDeadline=Math.min(routeDeadline,Date.now()+Math.max(1,(routeDeadline-Date.now())*.35));
     let firstBaseline=true;
     for(const [c1MaxMinutes,k1MaxMinutes] of [[180,180],[60,60],[30,30],[300,300],[60,180],[180,60]]){
@@ -435,7 +567,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
      for(const saleCount of options.returnComparisons===true?[count]:[3,1,2])try{const baseline=Staged.run(initial,{...c,enforceOpeningCaps:true,c1MaxMinutes,k1MaxMinutes,batchOffline:c.earningsMode==='offline',batchMode:'all-waits'},saleCount,L.completionGoals,()=>{if(cancelled()||Date.now()>candidateDeadline)throw Error('Baseline interrupted');},cache);control.consider(baseline);}catch{}
     }
    }
-   if(!Staged.supportsFixed(initial,c)&&Date.now()<routeDeadline){
+   if(!sampled.has(item)&&!Staged.supportsFixed(initial,c)&&Date.now()<routeDeadline){
     const seedDeadline=Date.now()+Math.max(1,(routeDeadline-Date.now())*.55);
     for(const minutes of [180,60,30]){
      if(cancelled()||Date.now()>=seedDeadline)break;
@@ -468,16 +600,32 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  // beams must not consume all CPU before a costly opening can be compared
  // with shifting earlier and doing its remaining research after K/I.
  if(options.returnComparisons!==true&&!cancelled()){
-  const alternatives=[...byShift.values()].sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0).slice(0,3).reverse();
+  const alternatives=[...byShift.values()].sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0).slice(0,3);
   for(let i=0;i<alternatives.length;i++){
    const item=alternatives[i];if(Date.now()>=started+maxMs*.95||cancelled())break;
    const {s:initial}=prepare(raw,item.route,item.count),c=item.context;
    control.context=c;control.route=item.route;
    const actions=S.history(item.state),prefixes=openingDepartures(initial,c,actions);
-   const refineDeadline=Date.now()+Math.max(1,(started+maxMs*.95-Date.now())/(alternatives.length-i));
+   const share=i===0&&alternatives.length>1?.6:1/(alternatives.length-i);
+   const refineDeadline=Date.now()+Math.max(1,(started+maxMs*.95-Date.now())*share);
    progress({phase:'route-search',stage:phase(initial,c),phaseLabel:'Comparing complete departure continuations',explored:control.explored,elapsedMs:Date.now()-started,bestSeconds:Math.min(...[...byShift.values()].map(x=>x.state.t-c.start)),routeIndex:control.routesCompared});
-   const openingDeadline=control.lookahead?Date.now()+Math.max(1,(refineDeadline-Date.now())*.65):refineDeadline;
+   const investment=!options.disableInvestmentRefinement,remaining=refineDeadline-Date.now();
+   const openingDeadline=investment?Date.now()+Math.max(1,remaining*.2):control.lookahead?Date.now()+Math.max(1,remaining*.65):refineDeadline;
    await compareDepartures(prefixes,c,openingDeadline,control);
+   if(investment&&Date.now()<refineDeadline&&!cancelled()){
+    let current=byShift.get(item.state.stage)||item;control.context=current.context;control.route=current.route;
+    let fresh=prepare(raw,current.route,current.count,{artifactReplay:true,artifactSets:current.context.loadouts});
+    const physical=physicalPrefixes(fresh.s,current.context,S.history(current.state));
+    const physicalDeadline=Date.now()+Math.max(1,(refineDeadline-Date.now())*.4);
+    progress({phase:'route-search',stage:'Investments',phaseLabel:'Comparing hab and fleet departure timing',elapsedMs:Date.now()-started,explored:control.explored});
+    await comparePhysicalInvestments(physical,current.context,physicalDeadline,control);
+    current=byShift.get(item.state.stage)||item;control.context=current.context;control.route=current.route;
+    fresh=prepare(raw,current.route,current.count,{artifactReplay:true,artifactSets:current.context.loadouts});
+    const research=researchPrefixes(fresh.s,current.context,S.history(current.state));
+    const deliveryDeadline=control.lookahead?Date.now()+Math.max(1,(refineDeadline-Date.now())*.85):refineDeadline;
+    progress({phase:'route-search',stage:'Delivery',phaseLabel:'Comparing final research and delivery gear',elapsedMs:Date.now()-started,explored:control.explored});
+    await compareDeliveryResearch(research,current.context,deliveryDeadline,control);
+   }
    if(control.lookahead&&Date.now()<refineDeadline&&!cancelled()){
     // Use the current winner after departure refinement, not an outdated
     // purchase path. Replay only this search's paid actions into checkpoints.
@@ -498,6 +646,23 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
     try{for(const end of completionAlternatives(raw,item,pending,()=>{if(cancelled()||Date.now()>=started+maxMs)throw Error('Completion comparison interrupted');})){control.consider(end);}}
     catch{}
    }
+   // A completed long route may require its last H for ships, so it cannot
+   // supply every shorter comparison. Give missing counts a fresh paid build
+   // on their own proposed route instead of treating a beam miss as impossible.
+   for(const shifts of missing){
+    if(byShift.has(shifts)||cancelled()||Date.now()>=started+maxMs)continue;
+    const candidates=searchContexts.filter(x=>x.route.length-1===shifts||x.route.length-2===shifts)
+     .sort((a,b)=>Math.abs(a.route.length-1-shifts)-Math.abs(b.route.length-1-shifts));
+    for(const item of candidates){
+     if(byShift.has(shifts)||cancelled()||Date.now()>=started+maxMs)break;
+     control.context=item.c;control.route=item.route;
+     try{
+      const end=seedRoute(item.initial,item.c,180,()=>{if(cancelled()||Date.now()>=started+maxMs)throw Error('Missing-count build interrupted');},control.checkpoints);
+      control.recoveryComparisons++;if(end)control.consider(end);
+      if(end&&!byShift.has(shifts))for(const shorter of completionAlternatives(raw,{state:end,context:item.c,route:item.route,count:item.count},[shifts],()=>{if(cancelled()||Date.now()>=started+maxMs)throw Error('Missing-count tail interrupted');}))control.consider(shorter);
+     }catch{}
+    }
+   }
   }
  }
  if(!recommended)throw Error(entries.find(e=>e.error)?.error||'No feasible plan found within the route and search budget.');
@@ -509,4 +674,4 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  const chosen=Plans.select({researchSalePlans:entries,recommendedResearchSales:recommended},recommended);
  return chosen;
 }
-module.exports={VERSION,recipe,seedRoute,openingDepartures,researchPrefixes,compareDepartures,comparePurchaseChains,completionAlternatives,unlockDepartures,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,solve};
+module.exports={VERSION,recipe,seedRoute,openingDepartures,researchPrefixes,physicalPrefixes,comparePhysicalInvestments,compareDeliveryResearch,deliveryPotential,compareDepartures,comparePurchaseChains,completionAlternatives,unlockDepartures,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,solve};

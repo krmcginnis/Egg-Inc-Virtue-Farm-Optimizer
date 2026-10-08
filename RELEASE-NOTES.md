@@ -1,3 +1,13 @@
+# v0.9.6
+
+- Compare a shared portfolio of early research and vehicle budgets before route beams, including hab-first and vehicle-first orders. Reuse paid openings across those trials.
+- Refine hab and fleet investment and departure timing using complete paid continuations, then compare final production research and delivery gear against finishing sooner.
+- When the declared earnings setup has lower income but identical production and research prices, use it to propose additional purchase orders. Execute and verify those schedules with the actual starting gear; recompute earning waits, sale timing, missions, and final Truth Egg allocation.
+- Retain completed candidates and give missing neighboring shift counts a fresh route build when a longer mission route cannot provide a shorter ending.
+- Add controlled investment and stronger-earnings regression checks to Windows release verification. Preserve the legacy solver, owned-gear rules, final-C delivery, and historical replay.
+- The search remains bounded; these comparisons improve the fastest plans found and do not prove a global optimum or guarantee monotonic results for every input change.
+- Install through Update App → Update & Restart.
+
 # v0.9.5
 
 - Reuse exact, paid farm checkpoints within each search so shared openings and repeated continuations need less simulation. Bound cache memory and keep different cash, timing, gear, fuel, missions, and route constraints separate.

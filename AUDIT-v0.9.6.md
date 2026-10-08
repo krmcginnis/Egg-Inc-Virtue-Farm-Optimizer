@@ -1,4 +1,10 @@
-# Egg Inc. Virtue Farm Optimizer v0.9.5 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.9.6 — Release Audit
+
+v0.9.6 compares an early investment portfolio, physical departures, final
+production research, and conservative earnings schedules re-executed with
+actual gear. Current validation is in the v0.9.6 section at the end; earlier
+evidence is historical.
+
 
 v0.9.5 adds per-search paid checkpoints and research-unlock lookahead, with
 controlled exhaustive comparisons and a repeatable benchmark command. Current
@@ -2275,3 +2281,68 @@ Public release: 406359880, v0.9.5, with both assets uploaded:
 
 This same-version audit update records completed verification without replacing
 or repackaging the immutable release assets.
+
+
+## v0.9.6 — investment search and stronger-stone investigation
+
+The two provided configurations differ only in the Cube's two starting Lunar
+stones: T3 (30%) versus T4 (40%). This increases starting offline earnings by
+(1.4 / 1.3)^2 = 1.1597633136094672. The saved stronger-stone result is slower
+because the bounded search selected different opening research, vehicles,
+final research, and delivery gear. Its pre-C3 fleet has six cars rather than
+seven. Full replay of the original faster purchase schedule with upgraded
+starting stones remains feasible at the same completion time.
+
+Changes:
+
+- Reserve a shared opening portfolio before route beams; interleave early I/K
+  orders and reuse exact C1 openings across K1 budget samples. These are search
+  samples, not user visit-time caps.
+- Compare paid early physical checkpoints with leaving immediately and with
+  additional fleet/hab investment. Rank projected delivery only to select
+  candidates; every accepted continuation pays for all remaining purchases,
+  interactions, shifts, mission fuel, and launches.
+- Compare final production research and both actual-fleet and future-fleet
+  delivery artifact choices, using full plan finish time.
+- A declared earnings setup may propose additional purchase schedules only
+  when it has the same hab, laying, shipping, IHR, and research-cost modifiers
+  and no stronger online/offline income than starting gear. Actual execution
+  starts from the real configuration, recalculates costs/cash/interaction
+  times, preserves research sale windows, and uses the same owned inventory.
+  Both conservative timing and compressed earning waits are candidates.
+  Reallocate delivery from the paid build; never compress TE collection as if
+  it were a cash wait. Verify full replay before retaining these proposals.
+- Retry missing neighboring counts on their own feasible generated route when
+  a long plan's required final H cannot be omitted.
+- Retain the exact previous solver and shared game/mission arithmetic.
+
+Private-input checks (files and completed results kept outside Git):
+
+- Fresh default 45-second solves use configuration inputs only, not saved
+  result seeds. All six output plans pass independent full replay.
+- T3 starting stones: 12 shifts 137.5369072180738 days; 11 shifts
+  155.58813101335255 days; 10 shifts 161.7060894191541 days.
+- T4 starting stones: 12 shifts 137.47792196629499 days; 11 shifts
+  152.9797175456142 days; 10 shifts 158.99571002698607 days.
+- Fastest T4 plan is about 85 minutes earlier than fastest T3. The prior saved
+  T4 result was 138.5389572808919 days.
+- Timings and lower-ranked candidates can vary with CPU budget. Search remains
+  bounded, with no proof of global optimality or general monotonic guarantee.
+
+Local verification passed:
+
+- New investment regression: a paid early hab investment on an arbitrary
+  entered route finishes over one day sooner than delaying it; every candidate
+  independently replays. Check physical interaction checkpoints, cancellation,
+  income-only profile validation, actual upgraded gear, cash waits/offline
+  minimums, actual purchase prices, and final-C delivery.
+- Existing search-quality exhaustive small-case optima, exact checkpoint reuse,
+  route/shift/fueling/mission/floor tests, and legacy 1/2/3-sale regressions.
+- Generated standalone browser worker solves and independently replays results.
+- Release-state and staged-publish guards, subscription import, timezone/DST,
+  discount boundary, physical previews, shift rates/PDF, and vehicle ordering.
+- npm ci and build. Generated bundles remain ignored; private attachments and
+  benchmark scripts/results remain outside tracked source.
+
+Native Windows update gates and public feed validation are pending in the
+release workflow. Publishing is not yet claimed.

@@ -67,6 +67,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/search-quality.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/investment-search.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/solver-worker.cjs
