@@ -24,6 +24,17 @@ async function run(){
  result=undefined;await context.onmessage({data:{config:sleep,options:{maxMs:1500}}});assert.equal(error,undefined);assert.ok(result?.validatedReplay);
  assert.equal(result.actions.find(a=>a.type==='shift').t,Date.parse('2026-10-09T07:00:00Z')/1000,'worker uses the plan timezone rather than the obsolete separate sleep zone');
  const awake=O.replay(sleep,result.actions);assert.equal(awake.c.sleep.timezone,'UTC');require('./sleep-schedule.cjs').validateInteractions(result.actions,awake.c);assert.equal(awake.s.t,result.end);
+ // The generated worker must use Pacific earnings even with UTC sleep/dates.
+ // A completed farm has constant rates, so cash across 09:00 PDT has an exact
+ // independent integral: one hour at normal earnings, one hour at double.
+ for(const [start,end]of [['2026-10-12T15:00:00Z','2026-10-12T17:00:00Z'],['2026-11-02T16:00:00Z','2026-11-02T18:00:00Z']]){
+  const probe=fixture();Object.assign(probe.plan,{start:Date.parse(start)/1000,eventTimezone:'UTC',strategy:'user',autoSequence:false,sequence:'C',target:101,solverVersion:2,shiftSeconds:0,actionSeconds:0});
+  probe.farm.cash=0;const p=S.prepare(probe),rate=S.stats(p.s,p.c);probe.farm.delivered[0]=S.D.te[20]-rate.delivery*7200;
+  result=undefined;await context.onmessage({data:{config:probe,options:{maxMs:1000}}});assert.equal(error,undefined);assert.ok(result?.validatedReplay);assert.ok(Math.abs(result.end-Date.parse(end)/1000)<.01);
+  // Include the solver's millisecond TE-threshold margin at the replayed end.
+  const paid=O.replay(probe,JSON.parse(JSON.stringify(result.actions)),true),expected=rate.online*(3600+2*(paid.s.t-probe.plan.start-3600));
+  assert.ok(Math.abs(paid.s.cash-expected)<=expected*1e-9,'built worker integrates the Pacific Monday boost under UTC selection');
+ }
  const weak=require('./sleep-search-quality.cjs').make();weak.farm.earningsMode='offline';weak.farm.loadouts={current:[{artifactId:'lunar-totem-4-3',stones:['lunar-stone-3']}]};
  result=undefined;await context.onmessage({data:{config:weak,options:{maxMs:1800}}});assert.equal(error,undefined);const old=result;
  const strong=structuredClone(weak);strong.farm.loadouts.current[0].stones=['lunar-stone-4'];result=undefined;

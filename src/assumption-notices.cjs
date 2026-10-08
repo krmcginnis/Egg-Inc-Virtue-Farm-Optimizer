@@ -7,7 +7,6 @@ function notices(s,c){
  if(c.claimedTotal<100)out.push('Below 100 claimed TE: the full-hab estimate can be optimistic because chicken fill time is not modeled.');
  if(!s.silos)out.push('This historical plan uses the old zero-silo start. New searches use the game\'s free starting silo.');
  else if(c.earningsMode==='offline'&&S.offlineMinimum(c)>r.siloHours*3600)out.push('The minimum offline break exceeds current silo coverage. The model assumes refills; that break cannot be uninterrupted with your current silos.');
- if(c.zone!=='America/Los_Angeles')out.push('Event schedule override: Monday earnings and Friday sales use '+c.zone+'. Pacific Time matches the Wasmegg game schedule; this field changes the calculation, not just date display.');
  const gear=startingGear(s,c);if(gear)out.push(gear);
  return out;
 }

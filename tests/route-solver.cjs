@@ -76,9 +76,9 @@ async function run(){
  const corruptShift=structuredClone(fastest);corruptShift.shiftPlans.push(corruptShift.shiftPlans[0]);assert.throws(()=>ShiftPlans.validate(corruptShift),/shift-count/);
  const partial=fixture();let stop=false;const stopped=verify(partial,await O.solve(partial,opts,p=>{if(p.researchSales===2)stop=true;},()=>stop));assert.equal(stopped.researchSalePlans[0].status,'complete');assert.equal(stopped.researchSalePlans[2].status,'not-completed');
  const invalid=structuredClone(manual);invalid.actions[0].routeSearch.sequence=['curiosity','humility'];assert.throws(()=>O.replay(custom,invalid.actions),/route differs/);
- // Calendar deadlines include a currently active sale and respect timezone.
- const friday=fixture();friday.plan.start=Date.UTC(2026,9,9,9)/1000;friday.plan.eventTimezone='UTC';const pc=R.prepare(friday,R.routes(friday)[0],1);
- assert.equal(pc.c.researchDeadline,Date.UTC(2026,9,10,9)/1000);assert.equal(R.prepare(friday,R.routes(friday)[0],3).c.researchDeadline,Date.UTC(2026,9,24,9)/1000);
+ // Sale deadlines stay Pacific even with a different sleep/display timezone.
+ const friday=fixture();friday.plan.start=Date.UTC(2026,9,9,16)/1000;friday.plan.eventTimezone='UTC';const pc=R.prepare(friday,R.routes(friday)[0],1);
+ assert.equal(pc.c.researchDeadline,Date.UTC(2026,9,10,16)/1000);assert.equal(R.prepare(friday,R.routes(friday)[0],3).c.researchDeadline,Date.UTC(2026,9,24,16)/1000);
  const last={...pc.s,stage:pc.c.finalCStage};assert.equal(S.allowed(last,pc.c,{type:'research',i:S.RMAP.comfy_nests}),false);
  // Physical upgrades can have future delivery value despite an immediate
  // shipping bottleneck, including when there is only one Integrity visit.

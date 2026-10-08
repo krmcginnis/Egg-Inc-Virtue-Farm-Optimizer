@@ -32,8 +32,9 @@ function validateLoadout(raw,limit=4){if(!Array.isArray(raw)||raw.length>limit)t
 // Only immutable calendar boundaries are shared. Farms, search states and
 // previous plans are never cached across searches. Bound memory to four windows.
 const calendarWindows=new Map();
-// Modern UTC offsets include 30- and 45-minute zones; preserve local 09:00 events.
-function calendar(start,end,zone){const key=start+':'+end+':'+zone;if(calendarWindows.has(key))return calendarWindows.get(key);const fmt=new Intl.DateTimeFormat('en-US',{timeZone:zone,weekday:'short',hour:'2-digit',hourCycle:'h23'});
+// Game events always use 09:00 Pacific, following PST/PDT. The selected plan
+// timezone belongs to sleep and date display, never to this event calendar.
+function calendar(start,end){const key=start+':'+end;if(calendarWindows.has(key))return calendarWindows.get(key);const fmt=new Intl.DateTimeFormat('en-US',{timeZone:'America/Los_Angeles',weekday:'short',hour:'2-digit',hourCycle:'h23'});
  function event(t){const p=Object.fromEntries(fmt.formatToParts(new Date(t*1000)).map(x=>[x.type,x.value]));const h=+p.hour;return {earnings:(p.weekday==='Mon'&&h>=9)||(p.weekday==='Tue'&&h<9)?2:1,sale:(p.weekday==='Fri'&&h>=9)||(p.weekday==='Sat'&&h<9)?0.3:1};}
  const out=[{t:start,...event(start)}];let prev=out[0];for(let t=(Math.floor(start/900)+1)*900;t<=end+7*86400;t+=900){const e=event(t);if(e.earnings!==prev.earnings||e.sale!==prev.sale){out.push({t,...e});prev=e;}}out.push({t:Infinity,earnings:1,sale:1});out.forEach(Object.freeze);Object.freeze(out);if(calendarWindows.size>=4)calendarWindows.delete(calendarWindows.keys().next().value);calendarWindows.set(key,out);return out;}
 function at(c,t){let lo=0,hi=c.calendar.length-1;while(lo+1<hi){const m=(lo+hi)>>1;if(c.calendar[m].t<=t+1e-6)lo=m;else hi=m;}return {...c.calendar[lo],next:c.calendar[lo+1].t};}
@@ -69,7 +70,9 @@ function prepare(raw,opts={}){
  c.ships=Ships.prepare(f,p,number);
  if(!['auto','wasmegg','user','free'].includes(c.strategy))throw Error('Select a valid planning strategy.');if(c.strategy==='wasmegg'&&!c.autoSequence)throw Error('Enable automatic visits for Optimized Sequence.');
  if(!['quick','balanced','thorough'].includes(p.searchEffort??'balanced'))throw Error('Select a valid search effort.');
- if(!['offline','online'].includes(c.earningsMode))throw Error('Earnings mode must be offline or online.');c.calendar=calendar(start,c.end,c.zone);
+ if(!['offline','online'].includes(c.earningsMode))throw Error('Earnings mode must be offline or online.');
+ // Validate the selected sleep/display zone even when sleep is disabled.
+ new Intl.DateTimeFormat('en-US',{timeZone:c.zone});c.calendar=calendar(start,c.end);
  c.sleep=Sleep.forPlan(p,start,c.end);
  const enteredSilos=number(f.silos??1,'Silos',0,pro?10:2,true);
  // Old saved timelines used zero silos and must replay with their original

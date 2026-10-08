@@ -111,9 +111,10 @@ Start from scratch includes the free Coop, Trike and one silo.
 
 Monday 09:00 to Tuesday 09:00: 2x earnings.
 Friday 09:00 to Saturday 09:00: research cost x0.30.
-New farms default to the timezone detected by your browser for both weekly
-event times and displayed dates. Override Event Schedule Timezone in Planning
-as needed; saved farms and plans retain their selected zone.
+Weekly events always use America/Los_Angeles, following PST/PDT.
+New farms default to the timezone detected by your browser for sleep and
+displayed dates. Select Sleep & Display Timezone in Planning as needed;
+saved farms and plans retain their selected zone. This does not move events.
 The start date/time uses your PC's local time.
 
 SEARCH QUALITY
@@ -200,7 +201,7 @@ K3: new train cars, then Kindness's TE share.
 C4/I2/R2/H2: wait for each remaining Virtue's TE share.
 
 PLANNING ASSUMPTIONS
-Habitats stay full; estimates are most reliable at approximately 100 TE or more. Artifacts do not improve during a plan. Optional Sleep Hours postpone purchases, shifts, and ship handling until awake, while passive earnings, delivery, ship travel, and fuel transfers continue. Sleep uses offline earnings even with Online Only selected. Sleep uses the Event Schedule Timezone beside Plan Start; Automatic uses your PC timezone. The timezone menu lists common regional choices with UTC offsets, plus your PC timezone, and retains uncommon saved selections. Refill silos before bed; production pauses when silo coverage runs out during sleep, then resumes at wake time. Sleep-enabled R seeds buy paid silo coverage for the longest remaining night within the planning horizon, including daylight saving changes, subject to the permit limit. Awake waits assume routine silo refills, and video coverage must be maintained. The target may be reached passively during covered sleep; claim pending TE when awake. Each plan covers one ascension. Start next ascension immediately begins at the prior plan's finish, preserving claimed TE, lifetime deliveries, Epic Research, artifacts, remaining Soul Eggs and total shifts, while resetting gems and common farm upgrades. Review these inputs before running the next plan. Actual results may vary.
+Habitats stay full; estimates are most reliable at approximately 100 TE or more. Artifacts do not improve during a plan. Optional Sleep Hours postpone purchases, shifts, and ship handling until awake, while passive earnings, delivery, ship travel, and fuel transfers continue. Sleep uses offline earnings even with Online Only selected. Sleep uses the Sleep & Display Timezone beside Plan Start; Automatic uses your PC timezone. The timezone menu lists common regional choices with UTC offsets, plus your PC timezone, and retains uncommon saved selections. Refill silos before bed; production pauses when silo coverage runs out during sleep, then resumes at wake time. Sleep-enabled R seeds buy paid silo coverage for the longest remaining night within the planning horizon, including daylight saving changes, subject to the permit limit. Awake waits assume routine silo refills, and video coverage must be maintained. The target may be reached passively during covered sleep; claim pending TE when awake. Each plan covers one ascension. Start next ascension immediately begins at the prior plan's finish, preserving claimed TE, lifetime deliveries, Epic Research, artifacts, remaining Soul Eggs and total shifts, while resetting gems and common farm upgrades. Review these inputs before running the next plan. Actual results may vary.
 
 Wasmegg-Staged-Plan.json is a newly generated, replay-validated fixed-stage plan for the supplied max-Epic farm.
 
@@ -212,7 +213,7 @@ The solver compares runs of short online purchase waits with one uninterrupted o
 
 Each shift card now summarizes completed tiers, combined research ranges, habitat/vehicle upgrades, train cars, silos and artifact changes, plus exact duration, TE gained and online/offline waiting totals. Click a card for the quick guide, then open Full breakdown for the detailed purchase timeline. Short online gaps hidden from that timeline still count toward every total. Switch/purchase interactions are listed separately from gems waits. The PDF walkthrough and saved plan include the summaries.
 
-Shift summary research items follow the in-game research order. Every card and PDF summary includes its end date/time in the selected event timezone.
+Shift summary research items follow the in-game research order. Every card and PDF summary includes its end date/time in the selected display timezone.
 
 PDF WALKTHROUGH EXPORT
 Export walkthrough opens the PDF in a new browser tab without an automatic download. It includes the compact shift summary timeline and the quick guide, with research in game order, shift durations, TE gained, end date/time, waiting totals, C1/K1 limits, research levels before each break, break times and resume dates. Fonts are embedded and long timelines are paginated. Saved plans can be loaded and exported without running the solver again. Save plan remains the JSON file for replay and future editing.

@@ -10,6 +10,8 @@ const {JSDOM}=require(process.env.JSDOM_MODULE||'jsdom'),blank=require('../src/b
  try{
   w.eval(fs.readFileSync(root+'/worker-source.js','utf8'));w.eval(fs.readFileSync(root+'/app.js','utf8'));
   const $=id=>w.document.getElementById(id),app=w.VirtueApp;assert.ok(app);const load=async raw=>app.loadFile({name:'Synthetic-Sleep.json',text:async()=>JSON.stringify(raw)});
+  assert.ok($('eventTimezone').closest('label').textContent.includes('Sleep & Display Timezone'));
+  assert.ok(w.document.querySelector('[data-page="help"]').textContent.includes('Pacific Time (America/Los_Angeles), following PST/PDT'));
   const set=(id,value)=>{$(id).value=value;$(id).dispatchEvent(new w.Event('input',{bubbles:true}));};
   const enabled=value=>{$('sleepEnabled').checked=value;$('sleepEnabled').dispatchEvent(new w.Event('input',{bubbles:true}));app.refresh();};
   assert.equal($('sleepEnabled').checked,false);assert.equal($('sleep-settings').hidden,true);assert.equal($('sleepStart').disabled,true);assert.equal($('sleepStart').value,'23:00');assert.equal($('sleepEnd').value,'07:00');
@@ -24,6 +26,10 @@ const {JSDOM}=require(process.env.JSDOM_MODULE||'jsdom'),blank=require('../src/b
   const fixture=require('./research-sale-plans.cjs').fixture();Object.assign(fixture.plan,{start:Date.parse('2026-10-08T22:59:59Z')/1000,eventTimezone:'UTC',solverVersion:2,maxDays:366,target:105,strategy:'user',autoSequence:false,sequence:'C K I R H',sleep:{enabled:true,start:'23:00',end:'07:00'}});
   const result=await require('../src/optimizer.cjs').solve(fixture,{maxMs:1500});await load({version:1,config:fixture,result});assert.ok(app.getResult());assert.ok(w.document.querySelector('.sleep-plan-note'));assert.ok(w.document.querySelector('#result-content').textContent.toLowerCase().includes('sleep included'));assert.ok(!$('notice').classList.contains('error'),'saved result loads and displays');
   assert.ok(w.document.querySelector('.sleep-plan-note').textContent.includes('UTC'));assert.ok(!w.document.querySelector('.sleep-plan-note').textContent.includes('undefined'));
+  const selected=new Intl.DateTimeFormat('en-US',{timeZone:'UTC',year:'numeric',month:'short',day:'numeric',weekday:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'}),dates=w.document.querySelectorAll('.shift-start,.shift-end');assert.ok(dates.length);
+  for(const node of dates)assert.ok(node.textContent.endsWith(selected.format(new Date(node.dateTime))),'shift dates display in the selected timezone, not the event timezone');
+  const prepared=require('../src/simulator.cjs').prepare(app.getConfig());assert.equal(prepared.c.zone,'UTC');assert.equal(prepared.c.sleep.timezone,'UTC');
+  const friday=Date.parse('2026-10-09T16:00:00Z')/1000,S=require('../src/simulator.cjs');assert.equal(S.at(prepared.c,friday-1).sale,1);assert.equal(S.at(prepared.c,friday).sale,.3);
   assert.deepEqual(errors,[]);console.log('PASS sleep controls: opt-in defaults, validation, shared/Automatic timezone, compact choices, uncommon saved selections, legacy files, and built app timeline rendering (DOM harness).');
  }finally{dom.window.close();}
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

@@ -1,3 +1,10 @@
+# v0.9.12
+
+- Fix Monday double earnings and Friday research sales to 09:00 America/Los_Angeles, following PST/PDT. The selected Sleep & Display Timezone continues to control sleep and displayed dates.
+- Recalculate non-Pacific plans with the corrected calendar; their event timing and resulting purchase waits can change.
+- Retain optional Sleep Hours, paid silo coverage, and the existing 90-second search budget. Enable Sleep Hours before creating new benchmark plans.
+- Install through Update App → Update & Restart, then rerun the planner. The release includes the game-model audit and Pacific event regression checks.
+
 # v0.9.11
 
 - Compare early Resilience trips when owned silos cannot cover sleep, including a two-shift coverage-and-return route when no missions are required.

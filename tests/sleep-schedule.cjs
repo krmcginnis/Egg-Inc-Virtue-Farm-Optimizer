@@ -42,7 +42,7 @@ async function run(){
  const cashRaw=rawAt('2026-10-12T00:00:00Z');cashRaw.plan.sleep={enabled:true,start:'08:00',end:'10:00',timezone:'UTC'};cashRaw.plan.eventTimezone='UTC';cashRaw.farm.proPermit=false;cashRaw.farm.earningsMode='online';cashRaw.farm.loadouts={current:[]};
  const cashCase=S.prepare(cashRaw),rates=S.stats(cashCase.s,cashCase.c),end=cashCase.s.t+DAY;
  let expected=cashCase.s.cash;
- for(let time=cashCase.s.t;time<end;time+=60){const hour=new Date(time*1000).getUTCHours();expected+=60*(hour>=8&&hour<10?rates.offline:rates.online)*(hour>=9?2:1);}
+ for(let time=cashCase.s.t;time<end;time+=60){const hour=new Date(time*1000).getUTCHours();expected+=60*(hour>=8&&hour<10?rates.offline:rates.online)*(hour>=16?2:1);}
  const accrued=S.advance(cashCase.s,cashCase.c,end,'Cash oracle',true,'online');close(accrued.cash,expected);close(accrued.eggs[0]-cashCase.s.eggs[0],rates.delivery*DAY);assert.equal(accrued.path.action.forcedOfflineSeconds,7200);
  // With one hour of silo coverage, an eight-hour sleep has seven hours of
  // stopped production. Both funding and TE completion include that downtime.
@@ -90,19 +90,19 @@ async function run(){
  const tiny={...c,sleep:schedule('00:01','00:00'),end:s.t+DAY};assert.throws(()=>S.interactionReady(s,tiny,61),/planning limit/);
  // Affordability is calculated using offline income during sleep. Sale
  // prices are recalculated at wake time, rather than carrying bedtime prices.
- const researchRaw=rawAt('2026-10-10T08:59:00Z');researchRaw.plan.eventTimezone='UTC';researchRaw.plan.sleep={enabled:true,start:'09:00',end:'10:00',timezone:'UTC'};researchRaw.farm.research.comfy_nests--;
- const researchCase=S.prepare(researchRaw),a={type:'research',i:S.RMAP.comfy_nests},cost=S.price({...researchCase.s,t:t('2026-10-10T10:00:00Z')},researchCase.c,a),income=S.stats(researchCase.s,researchCase.c).online;
+ const researchRaw=rawAt('2026-10-10T15:59:00Z');researchRaw.plan.eventTimezone='UTC';researchRaw.plan.sleep={enabled:true,start:'16:00',end:'17:00',timezone:'UTC'};researchRaw.farm.research.comfy_nests--;
+ const researchCase=S.prepare(researchRaw),a={type:'research',i:S.RMAP.comfy_nests},cost=S.price({...researchCase.s,t:t('2026-10-10T17:00:00Z')},researchCase.c,a),income=S.stats(researchCase.s,researchCase.c).online;
  researchCase.c.earningsScale*=cost/(income*10000);
  const poor={...researchCase.s,cash:cost*.29};
- const ready=S.afford(poor,researchCase.c,a);assert.ok(ready);assert.ok(ready.t>=t('2026-10-10T10:00:00Z'));assert.ok(S.price(ready,researchCase.c,a)<=ready.cash);validateInteractions(S.history(S.buy(ready,researchCase.c,a)),researchCase.c);
- assert.equal(S.afford(poor,{...researchCase.c,routeResearchRule:true,researchDeadline:t('2026-10-10T09:30:00Z')},a),null,'sale deadline is real time, even while asleep');
+ const ready=S.afford(poor,researchCase.c,a);assert.ok(ready);assert.ok(ready.t>=t('2026-10-10T17:00:00Z'));assert.ok(S.price(ready,researchCase.c,a)<=ready.cash);validateInteractions(S.history(S.buy(ready,researchCase.c,a)),researchCase.c);
+ assert.equal(S.afford(poor,{...researchCase.c,routeResearchRule:true,researchDeadline:t('2026-10-10T16:30:00Z')},a),null,'sale deadline is real time, even while asleep');
  // An independent one-second cash scan checks the earliest funded awake
  // purchase across bedtime, wake time, and the end of a weekly sale.
- for(const date of ['2026-10-08T08:59:00Z','2026-10-10T08:59:00Z'])for(const permit of [false,true]){
-  const probe=rawAt(date);probe.plan.eventTimezone='UTC';probe.plan.sleep={enabled:true,start:'09:00',end:'09:20',timezone:'UTC'};probe.farm.proPermit=permit;probe.farm.loadouts={current:[]};probe.farm.research.comfy_nests--;
+ for(const date of ['2026-10-08T15:59:00Z','2026-10-10T15:59:00Z'])for(const permit of [false,true]){
+  const probe=rawAt(date);probe.plan.eventTimezone='UTC';probe.plan.sleep={enabled:true,start:'16:00',end:'16:20',timezone:'UTC'};probe.farm.proPermit=permit;probe.farm.loadouts={current:[]};probe.farm.research.comfy_nests--;
   const prepared=S.prepare(probe),ctx=prepared.c,action={type:'research',i:S.RMAP.comfy_nests},fullCost=S.price({...prepared.s,t:prepared.s.t+3600},ctx,action);
   ctx.earningsScale*=fullCost/(S.stats(prepared.s,ctx).online*2000);const initial={...prepared.s,cash:0},r=S.stats(initial,ctx);let cash=0,oracle=null;
-  for(let elapsed=0;elapsed<=10000;elapsed++){const time=initial.t+elapsed,hour=new Date(time*1000).getUTCHours(),minute=new Date(time*1000).getUTCMinutes(),asleep=hour===9&&minute<20;
+  for(let elapsed=0;elapsed<=10000;elapsed++){const time=initial.t+elapsed,hour=new Date(time*1000).getUTCHours(),minute=new Date(time*1000).getUTCMinutes(),asleep=hour===16&&minute<20;
    if(!asleep&&S.price({...initial,t:time},ctx,action)<=cash){oracle=time;break;}
    cash+=(asleep?r.offline:r.online)*S.at(ctx,time).earnings;
   }

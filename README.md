@@ -53,8 +53,11 @@ for rollback testing.
 ## Sleep hours
 
 Planning can optionally block game interactions during a daily sleep window.
-Set Sleep Start and Wake Time. Sleep uses the Event Schedule Timezone beside
+Set Sleep Start and Wake Time. Sleep uses the Sleep & Display Timezone beside
 Plan Start; Automatic uses your PC timezone. Sleep is disabled by default.
+Weekly events always run from 09:00 to 09:00 Pacific (America/Los_Angeles),
+following PST/PDT: Monday–Tuesday double earnings and Friday–Saturday research
+cost ×0.30. The selected timezone controls sleep and displayed dates.
 The timezone menu contains common regional choices with UTC offsets, plus
 your PC timezone. Uncommon saved selections are retained when files are loaded.
 

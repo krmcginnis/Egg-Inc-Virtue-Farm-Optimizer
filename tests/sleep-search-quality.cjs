@@ -28,7 +28,7 @@ async function run(){
  // Quality checks need enough wall time on slower Windows runners; the app
  // keeps its 90-second default. Assertions still require the exact optimum.
  const qualityMs=8000,rows=[];
- for(const opts of [{},{fundHours:20},{route:'C R C'},{route:'C R C',permit:false},{start:'2026-10-09T08:30:00Z'},{start:'2026-10-10T08:30:00Z'},{start:'2026-10-12T22:30:00Z',fundHours:20},{start:'2026-11-01T05:30:00Z',zone:'America/Los_Angeles'},{start:'2026-11-01T05:30:00Z',zone:'America/Los_Angeles',permit:false}]){
+ for(const opts of [{},{fundHours:20},{route:'C R C'},{route:'C R C',permit:false},{start:'2026-10-09T15:30:00Z'},{start:'2026-10-10T15:30:00Z'},{start:'2026-10-12T22:30:00Z',fundHours:20},{start:'2026-11-01T05:30:00Z',zone:'America/Los_Angeles'},{start:'2026-11-01T05:30:00Z',zone:'America/Los_Angeles',permit:false}]){
   const raw=make(opts),exact=exhaustive(raw),found=await R.solve(raw,{maxMs:qualityMs,width:8});
   assert.ok(exact.nodes>50);assert.ok(exact.best);
   assert.ok(Math.abs(found.seconds-(exact.best.t-exact.c.start))<.05,'matches the finite exhaustive optimum: '+JSON.stringify({opts,actual:found.seconds,expected:exact.best.t-exact.c.start}));
