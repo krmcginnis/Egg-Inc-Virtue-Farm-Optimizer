@@ -2151,3 +2151,22 @@ release-state guards, and staged-publication guards. The changed app bundle
 passes the DOM integration checks listed above. Git diff confirms the solver,
 legacy solver, and simulator are unchanged. Native Windows and public updater
 checks are pending publication.
+
+
+Native Windows and public updater verification passed in GitHub Actions run
+37715595716, job 113111215584. Release guards, subscriptions, historical sale
+plans, current route/shift regressions, packaging, archive/digest/tamper
+rejection, installation/backup restore, hidden CMD launch, successful restart,
+startup-failure rollback, and legacy-worker restart passed. Windows
+PowerShell 5.1.26100.33438 downloaded the complete public v0.9.4 release
+through the updater and verified every app file checksum.
+
+Published source commit: 5c47d6e495d4a36a02b7959e4789629a956e90e5.
+Public release: 406330761, v0.9.4, with both assets uploaded:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8594187 bytes; SHA256
+  6a3a8da87cf7be559cdced97917ebfd93bd4830c8bd6b22bda4c09427cf69284.
+- update-manifest.json: 239 bytes; SHA256
+  3db2f237cd978c08e0d307a0583d6a10e1bd0ac23e37140d3a1067f39400ba14.
+
+This same-version audit update records completed verification without replacing
+or repackaging the immutable release assets.
