@@ -2035,3 +2035,23 @@ Quick Guide, timeline, JSON/PDF export, all-plan replay, update-session
 handoff, next ascension, cancellation, historical and invalid imports, and
 desktop layouts from 1440 to 1000px. Windows and public updater verification
 will be recorded after the automatic publication workflow completes.
+
+
+Native Windows and public updater verification passed in GitHub Actions run
+37710440155, job 113094871977. Checks include the new full-plan departure
+opportunity-cost and arbitrary-route fuel regressions, all previous route
+regressions, historical sales, subscriptions, packaging, version/source
+guards, archive/digest/tamper rejection, installation and exact backup restore,
+hidden CMD launch, successful restart, startup-failure rollback, and legacy
+worker restart. Windows PowerShell 5.1.26100.33438 downloaded the complete
+public v0.9.2 release through the updater and verified every app file checksum.
+
+Published source commit: aca36d251d7f7979238b7406012903b683d59f3b.
+Public release: 406295621, v0.9.2, with both assets uploaded:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8591029 bytes; SHA256
+  faafb4860118a85c4bae82c8ad3efe2243f5e8e175c066871746f07fcd0be865.
+- update-manifest.json: 239 bytes; SHA256
+  753d2cb848010d6f4b8c919b03bbd2c787c1afa9a0873cac0a8cf0da5c123254.
+
+This same-version audit update records completed verification without replacing
+or repackaging the immutable release assets.
