@@ -78,5 +78,25 @@ they are required on the Windows release runner before publication is accepted.
 The Windows release workflow includes the new sleep and silo-comfort checks,
 builds both generated bundles, packages one current audit and runtime files only,
 and checks native updater/launch behavior. Publication requires both complete
-assets and an anonymous public-feed/download checksum check. Release workflow
-and public-feed results will be recorded after the v0.9.8 run completes.
+assets and an anonymous public-feed/download checksum check. Windows run [37823561048](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/37823561048)
+completed successfully for source commit
+`0714a2f3431bcb3865a029e272e004c8a0df78ee`. Native Windows PowerShell checks
+passed valid installation, archive/version/digest rejection, rollback and exact
+restore, preserved user JSON/configuration, hidden launch/reuse from paths with
+spaces, successful restart, startup-failure recovery, and legacy-worker recovery.
+The runner then passed anonymous latest-feed lookup, complete public archive
+download, and every file checksum on Windows PowerShell 5.1.26100.33438.
+
+Independent anonymous verification also found v0.9.8 as latest, downloaded both
+complete assets, checked their GitHub digests and manifest size/hash, ZIP CRC,
+all 169 runtime entries and each runtime-file checksum, version/branding, one
+current audit, update repository configuration, and both sleep-enabled bundles.
+The release is [v0.9.8](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v0.9.8).
+
+| Asset | GitHub ID | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Egg-Inc-Virtue-Farm-Optimizer.zip | 622639371 | 8,578,032 | `6bfc803eb5ee865d2fbd8ea0d4cb2c89b7f60682e31c5905ecf33a5235c52059` |
+| update-manifest.json | 622639372 | 239 | `c58f5be6b5bcf0f795361172e8d53e62f641ca2564620ff15de06b27d206ff8e` |
+
+This verification record is a source-only follow-up. Published assets retain
+the pre-publication audit snapshot; no assets or app version are replaced.
