@@ -1,4 +1,4 @@
-# v0.9.9
+# v0.9.10
 
 - Compare early Resilience trips when owned silos cannot cover sleep, including a two-shift coverage-and-return route when no missions are required.
 - Compare departures before bedtime, at wake time, and at research-sale boundaries within passive funding waits. Recompute paid cash and delivery, and evaluate complete continuations.

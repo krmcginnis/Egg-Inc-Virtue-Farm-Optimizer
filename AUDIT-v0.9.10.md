@@ -1,4 +1,4 @@
-# Egg Inc. Virtue Farm Optimizer v0.9.9 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.9.10 — Release Audit
 
 ## Scope and search budget
 
@@ -103,4 +103,6 @@ and generated bundles remain excluded from source commits.
 
 ## Release verification
 
-Release preparation builds v0.9.9 and runs the new exhaustive sleep-search and earnings-reexecution regressions, existing solver and worker checks, release-state checks, publish-preparation checks, and packaging. Windows native updater/launch checks and anonymous public-feed/download verification must pass before this release is accepted. Verification results will be recorded in a source-only follow-up; published assets retain the pre-publication audit snapshot.
+Release preparation builds v0.9.10 and runs the new exhaustive sleep-search and earnings-reexecution regressions, existing solver and worker checks, release-state checks, publish-preparation checks, and packaging. Windows native updater/launch checks and anonymous public-feed/download verification must pass before this release is accepted. Verification results will be recorded in a source-only follow-up; published assets retain the pre-publication audit snapshot.
+
+The initial Windows release run stopped before publication because the 1.2-second finite-quality test allowance did not reach its expected optimum on that runner. Quality checks now allow eight seconds while retaining exact-optimum and strict-replay assertions. The application default remains 90 seconds. The corrected source must pass a new Windows release run.

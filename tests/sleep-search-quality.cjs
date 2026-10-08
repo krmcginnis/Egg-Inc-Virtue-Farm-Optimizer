@@ -25,11 +25,13 @@ function exhaustive(raw,{waits=1}={}){
  visit(s,waits);return {s,c,best,nodes};
 }
 async function run(){
- const rows=[];
+ // Quality checks need enough wall time on slower Windows runners; the app
+ // keeps its 90-second default. Assertions still require the exact optimum.
+ const qualityMs=8000,rows=[];
  for(const opts of [{},{fundHours:20},{route:'C R C'},{route:'C R C',permit:false},{start:'2026-10-09T08:30:00Z'},{start:'2026-10-10T08:30:00Z'},{start:'2026-10-12T22:30:00Z',fundHours:20},{start:'2026-11-01T05:30:00Z',zone:'America/Los_Angeles'},{start:'2026-11-01T05:30:00Z',zone:'America/Los_Angeles',permit:false}]){
-  const raw=make(opts),exact=exhaustive(raw),found=await R.solve(raw,{maxMs:1200,width:8});
+  const raw=make(opts),exact=exhaustive(raw),found=await R.solve(raw,{maxMs:qualityMs,width:8});
   assert.ok(exact.nodes>50);assert.ok(exact.best);
-  assert.ok(Math.abs(found.seconds-(exact.best.t-exact.c.start))<.05,'matches the finite exhaustive optimum: '+JSON.stringify(opts));
+  assert.ok(Math.abs(found.seconds-(exact.best.t-exact.c.start))<.05,'matches the finite exhaustive optimum: '+JSON.stringify({opts,actual:found.seconds,expected:exact.best.t-exact.c.start}));
   const checked=R.replay(raw,JSON.parse(JSON.stringify(found.actions)),true);assert.equal(checked.s.t,found.end);assert.ok(S.reached(checked.s,checked.c));validateInteractions(found.actions,checked.c);
   assert.ok(found.actions.some(a=>a.type==='silo'),'funds sleep coverage rather than assuming it');
   rows.push({case:opts,enumerated:exact.nodes,seconds:found.seconds,gapSeconds:found.seconds-(exact.best.t-exact.c.start)});
@@ -54,7 +56,7 @@ async function run(){
  const covered=structuredClone(raw);covered.farm.silos=8;assert.deepEqual(Automatic.generate(covered),Automatic.generate({...covered,plan:{...covered.plan,sleep:{enabled:false}}}),'no extra coverage routes when owned silos cover the nights');
  const brief=make({route:'C R C'}),exactBrief=exhaustive(brief);Object.assign(brief.plan,{strategy:'auto',strategyVersion:2,autoSequence:true,maxShifts:2});
  assert.ok(Automatic.generate(brief).some(r=>r.join(' ')==='curiosity resilience curiosity'),'two shifts can buy coverage and return without requiring unrelated farms');
- const quick=await R.solve(brief,{maxMs:1600,width:8});assert.equal(quick.switches,2);assert.ok(Math.abs(quick.seconds-(exactBrief.best.t-exactBrief.c.start))<.05);const replayed=R.replay(brief,quick.actions,true);assert.equal(replayed.s.t,quick.end);validateInteractions(quick.actions,replayed.c);
+ const quick=await R.solve(brief,{maxMs:qualityMs,width:8});assert.equal(quick.switches,2);assert.ok(Math.abs(quick.seconds-(exactBrief.best.t-exactBrief.c.start))<.05);const replayed=R.replay(brief,quick.actions,true);assert.equal(replayed.s.t,quick.end);validateInteractions(quick.actions,replayed.c);
  console.log('PASS sleep search quality: exhaustive paid research/silo/shift orders, early coverage, later-C research, both permits, sale/earnings boundaries, awake calendar departures, and unchanged sleep-disabled proposals.');
  return rows;
 }

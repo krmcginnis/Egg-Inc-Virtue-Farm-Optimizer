@@ -30,7 +30,7 @@ async function run(){
  await context.onmessage({data:{config:strong,options:{maxMs:5000,incumbent:{config:weak,result:old}}}});assert.equal(error,undefined);assert.ok(result.search.earningsAdaptations>0);
  for(const entry of old.shiftPlans){const next=result.shiftPlans.find(e=>e.switches===entry.switches);assert.ok(next);assert.ok(next.plan.seconds<=entry.plan.seconds+1e-6);const paid=O.replay(strong,next.plan.actions,true);assert.equal(paid.s.t,next.plan.end);require('./sleep-schedule.cjs').validateInteractions(next.plan.actions,paid.c);}
  const short=require('./sleep-search-quality.cjs').make({route:'C R C'});Object.assign(short.plan,{strategy:'auto',strategyVersion:2,autoSequence:true,maxShifts:2});result=undefined;
- await context.onmessage({data:{config:short,options:{maxMs:1600,width:8}}});assert.equal(error,undefined);assert.equal(result.switches,2);assert.ok(Math.abs(result.seconds-172832.00099992752)<.05);
+ await context.onmessage({data:{config:short,options:{maxMs:8000,width:8}}});assert.equal(error,undefined);assert.equal(result.switches,2);assert.ok(Math.abs(result.seconds-172832.00099992752)<.05);
  const covered=O.replay(short,JSON.parse(JSON.stringify(result.actions)),true);assert.equal(covered.s.t,result.end);require('./sleep-schedule.cjs').validateInteractions(result.actions,covered.c);
  console.log('PASS built browser worker: standalone search bundle, checkpoint metadata, distinct plans, extra paid silos after earlier delivery visits, shared sleep timezone, earnings-only upgrade reexecution, and independent replay.');
 }
