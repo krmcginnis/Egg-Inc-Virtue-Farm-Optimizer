@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.9.4 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.9.5 — Release Audit
+
+v0.9.5 adds per-search paid checkpoints and research-unlock lookahead, with
+controlled exhaustive comparisons and a repeatable benchmark command. Current
+validation is in the v0.9.5 section at the end; earlier evidence is historical.
 
 v0.9.4 removes the highlighted Planning helper text and shows the custom
 sequence shift count inline. Current evidence is at the end; earlier evidence
@@ -2170,3 +2174,85 @@ Public release: 406330761, v0.9.4, with both assets uploaded:
 
 This same-version audit update records completed verification without replacing
 or repackaging the immutable release assets.
+
+
+## v0.9.5 — Reused farm checkpoints and research unlocks
+
+The route solver now owns a bounded cache for one solve only. Exact state and
+context keys include cash, time, research, physical purchases, equipped gear,
+TE progress, fuel, mission state, and offline-break count. General continuations
+also require the same route, target, floors, and mission configuration. Local
+C/K/I recipes that neither shift nor launch missions can share identical paid
+openings across different route endings. Cached suffixes are cloned and attached
+to the caller's own paid prefix; dynamic gear snapshots are restored by their
+content keys. The cache holds at most 256 entries and 40,000 action records.
+Failed or interrupted operations are not stored. A valid synchronous recipe
+completed just after its time slice remains a candidate without being cached.
+
+Research lookahead branches through up to 16 prerequisite levels into useful
+research in the next locked tier. It retains cheap and earning-focused
+prerequisite paths, applies actual prices, events, cash waits, interaction time,
+and offline batching, and compares continuing research with leaving for the
+rest of the route. Whole-plan completion, then shifts, then offline breaks,
+remains the final ranking. The existing bounded search and recipe candidates
+remain available; the legacy solver and simulator files are unchanged.
+
+A part of the existing refinement budget is reserved for unlock comparisons.
+Complete alternatives are retained by route as well as by shift count, so a
+slightly faster ending does not erase a different completed path needed to
+recover a neighboring shift-count result. Cancellation and the final-C delivery
+rule remain enforced. No new user planning inputs are introduced.
+
+New tests/search-quality.cjs independently enumerates every legal purchase
+order within controlled two-, three-, and four-purchase horizons. The new
+lookahead reaches the same optimal finish in all three fixtures (111, 876, and
+6,784 enumerated purchase transitions). In the two-purchase fixture, the
+lookahead completes in 14.301 seconds versus 15.001 seconds for the best of the
+four immediate-purchase policies. These are bounded synthetic problems, not a
+proof of optimality for real farms.
+
+Checkpoint tests cover state/constraint differences, path rebasing, immutable
+results, offline-break tie breaking, memory eviction, interruption, complete
+continuation replay, and branching only after interaction time. Identical
+repeated continuations match an uncached simulation action for action.
+
+Developer command:
+  node scripts/benchmark-search.cjs
+Optionally provide --farm with an external farm/save file, --baseline with an
+older checkout, and --budgets with comma-separated millisecond budgets. The
+command ignores saved result plans and prints only aggregate metrics. No farm
+contents or private fixtures are committed.
+
+A fresh v0.9.4 run and the new solver were compared from the same saved farm
+configuration at the normal 45-second budget. Baseline results were 12 shifts:
+137.569067146 days; 11 shifts: 155.588167302 days; and 10 shifts: 161.706125708
+days. The new run took 43.684 seconds and returned 137.569067146,
+155.588014605, and 161.705973011 days, respectively. The fastest result is
+unchanged; the 11- and 10-shift results improve by about 13.19 seconds. This run
+recorded 105 checkpoint hits, 300 generated unlock chains, and 38 completed
+continuation comparisons, including 27 unlock comparisons. The baseline
+recorded 12 continuation comparisons. Search allocation is wall-clock bounded,
+so counts and improvements can vary with hardware and timing.
+
+All three resulting plans pass full replay, target/floor/mission checks,
+selection, JSON round-trip, and a second recorded replay. Existing current and
+legacy solver tests, calendar/DST checks, purchase-discount checks, physical
+preview checks, shift-rate checks, release guards, and publication guards pass.
+The separate pinned upstream reference-math fixture is not present in this
+workspace, so that optional suite was not rerun; the underlying game-math and
+legacy files are unchanged. No browser-layout changes are included.
+
+A shorter 15-second comparison returned no complete plan in either v0.9.4 or
+v0.9.5 for this demanding farm. The benchmark reports that outcome rather than
+silently omitting it. This update does not solve every farm within a smaller
+computation budget.
+
+Local npm ci, build, packaging of 169 runtime files, and the actual generated
+browser-worker bundle pass. The standalone worker test runs without Node
+module access and independently replays its returned plans. The new quality
+and worker tests are included in Windows release verification. PowerShell is
+not installed on this Linux host, so native update-core/update-launch checks
+could not run locally and remain assigned to the Windows release job.
+
+Native Windows checks and public updater verification are pending publication
+and will be recorded below.

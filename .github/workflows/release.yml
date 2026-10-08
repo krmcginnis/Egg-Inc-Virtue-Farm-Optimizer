@@ -65,7 +65,11 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/route-solver.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/search-quality.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/solver-worker.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python scripts/package.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

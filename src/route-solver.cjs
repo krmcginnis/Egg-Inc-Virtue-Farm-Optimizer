@@ -6,6 +6,7 @@ const Staged=require('./staged-route.cjs');
 const Recipes=require('./wasmegg-stage-engine.cjs');
 const Strategy=require('./planning-strategy.cjs'),Summary=require('./shift-summary.cjs'),F=require('./feasibility.cjs');
 const Automatic=require('./automatic-routes.cjs'),ShiftPlans=require('./shift-plans.cjs');
+const {Checkpoints}=require('./search-checkpoints.cjs'),Lookahead=require('./purchase-lookahead.cjs');
 function better(a,b){if(!a)return false;if(!b)return true;if(a.t<b.t-1e-6)return true;if(a.t>b.t+1e-6)return false;return a.stage<b.stage||a.stage===b.stage&&W.offlineBreaks(a)<W.offlineBreaks(b);}
 const VERSION=2,letters=['C','I','H','R','K'];
 
@@ -115,7 +116,19 @@ function tag(s,base,label){
  let path=base;for(const action of actions.reverse())path={prev:path,action:{...action,phase:action.phase==='Candidate'?label:action.phase||label}};
  return {...s,path};
 }
-function seedRoute(initial,c,minutes,checkpoint=()=>{}){
+function recipe(s,c,kind,limit=Infinity,cache,checkpoint=()=>{},forcePhysical=true){
+ const runner=kind==='C1'?(s,ctx)=>Recipes.runC1(s,ctx,limit):kind==='K1'?(s,ctx)=>Recipes.runK1(s,ctx,limit):
+  kind==='C3'?(s,ctx)=>Recipes.runC3(s,ctx,c.researchDeadline):Recipes['run'+kind];
+ const run=()=>Staged.step(s,c,forcePhysical&&['I1','K2'].includes(kind)?kind:'Candidate',s.egg,runner,limit,c.researchDeadline);
+ return cache?cache.run(s,c,['recipe',kind,limit,forcePhysical],run,checkpoint,true,true):run();
+}
+function seedRoute(initial,c,minutes,checkpoint=()=>{},cache){
+ let stopped=false,interruption;
+ const check=()=>{if(stopped)throw interruption;try{checkpoint();}catch(error){stopped=true;interruption=error;throw error;}};
+ const run=()=>seedRouteUncached(initial,c,minutes,check,cache);
+ return cache?cache.run(initial,c,['continuation',minutes],run,check,false,true):run();
+}
+function seedRouteUncached(initial,c,minutes,checkpoint,cache){
  // A paid, replayable starting candidate for every route. These sampled
  // departures do not constrain the subsequent search's visit durations.
  c={...c,stagedShips:false,batchOffline:c.earningsMode==='offline',batchMode:'all-waits'};let n=initial,best=null;
@@ -124,11 +137,11 @@ function seedRoute(initial,c,minutes,checkpoint=()=>{}){
   const base=n.path,label=phase(n,c),first=c.sequence.slice(0,stage).every(e=>e!==n.egg);
   if(n.egg===0&&stage<c.finalCStage&&n.t<c.researchDeadline){
    const local=researchContext(n,c);
-   if(first)n=Staged.step(n,local,'Candidate',0,(s,ctx)=>Recipes.runC1(s,ctx,minutes*60),minutes*60);
-   if(stage===c.finalResearchStage&&n.t<c.researchDeadline)n=Staged.step(n,local,'Candidate',0,(s,ctx)=>Recipes.runC3(s,ctx,c.researchDeadline),c.researchDeadline-n.t);
-   else if(!first)n=Staged.step(n,local,'Candidate',0,Recipes.runC2,14400);
-  }else if(n.egg===1)n=Staged.step(n,c,'I1',1,Recipes.runI1);
-  else if(n.egg===4)n=first?Staged.step(n,c,'Candidate',4,(s,ctx)=>Recipes.runK1(s,ctx,minutes*60),minutes*60):Staged.step(n,c,'K2',4,Recipes.runK2);
+   if(first)n=recipe(n,local,'C1',minutes*60,cache,checkpoint);
+   if(stage===c.finalResearchStage&&n.t<c.researchDeadline)n=recipe(n,local,'C3',c.researchDeadline-n.t,cache,checkpoint);
+   else if(!first)n=recipe(n,local,'C2',14400,cache,checkpoint);
+  }else if(n.egg===1)n=recipe(n,c,'I1',Infinity,cache,checkpoint);
+  else if(n.egg===4)n=recipe(n,c,first?'K1':'K2',first?minutes*60:Infinity,cache,checkpoint);
   else if(n.egg===2){
    const projected=S.clone(n);if(future(n,c,4))for(const v of projected.v)if(v.id===11)v.cars=S.stats(n,c).trainLength;
    const set=S.artifactChoices(projected,c).reduce((a,b)=>S.stats({...projected,set:b},c).delivery>S.stats({...projected,set:a},c).delivery?b:a,n.set);
@@ -160,8 +173,8 @@ function openingDepartures(initial,c,actions){
  }
  states.push(last);return [...new Set(states)];
 }
-async function compareDepartures(states,c,deadline,control){
- const trials=prune(states,c,8),ranked=[];
+async function compareDepartures(states,c,deadline,control,preferred=[]){
+ const trials=[...new Set([...preferred,...prune(states,c,8)])],ranked=[];
  for(const state of trials){
   if(control.cancelled()||Date.now()>=deadline)break;
   let best=null;
@@ -172,7 +185,7 @@ async function compareDepartures(states,c,deadline,control){
    try{
     let next=state;
     if(state.stage+1<c.sequence.length&&!complete(state,c))next=S.buy(state,c,{type:'shift',egg:c.sequence[state.stage+1]});
-    const end=seedRoute(next,c,minutes,()=>{if(control.cancelled()||Date.now()>=deadline)throw Error('Continuation interrupted');});
+    const end=seedRoute(next,c,minutes,()=>{if(control.cancelled()||Date.now()>=deadline)throw Error('Continuation interrupted');},control.checkpoints);
     control.continuationsCompared++;
     if(end){control.consider(end);if(better(end,best))best=end;}
    }catch{}
@@ -182,6 +195,53 @@ async function compareDepartures(states,c,deadline,control){
  }
  ranked.sort((a,b)=>better(a.end,b.end)?-1:better(b.end,a.end)?1:0);
  return ranked;
+}
+
+async function unlockDepartures(states,c,deadline,control){
+ if(!control.lookahead)return [];
+ const proposed=[];
+ for(const state of Lookahead.anchors(states,c)){
+  if(control.cancelled()||Date.now()>=deadline)break;
+  try{
+   const result=Lookahead.chains(state,c,{checkpoint:()=>{if(control.cancelled()||Date.now()>=deadline)throw Error('Purchase lookahead interrupted');}});
+   control.lookaheadNodes+=result.nodes;control.lookaheadChains+=result.candidates.length;
+   for(const candidate of result.candidates)proposed.push(tag(candidate.state,state.path,phase(state,c)));
+  }catch{}
+  await control.yield();
+ }
+ return proposed;
+}
+
+function researchPrefixes(initial,c,actions){
+ let n=initial;const states=[initial];
+ for(const action of actions){
+  if(action.type==='wait')n=S.advance(n,c,action.end,action.reason,true,action.earningsMode||'auto');
+  else n=S.buy(n,{...c,actionsSeconds:action.type==='ship-run'?c.actionsSeconds:0,shiftSeconds:0,shipReplay:true},action);
+  // Wait records include the full purchase interaction. Never branch from
+  // an instant between paying and completing that interaction.
+  if(n.egg===0&&n.stage<c.finalCStage&&(action.type==='wait'||c.actionsSeconds===0&&action.type!=='shift'))states.push(n);
+ }
+ return states;
+}
+async function comparePurchaseChains(states,c,deadline,control){
+ if(!control.lookahead)return;
+ const anchors=Lookahead.anchors(states,c);
+ for(let i=0;i<anchors.length;i++){
+  if(control.cancelled()||Date.now()>=deadline)break;
+  const end=Date.now()+Math.max(1,(deadline-Date.now())/(anchors.length-i));
+  const chains=await unlockDepartures([anchors[i]],c,Math.min(end,Date.now()+Math.max(1,(end-Date.now())*.25)),control);
+  // Keep separate economic and delivery candidates, then judge the actual
+  // completed route. Compare leaving now with continuing research on this C.
+  for(const state of prune(chains,c,4))for(const leave of [false,true]){
+   if(control.cancelled()||Date.now()>=end)break;
+   try{
+    let next=state;if(leave&&state.stage+1<c.sequence.length)next=S.buy(state,c,{type:'shift',egg:c.sequence[state.stage+1]});
+    const result=seedRoute(next,c,180,()=>{if(control.cancelled()||Date.now()>=end)throw Error('Unlock continuation interrupted');},control.checkpoints);
+    control.lookaheadComparisons++;control.continuationsCompared++;if(result)control.consider(result);
+   }catch{}
+   await control.yield();
+  }
+ }
 }
 
 function completionAlternatives(raw,item,counts,checkpoint=()=>{}){
@@ -246,15 +306,15 @@ async function visit(start,c,deadline,control){
  const generators=[];
  if(start.egg===0&&start.stage<c.finalCStage&&start.t<c.researchDeadline){
   const first=c.sequence.slice(0,start.stage).every(e=>e!==0);
-  if(first)generators.push([(s,ctx)=>Recipes.runC1(s,ctx,180*60),180*60]);
-  if(start.stage===c.finalResearchStage)generators.push([(s,ctx)=>Recipes.runC3(s,ctx,c.researchDeadline),c.researchDeadline-start.t]);
-  else if(!first)generators.push([Recipes.runC2,14400]);
- }else if(start.egg===1)generators.push([Recipes.runI1,Infinity]);
- else if(start.egg===4){const first=c.sequence.slice(0,start.stage).every(e=>e!==4);generators.push(first?[(s,ctx)=>Recipes.runK1(s,ctx,180*60),180*60]:[Recipes.runK2,Infinity]);}
- for(const [runner,limit] of generators){
+  if(first)generators.push(['C1',180*60]);
+  if(start.stage===c.finalResearchStage)generators.push(['C3',c.researchDeadline-start.t]);
+  else if(!first)generators.push(['C2',14400]);
+ }else if(start.egg===1)generators.push(['I1',Infinity]);
+ else if(start.egg===4){const first=c.sequence.slice(0,start.stage).every(e=>e!==4);generators.push(first?['K1',180*60]:['K2',Infinity]);}
+ for(const [kind,limit] of generators){
   if(control.cancelled()||Date.now()>=deadline)break;
   try{
-   const candidate=Staged.step(start,researchContext(start,c),'Candidate',start.egg,runner,limit,c.researchDeadline);
+   const candidate=recipe(start,researchContext(start,c),kind,limit,control.checkpoints,()=>{if(control.cancelled())throw Error('Recipe interrupted');},false);
    let n=start,seen=0;const actions=[];for(let p=candidate.path;p&&p!==start.path;p=p.prev)actions.push(p.action);
    for(const a of actions.reverse()){
     if(a.type==='wait')n=S.advance(n,c,a.end,a.reason,true,a.earningsMode||'auto');
@@ -280,7 +340,10 @@ async function visit(start,c,deadline,control){
   const event=S.at(c,state.t).next;
   if(Number.isFinite(event)&&event<c.end)try{departures.push(S.advance(state,c,event,'Compare departure at a weekly event boundary'));}catch{}
  }
- const continuations=compareLater?await compareDepartures(departures,c,deadline,control):[];
+ const chainDeadline=Date.now()+Math.max(0,(deadline-Date.now())*.2);
+ const chains=await unlockDepartures(departures,c,chainDeadline,control);departures.push(...chains);
+ const preferred=chains.length?prune(chains,c,4).slice(0,2):[];
+ const continuations=compareLater?await compareDepartures(departures,c,deadline,control,preferred):[];
  // Preserve prefixes whose paid continuations finish sooner even when they
  // currently earn less. Keep other candidates for the broader beam search.
  return [...new Set([...continuations.slice(0,Math.max(1,Math.floor(control.width/2))).map(x=>x.state),...prune(departures,c,control.width)])].slice(0,control.width);
@@ -324,7 +387,8 @@ function finalize(raw,best,c,route,count,control,termination){
   termination,explored:control.explored,elapsedMs:Date.now()-control.started,start:c.start,end:s.t,seconds:s.t-c.start,switches:s.stage,soulCost:s.lost,target:c.target,
   finalTE:S.teByEgg(s,c),pendingTE:S.totalTE(s,c)-c.claimedTotal,finalCash:s.cash,finalStats:S.stats(s,c),actions,
   frontier:[{switches:s.stage,seconds:s.t-c.start,soulCost:s.lost}],sourceCommit:S.D.commit,validatedReplay:true,
-  artifactRecommendations:best.artifactRecommendations||null,artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions),search:{automaticVisitTiming:true,routesCompared:control.routesCompared,statesExamined:control.explored,continuationsCompared:control.continuationsCompared}};
+  artifactRecommendations:best.artifactRecommendations||null,artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions),search:{automaticVisitTiming:true,routesCompared:control.routesCompared,statesExamined:control.explored,continuationsCompared:control.continuationsCompared,
+   checkpoints:control.checkpoints?.summary(),lookaheadNodes:control.lookaheadNodes,lookaheadChains:control.lookaheadChains,lookaheadComparisons:control.lookaheadComparisons}};
  return {...result,summary:Summary.summarize(raw,result)};
 }
 async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
@@ -332,11 +396,21 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  if(Strategy.automatic(raw.plan||{}))Automatic.limit(raw);
  const routeOptions=options.returnComparisons===true&&Strategy.automatic(raw.plan||{})?presetRoutes(raw):routes(raw),started=Date.now(),maxMs=S.number(options.maxMs??45000,'Search time',100,600000);
  const width=Math.min(16,S.number(options.width??12,'Search width',4,512,true));
- const entries=[],byShift=new Map(),control={started,width,explored:0,routesCompared:0,continuationsCompared:0,cancelled,yield:()=>new Promise(r=>setTimeout(r,0))};let recommended=null,overall=null,retained=null;
+ const entries=[],byShift=new Map(),byRoute=new Map(),control={started,width,explored:0,routesCompared:0,continuationsCompared:0,
+  checkpoints:options.disableCheckpoints?null:new Checkpoints(),lookahead:!options.disableLookahead,lookaheadNodes:0,lookaheadChains:0,lookaheadComparisons:0,
+  cancelled,yield:()=>new Promise(r=>setTimeout(r,0))};let recommended=null,overall=null,retained=null;
  for(const count of options.returnComparisons===true?Plans.COUNTS:[3]){
   if(cancelled()){entries.push({researchSales:count,status:'not-completed',error:'Search stopped before this sale option completed.'});continue;}
   const deadline=started+maxMs*count/3*(options.returnComparisons===true?1:.72);let best=null,bestContext=null,bestRoute=null,lastError='';
-  control.consider=state=>{if(!state||!complete(state,control.context))return;const previous=byShift.get(state.stage);if(better(state,previous?.state))byShift.set(state.stage,{state,context:control.context,route:control.route,count});if(better(state,best)){best=state;bestContext=control.context;bestRoute=control.route;}};
+  control.consider=state=>{
+   if(!state||!complete(state,control.context))return;
+   const item={state,context:control.context,route:control.route,count},previous=byShift.get(state.stage);
+   if(better(state,previous?.state))byShift.set(state.stage,item);
+   // A slightly faster H-ending plan must not erase an I-ending purchase
+   // path that can supply a valid shorter shift-count comparison.
+   const routeKey=JSON.stringify([count,control.route]);if(better(state,byRoute.get(routeKey)?.state))byRoute.set(routeKey,item);
+   if(better(state,best)){best=state;bestContext=control.context;bestRoute=control.route;}
+  };
   const contexts=[];
   // Exclude impossible proposals before dividing CPU time; otherwise routes
   // that cannot satisfy fuel/floors consume a share of every earlier slice.
@@ -365,7 +439,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
     const seedDeadline=Date.now()+Math.max(1,(routeDeadline-Date.now())*.55);
     for(const minutes of [180,60,30]){
      if(cancelled()||Date.now()>=seedDeadline)break;
-     try{control.consider(seedRoute(initial,c,minutes,()=>{if(cancelled()||Date.now()>seedDeadline)throw Error('Candidate interrupted');}));}catch(e){lastError=e.message;}
+     try{control.consider(seedRoute(initial,c,minutes,()=>{if(cancelled()||Date.now()>seedDeadline)throw Error('Candidate interrupted');},control.checkpoints));}catch(e){lastError=e.message;}
     }
    }
    let beam=[initial];
@@ -402,16 +476,26 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    const actions=S.history(item.state),prefixes=openingDepartures(initial,c,actions);
    const refineDeadline=Date.now()+Math.max(1,(started+maxMs*.95-Date.now())/(alternatives.length-i));
    progress({phase:'route-search',stage:phase(initial,c),phaseLabel:'Comparing complete departure continuations',explored:control.explored,elapsedMs:Date.now()-started,bestSeconds:Math.min(...[...byShift.values()].map(x=>x.state.t-c.start)),routeIndex:control.routesCompared});
-   await compareDepartures(prefixes,c,refineDeadline,control);
+   const openingDeadline=control.lookahead?Date.now()+Math.max(1,(refineDeadline-Date.now())*.65):refineDeadline;
+   await compareDepartures(prefixes,c,openingDeadline,control);
+   if(control.lookahead&&Date.now()<refineDeadline&&!cancelled()){
+    // Use the current winner after departure refinement, not an outdated
+    // purchase path. Replay only this search's paid actions into checkpoints.
+    const current=byShift.get(item.state.stage)||item;control.context=current.context;control.route=current.route;
+    const fresh=prepare(raw,current.route,current.count,{artifactReplay:true,artifactSets:current.context.loadouts});
+    const research=researchPrefixes(fresh.s,current.context,S.history(current.state));
+    progress({phase:'route-search',stage:'Research',phaseLabel:'Comparing research unlock chains',elapsedMs:Date.now()-started,explored:control.explored});
+    await comparePurchaseChains(research,current.context,refineDeadline,control);
+   }
   }
   // Recover missing neighboring shift counts before returning comparisons.
   // A thin beam failing to find one is not evidence that it is impossible.
   const highest=Math.max(...byShift.keys()),missing=[highest-1,highest-2].filter(n=>n>=0&&!byShift.has(n));
   if(missing.length){
-   const sources=[...byShift.values()].sort((a,b)=>better(a.state,b.state)?-1:1);
+   const sources=[...new Set([...byShift.values(),...byRoute.values()])].sort((a,b)=>a.state.stage-b.state.stage||(better(a.state,b.state)?-1:1));
    for(const item of sources){
-    if(cancelled())break;control.context=item.context;control.route=item.route;
-    try{for(const end of completionAlternatives(raw,item,missing,()=>{if(cancelled()||Date.now()>=started+maxMs)throw Error('Completion comparison interrupted');})){control.consider(end);}}
+    const pending=missing.filter(n=>!byShift.has(n));if(cancelled()||!pending.length)break;control.context=item.context;control.route=item.route;
+    try{for(const end of completionAlternatives(raw,item,pending,()=>{if(cancelled()||Date.now()>=started+maxMs)throw Error('Completion comparison interrupted');})){control.consider(end);}}
     catch{}
    }
   }
@@ -425,4 +509,4 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  const chosen=Plans.select({researchSalePlans:entries,recommendedResearchSales:recommended},recommended);
  return chosen;
 }
-module.exports={VERSION,seedRoute,openingDepartures,compareDepartures,completionAlternatives,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,solve};
+module.exports={VERSION,recipe,seedRoute,openingDepartures,researchPrefixes,compareDepartures,comparePurchaseChains,completionAlternatives,unlockDepartures,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,solve};

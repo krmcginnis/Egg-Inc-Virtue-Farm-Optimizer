@@ -1,3 +1,12 @@
+# v0.9.5
+
+- Reuse exact, paid farm checkpoints within each search so shared openings and repeated continuations need less simulation. Bound cache memory and keep different cash, timing, gear, fuel, missions, and route constraints separate.
+- Compare prerequisite research chains that unlock useful upgrades, then evaluate continuing research or leaving Curiosity through a complete paid plan.
+- Reserve computation time for these research comparisons and retain completed route alternatives that can produce shorter shift-count plans.
+- Add exhaustive small-case quality checks and a developer benchmark command. Run the new checks in Windows release verification.
+- Preserve the previous solver, owned-gear rules, final-C delivery, mission requirements, and saved-plan replay. Results remain the fastest plans found by a bounded search.
+- Install through Update App → Update & Restart.
+
 # v0.9.4
 
 - Remove the highlighted Planning helper text for offline breaks, launch ordering, FTL, and repeated user-sequence descriptions.
