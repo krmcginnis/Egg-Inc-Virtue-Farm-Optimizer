@@ -12,7 +12,7 @@ async function run(){
  if(!opts['--farm'])return;
  const document=JSON.parse(fs.readFileSync(opts['--farm'],'utf8')),raw=document.config||document;
  const baseline=opts['--baseline']?require(path.resolve(opts['--baseline'],'src/optimizer.cjs')):O;
- const budgets=(opts['--budgets']||'45000').split(',').map(n=>S.number(n,'Budget',100,600000,true));
+ const budgets=(opts['--budgets']||'90000').split(',').map(n=>S.number(n,'Budget',100,600000,true));
  for(const maxMs of budgets)for(const mode of ['baseline','checkpoints-and-lookahead']){
   const solver=mode==='baseline'?baseline:O,options={maxMs,...(mode==='baseline'&&!opts['--baseline']?{disableCheckpoints:true,disableLookahead:true}:{})};
   const start=performance.now();let result;

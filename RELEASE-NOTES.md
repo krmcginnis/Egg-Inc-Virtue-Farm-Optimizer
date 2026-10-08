@@ -1,3 +1,11 @@
+# v0.9.7
+
+- Compare paid research departures before long cash waits alongside tier, fleet-slot, train-length, and production-bottleneck changes. Judge each through a complete plan with independently funded vehicle investment.
+- Preserve replay-validated winners for each shift count when rerunning unchanged farm and planning inputs, including saved/restored results. Changed inputs or invalid timelines cannot seed the next search.
+- Increase the normal planner search budget from 45 to 90 seconds, allowing more route, purchase, and departure comparisons before returning the best plans found.
+- Match the app's displayed budget, solver fallback default, and developer benchmark default to 90 seconds. Keep explicit developer/test overrides and Stop support.
+- Install through Update App → Update & Restart, then rerun the planner.
+
 # v0.9.6
 
 - Compare a shared portfolio of early research and vehicle budgets before route beams, including hab-first and vehicle-first orders. Reuse paid openings across those trials.

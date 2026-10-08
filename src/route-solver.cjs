@@ -7,6 +7,7 @@ const Recipes=require('./wasmegg-stage-engine.cjs');
 const Strategy=require('./planning-strategy.cjs'),Summary=require('./shift-summary.cjs'),F=require('./feasibility.cjs');
 const Automatic=require('./automatic-routes.cjs'),ShiftPlans=require('./shift-plans.cjs');
 const {Checkpoints}=require('./search-checkpoints.cjs'),Lookahead=require('./purchase-lookahead.cjs');
+const Breakpoints=require('./research-breakpoints.cjs'),Incumbents=require('./plan-incumbents.cjs');
 const Schedules=require('./schedule-proposals.cjs');
 function better(a,b){if(!a)return false;if(!b)return true;if(a.t<b.t-1e-6)return true;if(a.t>b.t+1e-6)return false;return a.stage<b.stage||a.stage===b.stage&&W.offlineBreaks(a)<W.offlineBreaks(b);}
 const VERSION=2,letters=['C','I','H','R','K'];
@@ -226,6 +227,21 @@ function purchasePrefixes(initial,c,actions,include){
  return states.filter(include);
 }
 function researchPrefixes(initial,c,actions){return purchasePrefixes(initial,c,actions,n=>n.egg===0&&n.stage<c.finalCStage);}
+async function compareResearchBreakpoints(raw,item,count,deadline,control){
+ const states=researchPrefixes(item.initial,item.c,S.history(item.state)).filter(n=>n.stage===0);
+ const anchors=Breakpoints.select(states,item.c);
+ control.breakpointAnchors+=anchors.length;
+ for(const vehicles of [120,180])for(const state of anchors){
+  if(control.cancelled()||Date.now()>=deadline)return;
+  try{
+   const check=()=>{if(control.cancelled()||Date.now()>=deadline)throw Error('Breakpoint comparison interrupted');};
+   const candidate=Staged.supportsFixed(item.initial,item.c)?Staged.run(item.initial,{...item.c,enforceOpeningCaps:true,c1MaxMinutes:(state.t-item.c.start)/60,k1MaxMinutes:vehicles,batchOffline:item.c.earningsMode==='offline',batchMode:'all-waits'},count,L.completionGoals,check,{opening:{c1:state,speculative:null}}):seedRoute(S.buy(state,item.c,{type:'shift',egg:item.c.sequence[state.stage+1]}),item.c,{research:180,vehicles},check,control.checkpoints);
+   control.breakpointComparisons++;control.consider(candidate);
+   if(candidate)for(const end of completionAlternatives(raw,{state:candidate,context:item.c,route:item.route,count},[candidate.stage-1,candidate.stage-2],check))control.consider(end);
+  }catch{}
+  await control.yield();
+ }
+}
 function physicalPrefixes(initial,c,actions){return purchasePrefixes(initial,c,actions,n=>[1,4].includes(n.egg)&&n.stage<c.finalResearchStage);}
 async function comparePurchaseChains(states,c,deadline,control){
  if(!control.lookahead)return;
@@ -471,20 +487,21 @@ function finalize(raw,best,c,route,count,control,termination){
   frontier:[{switches:s.stage,seconds:s.t-c.start,soulCost:s.lost}],sourceCommit:S.D.commit,validatedReplay:true,
   artifactRecommendations:best.artifactRecommendations||null,artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions),search:{automaticVisitTiming:true,routesCompared:control.routesCompared,statesExamined:control.explored,continuationsCompared:control.continuationsCompared,
    checkpoints:control.checkpoints?.summary(),lookaheadNodes:control.lookaheadNodes,lookaheadChains:control.lookaheadChains,lookaheadComparisons:control.lookaheadComparisons,
-   openingComparisons:control.openingComparisons,conservativeComparisons:control.conservativeComparisons,physicalComparisons:control.physicalComparisons,deliveryResearchComparisons:control.deliveryResearchComparisons,recoveryComparisons:control.recoveryComparisons}};
+   openingComparisons:control.openingComparisons,conservativeComparisons:control.conservativeComparisons,physicalComparisons:control.physicalComparisons,deliveryResearchComparisons:control.deliveryResearchComparisons,recoveryComparisons:control.recoveryComparisons,breakpointAnchors:control.breakpointAnchors,breakpointComparisons:control.breakpointComparisons,retainedPlans:control.retainedPlans}};
  return {...result,summary:Summary.summarize(raw,result)};
 }
 async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  if(options.legacySolver===true){const input=structuredClone(raw);delete input.plan.solverVersion;return L.solve(input,options,progress,cancelled);}
+ const incumbents=Incumbents.restore(raw,options.incumbent,replay);
  if(Strategy.automatic(raw.plan||{}))Automatic.limit(raw);
- const routeOptions=options.returnComparisons===true&&Strategy.automatic(raw.plan||{})?presetRoutes(raw):routes(raw),started=Date.now(),maxMs=S.number(options.maxMs??45000,'Search time',100,600000);
+ const routeOptions=options.returnComparisons===true&&Strategy.automatic(raw.plan||{})?presetRoutes(raw):routes(raw),started=Date.now(),maxMs=S.number(options.maxMs??90000,'Search time',100,600000);
  const width=Math.min(16,S.number(options.width??12,'Search width',4,512,true));
  const entries=[],byShift=new Map(),byRoute=new Map(),searchContexts=[],control={started,width,explored:0,routesCompared:0,continuationsCompared:0,
   checkpoints:options.disableCheckpoints?null:new Checkpoints(),lookahead:!options.disableLookahead,lookaheadNodes:0,lookaheadChains:0,lookaheadComparisons:0,
-  openingComparisons:0,conservativeComparisons:0,physicalComparisons:0,deliveryResearchComparisons:0,recoveryComparisons:0,
+  openingComparisons:0,conservativeComparisons:0,physicalComparisons:0,deliveryResearchComparisons:0,recoveryComparisons:0,breakpointAnchors:0,breakpointComparisons:0,retainedPlans:0,
   cancelled,yield:()=>new Promise(r=>setTimeout(r,0))};let recommended=null,overall=null,retained=null;
  for(const count of options.returnComparisons===true?Plans.COUNTS:[3]){
-  if(cancelled()){entries.push({researchSales:count,status:'not-completed',error:'Search stopped before this sale option completed.'});continue;}
+  if(cancelled()&&!incumbents.some(item=>item.count===count)){entries.push({researchSales:count,status:'not-completed',error:'Search stopped before this sale option completed.'});continue;}
   const deadline=started+maxMs*count/3*(options.returnComparisons===true?1:.72);let best=null,bestContext=null,bestRoute=null,lastError='';
   control.consider=state=>{
    if(!state||!complete(state,control.context))return;
@@ -495,6 +512,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    const routeKey=JSON.stringify([count,control.route]);if(better(state,byRoute.get(routeKey)?.state))byRoute.set(routeKey,item);
    if(better(state,best)){best=state;bestContext=control.context;bestRoute=control.route;}
   };
+  for(const item of incumbents)if(item.count===count){control.context=item.context;control.route=item.route;control.consider(item.state);control.retainedPlans++;}
   const contexts=[];
   // Exclude impossible proposals before dividing CPU time; otherwise routes
   // that cannot satisfy fuel/floors consume a share of every earlier slice.
@@ -506,7 +524,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    // expensive first candidate must not hide every other C1/K1 combination.
    // Both physical orders get the same trials, interleaved for fairness.
    const openings=(Strategy.automatic(raw.plan||{})?contexts.filter(x=>Staged.supportsFixed(x.initial,x.c)&&x.route.at(-1)==='integrity').slice(0,2):contexts.slice(0,1));
-   const openingDeadline=Math.min(deadline,started+maxMs*.28);
+   const openingDeadline=Math.min(deadline,started+maxMs*.4);
    const reference=Schedules.earningReference(raw),item=openings[0];
    if(reference&&item&&!options.disableScheduleProposals&&Date.now()<openingDeadline){
     const proposed=prepare(reference,item.route,count),opening={};
@@ -544,6 +562,11 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
      const candidate=Staged.supportsFixed(item.initial,item.c)?Staged.run(item.initial,{...item.c,enforceOpeningCaps:true,c1MaxMinutes,k1MaxMinutes,batchOffline:item.c.earningsMode==='offline',batchMode:'all-waits'},count,L.completionGoals,check,{opening}):seedRoute(item.initial,item.c,{research:c1MaxMinutes,vehicles:k1MaxMinutes},check,control.checkpoints);
      if(!candidate)continue;
      control.openingComparisons++;control.consider(candidate);sampled.add(item);
+     if(c1MaxMinutes===180&&k1MaxMinutes===120&&!options.disableResearchBreakpoints){
+      progress({phase:'route-search',stage:'Opening',phaseLabel:'Comparing research breakpoints before cash waits',explored:control.explored,elapsedMs:Date.now()-started});
+      // Use this actual paid opening, not a different route's global winner.
+      await compareResearchBreakpoints(raw,{...item,state:candidate},count,openingDeadline,control);
+     }
     }catch{}
    }
   }
@@ -674,4 +697,4 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  const chosen=Plans.select({researchSalePlans:entries,recommendedResearchSales:recommended},recommended);
  return chosen;
 }
-module.exports={VERSION,recipe,seedRoute,openingDepartures,researchPrefixes,physicalPrefixes,comparePhysicalInvestments,compareDeliveryResearch,deliveryPotential,compareDepartures,comparePurchaseChains,completionAlternatives,unlockDepartures,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,solve};
+module.exports={VERSION,recipe,seedRoute,openingDepartures,researchPrefixes,physicalPrefixes,compareResearchBreakpoints,comparePhysicalInvestments,compareDeliveryResearch,deliveryPotential,compareDepartures,comparePurchaseChains,completionAlternatives,unlockDepartures,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,solve};

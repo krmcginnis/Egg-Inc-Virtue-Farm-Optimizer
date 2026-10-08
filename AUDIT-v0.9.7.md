@@ -1,4 +1,10 @@
-# Egg Inc. Virtue Farm Optimizer v0.9.6 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.9.7 — Release Audit
+
+v0.9.7 adds paid research breakpoints before long cash waits, retains compatible
+replay-validated plans across reruns, and increases the normal search budget to
+90 seconds. Current integration evidence is at the end; earlier experiments and
+validation are historical.
+
 
 v0.9.6 compares an early investment portfolio, physical departures, final
 production research, and conservative earnings schedules re-executed with
@@ -2372,3 +2378,233 @@ Publication verified:
 
 This same-version audit update records completed checks and does not replace
 or republish the immutable release assets.
+
+
+## v0.9.7 — 90-second default search budget
+
+- Raise the app's searchOptions.maxMs to 90,000 ms, so the displayed Planning
+  budget and worker request both use 90 seconds.
+- Raise the route solver's default maxMs to 90,000 ms when no explicit override
+  is supplied, and match the developer benchmark default.
+- Retain the existing proportional search slices, Stop/cancellation, explicit
+  developer/test overrides, and all solver/game rules. This is a computation
+  allowance; replay validation and an in-flight operation can exceed it.
+- Preserve the legacy solver and historical saved-plan replay.
+
+Local npm ci and build passed. Search-quality checks, paid-investment
+regressions, and the generated standalone browser-worker test passed, including
+independent replay of returned plans. Explicit test budgets remain respected.
+
+This version is local and unpublished. Native Windows and public release
+verification have not run for v0.9.7. The solver review identified existing
+research-window, route-selection, beam-width, prerequisite-lookahead, and
+time-allocation limits; the budget change does not remove those limits.
+
+## Local solver recommendation experiment — unpublished
+
+The original Virtue Farm NEW configuration (160 claimed TE, target 200 TE,
+maximum 12 shifts) was tested with the normal app request width of 32 and
+90,000-ms search allowance. No saved result seeded a solve. Runs were sequential
+on the same host. Experimental source snapshots and private inputs/results stay
+outside the repository; production search logic is unchanged.
+
+Two current-solver runs and three experimental variants all found the identical
+fastest 12-shift plan: 11,883,188.783641577 seconds, or 137d 12h 53m. Experiments
+raised the effective beam cap from 16 to 32 and reserved refinement for paid C1
+checkpoints paired with independent K1 investments. A revised selection used
+elapsed-time milestones rather than purchase-count fractions. The final variant
+also compared paid C2 departures, attempted additional Graviton Coupling levels
+within the existing research deadline, and paid K2/R1 before continuing C3.
+
+The first prototype appeared to improve neighboring shift counts, but the
+repeated current solver matched those results: 11 shifts
+155.58801460499288 days and 10 shifts 161.70597301079442 days. The first current
+run instead found a 361.18075943729946-day 10-shift plan. This exposes wall-clock
+allocation sensitivity; it is not a demonstrated gain from the prototype.
+
+In the corrected C2 probe, retaining two paid Graviton Coupling levels matched
+the fastest baseline. Departing with one level yielded 141.787542306469 days;
+sampled zero-level departures yielded 145.19935049086808 and
+151.24377618324976 days. These are sampled complete continuations, not proof that
+every earlier departure or different purchase bundle is worse.
+
+All 15 plans from the five comparison runs passed the unchanged production
+replay, target/floor/mission checks, and a second JSON-round-trip recorded replay.
+Runs returned after approximately 85.7–86.0 seconds under the 90-second
+allowance. Earlier C2 probes incorrectly requested a route-independent recipe
+cache entry for R; those failed probe attempts are excluded. The corrected probe
+executes that recipe uncached. Production R-start continuations themselves match
+with and without the cache; this was a prototype integration issue.
+
+No fastest-plan improvement was demonstrated on this case. The experiment does
+not evaluate additional research-sale horizons, larger prerequisite bundles,
+new adaptive route proposals, or quality guarantees on other farms.
+
+## Local stability and research-breakpoint prototype — unpublished
+
+A separate prototype was tested after the user clarified that maintaining the
+baseline is a successful outcome. It does not replace the app's general route
+solver. The prototype retains independently replayed plans only for identical
+farm/planning inputs, preserves a per-shift incumbent, and continues a fixed
+queue of complete paid candidate operations. Computation budgets do not change
+the candidate order or simulated visit durations. Interrupted tasks retain only
+completed paid prefixes and can retry; no partial plan becomes an incumbent.
+
+The final cold-start tests each used a 45-second slice followed by continuation
+to a 90-second total allowance. Both had pending work after the first slice and
+continued the same queue. Full synchronous operation boundaries led to actual
+allowances of approximately 90.40 and 90.45 seconds. They found all three
+requested counts before refinement: approximately 3.80 seconds with the fixed
+sampling queue and 3.06 seconds with breakpoint selection. A necessary coverage
+bridge executes an alternative neighboring-count route even when that count
+already has a winner, because its earlier final H can supply the shorter count's
+required missions. An initial direct 10-shift proposal failed fuel feasibility;
+the bridge produces a complete paid 10-shift candidate instead.
+
+Fastest 12-shift results on the same original Virtue Farm NEW configuration:
+
+- Current solver baseline: 11,883,188.783641577 seconds.
+- Fixed resumable sampling queue: 11,883,049.984394073 seconds, first found at
+  approximately 12.68 seconds of computation.
+- Same framework with breakpoint candidates: 11,883,041.506934643 seconds,
+  first found at approximately 4.51 seconds.
+
+The breakpoint prototype improves the baseline by 147.276706934 seconds
+(approximately 2m 27s); its gain over fixed sampling is 8.477459431 seconds.
+Both retain their best per-count plans from 45 seconds through 90 seconds.
+These are baseline-case prototype observations, not universal performance or
+optimality claims. The queue emphasizes existing fixed-route proposals and
+their paid continuations; broader route search still needs integration.
+
+Breakpoint selection examines actual paid research checkpoints. This C1 trace
+contained 1,185 checkpoints, reduced to 63 candidate states around 32 signature
+changes: nine tier unlocks, eleven vehicle-slot changes, and twelve switches of
+the current laying/shipping bottleneck. Both sides of each transition remain
+candidates. Selected whole-plan comparisons used up to twelve anchors. No car
+length or sale change occurred in that C1 trace; separate paid synthetic checks
+verify tier, train-car, and fleet-slot detection. Actual cash, costs, event time,
+owned gear, interaction time, and fuel remain in each candidate state; matching
+signatures do not establish dominance or justify merging states.
+
+The breakpoint prototype's 11-shift candidate finishes in
+143.00960424877704 days. Its new 10-shift candidate is slower than the known
+baseline (161.7588440964785 versus 161.70597301079442 days), so importing the
+independently verified prior winners correctly keeps the older 10-shift plan
+while accepting the new 11- and 12-shift plans. This distinction matters: cold
+coverage is improved, but cold search alone does not maintain every known
+frontier result. Compatible incumbent retention supplies that guarantee.
+
+Independent production replay and recorded-history JSON-round-trip checks
+passed all nine comparison plans. Retention rejects changed target, start,
+shift limit, video multiplier, offline minimum, and missing interaction history.
+Equal-time/equal-shift retention also compares recorded offline breaks, avoiding
+comparison against a history-free replay state. Cancellation/resume checks and
+existing owned-gear/game-math constraints remain part of the experiment.
+
+All scripts, source snapshots, configurations, and private outputs remain
+outside Git. Production solver logic is unchanged, and these helpers have not
+been integrated into app/worker persistence or published.
+
+## Breakpoint selector review — unpublished
+
+Four selectors were compared on the same original baseline configuration with
+fresh starts, no saved-plan seeds, and a 90,000-ms allowance. Runs were sequential
+on the same host. All used the same experimental fixed queue and unchanged
+production simulator/replay. Each selector proposed twelve paid anchors, with
+120- and 180-minute K1 continuations. Alternatives preserved the first four
+original anchors, including the previous fastest candidate. Whole-operation
+boundaries produced elapsed times between 90.10 and 90.75 seconds.
+
+| Selector | Fastest 12-shift plan (seconds) | Saving versus previous breakpoints |
+| --- | ---: | ---: |
+| Original tier/slot/bottleneck transitions | 11,883,041.506934643 | — |
+| States before long cash waits | 11,880,845.787225008 | 2,195.719709635 seconds |
+| Earning, future-capacity, and affordability milestones | 11,881,767.63867879 | 1,273.868255853 seconds |
+| Sampled C2/final-research cash-wait departures | 11,883,041.506934643 | No improvement |
+
+The winning selector adds checkpoints immediately before actual cash-producing
+waits of at least the configured offline minimum or ten minutes, whichever is
+larger. Purchase interaction waits and shift overhead are excluded. Its C1 trace
+has eight qualifying waits; selection adds seven new before-wait anchors plus
+one structural fallback to the four retained anchors. The winning paid prefix
+contains 1,116 research purchases and departs C1 at approximately 57m 28s instead
+of 2h 16m 21s. K1, C2, and final research then take longer, so the approximately
+79-minute C1 saving becomes a net 36m 36s improvement. Final delivery rates match.
+No accumulated cash is carried across a shift and no unpaid upgrade is granted.
+
+A second fresh 90-second before-wait run reproduces all three shift-count times
+exactly. The best 12-shift result is approximately 137d 12h 14m, first found at
+9.13 and 9.30 seconds of computation. The 11-shift result also improves, to
+12,353,833.847268581 seconds. Cold 10-shift coverage remains unchanged at
+13,975,964.129935741 seconds and still needs incumbent retention to preserve the
+known faster 13,971,396.068132639-second plan.
+
+All fifteen comparison plans passed independent strict production replay and
+recorded-history JSON-round-trip replay. Selector checks verify actual paid
+prefixes, preservation of the original anchors, valid before-wait boundaries,
+and that potential-capacity forecasts do not mutate paid research/structures.
+Merging the prior baseline and new winners preserves the minimum time for each
+shift count; all three merged plans replay successfully.
+
+This is a measured improvement on one baseline, not a global optimum. Later-C
+tests sampled early departures from the existing paid path, without new research
+bundles; their paired K1 labels produced duplicate continuations. The economic
+selector uses heuristic category ordering and capacity forecasts only to rank
+anchors. Neither negative result rules out a better selection in those regions.
+Prioritize before-wait anchors alongside structural transitions and retained
+winners; broader route and purchase-bundle search still needs integration.
+These selectors remain local experiments, outside the app/worker and unpublished.
+
+## v0.9.7 integration and release checks
+
+The before-cash-wait and structural selector is now integrated into the normal
+opening portfolio. Each paid prefix continues through independently funded K1
+investment and the rest of the route. Compatible fixed routes use the staged
+continuation; custom routes execute the general route continuation. Final C
+remains delivery only. No economic forecasts, experimental resumable queue, or
+untested later-C selector is included in this release.
+
+The app sends its current result and result configuration to the worker on a
+rerun. All farm and planning inputs must match canonically before reuse. Each
+accepted plan passes strict recorded production replay, finish/shift metadata,
+affordability, target, route, and interaction checks. Per-shift winners remain
+incumbents and use the existing finish-time/shift-count/offline-break comparator.
+Saved/restored results use the same path. Changed inputs and invalid histories
+are ignored; stopping a new search preserves compatible validated results.
+
+The initial direct production integration reproduced the prototype's
+11,880,845.787225008-second 12-shift result under a 90-second allowance, with
+approximately 87.98 seconds total elapsed. A slower standalone browser-worker
+run initially reached only the prior structural winner within the opening
+slice. The final selector preserves the same twelve anchors but schedules the
+leading two structural departures and later paid before-wait states first.
+The opening portfolio now reserves up to 40% of the search budget; the main
+route beam, refinement, and recovery still run within the total 90-second
+allowance. This is computation scheduling, not an in-game C1/K1 cap.
+
+The final generated browser worker, running without Node imports, reproduces:
+
+| New shifts | Plan seconds | Evidence |
+| --- | ---: | --- |
+| 12 | 11,880,845.787225008 | Newly searched; matches prototype |
+| 11 | 12,353,833.847268581 | Newly searched; matches prototype |
+| 10 | 13,971,396.068132639 | Retained faster baseline |
+
+That worker run starts with the previous production baseline, accepts all three
+validated incumbents, and discovers the faster 12/11-shift candidates. All three
+final plans pass independent strict production and recorded-history JSON replay.
+Total wall time including restoration and finalization is approximately 91.93
+seconds. The 12-shift saving versus the prior production baseline is 2,342.996417
+seconds, approximately 39m 3s. This remains a fastest-found result on one case,
+not a global optimum or universal input-monotonicity guarantee.
+
+Local checks passed: research breakpoints/incumbents, search quality,
+investment search, route solver, research-sale compatibility, built standalone
+worker with prior-plan retention, release-state guards, and prepare-publish
+guards. The new regression covers before-wait paid interactions, tier/slot/car
+transitions, custom-route continuations, identical-input retention, changed
+inputs, missing interactions, and cancellation with prior winners. Build passes
+after npm ci. The local Windows updater test could not run because PowerShell
+is unavailable on this Linux host; the release workflow runs its Windows
+updater/launch checks and validates the anonymous published feed before release
+success is reported. Private inputs and results remain outside Git.

@@ -27,7 +27,7 @@ const $ = (id) => document.getElementById(id), D = S.D;
 const EID_KEY = "virtue-optimizer.eid.v1", EID_NAME_KEY = "virtue-optimizer.eid-name.v1";
 let savedEid = "", savedEidName = "", eidDraft = "";
 let config = Defaults.freshFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
-const searchOptions = { width: 32, branches: 12, maxDepth: 1200, maxMs: 45e3 };
+const searchOptions = { width: 32, branches: 12, maxDepth: 1200, maxMs: 90e3 };
 let activeLoadoutTab = "current";
 const labels = { account: "Account", farm: "Virtue Farm", planning: "Planning", results: "Purchase timeline", help: "How it works" };
 const colNames = { earnings: "Earnings", awayEarnings: "Away earnings", ihr: "Internal hatchery", elr: "Egg laying", shippingCap: "Shipping capacity", habCap: "Hab capacity", vehicleCost: "Vehicle cost", habCost: "Hab cost", researchCost: "Research cost" };
@@ -1447,7 +1447,7 @@ function optimize() {
     $("run-summary").textContent = "Worker error";
     $("run-detail").textContent = "Review inputs and try the search again";
     };
-  worker.postMessage({ config: runConfig, options: { ...searchOptions } });
+  worker.postMessage({ config: runConfig, options: { ...searchOptions, ...(result && resultConfig ? { incumbent: { config: resultConfig, result } } : {}) } });
 }
 async function loadFile(file) {
   const epoch = loadEpoch;

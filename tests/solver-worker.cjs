@@ -13,6 +13,10 @@ async function run(){
  await context.onmessage({data:{config:raw,options:{maxMs:1500}}});
  assert.equal(error,undefined);assert.ok(result?.validatedReplay);assert.ok(result.search.checkpoints);
  for(const entry of result.shiftPlans){const verified=O.replay(raw,entry.plan.actions);assert.ok(S.reached(verified.s,verified.c));assert.equal(verified.s.t,entry.plan.end);}
+ const previous=result;result=undefined;
+ await context.onmessage({data:{config:raw,options:{maxMs:100,incumbent:{config:raw,result:previous}}}});
+ assert.equal(error,undefined);assert.ok(result?.search.retainedPlans>0);
+ for(const entry of previous.shiftPlans){const kept=result.shiftPlans.find(p=>p.switches===entry.switches);assert.ok(kept);assert.ok(kept.plan.seconds<=entry.plan.seconds);assert.equal(O.replay(raw,kept.plan.actions).s.t,kept.plan.end);}
  console.log('PASS built browser worker: standalone search bundle, checkpoint metadata, distinct plans, and independent replay.');
 }
 run().catch(error=>{console.error(error.message);process.exitCode=1;});
