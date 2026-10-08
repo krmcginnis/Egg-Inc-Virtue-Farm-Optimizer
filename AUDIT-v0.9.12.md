@@ -326,5 +326,21 @@ Local preparation reruns the release-state and publish-preparation checks,
 timezone regression, build, generated worker, and DOM sleep/date checks. The
 previous full local solver/reference verification remains recorded above.
 Windows solver, updater, packaging, launch, and anonymous public-feed checks
-must pass before v0.9.12 is accepted. Their results will be recorded after the
-release workflow completes.
+passed for v0.9.12. The accepted verification is recorded below; published
+assets retain the release-preparation audit snapshot.
+
+
+## Accepted v0.9.12 release verification
+
+Windows run [37855442511](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/37855442511) completed successfully for source commit `af2dd58deb516af8aa4c243b8ebe85008c9b819d`. All solver checks passed, including the fixed Pacific timezone regression, all nine finite exhaustive sleep-search cases, earnings adaptation, and the generated browser worker.
+
+Native Windows checks passed valid installation, seven invalid archive cases, digest/version rejection, rollback and exact backup restore, user JSON/config preservation, hidden CMD launch and repeat reuse from paths with spaces, successful restart, startup-failure recovery, and legacy-worker recovery. The anonymous update-feed lookup, complete ZIP download, and every app-file checksum passed on Windows PowerShell 5.1.26100.33438.
+
+Independent anonymous verification confirmed v0.9.12 as latest, downloaded both complete assets, checked GitHub digests and manifest size/hash, ZIP CRC, all 169 runtime entries and every file checksum, version/branding, one current audit, updater repository configuration, sleep and calendar-departure code, earnings adaptation, the Sleep & Display Timezone label, and removal of the obsolete event-override notice.
+
+The accepted release is [v0.9.12](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v0.9.12). Existing release assets were not replaced. This is a source-only follow-up; the published ZIP retains the release-preparation audit snapshot.
+
+| Asset | GitHub ID | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Egg-Inc-Virtue-Farm-Optimizer.zip | 623216613 | 8,588,315 | `21a7eb5ec05fa5067a3388768c1f61c006bcb05e1646b4e7066c61e04db48a88` |
+| update-manifest.json | 623216612 | 240 | `1b7cb567e65d1c352a11eea8474e0467a168a3659b11558f0071b68bdfc0bcf6` |
