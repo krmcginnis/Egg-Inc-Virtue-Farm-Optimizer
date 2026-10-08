@@ -57,6 +57,16 @@ function updateSequenceVisibility() {
   $("wasmegg-sequence-description").hidden = strategy === "user";
   $("automatic-shift-limit").hidden = !automatic;
   $("maxShifts").disabled = !automatic;
+  updateSequenceCount();
+}
+function updateSequenceCount() {
+  const count = $("sequence-count");
+  count.textContent = "";
+  if ($("strategy").value !== "user") return;
+  try {
+    const shifts = Route.normalize($("sequence").value, $("virtue").value, {required:true}).length - 1;
+    count.textContent = " (" + shifts + " shift" + (shifts === 1 ? "" : "s") + ")";
+  } catch { }
 }
 function updatePlanControls() {
   const automatic = $("autoTeAllocation").checked;
@@ -823,19 +833,11 @@ function refresh() {
   EggIcons.decorateLabel($("virtue").closest("label"), $("virtue").value);
   updateSequenceVisibility();
   updatePlanningContext();
-  $("sequence-budget").hidden = true;
   try {
     updateResearchSummaries();
     config = gather();
-    if (!config.plan.autoSequence) {
-      const route = Route.normalize(config.plan.sequence, config.farm.virtue), needed = route.length - 1;
-      $("sequence-budget").hidden = false;
-      $("sequence-budget").textContent = "Full sequence: " + needed + " new switches from " + S.NAME[S.EGGS.indexOf(config.farm.virtue)] + ".";
-    }
     const { s, c } = S.prepare(config), r = S.stats(s, c), pending = S.totalTE(s, c) - c.claimedTotal;
     populateAutomaticSets(s, c);
-    $("sequence-preview").hidden = c.autoSequence;
-    $("sequence-preview").textContent = "Planned order: " + c.sequence.map((i) => ({ curiosity: "C", kindness: "K", integrity: "I", resilience: "R", humility: "H" })[S.EGGS[i]]).join(" ");
 
     const warnings = Model.notices(s, c);
     $("farm-advisories").replaceChildren(...warnings.map((message) => el("p", message)));
@@ -880,7 +882,6 @@ function refresh() {
         shipEstimate.append(el("p", missing.some((n) => n) ? (run.visit === 1 ? "Collect before H1: " : "Refill after H1 for H2: ") + missing.map((n, i) => n ? S.NAME[i] + " " + num(n) : "").filter(Boolean).join(" \xB7 ") : "Required non-Humility fuel is already available."));
         if (run.visit === 1 && run.collectionTargets?.some((n, i) => n > run.targets[i])) shipEstimate.append(el("p", "Includes fuel reserved for H2 where the switch sequence has no refill stop."));
       }
-      shipEstimate.append(el("p", "FTL: " + c.ships.ftl + " / 60 from Epic Research. Both schedules include gem costs, fueling, and earlier returns; final returns are not awaited."));
     }
     updatePrimaryAction();
     if (!worker && !dirty) {
@@ -889,7 +890,6 @@ function refresh() {
     }
     return true;
   } catch (e) {
-    $("sequence-preview").hidden = true;
     fieldError(e);
     updatePrimaryAction();
     return false;
@@ -1801,6 +1801,7 @@ document.addEventListener("change", (e) => {
 document.addEventListener("input", (e) => {
   if (!e.target.matches("input,select") || unsavedInputs.has(e.target.id) || e.target.closest("#gear-picker,#date-picker")) return;
   if (Object.values(editingGroups).some(group => group.toggles.includes(e.target.id))) return;
+  if (e.target.id === "sequence" || e.target.id === "virtue") updateSequenceCount();
   const group = e.target.closest("#account-basic-fields") ? "account"
     : e.target.closest("#account-progress-fields") ? "progress"
     : e.target.closest("#account-fuel-fields") ? "fuel"

@@ -950,3 +950,11 @@ faster complete plans, required TE minimums, fuel, and configured missions.
 Only complete, replay-verified alternatives appear in Purchase Timeline. The
 bounded search returns up to three fastest plans found; some inputs may still
 have fewer feasible alternatives. No additional user controls are required.
+
+
+Compact Planning Labels — v0.9.4
+The user-entered Switch Sequence shows its shift count in the input label.
+The count includes any initial transition from the current farm, ignores
+consecutive duplicate visits, and updates as the sequence is edited.
+Duplicate sequence descriptions and highlighted offline/ship helper text
+were removed. Mission controls, fuel estimates, and the solver are unchanged.

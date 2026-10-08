@@ -1,3 +1,11 @@
+# v0.9.4
+
+- Remove the highlighted Planning helper text for offline breaks, launch ordering, FTL, and repeated user-sequence descriptions.
+- Show a live shift count in the Switch Sequence label. Count actual transitions from the starting farm and ignore consecutive duplicate visits.
+- Retain the Virtue-code legend, mission controls, fuel estimates, validation messages, and saved routes.
+- No solver or game-model changes in this release.
+- Install through Update App → Update & Restart.
+
 # v0.9.3
 
 - Recover missing neighboring shift-count comparisons from complete, paid purchase paths by recalculating delivery across shorter endings.

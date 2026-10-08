@@ -27,11 +27,19 @@ const root = path.resolve(__dirname, "..");
     assert.ok(await page.isChecked("#autoTeAllocation"));assert.ok(await page.locator("#te-minimums").isHidden());assert.ok(await page.locator("#floor-0").isDisabled());
     assert.equal(await page.locator("#planPriority,#priorityMaxDays,#priorityMaxShifts,#target-default-help,#c1MaxMinutes,#k1MaxMinutes").count(),0);
     assert.equal(await page.inputValue("#maxShifts"),"12");assert.ok(await page.locator('#automatic-shift-limit').isVisible());await page.fill('#maxShifts','8');assert.equal((await config()).plan.maxShifts,8);await page.selectOption('#strategy','user');assert.ok(await page.locator('#automatic-shift-limit').isHidden());assert.ok(await page.locator('#maxShifts').isDisabled());await page.selectOption('#strategy','wasmegg');assert.equal(await page.inputValue('#maxShifts'),'8');await load(fresh);
-    assert.equal(await page.locator("#shipSlots,#starting-gear-controls,#current-set-note,#strategy-description,#shift-limit-help,#routing-help,#event-zone-help,#col-totals,#col-note,#epic-key-levels,#artifact-mods,#fuel-status,#flight-help").count(),0);
+    assert.equal(await page.locator("#sequence-preview,#sequence-budget,#offline-break-help,#shipSlots,#starting-gear-controls,#current-set-note,#strategy-description,#shift-limit-help,#routing-help,#event-zone-help,#col-totals,#col-note,#epic-key-levels,#artifact-mods,#fuel-status,#flight-help").count(),0);
+    assert.doesNotMatch(await page.locator('#sequence-help').textContent(),/Required for User Selected Sequence/);
+    assert.doesNotMatch(await page.locator('#ship-planning').textContent(),/Launch rows in order|FTL:|Both schedules include/);
+    assert.equal(await page.locator('#minOfflineMinutes').getAttribute('aria-describedby'),null);
+    await page.selectOption('#strategy','user');
+    for(const [sequence,expected] of [['C K I C K R C H K C R H I',' (12 shifts)'],['C C K K I',' (2 shifts)'],['K I',' (2 shifts)'],['C H',' (1 shift)'],['C',' (0 shifts)'],['C X',''],['','']]){
+      await page.fill('#sequence',sequence);await refresh();assert.equal(await page.locator('#sequence-count').textContent(),expected);
+    }
+    await load(fresh);assert.equal(await page.locator('#sequence-count').textContent(),'');
     assert.equal((await config()).plan.ships.slots,3);
     const oldSlots=structuredClone(fresh);oldSlots.plan.ships.slots=1;await load(oldSlots);assert.equal((await config()).plan.ships.slots,3);await load(fresh);
     await page.locator(".strategy-stages>summary").click();
-    assert.equal(await page.locator(".strategy-stages p").first().evaluate(n=>getComputedStyle(n).fontSize),await page.locator("#offline-break-help").evaluate(n=>getComputedStyle(n).fontSize));
+    assert.equal(await page.locator(".strategy-stages p").first().evaluate(n=>getComputedStyle(n).fontSize),await page.locator("#sequence-help").evaluate(n=>getComputedStyle(n).fontSize));
     await page.locator(".strategy-stages>summary").click();
     assert.equal(await page.inputValue("#actionSeconds"),"0.3");assert.equal(S.prepare(fresh).c.actionsSeconds,0.3);
     assert.equal(await page.locator("#start").evaluate(n=>n.closest("label").firstChild.textContent),"Plan Start (PC Local Time)");

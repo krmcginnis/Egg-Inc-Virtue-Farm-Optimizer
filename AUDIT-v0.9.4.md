@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.9.3 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.9.4 — Release Audit
+
+v0.9.4 removes the highlighted Planning helper text and shows the custom
+sequence shift count inline. Current evidence is at the end; earlier evidence
+is historical.
 
 v0.9.3 recovers missing neighboring shift-count comparisons from paid paths.
 Current validation appears in the v0.9.3 section at the end; earlier evidence
@@ -2114,3 +2118,36 @@ Public release: 406325505, v0.9.3, with both assets uploaded:
 
 This same-version audit update records completed verification without replacing
 or repackaging the immutable release assets.
+
+
+## v0.9.4 — Compact Planning labels
+
+Removed the highlighted offline-break paragraph, launch-row instructions,
+FTL schedule explanation, required-sequence phrase, repeated planned order,
+and separate full-sequence budget paragraph. The Virtue-code legend and
+separator instructions remain. A live count appears in the Switch Sequence
+label, derived from the same normalized route used by the solver. It includes
+an initial transition when needed, ignores consecutive duplicate visits, uses
+singular/plural shift labels, and clears for invalid or empty inputs and
+Automatic Planning. It is independent of unrelated form validation. Deleted
+ARIA descriptions and DOM references were removed. Mission inputs and fuel
+estimates remain intact. No solver, price, or simulation rules were changed.
+
+Updated existing browser regression expectations for the compact label and
+removed nodes. Real built-app DOM checks pass normal/custom/duplicate routes,
+starting-farm transitions, zero/singular shifts, invalid/empty sequences,
+automatic hiding, inline inherited label styling, accessible descriptions,
+account-backed farm import, mission/fuel rendering, and JSON round-trip.
+Chromium remains unavailable in this environment after the previous download
+endpoint failure; these are DOM integration checks, not rendered browser
+layout verification. This change adds only a short inline count and removes
+text; prior desktop layout checks remain historical evidence.
+
+Build, package, local release checks, and native Windows/public updater
+verification will be recorded below.
+
+Local validation passed npm ci, build, packaging of 169 runtime files,
+release-state guards, and staged-publication guards. The changed app bundle
+passes the DOM integration checks listed above. Git diff confirms the solver,
+legacy solver, and simulator are unchanged. Native Windows and public updater
+checks are pending publication.
