@@ -941,3 +941,12 @@ candidates collect required fuel on their last pre-launch visits, using the
 actual sequence rather than skipping it based on legacy phase names.
 The bounded search still reports the fastest plans it finds, not a proven
 global optimum.
+
+
+Shift-Count Coverage — v0.9.3
+A final comparison recovers missing neighboring shift counts by retaining actual
+paid upgrade paths and recalculating delivery for shorter endings. It preserves
+faster complete plans, required TE minimums, fuel, and configured missions.
+Only complete, replay-verified alternatives appear in Purchase Timeline. The
+bounded search returns up to three fastest plans found; some inputs may still
+have fewer feasible alternatives. No additional user controls are required.

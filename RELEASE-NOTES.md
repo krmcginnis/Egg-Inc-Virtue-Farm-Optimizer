@@ -1,3 +1,11 @@
+# v0.9.3
+
+- Recover missing neighboring shift-count comparisons from complete, paid purchase paths by recalculating delivery across shorter endings.
+- Reserve a small part of the existing search budget for this final comparison, keeping faster completed plans intact.
+- Include a shorter plan only when it reaches the TE target, respects per-Virtue minimums, completes configured missions, and passes full replay.
+- Preserve the previous solver and historical saved plans. The search still returns up to three fastest plans found; it does not guarantee that every shift count is feasible or globally optimal.
+- Install through Update App → Update & Restart.
+
 # v0.9.2
 
 - Compare earlier research-visit departures using complete, paid continuations through later upgrades, sale windows, fuel collection, missions, and TE delivery.

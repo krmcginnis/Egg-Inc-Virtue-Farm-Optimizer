@@ -20,6 +20,17 @@ function verify(raw,result){
 async function run(){
  assert.ok(R.better({t:100,stage:1,path:null},{t:100,stage:2,path:null}));
  assert.ok(!R.better({t:101,stage:1,path:null},{t:100,stage:2,path:null}));
+ // Completed paid paths can recover neighboring shift counts without
+ // inventing purchases or padding a timeline with unnecessary shifts.
+ const deliveryCase=fixture();Object.assign(deliveryCase.plan,{strategy:'user',autoSequence:false,sequence:'C K I R H',target:105,floors:Array(5).fill(21)});
+ const deliveryContext=R.prepare(deliveryCase,R.routes(deliveryCase)[0],3),paid=L.tail(deliveryContext.s,deliveryContext.c);assert.ok(paid&&paid.stage===4);
+ const flexible=structuredClone(deliveryCase);flexible.plan.floors=Array(5).fill(0);
+ const flexibleContext=R.prepare(flexible,R.routes(flexible)[0],3);
+ const source={state:paid,context:flexibleContext.c,route:R.routes(flexible)[0],count:3};
+ const shorter=R.completionAlternatives(flexible,source,[3,2]);assert.deepEqual(shorter.map(n=>n.stage),[3,2]);
+ for(const n of shorter){const actions=S.history(n).map((a,i)=>i?a:{...a,routeSearch:{version:2,sequence:source.route,researchSales:3},initialSiloRule:'one'});const checked=O.replay(flexible,actions);assert.ok(S.reached(checked.s,checked.c));assert.equal(checked.s.t,n.t);assert.equal(actions.filter(a=>a.type==='shift').length,n.stage);}
+ assert.equal(R.completionAlternatives(deliveryCase,{...source,context:deliveryContext.c},[3,2]).length,0,'required per-Virtue floors cannot be dropped to fill comparisons');
+ assert.throws(()=>R.completionAlternatives(flexible,source,[3],()=>{throw Error('Cancelled');}),/Cancelled/);
  // Higher earnings on the current C visit can lose to shifting earlier,
  // paying for K/I, and spending the research time on the next C instead.
  const buildCase=require('../src/blank-farm.cjs')(1791993600);
@@ -43,6 +54,7 @@ async function run(){
  const fuelContext=R.prepare(fuelCase,R.routes(fuelCase)[0],3),fueled=R.seedRoute(fuelContext.s,fuelContext.c,180,()=>{});assert.ok(fueled&&fueled.shipsDone);
  const fuelActions=S.history(fueled),launchIndex=fuelActions.findIndex(a=>a.type==='ship-run');assert.ok(launchIndex>=0);assert.ok(fuelActions.slice(0,launchIndex).some(a=>a.type==='fuel'&&a.egg===0));assert.ok(fuelActions.slice(0,launchIndex).some(a=>a.type==='fuel'&&a.egg===4));
  const fuelMarked=fuelActions.map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:2,sequence:R.routes(fuelCase)[0],researchSales:3}});assert.ok(S.reached(O.replay(fuelCase,fuelMarked).s,fuelContext.c));
+ assert.equal(R.completionAlternatives(fuelCase,{state:fueled,context:fuelContext.c,route:R.routes(fuelCase)[0],count:3},[4]).length,0,'missing shift comparisons cannot omit a required Humility launch');
  const raw=fixture(),fastest=verify(raw,await O.solve(raw,{maxMs:1800,width:4}));assert.equal(fastest.researchSalePlans,undefined);assert.equal(fastest.selectedResearchSales,undefined);assert.ok(fastest.shiftPlans.length<=3);assert.equal(new Set(fastest.shiftPlans.map(e=>e.switches)).size,fastest.shiftPlans.length);assert.equal(fastest.selectedSwitches,fastest.recommendedSwitches);for(let i=1;i<fastest.shiftPlans.length;i++)assert.ok(!R.better({t:fastest.shiftPlans[i].plan.end,stage:fastest.shiftPlans[i].switches},{t:fastest.shiftPlans[i-1].plan.end,stage:fastest.shiftPlans[i-1].switches}));const opts={maxMs:1800,width:4,returnComparisons:true};
  assert.equal(R.routes(raw)[0].at(-1),'integrity');assert.ok(R.routes(raw).some(route=>route.at(-1)==='humility'),'a faster delivery order may finish elsewhere');
  const result=verify(raw,await O.solve(raw,opts));assert.deepEqual(result.researchSalePlans.map(e=>e.status),['complete','complete','complete']);
@@ -76,6 +88,6 @@ async function run(){
  assert.ok(R.scored(onI,prepared.c).some(x=>x.a.type==='hab'&&x.a.id===18),'future K/research supports useful hab capacity');
  const early={...prepared.s,path:null,cash:10},late=S.advance(early,prepared.c,early.t+60,'test',false);assert.ok(R.dominates(early,late,prepared.c));
  const legacySaved=baseline.researchSalePlans[0].plan;assert.equal(O.replay(raw,legacySaved.actions,false,{enforceOpeningCaps:true}).s.t,legacySaved.end);
- console.log('PASS route/shift solver: whole-plan departure opportunity cost, later physical upgrades, arbitrary-route fueling, ceiling and distinct ranked shift plans, zero-shift completion, preserved legacy baseline/replay, internal sale windows, arbitrary three-C route, final-C rules, delivery-only single/no-C routes, manual floors, uncapped timing, calendar boundaries, physical lookahead, saved rule replay, cancellation, and route integrity.');
+ console.log('PASS route/shift solver: neighboring shift-count recovery with replay, required floors/missions and cancellation, whole-plan departure opportunity cost, later physical upgrades, arbitrary-route fueling, ceiling and distinct ranked shift plans, zero-shift completion, preserved legacy baseline/replay, internal sale windows, arbitrary three-C route, final-C rules, delivery-only single/no-C routes, manual floors, uncapped timing, calendar boundaries, physical lookahead, saved rule replay, cancellation, and route integrity.');
 }
 module.exports={verify};if(require.main===module)run().catch(e=>{console.error(e);process.exitCode=1;});

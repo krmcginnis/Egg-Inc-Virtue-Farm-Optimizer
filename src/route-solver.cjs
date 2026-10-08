@@ -184,6 +184,40 @@ async function compareDepartures(states,c,deadline,control){
  return ranked;
 }
 
+function completionAlternatives(raw,item,counts,checkpoint=()=>{}){
+ const c=item.context,actions=S.history(item.state);
+ let n=prepare(raw,item.route,item.count,{artifactReplay:true,artifactSets:c.loadouts}).s;
+ const prefixes=new Map(),remember=()=>{
+  const entry=prefixes.get(n.stage)||{first:n};entry.last=n;prefixes.set(n.stage,entry);
+ };
+ remember();let purchase=false;
+ for(const action of actions){
+  checkpoint();
+  if(action.type==='wait'){
+   n=S.advance(n,c,action.end,action.reason,true,action.earningsMode||'auto');
+   if(purchase){remember();prefixes.get(n.stage).build=n;purchase=false;}
+  }else{
+   if(action.type==='shift')remember();
+   n=S.buy(n,{...c,actionsSeconds:action.type==='ship-run'?c.actionsSeconds:0,shiftSeconds:0,shipReplay:true},action);
+   purchase=['shift','research','hab','vehicle','car','silo','set'].includes(action.type);
+   if(!purchase||c.actionsSeconds===0&&action.type!=='shift'||action.type==='shift'&&c.shiftSeconds===0){remember();purchase=false;}
+  }
+ }
+ remember();const output=[];
+ for(const shifts of counts){
+  checkpoint();if(shifts<0||shifts>=c.sequence.length)continue;
+  // Reallocate delivery across the remaining visits of a shorter ending.
+  // Research, gear, vehicles, fuel, missions, and elapsed time stay paid.
+  const shorter={...c,sequence:c.sequence.slice(0,shifts+1),maxSwitches:shifts};let best=null;
+  for(const entry of prefixes.values())for(const state of new Set([entry.first,entry.build,entry.last].filter(Boolean))){
+   checkpoint();if(state.stage>shifts||state.stage<=c.finalResearchStage)continue;
+   const end=finish(state,shorter);if(better(end,best))best=end;
+  }
+  if(best&&complete(best,c))output.push(best);
+ }
+ return output;
+}
+
 async function trace(start,c,policy,saleAware,deadline,control){
  let n=start,output=[start];const base=start.path,label=phase(start,c),local=researchContext(start,c);
  for(let step=0;step<4000;step++){
@@ -362,13 +396,24 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  if(options.returnComparisons!==true&&!cancelled()){
   const alternatives=[...byShift.values()].sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0).slice(0,3).reverse();
   for(let i=0;i<alternatives.length;i++){
-   const item=alternatives[i];if(Date.now()>=started+maxMs||cancelled())break;
+   const item=alternatives[i];if(Date.now()>=started+maxMs*.95||cancelled())break;
    const {s:initial}=prepare(raw,item.route,item.count),c=item.context;
    control.context=c;control.route=item.route;
    const actions=S.history(item.state),prefixes=openingDepartures(initial,c,actions);
-   const refineDeadline=Date.now()+Math.max(1,(started+maxMs-Date.now())/(alternatives.length-i));
+   const refineDeadline=Date.now()+Math.max(1,(started+maxMs*.95-Date.now())/(alternatives.length-i));
    progress({phase:'route-search',stage:phase(initial,c),phaseLabel:'Comparing complete departure continuations',explored:control.explored,elapsedMs:Date.now()-started,bestSeconds:Math.min(...[...byShift.values()].map(x=>x.state.t-c.start)),routeIndex:control.routesCompared});
    await compareDepartures(prefixes,c,refineDeadline,control);
+  }
+  // Recover missing neighboring shift counts before returning comparisons.
+  // A thin beam failing to find one is not evidence that it is impossible.
+  const highest=Math.max(...byShift.keys()),missing=[highest-1,highest-2].filter(n=>n>=0&&!byShift.has(n));
+  if(missing.length){
+   const sources=[...byShift.values()].sort((a,b)=>better(a.state,b.state)?-1:1);
+   for(const item of sources){
+    if(cancelled())break;control.context=item.context;control.route=item.route;
+    try{for(const end of completionAlternatives(raw,item,missing,()=>{if(cancelled()||Date.now()>=started+maxMs)throw Error('Completion comparison interrupted');})){control.consider(end);}}
+    catch{}
+   }
   }
  }
  if(!recommended)throw Error(entries.find(e=>e.error)?.error||'No feasible plan found within the route and search budget.');
@@ -380,4 +425,4 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  const chosen=Plans.select({researchSalePlans:entries,recommendedResearchSales:recommended},recommended);
  return chosen;
 }
-module.exports={VERSION,seedRoute,openingDepartures,compareDepartures,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,solve};
+module.exports={VERSION,seedRoute,openingDepartures,compareDepartures,completionAlternatives,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,solve};

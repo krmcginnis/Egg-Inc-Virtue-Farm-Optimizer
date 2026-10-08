@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.9.2 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.9.3 — Release Audit
+
+v0.9.3 recovers missing neighboring shift-count comparisons from paid paths.
+Current validation appears in the v0.9.3 section at the end; earlier evidence
+is historical.
 
 v0.9.2 compares complete departure continuations, reserves refinement time,
 and applies route-aware fueling to new route proposals. Current validation
@@ -2055,3 +2059,39 @@ Public release: 406295621, v0.9.2, with both assets uploaded:
 
 This same-version audit update records completed verification without replacing
 or repackaging the immutable release assets.
+
+
+## v0.9.3 — Recover missing shift-count comparisons
+
+The v0.9.2 beam/refinement search could retain 12- and 11-shift plans without
+recovering a feasible 10-shift alternative. The solver now reserves the last
+5% of its existing computation budget for missing neighboring counts. It
+reconstructs actual paid prefix states from plans computed in the current run,
+retains upgrade-complete states, and compares TE delivery allocations along
+shorter endings. No saved plan seeds a search. Physical purchases, common
+research, gear, event timing, Soul Egg costs, fuel, and missions remain paid.
+Complete incumbents are retained and every returned alternative passes replay.
+No prices, game formulas, controls, or historical replay rules were changed.
+
+The supplied private 194.4678542-day 11-shift plan was replayed successfully.
+With identical inputs at the existing 45-second budget, v0.9.2 found
+137.5690671 days for 12 shifts and 155.5881673 days for 11 shifts. The new final
+comparison retains both times and recovers 161.7061257 days for 10 shifts.
+All three alternatives replay to their reported completion, 200 total TE,
+and both configured Humility mission schedules. This matched test completed
+in approximately 37.46 seconds. Private account files remain outside Git.
+These results are examples of fastest plans found, not global-optimum proofs.
+
+New regressions verify that shorter endings produce actual distinct shift
+counts, replay exactly, respect mandatory per-Virtue TE minimums and planned
+Humility launches, and honor cancellation. Existing route and solver checks
+pass. Additional local and native Windows validation will be recorded below.
+
+Local validation passed npm ci, build, packaging of 169 runtime files, route
+solver regressions, historical sale-plan tests, shift rates/PDF, timezones,
+subscription imports, release-state, and staged-publication guards. The same
+private input with an 11-shift ceiling also returns the unchanged 11-shift
+result and the replay-verified 10-shift result. The UI and export code did not
+change. Browser regressions passed for v0.9.2; they were not rerun here because
+the browser download endpoint returned an unavailable-page response rather
+than an archive. Native Windows and public updater checks are pending.
