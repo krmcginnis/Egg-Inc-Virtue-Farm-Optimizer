@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.9.1 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.9.2 — Release Audit
+
+v0.9.2 compares complete departure continuations, reserves refinement time,
+and applies route-aware fueling to new route proposals. Current validation
+appears in the v0.9.2 section at the end; prior evidence is historical.
 
 v0.9.1 removes redundant panel text and duplicate starting-artifact controls,
 uses compact Automatic Planning details, and fixes new plans at three ship slots.
@@ -1975,3 +1979,59 @@ Public release: 406280917, v0.9.1, with both assets uploaded:
 
 This same-version audit update records completed verification without replacing
 or repackaging the immutable release assets.
+
+
+## v0.9.2 complete departure comparisons
+
+The simulator already charged time for C1 waits. The search could nevertheless
+retain high-current-rate prefixes without evaluating their later opportunity
+cost, give initial recipes a disproportionate computation budget, and return
+the first feasible delivery tail before comparing useful later physical
+purchases or owned gear. New C-visit comparisons execute complete paid
+continuations through subsequent farms, research-sale calendars, physical
+purchases, fuel collection, configured missions, and TE delivery. Prefixes
+with faster completed continuations are retained alongside ordinary beam
+candidates. Both sampled later physical-visit durations are compared so a
+shortened C1 does not silently force an equally short K1. These are proposal
+samples, not user caps; the broader beam still compares other visit durations.
+
+Twenty-eight percent of the default budget is reserved to refine up to three
+displayed shift-count alternatives, beginning with the slower alternatives.
+Infeasible proposals are removed before dividing computation time. Initial
+recipe trials are bounded by route rather than borrowing the whole search
+deadline. Generic seeds compare their feasible delivery tails with later
+upgrades instead of returning the first tail, and retain valid completed
+candidates if a later proposal cannot finish. Arbitrary-route seeds use
+route-aware pre-launch fueling; legacy C1/K1/C2 phase names no longer suppress
+required fuel collection on those new routes. The preserved legacy solver
+and historical replay semantics are unchanged.
+
+A synthetic regression uses paid C1 departures from the same starting farm.
+The longer C1 has higher current earnings, but its complete continuation
+finishes over a day later; the comparison selects the earlier departure.
+Every resulting continuation is replayed for prices, permissions, required
+interaction times, final-C research rules, and target attainment. Another
+regression starts with empty fuel and verifies a shortened route collects C
+and K fuel before its configured Henerprise launch. Existing ceiling, ranking,
+custom-route, calendar, cancellation, legacy, and marker-preserving replay
+checks pass.
+
+Matched 45-second private-farm benchmarks retain the 12-shift result at
+137.9048235 days and improve the 11-shift result from 158.8882219 days to
+152.6828458 days. The new 11-shift plan starts with approximately 2.44 hours
+on C1. All alternatives replay to their reported finish and target. At
+ceilings 11 and 12, the comparisons complete in approximately 45.35 and
+45.40 seconds including atomic recipe work and finalization. These figures
+refer to the earlier saved benchmark, not the user's newly reported
+194-day run, which has not been supplied. They do not establish global
+optimality or guarantee the same improvement for other farms. Private farms
+and plans are kept outside the repository and release package.
+
+Local validation passed npm ci, build, packaging of 169 runtime files, the
+new route-solver regressions, historical sale-plan tests, shift rates/PDF,
+timezones, subscription imports, release-state, and prepare-publish. Real
+worker browser checks pass distinct-plan selection, ceilings, summaries,
+Quick Guide, timeline, JSON/PDF export, all-plan replay, update-session
+handoff, next ascension, cancellation, historical and invalid imports, and
+desktop layouts from 1440 to 1000px. Windows and public updater verification
+will be recorded after the automatic publication workflow completes.

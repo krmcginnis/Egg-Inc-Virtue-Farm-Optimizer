@@ -1,3 +1,13 @@
+# v0.9.2
+
+- Compare earlier research-visit departures using complete, paid continuations through later upgrades, sale windows, fuel collection, missions, and TE delivery.
+- Keep prefixes that finish sooner even when their current farm earns less. Reserve part of the search budget to refine the displayed shift-count alternatives.
+- Continue comparing later gear and physical upgrades after finding a feasible delivery plan; keep the faster completion.
+- Share computation time among feasible routes and bound the initial recipe comparisons so they cannot consume the whole search.
+- Apply route-aware fuel collection to new arbitrary-route candidates instead of skipping fuel based on legacy C1/K1/C2 labels.
+- Preserve historical replay, the previous solver, and the existing 45-second search budget.
+- Install through Update App → Update & Restart.
+
 # v0.9.1
 
 - Match Automatic Planning Details text to the other compact panel text.

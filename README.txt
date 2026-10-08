@@ -927,3 +927,17 @@ removed from Account, Virtue Farm, and Planning. Starting artifacts are managed
 through the existing Artifacts panel; the duplicate Starting Farm section is removed.
 New plans always use three concurrent ship mission slots. Saved historical plans
 retain their recorded slot setting for replay.
+
+Departure Comparisons — v0.9.2
+-----------------------------
+Research-visit departure candidates are compared using paid continuations through
+later farms, upgrades, research-sale timing, missions, fuel, and TE delivery.
+Current earnings alone do not decide which compared prefixes are retained.
+A portion of the 45-second search budget refines displayed alternatives. Initial
+recipe comparisons are bounded by route, and infeasible routes are excluded
+before time is divided. Finding a feasible delivery tail no longer prevents
+comparison with useful later physical purchases or owned gear. New route
+candidates collect required fuel on their last pre-launch visits, using the
+actual sequence rather than skipping it based on legacy phase names.
+The bounded search still reports the fastest plans it finds, not a proven
+global optimum.

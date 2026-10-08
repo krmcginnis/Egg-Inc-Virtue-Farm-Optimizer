@@ -20,6 +20,29 @@ function verify(raw,result){
 async function run(){
  assert.ok(R.better({t:100,stage:1,path:null},{t:100,stage:2,path:null}));
  assert.ok(!R.better({t:101,stage:1,path:null},{t:100,stage:2,path:null}));
+ // Higher earnings on the current C visit can lose to shifting earlier,
+ // paying for K/I, and spending the research time on the next C instead.
+ const buildCase=require('../src/blank-farm.cjs')(1791993600);
+ const gear=[{artifactId:'lunar-totem-4-3',stones:['lunar-stone-4']},{artifactId:'demeters-necklace-4-3',stones:[]},{artifactId:'tungsten-ankh-3-3',stones:[]},{artifactId:'puzzle-cube-4-2',stones:[]}];
+ Object.assign(buildCase.farm,{soulEggs:1e30,claimed:Array(5).fill(32),delivered:Array(5).fill(S.D.te[31]),epic:Object.fromEntries(S.D.epic.map(r=>[r.id,r.levels])),proPermit:true,videoDoubler:true,colleggtibles:{awayEarnings:6},loadouts:{current:gear,earnings:structuredClone(gear),delivery:structuredClone(gear)}});
+ Object.assign(buildCase.plan,{strategy:'user',autoSequence:false,sequence:'C K I C H K C R H I',target:180});
+ const buildContext=R.prepare(buildCase,R.routes(buildCase)[0],3),T=require('../src/staged-route.cjs'),Recipes=require('../src/wasmegg-stage-engine.cjs');
+ const prefix=minutes=>T.step(buildContext.s,buildContext.c,'C1',0,(s,c)=>Recipes.runC1(s,c,minutes*60),minutes*60);
+ const earlierBuild=prefix(180),laterBuild=prefix(1440),continued=[];
+ assert.ok(S.stats(laterBuild,buildContext.c).earning>S.stats(earlierBuild,buildContext.c).earning,'longer C1 has higher immediate earnings');
+ const departures=await R.compareDepartures([laterBuild,earlierBuild],buildContext.c,Date.now()+15000,{width:4,continuationsCompared:0,cancelled:()=>false,yield:async()=>{},consider:n=>continued.push(n)});
+ assert.equal(departures.length,2);assert.ok(departures[0].state===earlierBuild,'paid whole-plan completion favors earlier C1 departure over higher current earnings');
+ assert.ok(departures[0].end.t<departures[1].end.t-86400);
+ for(const n of continued){const actions=S.history(n).map((a,i)=>i? a:{...a,initialSiloRule:'one',routeSearch:{version:2,sequence:R.routes(buildCase)[0],researchSales:3}});const checked=O.replay(buildCase,actions);assert.ok(S.reached(checked.s,checked.c));assert.equal(checked.s.t,n.t);}
+ assert.ok(continued.some(n=>S.history(n).some(a=>a.type==='vehicle'||a.type==='car')),'continuations pay for physical purchases');
+ const sampled=R.openingDepartures(buildContext.s,buildContext.c,S.history(continued[0]));assert.ok(sampled.every(n=>n.stage===0));assert.ok(sampled.some(n=>n.t<laterBuild.t));
+ // A shortened route's last pre-launch C/K visits must collect fuel;
+ // legacy phase names must not skip fueling on an arbitrary new route.
+ const fuelCase=fixture();Object.assign(fuelCase.plan,{strategy:'user',autoSequence:false,sequence:'C K I C R H C',target:105,ships:{mode:'custom-two-visits',slots:3,visits:[{missions:[{ship:'HENERPRISE',duration:'EPIC',count:1}]},{missions:[]}]}});
+ fuelCase.farm.fuelTank={capacity:500e12,outputPerMinute:9e12,amounts:Object.fromEntries(S.EGGS.map(e=>[e,0]))};
+ const fuelContext=R.prepare(fuelCase,R.routes(fuelCase)[0],3),fueled=R.seedRoute(fuelContext.s,fuelContext.c,180,()=>{});assert.ok(fueled&&fueled.shipsDone);
+ const fuelActions=S.history(fueled),launchIndex=fuelActions.findIndex(a=>a.type==='ship-run');assert.ok(launchIndex>=0);assert.ok(fuelActions.slice(0,launchIndex).some(a=>a.type==='fuel'&&a.egg===0));assert.ok(fuelActions.slice(0,launchIndex).some(a=>a.type==='fuel'&&a.egg===4));
+ const fuelMarked=fuelActions.map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:2,sequence:R.routes(fuelCase)[0],researchSales:3}});assert.ok(S.reached(O.replay(fuelCase,fuelMarked).s,fuelContext.c));
  const raw=fixture(),fastest=verify(raw,await O.solve(raw,{maxMs:1800,width:4}));assert.equal(fastest.researchSalePlans,undefined);assert.equal(fastest.selectedResearchSales,undefined);assert.ok(fastest.shiftPlans.length<=3);assert.equal(new Set(fastest.shiftPlans.map(e=>e.switches)).size,fastest.shiftPlans.length);assert.equal(fastest.selectedSwitches,fastest.recommendedSwitches);for(let i=1;i<fastest.shiftPlans.length;i++)assert.ok(!R.better({t:fastest.shiftPlans[i].plan.end,stage:fastest.shiftPlans[i].switches},{t:fastest.shiftPlans[i-1].plan.end,stage:fastest.shiftPlans[i-1].switches}));const opts={maxMs:1800,width:4,returnComparisons:true};
  assert.equal(R.routes(raw)[0].at(-1),'integrity');assert.ok(R.routes(raw).some(route=>route.at(-1)==='humility'),'a faster delivery order may finish elsewhere');
  const result=verify(raw,await O.solve(raw,opts));assert.deepEqual(result.researchSalePlans.map(e=>e.status),['complete','complete','complete']);
@@ -53,6 +76,6 @@ async function run(){
  assert.ok(R.scored(onI,prepared.c).some(x=>x.a.type==='hab'&&x.a.id===18),'future K/research supports useful hab capacity');
  const early={...prepared.s,path:null,cash:10},late=S.advance(early,prepared.c,early.t+60,'test',false);assert.ok(R.dominates(early,late,prepared.c));
  const legacySaved=baseline.researchSalePlans[0].plan;assert.equal(O.replay(raw,legacySaved.actions,false,{enforceOpeningCaps:true}).s.t,legacySaved.end);
- console.log('PASS route/shift solver: ceiling and distinct ranked shift plans, zero-shift completion, preserved legacy baseline/replay, internal sale windows, arbitrary three-C route, final-C rules, delivery-only single/no-C routes, manual floors, uncapped timing, calendar boundaries, physical lookahead, saved rule replay, cancellation, and route integrity.');
+ console.log('PASS route/shift solver: whole-plan departure opportunity cost, later physical upgrades, arbitrary-route fueling, ceiling and distinct ranked shift plans, zero-shift completion, preserved legacy baseline/replay, internal sale windows, arbitrary three-C route, final-C rules, delivery-only single/no-C routes, manual floors, uncapped timing, calendar boundaries, physical lookahead, saved rule replay, cancellation, and route integrity.');
 }
 module.exports={verify};if(require.main===module)run().catch(e=>{console.error(e);process.exitCode=1;});
