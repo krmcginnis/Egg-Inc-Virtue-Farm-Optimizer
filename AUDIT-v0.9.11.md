@@ -105,6 +105,22 @@ and generated bundles remain excluded from source commits.
 
 Release preparation builds v0.9.11 and runs the new exhaustive sleep-search and earnings-reexecution regressions, existing solver and worker checks, release-state checks, publish-preparation checks, and packaging. Windows native updater/launch checks and anonymous public-feed/download verification must pass before this release is accepted. Verification results will be recorded in a source-only follow-up; published assets retain the pre-publication audit snapshot.
 
-The initial Windows release run stopped before publication because the 1.2-second finite-quality test allowance did not reach its expected optimum on that runner. Quality checks now allow eight seconds while retaining exact-optimum and strict-replay assertions. The application default remains 90 seconds. The corrected source must pass a new Windows release run.
+The initial Windows release run stopped before publication because the 1.2-second finite-quality test allowance did not reach its expected optimum on that runner. Quality checks now allow eight seconds while retaining exact-optimum and strict-replay assertions. The application default remains 90 seconds. The corrected source passed the final Windows release run described below.
 
 The second attempt (v0.9.10, source 9f40a486fc3dd9ed930484205da41a429d5a330b, Windows run 37840961939) passed all solver, native updater, packaging, and launch checks. Independent anonymous verification passed both complete downloads, GitHub/manifest digests, ZIP CRC, and all 169 runtime entries. The Windows anonymous feed check then received HTTP 403 after retries, and the workflow hid that release. It is not an accepted public release. v0.9.11 retries on a fresh runner with clearer HTTP/rate-limit diagnostics; the solver is unchanged.
+
+
+### Accepted release verification
+
+Windows run [37841706720](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/37841706720) completed successfully for source commit `0361dc7af4cf5b2e1e14ddb3fb78cacfd0c88934`. All solver checks passed, including all nine exact finite sleep-search optima and the generated browser worker. Native Windows checks passed valid installation, seven invalid archive cases, digest/version rejection, rollback and exact backup restore, user JSON/config preservation, hidden CMD launch and repeat reuse from paths with spaces, successful restart, startup-failure recovery, and legacy-worker recovery.
+
+The anonymous public-feed lookup, complete ZIP download, and every app-file checksum passed on Windows PowerShell 5.1.26100.33438. Independent anonymous verification confirmed v0.9.11 as latest, downloaded both complete assets, checked GitHub digests and manifest size/hash, ZIP CRC, all 169 runtime entries and every file checksum, current version/branding, one current audit, updater repository configuration, and the new calendar-departure and earnings-adaptation worker code.
+
+The accepted release is [v0.9.11](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v0.9.11). v0.9.9 never published; v0.9.10 remains hidden after its runner's HTTP 403. No existing assets were replaced.
+
+| Asset | GitHub ID | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Egg-Inc-Virtue-Farm-Optimizer.zip | 622967586 | 8,582,266 | `d39b71b937e103ec555a87117a46c87c43eac31a8c75cb0d717db5b2918dfc51` |
+| update-manifest.json | 622967582 | 240 | `90a580bba23147041e214091992df9b593ecbf130fe388f253bdeda54a8af19d` |
+
+This record is a source-only follow-up. Published assets retain the pre-publication audit snapshot; the app version and release assets are unchanged.
