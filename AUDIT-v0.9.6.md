@@ -2344,5 +2344,31 @@ Local verification passed:
 - npm ci and build. Generated bundles remain ignored; private attachments and
   benchmark scripts/results remain outside tracked source.
 
-Native Windows update gates and public feed validation are pending in the
-release workflow. Publishing is not yet claimed.
+Publication verified:
+
+- Source commit c47cb8be18c4220ddb917a2a48e145cbca2be80f.
+- Workflow 37775675224, Windows job 113305758991: success. Release intent,
+  build/regression checks, asset publication, and public updater verification
+  all passed.
+- Public release v0.9.6 (406795290) is published with both assets uploaded.
+  ZIP: 8,610,351 bytes; SHA256
+  94e58d8e33cfc27148eeff53dcf3935dc370e2a7189115e8e55beef4c34063f7.
+  Manifest: 239 bytes; SHA256
+  110d34a40e18a5c7a10497392b7db2e5263b5996b0e341439e5af0e21be6c2f7.
+- Native updater checks passed valid/bad archives, digests, tampering,
+  installation rollback, backup restore, and private JSON preservation.
+  CMD paths with spaces, hidden launch/reuse, success restart, startup-failure
+  rollback, and legacy-worker restart passed.
+- The public updater downloaded the complete published release and checked all
+  169 runtime files on Windows PowerShell 5.1.26100.33438.
+- All six private Node results also passed recorded-history JSON round-trip
+  replay and shift-plan selection.
+- A separate execution of the actual generated browser worker with the T4 farm
+  and default 45-second budget reproduced the fastest 137.47792196629499-day
+  12-shift plan. Its slower VM environment returned a valid 11-shift alternative
+  but did not finish a 10-shift alternative in that budget. This confirms the
+  primary regression is corrected in the built bundle, and underscores that
+  bounded search still cannot guarantee three counts on every machine.
+
+This same-version audit update records completed checks and does not replace
+or republish the immutable release assets.
