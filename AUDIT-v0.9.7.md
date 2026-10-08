@@ -2608,3 +2608,23 @@ after npm ci. The local Windows updater test could not run because PowerShell
 is unavailable on this Linux host; the release workflow runs its Windows
 updater/launch checks and validates the anonymous published feed before release
 success is reported. Private inputs and results remain outside Git.
+
+## v0.9.7 published Windows verification
+
+Release source commit: `3c2799763842a7f8afc2f0c675e822c76e5f95e6`.
+GitHub release `406914384` is public, stable, and the latest release. Automatic
+workflow `37791183752`, Windows job `113358678636`, completed successfully,
+including the new breakpoint/retention regression, build, standalone worker,
+packaging, updater, native launch, and anonymous published-feed checks.
+The public feed downloaded the complete archive and verified every app-file
+checksum on Windows PowerShell 5.1.26100.33438.
+
+Published assets:
+
+- ZIP asset `622041909`: 8,618,923 bytes, 169 runtime files;
+  SHA-256 `ad7e083de85fe59fa2d421cfc70ca550dbc262659e619b07d109d991be3a5fba`.
+- Manifest asset `622041903`: 239 bytes;
+  SHA-256 `84c62185993eb1a58dc21a810eb078db5183e165d9f419af3a1133f0af3f67d7`.
+
+This verification record updates the source audit only. Published assets remain
+the exact files built and verified from the release source commit above.
