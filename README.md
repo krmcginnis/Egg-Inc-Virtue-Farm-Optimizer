@@ -76,3 +76,31 @@ planning horizon, including daylight saving changes, rather than automatically
 buying 24 hours. Purchases still require Resilience, available cash, and the
 permit's silo limit. Before enough coverage is bought, empty-silo hours reduce
 cash, delivered eggs, and farm-produced fuel in funding and completion estimates.
+
+## Local solver development
+
+With sleep enabled, the route search reserves early Resilience alternatives when
+owned silos cannot cover the remaining nights. Paid funding waits also expose
+awake departures before bedtime, at wake time, and at a change in research-sale
+pricing. These proposals are compared through complete plans within the existing
+90-second budget; they are not mandatory visits or extra shifts.
+
+When only the starting earnings gear improves, an existing result may propose
+its purchase order for a new solve. Both the old source and the new paid timeline
+must strictly replay. Production, research discounts, inventory, sleep, targets,
+and all other inputs must match. The actual new gear is used; no completion delay
+or extra shifts are accepted. Wait compression is compared after preserving the
+verified shift-count alternatives. Other input changes continue to invalidate
+previous winners. This safeguard requires an earlier result; a cold bounded
+search can still find different-quality paths with different gear.
+
+Run `node tests/sleep-search-quality.cjs` for finite exhaustive sleep, research,
+silo, and shift decisions, and `node tests/earnings-incumbents.cjs` for upgrade
+reexecution and rejection checks. For private baseline comparisons, use:
+
+```sh
+node scripts/benchmark-search.cjs --farm ../private-farm.json --baseline ../prior-checkout --budgets 90000 --sleep 23:00,07:00
+```
+
+`--incumbent ../saved-plan.json` optionally supplies a previous result. Keep
+private inputs and diagnostic outputs outside the source checkout.

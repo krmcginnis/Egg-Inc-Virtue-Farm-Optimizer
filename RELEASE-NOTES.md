@@ -1,3 +1,11 @@
+# v0.9.9
+
+- Compare early Resilience trips when owned silos cannot cover sleep, including a two-shift coverage-and-return route when no missions are required.
+- Compare departures before bedtime, at wake time, and at research-sale boundaries within passive funding waits. Recompute paid cash and delivery, and evaluate complete continuations.
+- When only starting earnings gear improves, reexecute verified prior purchase plans with the actual new gear. Preserve shift-count alternatives before compressing waits; accept no extra time or shifts. Other input changes still invalidate prior winners.
+- Keep the 90-second search budget. Nine finite exhaustive sleep/research/silo cases matched their optima, and repeated baseline runs retained all three established plans. Bounded cold searches can still vary.
+- Install through Update App → Update & Restart, then rerun the planner. Retain a verified previous result when testing an earnings-only gear upgrade.
+
 # v0.9.8
 
 - Add optional daily Sleep Hours using the Event Schedule Timezone beside Plan Start. Purchases, shifts, fuel setup, and ship handling are scheduled while awake, including daylight saving changes.

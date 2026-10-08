@@ -75,6 +75,10 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/silo-comfort.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/sleep-search-quality.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/earnings-incumbents.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/solver-worker.cjs

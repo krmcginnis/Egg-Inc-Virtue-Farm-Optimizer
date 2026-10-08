@@ -24,6 +24,14 @@ async function run(){
  result=undefined;await context.onmessage({data:{config:sleep,options:{maxMs:1500}}});assert.equal(error,undefined);assert.ok(result?.validatedReplay);
  assert.equal(result.actions.find(a=>a.type==='shift').t,Date.parse('2026-10-09T07:00:00Z')/1000,'worker uses the plan timezone rather than the obsolete separate sleep zone');
  const awake=O.replay(sleep,result.actions);assert.equal(awake.c.sleep.timezone,'UTC');require('./sleep-schedule.cjs').validateInteractions(result.actions,awake.c);assert.equal(awake.s.t,result.end);
- console.log('PASS built browser worker: standalone search bundle, checkpoint metadata, distinct plans, extra paid silos after earlier delivery visits, shared sleep timezone, and independent replay.');
+ const weak=require('./sleep-search-quality.cjs').make();weak.farm.earningsMode='offline';weak.farm.loadouts={current:[{artifactId:'lunar-totem-4-3',stones:['lunar-stone-3']}]};
+ result=undefined;await context.onmessage({data:{config:weak,options:{maxMs:1800}}});assert.equal(error,undefined);const old=result;
+ const strong=structuredClone(weak);strong.farm.loadouts.current[0].stones=['lunar-stone-4'];result=undefined;
+ await context.onmessage({data:{config:strong,options:{maxMs:5000,incumbent:{config:weak,result:old}}}});assert.equal(error,undefined);assert.ok(result.search.earningsAdaptations>0);
+ for(const entry of old.shiftPlans){const next=result.shiftPlans.find(e=>e.switches===entry.switches);assert.ok(next);assert.ok(next.plan.seconds<=entry.plan.seconds+1e-6);const paid=O.replay(strong,next.plan.actions,true);assert.equal(paid.s.t,next.plan.end);require('./sleep-schedule.cjs').validateInteractions(next.plan.actions,paid.c);}
+ const short=require('./sleep-search-quality.cjs').make({route:'C R C'});Object.assign(short.plan,{strategy:'auto',strategyVersion:2,autoSequence:true,maxShifts:2});result=undefined;
+ await context.onmessage({data:{config:short,options:{maxMs:1600,width:8}}});assert.equal(error,undefined);assert.equal(result.switches,2);assert.ok(Math.abs(result.seconds-172832.00099992752)<.05);
+ const covered=O.replay(short,JSON.parse(JSON.stringify(result.actions)),true);assert.equal(covered.s.t,result.end);require('./sleep-schedule.cjs').validateInteractions(result.actions,covered.c);
+ console.log('PASS built browser worker: standalone search bundle, checkpoint metadata, distinct plans, extra paid silos after earlier delivery visits, shared sleep timezone, earnings-only upgrade reexecution, and independent replay.');
 }
 run().catch(error=>{console.error(error.message);process.exitCode=1;});

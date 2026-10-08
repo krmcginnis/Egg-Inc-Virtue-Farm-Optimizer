@@ -17,19 +17,21 @@ function select(states,c,limit=12){
  // Preserve the latest useful structural departures, then test the decision
  // BEFORE paying for another cash wait. All anchors are complete paid states.
  const original=[...new Set([states.at(-1),...events.reverse().flat(),states[0]])];
- const chosen=new Set(original.slice(0,Math.min(4,limit))),waits=[];
+ const chosen=new Set(original.slice(0,Math.min(4,limit))),waits=[],calendar=[];
  for(let i=1;i<states.length;i++){
   const action=states[i].path?.action;
+  if(c.sleep&&action?.reason==='Compare an awake departure before sleep or at a calendar boundary')calendar.push(states[i]);
   if(states[i].stage===states[i-1].stage&&action?.type==='wait'&&
    !/interaction time|Switch overhead/.test(action.reason||'')&&action.cashGained>0&&
    action.end-action.t>=Math.max(600,c.offlineMinSeconds))
    waits.push({state:states[i-1],seconds:action.end-action.t});
  }
  waits.sort((a,b)=>b.seconds-a.seconds||b.state.t-a.state.t);
- for(const state of [...waits.map(x=>x.state),...original])if(chosen.size<limit)chosen.add(state);
+ const calendarAnchors=[...new Set([calendar.at(-1),calendar[0]].filter(Boolean))];
+ for(const state of [...calendarAnchors,...waits.map(x=>x.state),...original])if(chosen.size<limit)chosen.add(state);
  // Keep the existing leading departures first, then prioritize later paid
  // before-wait states. Do not let several cheap early openings exhaust a
  // slower browser worker's slice before it tests the stronger paid prefixes.
- return [...new Set([...original.slice(0,Math.min(2,limit)),...waits.map(x=>x.state).filter(s=>chosen.has(s)).sort((a,b)=>b.t-a.t),...chosen])];
+ return [...new Set([...original.slice(0,Math.min(2,limit)),...calendarAnchors.filter(s=>chosen.has(s)),...waits.map(x=>x.state).filter(s=>chosen.has(s)).sort((a,b)=>b.t-a.t),...chosen])];
 }
 module.exports={signature,select};

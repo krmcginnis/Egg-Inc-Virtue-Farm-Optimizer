@@ -1,5 +1,5 @@
 'use strict';
-const Route=require('./switch-sequence.cjs'),S=require('./simulator.cjs');
+const Route=require('./switch-sequence.cjs'),S=require('./simulator.cjs'),Sleep=require('./sleep-schedule.cjs'),Ships=require('./ships.cjs');
 function limit(raw){return S.number(raw.plan?.maxShifts??12,'Maximum new shifts',0,30,true);}
 function permutations(items){if(!items.length)return [[]];return items.flatMap((item,i)=>permutations(items.filter((_,j)=>j!==i)).map(rest=>[item,...rest]));}
 function generate(raw){
@@ -30,6 +30,20 @@ function generate(raw){
   for(let i=0;i<tail.length;i++)add(tail.filter((_,j)=>i!==j),35);
  }
  add([start],40);
+ if(raw.plan?.sleep?.enabled){
+  const start=S.number(raw.plan.start||Date.now()/1000,'Start timestamp',1),end=start+S.number(raw.plan.maxDays??90,'Planning limit (days)',1,366,true)*86400;
+  const sleep=Sleep.forPlan(raw.plan,start,end),coverage=Math.max(1,raw.farm.silos??1)*(60+6*(raw.farm.epic?.silo_capacity??0))*60;
+  // Reserve paid early-R proposals when current coverage cannot span sleep.
+  // Keep the original research/physical portfolio first and the shift ceiling.
+  const base=[...pool.values()].sort((a,b)=>a.priority-b.priority||b.shifts-a.shifts).find(x=>x.route.indexOf('resilience')>1)?.route;
+  const index=base?.indexOf('resilience')??-1;
+  if(coverage<Sleep.requiredCoverage(sleep,start,end)){
+   if(raw.farm.virtue!=='resilience'&&!Ships.prepare(raw.farm,raw.plan,S.number).enabled)add([raw.farm.virtue,'resilience',raw.farm.virtue],1.29);
+   if(index>1)for(const at of [1,3]){
+    const route=base.slice();route.splice(index,1);route.splice(Math.min(at,route.length),0,'resilience');add(route,1.3+at*.01);
+   }
+  }
+ }
  const candidates=[...pool.values()].sort((a,b)=>a.priority-b.priority||b.shifts-a.shifts),chosen=[],seen=new Set();
  function take(item){const key=item.route.join(' ');if(!seen.has(key)){seen.add(key);chosen.push(item.route);}}
  for(const item of candidates.filter(x=>x.priority<2))take(item);

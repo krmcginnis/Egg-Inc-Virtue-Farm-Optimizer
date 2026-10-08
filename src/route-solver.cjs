@@ -11,6 +11,8 @@ const Breakpoints=require('./research-breakpoints.cjs'),Incumbents=require('./pl
 const Sleep=require('./sleep-schedule.cjs');
 const Schedules=require('./schedule-proposals.cjs');
 const Comfort=require('./silo-comfort.cjs');
+const CalendarDepartures=require('./calendar-departures.cjs');
+const EarningsIncumbents=require('./earnings-incumbents.cjs');
 function better(a,b){if(!a)return false;if(!b)return true;if(a.t<b.t-1e-6)return true;if(a.t>b.t+1e-6)return false;if(a.stage!==b.stage)return a.stage<b.stage;if(Comfort.preferred(a,b))return true;if(Comfort.preferred(b,a))return false;return W.offlineBreaks(a)<W.offlineBreaks(b);}
 const VERSION=2,letters=['C','I','H','R','K'];
 
@@ -178,7 +180,7 @@ function openingDepartures(initial,c,actions){
  for(const action of actions){
   if(action.type==='shift')break;
   try{
-   if(action.type==='wait')n=S.advance(n,c,action.end,action.reason,true,action.earningsMode||'auto');
+   if(action.type==='wait'){states.push(...CalendarDepartures.duringWait(n,c,action));n=S.advance(n,c,action.end,action.reason,true,action.earningsMode||'auto');}
    else n=S.buy(n,{...c,actionsSeconds:0,shiftSeconds:0,shipReplay:true},action);
    // Only depart after complete purchase interactions. Keep the last paid
    // state before each sampling time, without pretending it earned extra cash.
@@ -232,7 +234,7 @@ async function unlockDepartures(states,c,deadline,control){
 function purchasePrefixes(initial,c,actions,include){
  let n=initial;const states=[initial];
  for(const action of actions){
-  if(action.type==='wait')n=S.advance(n,c,action.end,action.reason,true,action.earningsMode||'auto');
+  if(action.type==='wait'){states.push(...CalendarDepartures.duringWait(n,c,action).filter(include));n=S.advance(n,c,action.end,action.reason,true,action.earningsMode||'auto');}
   else n=S.buy(n,{...c,actionsSeconds:action.type==='ship-run'?c.actionsSeconds:0,shiftSeconds:0,shipReplay:true},action);
   // Wait records include the full purchase interaction. Never branch from
   // an instant between paying and completing that interaction.
@@ -402,7 +404,7 @@ async function trace(start,c,policy,saleAware,deadline,control){
   }
   let changed=false,executed=0;const before=n,batch=choice.a.type==='research'?8:choice.a.type==='car'?4:1;
   for(let i=0;i<batch;i++){
-   try{const ready=S.afford(n,local,choice.a);if(!ready)break;const next=S.buy(ready,local,choice.a);if(next.t>c.end)break;n=next;changed=true;executed++;control.explored++;}catch{break;}
+   try{const ready=S.afford(n,local,choice.a);if(!ready)break;output.push(...CalendarDepartures.beforePurchase(n,local,ready).map(x=>tag(x,base,label)));const next=S.buy(ready,local,choice.a);if(next.t>c.end)break;n=next;changed=true;executed++;control.explored++;}catch{break;}
   }
   if(!changed)break;
   if(executed>1&&c.earningsMode==='offline')try{const offline=B.compare(before,local,Array(executed).fill(choice.a),local.end);if(offline?.count===executed&&W.better(offline.s,n))n=offline.s;}catch{}
@@ -429,7 +431,7 @@ async function visit(start,c,deadline,control){
    const candidate=recipe(start,researchContext(start,c),kind,limit,control.checkpoints,()=>{if(control.cancelled())throw Error('Recipe interrupted');},false);
    let n=start,seen=0;const actions=[];for(let p=candidate.path;p&&p!==start.path;p=p.prev)actions.push(p.action);
    for(const a of actions.reverse()){
-    if(a.type==='wait')n=S.advance(n,c,a.end,a.reason,true,a.earningsMode||'auto');
+    if(a.type==='wait'){proposed.push(...CalendarDepartures.duringWait(n,c,a).map(x=>tag(x,start.path,label)));n=S.advance(n,c,a.end,a.reason,true,a.earningsMode||'auto');}
     else n=S.buy(n,{...c,shiftSeconds:0,actionsSeconds:0,shipReplay:true},a);
     control.explored++;
     seen++;if((a.type==='wait'||c.actionsSeconds===0)&&(seen%16===0||S.reached(n,c)))proposed.push(tag(n,start.path,label));
@@ -509,7 +511,7 @@ function finalize(raw,best,c,route,count,control,termination){
   frontier:[{switches:s.stage,seconds:s.t-c.start,soulCost:s.lost}],sourceCommit:S.D.commit,validatedReplay:true,
   artifactRecommendations:best.artifactRecommendations||null,...(best.siloComfort?{siloComfort:best.siloComfort}:{}),artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions),search:{automaticVisitTiming:true,routesCompared:control.routesCompared,statesExamined:control.explored,continuationsCompared:control.continuationsCompared,
    checkpoints:control.checkpoints?.summary(),lookaheadNodes:control.lookaheadNodes,lookaheadChains:control.lookaheadChains,lookaheadComparisons:control.lookaheadComparisons,
-   openingComparisons:control.openingComparisons,conservativeComparisons:control.conservativeComparisons,physicalComparisons:control.physicalComparisons,deliveryResearchComparisons:control.deliveryResearchComparisons,recoveryComparisons:control.recoveryComparisons,breakpointAnchors:control.breakpointAnchors,breakpointComparisons:control.breakpointComparisons,retainedPlans:control.retainedPlans}};
+   openingComparisons:control.openingComparisons,conservativeComparisons:control.conservativeComparisons,physicalComparisons:control.physicalComparisons,deliveryResearchComparisons:control.deliveryResearchComparisons,recoveryComparisons:control.recoveryComparisons,breakpointAnchors:control.breakpointAnchors,breakpointComparisons:control.breakpointComparisons,retainedPlans:control.retainedPlans,earningsAdaptations:control.earningsAdaptations}};
  return {...result,summary:Summary.summarize(raw,result)};
 }
 async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
@@ -520,7 +522,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  const width=Math.min(16,S.number(options.width??12,'Search width',4,512,true));
  const entries=[],byShift=new Map(),byRoute=new Map(),searchContexts=[],control={started,width,explored:0,routesCompared:0,continuationsCompared:0,
   checkpoints:options.disableCheckpoints?null:new Checkpoints(),lookahead:!options.disableLookahead,lookaheadNodes:0,lookaheadChains:0,lookaheadComparisons:0,
-  openingComparisons:0,conservativeComparisons:0,physicalComparisons:0,deliveryResearchComparisons:0,recoveryComparisons:0,breakpointAnchors:0,breakpointComparisons:0,retainedPlans:0,
+  openingComparisons:0,conservativeComparisons:0,physicalComparisons:0,deliveryResearchComparisons:0,recoveryComparisons:0,breakpointAnchors:0,breakpointComparisons:0,retainedPlans:0,earningsAdaptations:0,
   cancelled,yield:()=>new Promise(r=>setTimeout(r,0))};let recommended=null,overall=null,retained=null;
  for(const count of options.returnComparisons===true?Plans.COUNTS:[3]){
   if(cancelled()&&!incumbents.some(item=>item.count===count)){entries.push({researchSales:count,status:'not-completed',error:'Search stopped before this sale option completed.'});continue;}
@@ -535,6 +537,11 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    if(better(state,best)){best=state;bestContext=control.context;bestRoute=control.route;}
   };
   for(const item of incumbents)if(item.count===count){control.context=item.context;control.route=item.route;control.consider(item.state);control.retainedPlans++;}
+  if(!incumbents.length&&!cancelled()&&options.returnComparisons!==true&&!options.disableEarningsAdaptation){
+   const adaptationDeadline=Math.min(started+maxMs*.05,started+4500);
+   const adapted=EarningsIncumbents.adapt(raw,options.incumbent,{prepare,replay,checkpoint:()=>{if(cancelled()||Date.now()>=adaptationDeadline)throw Error('Earnings schedule comparison interrupted');}});
+   for(const item of adapted)if(item.count===count){control.context=item.context;control.route=item.route;control.consider(item.state);control.earningsAdaptations++;}
+  }
   const contexts=[];
   // Exclude impossible proposals before dividing CPU time; otherwise routes
   // that cannot satisfy fuel/floors consume a share of every earlier slice.
