@@ -2256,3 +2256,22 @@ could not run locally and remain assigned to the Windows release job.
 
 Native Windows checks and public updater verification are pending publication
 and will be recorded below.
+
+Native Windows and public updater verification passed in GitHub Actions run
+37719770952, job 113124510267. Release/publication guards, subscriptions,
+historical sale plans, current route/shift regressions, exhaustive search-quality
+checks, the built browser-worker test, packaging, archive/digest/tamper rejection,
+installation/backup restore, hidden CMD launch, successful restart,
+startup-failure rollback, and legacy-worker restart all passed. Windows
+PowerShell 5.1.26100.33438 downloaded the complete public v0.9.5 release through
+the updater and verified every app file checksum.
+
+Published source commit: c5ba7cc0a72d8909cc116096a7ef3c8e845ae935.
+Public release: 406359880, v0.9.5, with both assets uploaded:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8602193 bytes; SHA256
+  be3c03093e8ab036f4c0982a14729cb4f40d47a335af7447ab90e3df5187345c.
+- update-manifest.json: 239 bytes; SHA256
+  b84f84880d29255fc54320fa38fa20cb0e23e5d3bb5848f2a187703e3d4489f8.
+
+This same-version audit update records completed verification without replacing
+or repackaging the immutable release assets.
