@@ -1,3 +1,11 @@
+# v0.9.1
+
+- Match Automatic Planning Details text to the other compact panel text.
+- Remove the highlighted helper text and redundant bonus, gear-effect, and fuel summaries from Account, Virtue Farm, and Planning.
+- Remove duplicate Starting Artifacts controls beneath Starting Farm; use the existing Artifacts panel.
+- Remove Concurrent Mission Slots from Planning. New plans use three slots; historical saved plans retain their original scheduling for replay.
+- Install through Update App → Update & Restart.
+
 # v0.9.0
 
 - Use one route-aware purchase and departure solver for optimized and user-entered sequences, with automatic visit timing and no C1/K1 time-limit controls.

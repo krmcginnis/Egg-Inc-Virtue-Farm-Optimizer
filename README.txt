@@ -458,7 +458,7 @@ Tank values accept exact game suffixes and are saved with every planning goal.
 Egg Inc. backup imports read the Virtue tank contents/capacity and FTL level.
 
 Planning Goals lets you choose ship types, Short/Standard/Extended missions,
-launch counts, FTL Drive Upgrades, and 1–3 mission slots, with existing flights accounted for. Add up
+launch counts and FTL Drive Upgrades, using three mission slots with existing flights accounted for. Add up
 to eight mission groups. Leave one launch count blank for Tank Maximum: the
 largest run the shared tank can support, accounting for other planned missions
 and existing fuel. Humility-only ships require an explicit count. The maximum
@@ -918,3 +918,12 @@ owned gear is used; future mission rewards are not predicted. Fuel, flights,
 and configured launches remain requirements. The bounded search does not
 exhaust all possible routes or prove global optimality. The prior solver is
 retained for developer rollback and historical replay.
+
+Panel Cleanup — v0.9.1
+---------------------
+Automatic Planning Details uses the same compact text size as other panel help.
+Redundant helper paragraphs, bonus summaries, gear effects, and fuel totals are
+removed from Account, Virtue Farm, and Planning. Starting artifacts are managed
+through the existing Artifacts panel; the duplicate Starting Farm section is removed.
+New plans always use three concurrent ship mission slots. Saved historical plans
+retain their recorded slot setting for replay.

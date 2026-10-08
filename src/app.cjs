@@ -51,16 +51,12 @@ function show(message, error = false) {
 function updateSequenceVisibility() {
   const strategy = $("strategy").value, automatic = strategy !== "user";
   $("fixed-sequence").hidden = automatic;
+  $("fixed-sequence").parentElement.hidden = automatic;
   $("sequence").disabled = automatic;
   $("sequence").required = !automatic;
   $("wasmegg-sequence-description").hidden = strategy === "user";
   $("automatic-shift-limit").hidden = !automatic;
   $("maxShifts").disabled = !automatic;
-  $("strategy-description").textContent = {
-    wasmegg: "Searches route order, research, and timing within your maximum new shifts. Shows up to three fastest plans using different shift counts.",
-    user: "Enter your truth egg switch sequence below. The solver preserves your order and chooses visit durations. Plans can stop early once the goal and missions are complete. The final C is delivery-only."
-  }[strategy] || "Select a planning strategy.";
-  $("routing-help").textContent = automatic ? "Choose User Selected Sequence to enter your own order." : "Your truth egg sequence controls the visit order.";
 }
 function updatePlanControls() {
   const automatic = $("autoTeAllocation").checked;
@@ -182,10 +178,10 @@ function showPlanningGuidance(message, fromSearch = false, inputsChanged = false
     targets = [["epic-hold_to_hatch", "Review Epic Research"]];
   } else if (/fuel|tank/i.test(message)) {
     detail = "Review stored fuel, tank capacity, and the planned missions for each Humility visit.";
-    targets = [[field || "tankCapacity", "Review Fuel Inputs"], ["shipSlots", "Review Planned Ships"]];
+    targets = [[field || "tankCapacity", "Review Fuel Inputs"], ["add-ship-1", "Review Planned Ships"]];
   } else if (/mission|launch count/i.test(message)) {
-    detail = "Review the mission slots and launch counts for each Humility visit.";
-    targets = [[field || "shipSlots", "Review Planned Ships"]];
+    detail = "Review the missions and launch counts for each Humility visit.";
+    targets = [[field || "add-ship-1", "Review Planned Ships"]];
   } else if (/sequence|switch.*budget|Maximum.*switch|unreachable/i.test(message)) {
     detail = "Check the visit order. User Selected Sequence uses the full entered route, up to 30 switches.";
     targets = [[field || "strategy", "Review Routing Settings"]];
@@ -306,10 +302,7 @@ function selectField(label, id, opts, value) {
   l.append(s);
   return l;
 }
-function renderColleggtibleTotals(tiers, overrides) {
-  const totals = C.combine(tiers, overrides);
-  $("col-totals").replaceChildren(...Object.entries(colNames).filter(([k]) => totals[k] !== 1).map(([k, label]) => el("span", label + " \xD7" + NumberFormat.decimal(totals[k]), "bonus-chip")));
-  if (!$("col-totals").childElementCount) $("col-totals").textContent = "No Colleggtible bonuses selected.";
+function renderColleggtibleSummary(tiers) {
   const active = D.customEggs.filter(e => (tiers[e.identifier] ?? -1) >= 0).length;
   const maxed = D.customEggs.filter(e => tiers[e.identifier] === e.buffs.length - 1).length;
   $("col-summary").textContent = active + " / " + D.customEggs.length + " bonuses active · " + maxed + " at highest tier";
@@ -323,10 +316,6 @@ function updateAccountSummaries() {
     if (value === r.levels) maxed++;
   }
   $("epic-summary").textContent = valid ? maxed + " / " + D.epic.length + " researches maxed · " + levels + " levels purchased" : "Review the entered research levels.";
-  $("epic-key-levels").textContent = ["epic_egg_laying", "afx_mission_time"].map(id => {
-    const r = D.epic.find(r => r.id === id);
-    return r.name + " " + $("epic-" + id).value + " / " + r.levels;
-  }).join(" · ");
   updateDataSources();
 }
 function setSource(node, label, detail, kind = "default") {
@@ -343,9 +332,9 @@ function updateDataSources() {
     if (manual) setSource(node, "Manual Override", "Manual editing is enabled. The solver uses the entered values.", "manual");
     else if (config.uiProvenance?.[group] === "manual") setSource(node, "Manually Edited", "Values were edited after loading and are now locked. Reimport to refresh them.", "manual");
     else if (config.uiProvenance?.[group] === "plan") setSource(node, "Projected from Plan", "Calculated for the next ascension from the completed plan; not a new game backup.");
-    else if (group === "colleggtibles" && info?.colleggtibleSource === "partial") setSource(node, "Partially Imported", "Some contract records could not be matched. Imported bonuses are combined with retained selections; see the explanation below.", "warning");
-    else if (group === "colleggtibles" && info?.colleggtibleSource === "unavailable") setSource(node, "Previous Values Retained", "Contract progress was missing from the backup. These bonuses were not refreshed; see the explanation below.", "warning");
-    else if (group === "colleggtibles" && config.farm.colleggtibleTiersInferred) setSource(node, "Reconstructed from Totals", "Individual tiers were reconstructed from an older saved file's combined bonuses; see the explanation below.", "warning");
+    else if (group === "colleggtibles" && info?.colleggtibleSource === "partial") setSource(node, "Partially Imported", "Some contract records could not be matched. Imported bonuses are combined with retained selections. Compare individual bonuses with the game.", "warning");
+    else if (group === "colleggtibles" && info?.colleggtibleSource === "unavailable") setSource(node, "Previous Values Retained", "Contract progress was missing from the backup. These bonuses were not refreshed. Sync the game and reload, or edit them manually.", "warning");
+    else if (group === "colleggtibles" && config.farm.colleggtibleTiersInferred) setSource(node, "Reconstructed from Totals", "Individual tiers were reconstructed from an older saved file's combined bonuses. Verify the individual selections.", "warning");
     else if (group === "flights" && info?.flightSource !== "backup") setSource(node, config.farm.shipFlights?.length ? "Retained Flights" : "Not Loaded", "Flight information was not supplied by the last import.");
     else if (group === "farm" && info?.scope === "account") setSource(node, "Retained Farm", "No active Virtue farm was found. Your starting farm was retained.");
     else if (info) setSource(node, "Imported Backup", "From the last loaded Egg Inc. backup; check its timestamp in the sidebar.", "imported");
@@ -393,7 +382,7 @@ function renderForm() {
   const zone = p.eventTimezoneMode === Zones.automatic || !p.eventTimezone ? Zones.automatic : p.eventTimezone;
   if (![...$("eventTimezone").options].some(o => o.value === zone)) $("eventTimezone").append(option(zone, Zones.label(zone)));
   $("eventTimezone").value = zone;
-  updateTimezoneHelp();
+  updateTimezoneLabel();
   $("sequence").value = typeof p.sequence === "string" ? p.sequence : (p.sequence ?? DEFAULT_ROUTE).map((x) => ({ curiosity: "C", integrity: "I", humility: "H", resilience: "R", kindness: "K" })[x] || x).join(" ");
   $("minOfflineMinutes").value = p.minOfflineMinutes ?? 1;
   $("strategy").value = p.strategy || "wasmegg";
@@ -458,12 +447,7 @@ function renderForm() {
     const name = e.name === "P.E.G.G." ? e.name : e.name.toLowerCase().replace(/\b\w/g, (x) => x.toUpperCase()), key = C.dimension[e.buffs[0].dimension];
     return EggIcons.decorateLabel(selectField(name + " \xB7 " + colNames[key], "col-egg-" + e.identifier, [[-1, "None (1\xD7)"], ...e.buffs.map((b, i) => [i, "Tier " + (i + 1) + " \xB7 " + (b.value >= 1 ? "+" : "\u2212") + NumberFormat.decimal(Math.abs(b.value - 1) * 100) + "% (" + NumberFormat.decimal(b.value) + "\xD7)"])], selected.tiers[e.identifier] ?? -1), e.identifier);
   }));
-  const colleggtibleSource = config.importInfo?.colleggtibleSource;
-  $("col-note").textContent = [
-    selected.inferred ? "Older files store combined bonuses only. These tiers were reconstructed to match; verify the individual selections. " + (Object.keys(selected.overrides).length ? "Custom totals are preserved until you change a colleggtible affecting that stat." : "") : "",
-    colleggtibleSource === "backup" ? "Colleggtible bonuses loaded from account contract progress." : colleggtibleSource === "partial" ? "Some contract records could not be matched to Colleggtible eggs. Recognized bonuses were imported; earlier selections were kept for missing records. Compare the individual bonuses with the game, or sync the game and reload." : colleggtibleSource === "unavailable" ? "Contract progress was missing from the backup, so Colleggtible bonuses were not refreshed. Previous selections were retained. Sync the game and reload, or enter the bonuses manually." : ""
-  ].filter(Boolean).join(" ");
-  renderColleggtibleTotals(selected.tiers, selected.overrides);
+  renderColleggtibleSummary(selected.tiers);
   renderResearch();
   $("epic-fields").replaceChildren(...D.epic.map((r) => {
     const label = ResearchIcons.decorateLabel(field(r.name, "epic-" + r.id, f.epic?.[r.id] || 0, "number", { min: 0, max: r.levels }), r.id);
@@ -482,7 +466,6 @@ function renderForm() {
   select("tankCapacity", capacities.map((n) => [n, fuelNumber(n)]), capacity);
   NumericInput.write($("tankOutput"), tank.outputPerMinute ?? Ships.rateFor(capacity), fuelNumber);
   $("fuel-fields").replaceChildren(...displayEggOrder.map(i => { const egg = S.EGGS[i]; return EggIcons.decorateLabel(field(S.NAME[i] + " Fuel", "fuel-" + egg, tank.amounts?.[egg] ?? 0, "text", {}, fuelNumber), egg); }));
-  $("shipSlots").value = p.ships?.slots ?? 3;
   renderExistingFlights();
   const visits = Ships.plannedVisits(p.ships, result?.actions);
   for (let visit = 1; visit <= 2; visit++) renderShipMissions(visit, visits[visit - 1].missions);
@@ -584,9 +567,9 @@ function restoreUpdateSnapshot(saved, message = "Session restored.") {
   tab(saved.tab === "results" && !result ? "account" : (saved.tab || "account"), true);
   show(message + (saved.interrupted ? " The interrupted search needs to be run again." : "") + replayError + (!valid ? " Review the marked inputs before planning." : ""), !!replayError || !valid);
 }
-function updateTimezoneHelp() {
+function updateTimezoneLabel() {
   const zone = $("eventTimezone").value;
-  $("event-zone-help").textContent = (zone === Zones.automatic ? "Automatic: "+Zones.label(Zones.resolve(zone))+". " : "")+"Controls event times and displayed dates. Regional timezones follow daylight saving; UTC offsets stay fixed.";
+  $("eventTimezone").title = Zones.label(Zones.resolve(zone));
 }
 function purchaseTime(seconds) {
   return seconds === null ? "Complete farm inputs for estimate" : seconds === 0 ? "~<1" : Number.isFinite(seconds) ? seconds > 365*86400 ? ">1 year" : "~"+duration(seconds) : "No current income";
@@ -691,7 +674,7 @@ function renderLoadouts() {
     const grid = el("fieldset", void 0, "loadout-grid account-value-fields");
     grid.style.setProperty("--loadout-slots",limit);
     grid.id = key + "-loadout-fields"; grid.disabled = !$("manualFarmData").checked;
-    const note = el("p", void 0, "hint"); note.id = key + "-set-note"; section.append(note);
+    if (key !== "current") { const note = el("p", void 0, "hint"); note.id = key + "-set-note"; section.append(note); }
     for (let i = 0; i < limit; i++) {
       const slot = config.farm.loadouts[key]?.[i] || { artifactId: null, stones: [] };
       const div = el("div", void 0, "artifact-slot");
@@ -727,7 +710,6 @@ function updateLoadoutCard(key, i) {
 }
 function updateArtifactNotes() {
   const manual = $("manualFarmData").checked, automatic = Array.isArray(config.farm.artifactInventory) && !manual;
-  $("current-set-note").textContent = "Starting gear. Changes require Humility.";
   $("earnings-set-note").textContent = automatic ? "Owned gear with the highest starting research buying power: income ÷ research cost multiplier. The solver also compares income-focused sets." : manual ? "The solver uses these artifacts and stones." : "Import Virtue inventory for automatic sets, or enable Edit Farm Manually.";
   const chosen = !dirty && (result?.artifactRecommendations || result?.actions.find(a => a.type === "set" && a.set.startsWith("auto-delivery-")));
   $("delivery-set-note").textContent = automatic ? chosen ? "Selected for this plan's research and shipping capacity. Equip the gear shown in the timeline." : "Starting-farm preview. Recalculated for the planned equip time." : manual ? "The solver uses these artifacts and stones." : "Import Virtue inventory for automatic sets, or enable Edit Farm Manually.";
@@ -742,15 +724,6 @@ function populateAutomaticSets(s, c) {
   if (config.farm.activeSet !== "current") { config.farm.loadouts.current = structuredClone(c.loadouts[s.set]); config.farm.activeSet = "current"; $("activeSet").value = "current"; changed = true; }
   for (const [key, value] of Object.entries(values)) if (ArtifactSets.signature(config.farm.loadouts[key]) !== ArtifactSets.signature(value)) { config.farm.loadouts[key] = structuredClone(value); changed = true; }
   if (changed) renderLoadouts(); else updateArtifactNotes();
-}
-function updateStartingGear(s, c) {
-  const automatic = !!c.earningLoadout?.some(slot => slot.artifactId);
-  $("starting-gear-controls").hidden = !automatic;
-  const names = (c.loadouts[s.set] || []).map(slot => S.AMAP[slot.artifactId]?.label).filter(Boolean);
-  $("starting-gear-summary").textContent = "Starting gear: " + (names.length ? names.join(" · ") : "Empty. No artifact or stone bonuses apply until gear is equipped on Humility.");
-  const ready = automatic && ArtifactSets.signature(c.loadouts[s.set]) !== ArtifactSets.signature(c.earningLoadout);
-  $("use-earnings-start").dataset.ready = String(ready);
-  $("use-earnings-start").disabled = !ready || !!worker || !!importingBackup;
 }
 function renderStones(key, i, values = []) {
   const art = S.AMAP[$(`artifact-${key}-${i}`).value], host = $(`stones-${key}-${i}`);
@@ -775,8 +748,7 @@ function renderExistingFlights() {
     const ship = Ships.DATA.ships.find(s => s.id === f.ship)?.name || "Virtue Ship", duration = {SHORT:"Short",LONG:"Standard",EPIC:"Extended"}[f.duration];
     return el("li", (duration ? duration + " " : "") + ship + " · " + (Number.isFinite(f.returnAt) ? (f.returnAt <= start ? "ready to collect at plan start" : "returns " + timestamp(f.returnAt, zone, true)) : "return time unavailable"));
   }));
-  $("flight-status").textContent = flights.length ? flights.length + " existing Virtue flight" + (flights.length === 1 ? "" : "s") + " accounted for." : source === "backup" ? "No active Virtue flights in the imported backup." : source === "unavailable" ? "Flight records were not included in this backup." : "No flight records loaded. Selected mission slots are assumed available.";
-  $("flight-help").textContent = source === "unavailable" ? "Sync the game, then press Enter in the sidebar EID field to refresh flight information before relying on the ship schedule." : source === "backup" ? "Loaded automatically with your Egg Inc. backup. Sync the game, then press Enter in the sidebar EID field to refresh. Existing launches do not consume planned fuel again." : "Enter your EID in the sidebar and press Enter to refresh current flights. Saved farms and previous plans retain their flight records.";
+  $("flight-status").textContent = flights.length ? flights.length + " existing Virtue flight" + (flights.length === 1 ? "" : "s") + " accounted for." : source === "backup" ? "No active Virtue flights in the imported backup." : source === "unavailable" ? "Flight records were not included in this backup." : "No flight records loaded. Three mission slots are assumed available.";
 }
 function syncDefaultTarget() {
   if (config.plan.targetMode !== Defaults.targetMode) return;
@@ -826,7 +798,7 @@ function gather() {
     Route.parse(p.sequence, {required: true});
   } catch (error) { error.fieldId = "sequence"; throw error; }
   f.fuelTank = { capacity: readNumber("tankCapacity", "Tank capacity"), outputPerMinute: readNumber("tankOutput", "Tank output per minute", 1), amounts: Object.fromEntries(S.EGGS.map((egg) => [egg, readNumber("fuel-" + egg, egg + " fuel")])) };
-  p.ships = { mode: "custom-two-visits", slots: readNumber("shipSlots", "Mission slots", 1, 3, true), visits: [1, 2].map((visit) => ({ missions: Array.from($("ship-missions-" + visit).children, (_, i) => ({ ship: $("ship-" + visit + "-" + i).value, duration: $("mission-" + visit + "-" + i).value, count: $("ship-count-" + visit + "-" + i).value.trim() === "" ? null : readNumber("ship-count-" + visit + "-" + i, "H" + visit + " launch count", 1, 1e6, true) })) })) };
+  p.ships = { mode: "custom-two-visits", slots: 3, visits: [1, 2].map((visit) => ({ missions: Array.from($("ship-missions-" + visit).children, (_, i) => ({ ship: $("ship-" + visit + "-" + i).value, duration: $("mission-" + visit + "-" + i).value, count: $("ship-count-" + visit + "-" + i).value.trim() === "" ? null : readNumber("ship-count-" + visit + "-" + i, "H" + visit + " launch count", 1, 1e6, true) })) })) };
   delete p.openingStepMinutes;
   p.sequenceVersion = 2;
   if (!Number.isFinite(p.start) || p.start <= 0) throw Object.assign(Error("Choose a valid start date/time."), {fieldId:"start"});
@@ -843,7 +815,7 @@ function stat(label, value, sub, egg) {
 }
 function refresh() {
   updatePlanControls();
-  updateTimezoneHelp();
+  updateTimezoneLabel();
   document.querySelectorAll("[data-farm-picker] select").forEach(FarmIcons.updatePicker);
   SelectionReadout.refresh();
   clearFieldError();
@@ -862,14 +834,13 @@ function refresh() {
     }
     const { s, c } = S.prepare(config), r = S.stats(s, c), pending = S.totalTE(s, c) - c.claimedTotal;
     populateAutomaticSets(s, c);
-    updateStartingGear(s, c);
     $("sequence-preview").hidden = c.autoSequence;
     $("sequence-preview").textContent = "Planned order: " + c.sequence.map((i) => ({ curiosity: "C", kindness: "K", integrity: "I", resilience: "R", humility: "H" })[S.EGGS[i]]).join(" ");
 
     const warnings = Model.notices(s, c);
     $("farm-advisories").replaceChildren(...warnings.map((message) => el("p", message)));
     $("farm-advisories").hidden = !warnings.length;
-    renderColleggtibleTotals(config.farm.colleggtibleTiers, config.farm.colleggtibleOverrides);
+    renderColleggtibleSummary(config.farm.colleggtibleTiers);
     $("stats").replaceChildren(stat("Truth Eggs", c.claimedTotal + " + " + pending, "claimed + pending", "truth"), stat("Egg delivery / hour", num(r.delivery * 3600), r.bottleneck + " limited \xB7 headroom " + num(r.headroom * 3600) + "/hr"), stat("Normal earnings / hour", num(r.earning * 3600), c.earningsMode + " \xB7 before weekly event"), stat("Habitat capacity", compactNumber(r.hab), "Silo coverage: " + duration(r.siloHours * 3600)));
     for (let i = 0; i < 5; i++) $("pending-" + i).textContent = String(Math.max(0, S.countTE(s.eggs[i]) - c.claimed[i]));
     for (const research of D.research) {
@@ -888,9 +859,6 @@ function refresh() {
       cars.closest("label").hidden = cars.disabled;
     }
     $("fleet-status").textContent = r.slots + " unlocked " + (r.slots === 1 ? "slot" : "slots") + (hiddenSlots ? " · " + hiddenSlots + " locked empty slots hidden" : "");
-    const m = c.mods[s.set];
-    $("artifact-mods").textContent = "Active set effects: " + Object.entries(m).map(([k, v]) => k + " \xD7" + v.toFixed(3)).join(" \xB7 ");
-    $("fuel-status").textContent = fuelNumber(c.ships.stored.reduce((a, b) => a + b, 0)) + " stored / " + fuelNumber(c.ships.capacity) + " capacity";
     renderExistingFlights();
     const shipEstimate = $("ship-estimate");
     shipEstimate.replaceChildren();
@@ -1367,7 +1335,6 @@ function busy(active) {
   if (active) $("optimize").disabled = true;
   if ($("next-ascension")) $("next-ascension").disabled = active || !!importingBackup || dirty || !result || result.target >= 490;
   for (const id of ["load-file", "eid"]) $(id).disabled = active || !!importingBackup;
-  $("use-earnings-start").disabled = active || !!importingBackup || $("use-earnings-start").dataset.ready !== "true";
   $("eid").setAttribute("aria-busy", String(!!importingBackup));
 }
 function optimize() {
@@ -1664,23 +1631,6 @@ $("eid").addEventListener("keydown", (event) => {
   if (event.key === "Enter") { event.preventDefault(); persistEid(); loadEidData(); }
 });
 $("copy-earnings").onclick = () => copySet("earnings");
-$("review-starting-gear").onclick = () => tab("artifacts", true);
-$("use-earnings-start").onclick = () => {
-  if (worker || importingBackup) return;
-  try {
-    config = gather();
-    const {c} = S.prepare(config);
-    if (!c.earningLoadout?.some(slot => slot.artifactId)) return;
-    config.farm.loadouts.current = structuredClone(c.earningLoadout);
-    (config.uiProvenance ||= {}).farm = "manual";
-    config.farm.activeSet = "current";
-    $("activeSet").value = "current";
-    markInputsChanged();
-    renderLoadouts();
-    refresh();
-    show("The plan now starts with your earning set. Equip the listed artifacts and stones on Humility before starting this plan. Automatic delivery optimization remains enabled.");
-  } catch (e) { show(e.message, true); }
-};
 function copySet(key) {
   if (!$("manualFarmData").checked) return;
   try {
@@ -1818,7 +1768,6 @@ document.addEventListener("change", (e) => {
       refresh();
       if (previous !== ArtifactSets.signature(config.farm.loadouts)) markInputsChanged();
     }
-    if (editingKey === "manualFarmData" && e.target.checked) $("starting-gear-controls").hidden = true;
     return;
   }
   if (id === "tankCapacity") NumericInput.write($("tankOutput"), Ships.rateFor(Number(e.target.value)));

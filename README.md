@@ -10,7 +10,7 @@ Start on **Farm & Account** to import and review your account and current farm. 
 
 ## Updates
 
-The current version is **v0.9.0**. Earlier releases were renumbered from v1.7.0 to v0.8.0. If you already installed a 1.x version, download and extract the current ZIP once; the updater does not install lower version numbers. Future 0.x releases update normally.
+The current version is **v0.9.1**. Earlier releases were renumbered from v1.7.0 to v0.8.0. If you already installed a 1.x version, download and extract the current ZIP once; the updater does not install lower version numbers. Future 0.x releases update normally.
 
 Use **Update App → Update & Restart** in the sidebar. Published ZIPs already point to this repository. Updates verify downloads, preserve your current inputs and timeline, and restore the previous app if installation or startup fails. Finish your search or import before updating.
 

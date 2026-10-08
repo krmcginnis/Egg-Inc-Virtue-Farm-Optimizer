@@ -1,4 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v0.9.0 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.9.1 — Release Audit
+
+v0.9.1 removes redundant panel text and duplicate starting-artifact controls,
+uses compact Automatic Planning details, and fixes new plans at three ship slots.
+Current validation is in the v0.9.1 section at the end; prior evidence is historical.
 
 v0.9.0 introduces the route-aware timing and purchase solver, preserves the
 legacy implementation, and returns distinct shift-count plans. Current validation is
@@ -1924,3 +1928,31 @@ This same-version audit commit records completed verification without replacing
 or repackaging either immutable release asset. PowerShell-specific tests were
 unavailable in the local Linux environment; the native Windows workflow is the
 completed verification source for those checks.
+
+
+## v0.9.1 panel cleanup
+
+Removed the screenshot-marked helper paragraphs and redundant Colleggtible
+bonus totals, Epic key levels, active artifact effects, and fuel totals. Removed
+the duplicate Starting Artifacts block and its event handlers; artifact editing
+and Copy Earnings to Current remain in the existing right-hand Artifacts panel.
+Automatic Planning Details paragraphs now use the panel hint size of 12px.
+Deleted descriptions no longer have dangling accessibility references.
+Partial/retained import source badges keep their concise labels and tooltips.
+The automatic routing separator is hidden when the sequence editor is hidden.
+
+Concurrent Mission Slots was a scheduling input, used to queue launches and
+wait for returns. New UI searches and saved farms now always use three slots.
+The simulator's slot setting remains intact for replaying historical saved
+plans with their original configuration and occupied-flight records. Purchase
+rates, route search, and ship scheduling algorithms are unchanged.
+
+Local validation passed npm ci, build, and packaging of 169 runtime files;
+planning-controls, planning-clarity, EID-import, shift-plan, and timeline browser
+checks at 1440, 1280, 1050, and 1000px; route/shift solver regressions; shift rates
+and PDF; timezones; subscription import; release-state; and prepare-publish.
+Browser checks confirm deleted controls/text, matching detail font size,
+three-slot migration, manual locks, actual import values, all-plan save/load,
+update-session recovery, exports, and no page errors. Historical plan replay
+remains validated. Windows release and public updater verification follow the
+automatic publication workflow; this entry records local validation only.
