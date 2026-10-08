@@ -1956,3 +1956,22 @@ three-slot migration, manual locks, actual import values, all-plan save/load,
 update-session recovery, exports, and no page errors. Historical plan replay
 remains validated. Windows release and public updater verification follow the
 automatic publication workflow; this entry records local validation only.
+
+
+Native Windows and public updater verification passed in GitHub Actions run
+37708423148, job 113088266700. Checks covered the route/shift solver and
+historical sale regressions, subscription imports, packaging, version/source
+guards, bad/tampered archive rejection, installation and exact backup restore,
+hidden CMD launch, successful restart, startup-failure rollback, and legacy
+worker restart. Windows PowerShell 5.1.26100.33438 found v0.9.1 through the public
+updater, downloaded the complete release, and verified every app file checksum.
+
+Published source commit: 0cace7ad20fbf8a4acb6d9973a284853316dd4df.
+Public release: 406280917, v0.9.1, with both assets uploaded:
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8587455 bytes; SHA256
+  a433a6944e8085fc5592668912b26b60372ac5986ddb4b1200382cdb77e74bc2.
+- update-manifest.json: 239 bytes; SHA256
+  0500d233cc75b04208377497691e2e3d50f0859d91ab22d55e8f466daf4c7a52.
+
+This same-version audit update records completed verification without replacing
+or repackaging the immutable release assets.
