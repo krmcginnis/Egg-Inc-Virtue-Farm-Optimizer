@@ -6,7 +6,7 @@ Unofficial PC app for planning Egg Inc. Virtue farm research, shifts, artifacts,
 
 Download [the latest app ZIP](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/latest/download/Egg-Inc-Virtue-Farm-Optimizer.zip), extract the entire ZIP, and run `Start-Virtue-Optimizer.cmd`. The helper runs in the background and opens the app in your browser. No installation, admin rights, Python, or Node is needed. `index.html` also works offline for manual inputs or JSON files.
 
-Start on **Account** to load your account or saved farm. Continue to **Virtue Farm** to review upgrades, gear, fuel, and flights, then **Planning** to set your target, route, sleep hours, and missions. **Save Farm** retains settings across all three pages. See **How It Works** for the model's rules and assumptions.
+Start on **Account** to load your account or saved farm. Continue to **Virtue Farm** to review upgrades, gear, fuel, and flights, then **Planning** to set your target, route, sleep hours, and missions. **Save Farm** retains settings across all three pages. **Load Plan** in the page header restores a **Save Plan** JSON, including its inputs and selected timeline, after replay validation. See **How It Works** for the model's rules and assumptions.
 
 ## Updates
 

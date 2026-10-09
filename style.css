@@ -476,6 +476,7 @@ aside .update-app{margin-top:auto}
 .shift-duration .icon-amount,.shift-cost .icon-amount{--unit-size:18px}
 .shift-timing{align-items:flex-end}
 .shift-timing .shift-duration,.shift-timing .shift-cost{display:flex;align-items:center;justify-content:flex-end;gap:4px;line-height:1.5}
+.final-delivery{display:flex;align-items:center;flex-wrap:wrap;gap:4px 5px;line-height:1.5}
 @media(max-width:500px){.shift-timing{align-items:flex-start}.shift-timing .shift-duration,.shift-timing .shift-cost{justify-content:flex-start}}
 @media(max-width:500px){.shift-max-rates>div{display:block}.shift-max-rates dd{margin:3px 0 0;text-align:left}}
 

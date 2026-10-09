@@ -1,4 +1,40 @@
-# Egg Inc. Virtue Farm Optimizer v0.9.13 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.9.14 — Release Audit
+
+## v0.9.14 scope and local verification
+
+Load Plan is available in the page header. It restores a Save Plan JSON's
+inputs, selected alternative, and Purchase Timeline using the existing strict
+replay validator for every saved alternative. Load Farm remains compatible
+with plans and game backups. Invalid files retain the current inputs and
+result. File loading is blocked during a search or account import; file
+choosers reset so the same file can be opened again. The plan chooser is
+excluded from saved input drafts. Pending input-refresh timers are cancelled
+when a plan is restored.
+
+The final delivered egg rate uses a wrapping flex row so the label, numeric
+rate, /hour suffix, and egg artwork align consistently. How It Works and both
+user guides describe the dedicated loading flow. The solver, model rules,
+normal 90-second budget, and existing replay logic are unchanged.
+
+Local Chromium checks passed saved-input and selected-alternative restoration,
+all-alternative validation, Save Plan/load round trips, repeated files, single
+plans, malformed/farm-only/corrupt-alternative rejection without losing the
+current plan, Load Farm compatibility, and busy-state handling. Account-import
+browser regressions passed, including disabling Load Plan during import.
+The supplied 12-shift plan restored its original finish timestamp and all
+alternatives without stale state or console errors. Desktop layout checks
+found no horizontal overflow at 1,000, 1,440, and 1,920 px; the final-rate row
+alignment matched at each width. Private farm files and review output remain
+outside tracked source.
+
+Release preparation rebuilds versioned app/worker bundles and runs release-state,
+publish-preparation, worker, saved-plan, and timeline browser checks. The
+publication workflow must pass native Windows solver, updater, package,
+launcher, and anonymous public-feed checks before release acceptance. The
+accepted verification will be recorded after publication; packaged assets
+retain this release-preparation snapshot.
+
+## Inherited v0.9.13 release audit
 
 ## v0.9.13 scope and local verification
 

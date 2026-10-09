@@ -1,3 +1,11 @@
+# v0.9.14
+
+- Add Load Plan to the page header. Restore saved inputs, the selected alternative, and the Purchase Timeline after replay-validating every saved alternative. Invalid files retain the current inputs and timeline.
+- Keep Load Farm compatible with saved plans and game backups. Disable loading during an active search or account import, and allow reopening the same saved file.
+- Align the final delivered egg rate with its text and egg artwork.
+- Update How It Works and the user guides with the saved-plan loading flow. The solver, search budget, and replayed plan times are unchanged.
+- Install through Update App → Update & Restart.
+
 # v0.9.13
 
 - Align shift durations, Truth Egg gains, and Soul Egg costs with their icons and summary dates.

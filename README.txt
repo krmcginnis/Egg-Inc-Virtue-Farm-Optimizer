@@ -4,7 +4,8 @@ GET STARTED
 1. Extract the entire ZIP.
 2. Double-click Start-Virtue-Optimizer.cmd to open the app in your browser.
 3. On Account, enter your Egg Inc. ID in the sidebar and press Enter, or use
-   Load Farm to open a saved farm, saved plan, or JSON game backup.
+   Load Farm to open a saved farm or JSON game backup. Load Plan in the page
+   header restores a saved plan and opens its Purchase Timeline.
 4. Continue to Virtue Farm to review upgrades, research, gear, fuel, and flights.
 5. Continue to Planning to set your TE target, route, sleep hours, and missions.
    Review How It Works and its assumptions, then select Find Fastest Plan.
@@ -131,8 +132,10 @@ Rates are before fuel diversion and empty-silo pauses. Final delivered egg
 rate shows the farm's rate at completion. Displayed plan dates include years.
 
 Save Farm keeps the inputs from all three pages. Save Plan also keeps every
-alternative and the selected timeline for replay. Load Farm accepts either
-file. Export Walkthrough opens a PDF; use Save PDF or browser controls to save
+alternative and the selected timeline. Load Plan restores its inputs, selected
+alternative, and Purchase Timeline after validating every alternative by replay.
+Invalid files retain your current inputs and timeline. Load Farm also accepts
+plan files. Export Walkthrough opens a PDF; use Save PDF or browser controls to save
 or print it. Start from Scratch resets inputs and the timeline; Undo Reset
 restores them during the current session. Exported files remain available.
 

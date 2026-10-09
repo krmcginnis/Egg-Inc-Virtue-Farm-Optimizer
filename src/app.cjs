@@ -500,7 +500,7 @@ function renderForm() {
   filterResearch();
   return refresh();
 }
-const unsavedInputs = /* @__PURE__ */ new Set(["eid", "file-input", "research-filter", "update-repository"]);
+const unsavedInputs = /* @__PURE__ */ new Set(["eid", "file-input", "plan-file-input", "research-filter", "update-repository"]);
 function captureDraftInputs() {
   return { version: 1, fields: Object.fromEntries([...document.querySelectorAll("input[id],select[id]")].filter((node) => !unsavedInputs.has(node.id) && !node.closest("dialog")).map((node) => [node.id, node.type === "checkbox" ? { checked: node.checked } : { value: NumericInput.draft(node) }])) };
 }
@@ -1288,7 +1288,8 @@ function renderResult() {
   const end = el("div", void 0, "card final-result");
   const totals = el("p", void 0, "egg-totals");
   for (const [i, count] of r.finalTE.entries()) totals.append(EggIcons.caption(S.EGGS[i], S.NAME[i] + " " + count));
-  const delivery = el("p", r.pendingTE + " pending TE \xB7 Final delivered egg rate ");
+  const delivery = el("p", void 0, "final-delivery");
+  delivery.append(el("span", r.pendingTE + " pending TE \xB7 Final delivered egg rate"));
   delivery.append(Units.amount(S.EGGS[summary.shifts.at(-1)?.egg ?? initial.s.egg],num(r.finalStats.delivery * 3600),"/hour"));
   const limit = r.finalStats.bottleneck === "Balanced" ? "Laying and shipping capacity are balanced." : "Limited by " + r.finalStats.bottleneck.toLowerCase() + ".";
   end.append(el("h2", "Target available to claim"), el("p", timestamp(r.end, zone)), totals, delivery, el("p", limit + " Delivered eggs use the lower of egg laying and shipping capacity.", "hint"));
@@ -1358,7 +1359,7 @@ function busy(active) {
   updatePrimaryAction();
   if (active) $("optimize").disabled = true;
   if ($("next-ascension")) $("next-ascension").disabled = active || !!importingBackup || dirty || !result || result.target >= 490;
-  for (const id of ["load-file", "eid"]) $(id).disabled = active || !!importingBackup;
+  for (const id of ["load-file", "load-plan", "eid"]) $(id).disabled = active || !!importingBackup;
   $("eid").setAttribute("aria-busy", String(!!importingBackup));
 }
 function optimize() {
@@ -1473,15 +1474,18 @@ function optimize() {
     };
   worker.postMessage({ config: runConfig, options: { ...searchOptions, ...(result && resultConfig ? { incumbent: { config: resultConfig, result } } : {}) } });
 }
-async function loadFile(file) {
+async function loadFile(file, {planOnly = false} = {}) {
   const epoch = loadEpoch;
   try {
+    if (worker || importingBackup) throw Error("Stop or finish the current search or account import before loading a file.");
     const text = await file.text();
     if (epoch !== loadEpoch) return;
     const raw = JSON.parse(text);
-    if (worker) throw Error("Stop or finish the current search before loading a farm.");
+    if (worker || importingBackup) throw Error("Stop or finish the current search or account import before loading a file.");
+    if (planOnly && !(raw.version === 1 && raw.config && raw.result)) throw Error("Select a saved plan JSON created with Save Plan. Use Load Farm for farm inputs or a game backup.");
     if (raw.version === 1 && raw.config && raw.result) {
       const recovered = replaySavedResult(raw.config, raw.result);
+      clearTimeout(refreshTimer);
       config = raw.config;
       result = recovered;
       resultConfig = structuredClone(raw.config);
@@ -1542,6 +1546,11 @@ $("file-input").onchange = (e) => {
   if (e.target.files[0]) loadFile(e.target.files[0]);
   e.target.value = "";
 };
+$("load-plan").onclick = () => $("plan-file-input").click();
+$("plan-file-input").onchange = (e) => {
+  if (e.target.files[0]) loadFile(e.target.files[0], {planOnly:true});
+  e.target.value = "";
+};
 $("clear-data").onclick = () => {
   let saved;
   try { saved = gather(); } catch { saved = {...structuredClone(config), draftInputs:captureDraftInputs()}; }
@@ -1558,6 +1567,7 @@ $("clear-data").onclick = () => {
   resultConfig = null;
   dirty = false;
   $("file-input").value = "";
+  $("plan-file-input").value = "";
   $("research-filter").value = "";
   $("run-summary").textContent = "";
   $("run-detail").textContent = "";
