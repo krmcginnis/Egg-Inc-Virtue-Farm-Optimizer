@@ -27,12 +27,26 @@ found no horizontal overflow at 1,000, 1,440, and 1,920 px; the final-rate row
 alignment matched at each width. Private farm files and review output remain
 outside tracked source.
 
-Release preparation rebuilds versioned app/worker bundles and runs release-state,
+Release preparation passed the versioned app/worker build, release-state,
 publish-preparation, worker, saved-plan, and timeline browser checks. The
-publication workflow must pass native Windows solver, updater, package,
-launcher, and anonymous public-feed checks before release acceptance. The
-accepted verification will be recorded after publication; packaged assets
-retain this release-preparation snapshot.
+publication workflow passed native Windows solver, updater, package, launcher,
+and anonymous public-feed checks. The accepted result is recorded below;
+published assets retain the release-preparation audit snapshot.
+
+## Accepted v0.9.14 release verification
+
+Windows run [37961773163](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/37961773163) completed successfully for source commit `23f26a2c9c8bde64dc527769cad7735d69cffd4d`. All solver checks passed, including fixed Pacific events, sleep-search cases, earnings adaptation, and the generated browser worker.
+
+Native Windows checks passed valid installation, seven invalid archive cases, digest/version rejection, rollback and exact backup restore, user JSON/config preservation, hidden CMD launch and repeat reuse from paths with spaces, successful restart, startup-failure recovery, and legacy-worker recovery. Anonymous update-feed lookup, complete ZIP download, and every app-file checksum passed on Windows PowerShell 5.1.26100.33438.
+
+Independent anonymous verification confirmed v0.9.14 as latest, downloaded both complete assets, checked GitHub digests and manifest size/hash, ZIP CRC, all 169 runtime entries and every file checksum, version/branding, one current audit, and updater repository configuration. It also confirmed the packaged Load Plan button/file chooser/validation text and final-delivery alignment style, along with retained sleep, calendar, rate, and Help behavior.
+
+The accepted release is [v0.9.14](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v0.9.14). Existing release assets were not replaced. This verification record is a source-only follow-up; the published ZIP retains the release-preparation audit snapshot.
+
+| Asset | GitHub ID | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Egg-Inc-Virtue-Farm-Optimizer.zip | 625577532 | 8,572,031 | `91ebe8504a62474a8851904b35d14c29f66003dd33def1b3aa9733371bb5e1db` |
+| update-manifest.json | 625577535 | 240 | `4de2fbd9021870e58a9c608e433c7b3c99341cf13d8b8f98ceafabc3c6fdbbd2` |
 
 ## Inherited v0.9.13 release audit
 
