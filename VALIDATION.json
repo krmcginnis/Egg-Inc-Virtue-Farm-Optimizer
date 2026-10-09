@@ -1,14 +1,11 @@
 {
   "version": "1.0.0",
-  "date": "2026-10-09T20:03:56.945454+00:00",
-  "status": "local-release-candidate",
+  "date": "2026-10-09T20:20:27.928969+00:00",
+  "status": "accepted-public-release",
   "currentAudit": "AUDIT-v1.0.0.md",
-  "published": false,
-  "nativeWindowsTested": false,
-  "pendingReleaseGates": [
-    "native Windows solver/updater/launcher verification",
-    "anonymous public update feed and complete asset verification"
-  ],
+  "published": true,
+  "nativeWindowsTested": true,
+  "pendingReleaseGates": [],
   "localSuitesPassed": [
     "earnings-first-research.cjs",
     "earnings-incumbents.cjs",
@@ -116,5 +113,34 @@
       "release-state.cjs",
       "prepare-publish.cjs"
     ]
+  },
+  "publication": {
+    "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.0",
+    "sourceCommit": "efdee7c6ab2dbcd1a7055eb0ccdb7daec70ecc64",
+    "workflowRunId": 37985709711,
+    "workflowJobId": 114007058539,
+    "workflowConclusion": "success",
+    "workflowSuitesPassed": 18,
+    "windowsPowerShellVersion": "5.1.26100.33438",
+    "nativeUpdaterAndLauncherPassed": true,
+    "anonymousWindowsFeedPassed": true,
+    "independentAnonymousDownloadsPassed": true,
+    "archiveCRCAndEveryFileChecksumPassed": true,
+    "runtimeFiles": 169,
+    "assets": [
+      {
+        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
+        "id": 626071854,
+        "size": 8576789,
+        "digest": "sha256:bf40e6794edd9db9b106f1f1cc5f9fb783435e0aa901ced5c0801c2ca6f925c6"
+      },
+      {
+        "name": "update-manifest.json",
+        "id": 626071855,
+        "size": 239,
+        "digest": "sha256:3bd767f1d6aa5921a17b7f268b20a02a6ee76cecdc478757ba18dc2106f1e81c"
+      }
+    ],
+    "publishedAuditIsPrepublicationSnapshot": true
   }
 }

@@ -1,12 +1,12 @@
 # Egg Inc. Virtue Farm Optimizer v1.0.0 — Release Audit
 
-## Release candidate status
+## Accepted release status
 
-The local v1.0.0 review is complete for the source, model, and browser checks
-listed below. This candidate has not been pushed or published. Native Windows
-launcher/updater checks and anonymous public-feed verification must pass in the
-publication workflow before the release is accepted. Local Linux checks do not
-substitute for those Windows checks.
+v1.0.0 is published and accepted. The source, model, and browser checks listed
+below passed locally. The Windows publication workflow passed the native
+launcher/updater checks and anonymous public-feed verification. Independent
+anonymous downloads also passed archive and file checksum verification.
+The accepted publication evidence is recorded below.
 
 ## Changes since the accepted v0.9.14 release
 
@@ -103,7 +103,7 @@ in offline break counts and early-visit duration.
 
 Private account inputs, plans, logs, and review screenshots remain outside
 tracked source and both archives. `VALIDATION.json` records current local results
-and explicitly marks the Windows/public-feed gates as pending.
+and records the accepted Windows/public-feed results.
 
 ### Release package verification
 
@@ -119,20 +119,49 @@ ZIP CRC and dependency checks passed. A fresh extraction installed dependencies
 with `npm ci --offline`, rebuilt the app and worker, and passed the earnings-first,
 worker, release-state, and publish-preparation suites.
 
-### Windows verification status
+### Windows verification before publication
 
-No PowerShell/Windows runtime is available in this local review environment, so
-`tests/update-core.cjs` and `tests/update-launch.cjs` are reserved for the mandatory
+No PowerShell/Windows runtime was available in the local review environment, so
+`tests/update-core.cjs` and `tests/update-launch.cjs` were reserved for the mandatory
 Windows publication workflow. They cover verified download/install, invalid
 archives, rollback, preserved user files, hidden launch/reuse from paths with
 spaces, restart, and startup-failure recovery. The workflow also verifies the
 anonymous public update feed after publication and hides a release if that
 validation fails.
 
-The last accepted Windows/public-feed result was v0.9.14, source commit
+Before this publication, the last accepted Windows/public-feed result was v0.9.14, source commit
 `23f26a2c9c8bde64dc527769cad7735d69cffd4d`, in run
 [37961773163](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/37961773163).
 That historical success is not a v1.0.0 Windows result.
+
+## Accepted v1.0.0 publication — October 9, 2026
+
+Windows run [37985709711](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/37985709711)
+completed successfully for source commit `efdee7c6ab2dbcd1a7055eb0ccdb7daec70ecc64`.
+All 18 workflow test suites passed, including the new earnings-first ordering
+checks, finite exhaustive sleep-search cases, and generated worker replay.
+
+Native updater checks passed verified installation, seven invalid archive cases,
+digest rejection, mid-install rollback, exact backup restoration, user JSON/config
+preservation, and stage-tamper rejection. Native launcher checks passed hidden CMD
+launch and reuse from paths with spaces, successful restart, startup-failure
+recovery, and legacy-worker recovery.
+
+The anonymous update feed, complete ZIP download, and every app-file checksum
+passed on Windows PowerShell 5.1.26100.33438. Independent anonymous verification
+confirmed v1.0.0 as the latest stable release, downloaded both complete assets,
+verified GitHub digests and manifest size/hash, ZIP CRC, all 169 runtime entries,
+every file checksum, version/repository metadata, current audit links, and the
+built earnings-first code.
+
+The accepted release is [v1.0.0](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.0).
+This is a source-only verification follow-up. Published assets retain the
+pre-publication audit snapshot; no existing assets were replaced.
+
+| Asset | ID | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Egg-Inc-Virtue-Farm-Optimizer.zip | 626071854 | 8,576,789 | `bf40e6794edd9db9b106f1f1cc5f9fb783435e0aa901ced5c0801c2ca6f925c6` |
+| update-manifest.json | 626071855 | 239 | `3bd767f1d6aa5921a17b7f268b20a02a6ee76cecdc478757ba18dc2106f1e81c` |
 
 ## Remaining model and search limits
 
