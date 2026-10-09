@@ -498,6 +498,30 @@ function usedSales(actions,c){
  }
  return windows.size;
 }
+async function compareResearchOrders(raw,item,deadline,control){
+ const actions=S.history(item.state),stages=[];let stage=0;
+ for(const a of actions){if(a.type==='shift')stage++;if(a.type==='research'&&!stages.includes(stage))stages.push(stage);}
+ if(!stages.length)return;
+ // Compare the whole build, earlier-C combinations, and each C separately.
+ // A poor final-C reorder must not hide a useful opening, or replace its baseline.
+ const proposed=[stages,...stages.slice(1).map((_,i)=>stages.slice(0,stages.length-1-i)),...stages.map(stage=>[stage])];
+ const seen=new Set(),masks=proposed.filter(mask=>{const key=mask.join(',');if(seen.has(key))return false;seen.add(key);return true;});
+ for(const mask of masks){
+  if(control.cancelled()||Date.now()>=deadline)break;
+  const checkpoint=()=>{if(control.cancelled()||Date.now()>=deadline)throw Error('Research-order comparison interrupted');};
+  try{
+   const {s,c}=prepare(raw,item.route,item.count,{artifactReplay:true,artifactSets:S.recordedArtifactSets(actions)});
+   const state=Schedules.execute(s,c,actions,{earningsFirst:mask,compress:true,retime:true,checkpoint});
+   if(!state)continue;
+   const marked=S.history(state).map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:VERSION,sequence:item.route,researchSales:item.count}});
+   const verified=replay(raw,marked,true);
+   if(verified.s.t!==state.t)throw Error('Research-order replay differs from its paid continuation.');
+   control.researchOrderComparisons++;
+   control.context=verified.c;control.route=item.route;control.consider(verified.s);
+  }catch{try{checkpoint();}catch{break;}}
+  await control.yield();
+ }
+}
 function finalize(raw,best,c,route,count,control,termination){
  let actions=S.history(best);
  if(!actions.length)actions=[{type:'wait',t:c.start,end:c.start,egg:best.egg,reason:'Target already reached',earningsMode:'online'}];
@@ -511,7 +535,7 @@ function finalize(raw,best,c,route,count,control,termination){
   frontier:[{switches:s.stage,seconds:s.t-c.start,soulCost:s.lost}],sourceCommit:S.D.commit,validatedReplay:true,
   artifactRecommendations:best.artifactRecommendations||null,...(best.siloComfort?{siloComfort:best.siloComfort}:{}),artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions),search:{automaticVisitTiming:true,routesCompared:control.routesCompared,statesExamined:control.explored,continuationsCompared:control.continuationsCompared,
    checkpoints:control.checkpoints?.summary(),lookaheadNodes:control.lookaheadNodes,lookaheadChains:control.lookaheadChains,lookaheadComparisons:control.lookaheadComparisons,
-   openingComparisons:control.openingComparisons,conservativeComparisons:control.conservativeComparisons,physicalComparisons:control.physicalComparisons,deliveryResearchComparisons:control.deliveryResearchComparisons,recoveryComparisons:control.recoveryComparisons,breakpointAnchors:control.breakpointAnchors,breakpointComparisons:control.breakpointComparisons,retainedPlans:control.retainedPlans,earningsAdaptations:control.earningsAdaptations}};
+   openingComparisons:control.openingComparisons,conservativeComparisons:control.conservativeComparisons,physicalComparisons:control.physicalComparisons,deliveryResearchComparisons:control.deliveryResearchComparisons,researchOrderComparisons:control.researchOrderComparisons,recoveryComparisons:control.recoveryComparisons,breakpointAnchors:control.breakpointAnchors,breakpointComparisons:control.breakpointComparisons,retainedPlans:control.retainedPlans,earningsAdaptations:control.earningsAdaptations}};
  return {...result,summary:Summary.summarize(raw,result)};
 }
 async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
@@ -522,7 +546,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  const width=Math.min(16,S.number(options.width??12,'Search width',4,512,true));
  const entries=[],byShift=new Map(),byRoute=new Map(),searchContexts=[],control={started,width,explored:0,routesCompared:0,continuationsCompared:0,
   checkpoints:options.disableCheckpoints?null:new Checkpoints(),lookahead:!options.disableLookahead,lookaheadNodes:0,lookaheadChains:0,lookaheadComparisons:0,
-  openingComparisons:0,conservativeComparisons:0,physicalComparisons:0,deliveryResearchComparisons:0,recoveryComparisons:0,breakpointAnchors:0,breakpointComparisons:0,retainedPlans:0,earningsAdaptations:0,
+  openingComparisons:0,conservativeComparisons:0,physicalComparisons:0,deliveryResearchComparisons:0,researchOrderComparisons:0,recoveryComparisons:0,breakpointAnchors:0,breakpointComparisons:0,retainedPlans:0,earningsAdaptations:0,
   cancelled,yield:()=>new Promise(r=>setTimeout(r,0))};let recommended=null,overall=null,retained=null;
  for(const count of options.returnComparisons===true?Plans.COUNTS:[3]){
   if(cancelled()&&!incumbents.some(item=>item.count===count)){entries.push({researchSales:count,status:'not-completed',error:'Search stopped before this sale option completed.'});continue;}
@@ -537,6 +561,11 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    if(better(state,best)){best=state;bestContext=control.context;bestRoute=control.route;}
   };
   for(const item of incumbents)if(item.count===count){control.context=item.context;control.route=item.route;control.consider(item.state);control.retainedPlans++;}
+  if(!options.disableResearchOrder&&!cancelled()&&incumbents.length){
+   const orderDeadline=Math.min(deadline,started+Math.min(5000,maxMs*.08));
+   const prior=incumbents.filter(item=>item.count===count).sort((a,b)=>a.state.t-b.state.t).slice(0,1);
+   for(const item of prior)await compareResearchOrders(raw,item,orderDeadline,control);
+  }
   if(!incumbents.length&&!cancelled()&&options.returnComparisons!==true&&!options.disableEarningsAdaptation){
    const adaptationDeadline=Math.min(started+maxMs*.05,started+4500);
    const adapted=EarningsIncumbents.adapt(raw,options.incumbent,{prepare,replay,checkpoint:()=>{if(cancelled()||Date.now()>=adaptationDeadline)throw Error('Earnings schedule comparison interrupted');}});
@@ -660,6 +689,11 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    const actions=S.history(item.state),prefixes=openingDepartures(initial,c,actions);
    const share=i===0&&alternatives.length>1?.6:1/(alternatives.length-i);
    const refineDeadline=Date.now()+Math.max(1,(started+maxMs*.95-Date.now())*share);
+   if(!options.disableResearchOrder){
+    progress({phase:'route-search',stage:'Research order',phaseLabel:'Comparing earnings-first Curiosity research',explored:control.explored,elapsedMs:Date.now()-started});
+    await compareResearchOrders(raw,item,Math.min(refineDeadline,Date.now()+Math.max(1,(refineDeadline-Date.now())*.25)),control);
+    control.context=c;control.route=item.route;
+   }
    progress({phase:'route-search',stage:phase(initial,c),phaseLabel:'Comparing complete departure continuations',explored:control.explored,elapsedMs:Date.now()-started,bestSeconds:Math.min(...[...byShift.values()].map(x=>x.state.t-c.start)),routeIndex:control.routesCompared});
    const investment=!options.disableInvestmentRefinement,remaining=refineDeadline-Date.now();
    const openingDeadline=investment?Date.now()+Math.max(1,remaining*.2):control.lookahead?Date.now()+Math.max(1,remaining*.65):refineDeadline;
@@ -738,4 +772,4 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  const chosen=Plans.select({researchSalePlans:entries,recommendedResearchSales:recommended},recommended);
  return chosen;
 }
-module.exports={VERSION,recipe,seedRoute,openingDepartures,researchPrefixes,physicalPrefixes,compareResearchBreakpoints,comparePhysicalInvestments,compareDeliveryResearch,deliveryPotential,compareDepartures,comparePurchaseChains,completionAlternatives,unlockDepartures,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,solve};
+module.exports={VERSION,recipe,seedRoute,openingDepartures,researchPrefixes,physicalPrefixes,compareResearchBreakpoints,comparePhysicalInvestments,compareDeliveryResearch,compareResearchOrders,deliveryPotential,compareDepartures,comparePurchaseChains,completionAlternatives,unlockDepartures,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,solve};

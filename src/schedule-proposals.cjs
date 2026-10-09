@@ -1,6 +1,7 @@
 'use strict';
 const S=require('./simulator.cjs'),L=require('./optimizer-legacy.cjs');
 const Sleep=require('./sleep-schedule.cjs');
+const EarningsFirst=require('./earnings-first-research.cjs');
 
 // A declared earnings setup can propose an additional purchase order when
 // starting gear earns more. It is never equipped by this search. Execute its
@@ -31,11 +32,25 @@ function earningWait(s,c,action){
  throw Error('Proposed earnings wait exceeds the planning limit.');
 }
 function deliveryWait(action){return action.type==='wait'&&/^(Collect .* (?:share of the Truth Egg target|Truth Egg milestones)|Deliver enough eggs to reach the Truth Egg target)/.test(action.reason||'');}
-function execute(initial,c,actions,{compress=false,retime=false,beforeAction=s=>s,reallocate=()=>true,checkpoint=()=>{}}={}){
+function execute(initial,c,actions,{compress=false,retime=false,earningsFirst=false,beforeAction=s=>s,reallocate=()=>true,checkpoint=()=>{}}={}){
  let n=initial;
- for(const action of actions){
+ for(let index=0;index<actions.length;index++){
+  const action=actions[index];
   checkpoint();
   n=beforeAction(n,action);
+  if((earningsFirst===true||Array.isArray(earningsFirst)&&earningsFirst.includes(n.stage))&&n.egg===0&&action.type!=='shift'){
+   let end=index;while(end<actions.length&&actions[end].type!=='shift')end++;
+   const visit=actions.slice(index,end);
+   if(visit.some(a=>a.type==='research')){
+    if(visit.some(a=>!['research','wait','fuel','fuel-dump'].includes(a.type)))throw Error('Unsupported action in proposed Curiosity visit.');
+    const local={...c,end:Math.min(c.end,c.researchDeadline??c.end)};
+    n=EarningsFirst.run(n,local,visit,{checkpoint}).state;
+    // Fuel still uses the real tank limits, production diversion and awake
+    // controls. Store it after research, before leaving this Curiosity visit.
+    for(const a of visit)if(a.type==='fuel'||a.type==='fuel-dump'){checkpoint();n=S.buy(n,{...c,shipReplay:true,sleepReplay:false},a);}
+    index=end-1;continue;
+   }
+  }
   // Delivery is reallocated from the actual paid build and current progress.
   if(deliveryWait(action)&&reallocate(n,action)){
    const end=L.tail(n,c);if(!end)throw Error('Proposed build has no feasible delivery tail.');return end;

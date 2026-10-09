@@ -125,7 +125,9 @@ const root = path.resolve(__dirname, "..");
     assert.match(await page.locator("#notice").innerText(), /replayed/);
     assert.equal(await page.locator(".activity-chip.research .research-icon").count(), 2);
     await page.locator(".shift-summary>summary").first().click(); assert.equal(await page.locator(".guide-item.research .research-icon").count(), 2);
-    await page.locator(".full-breakdown>summary").first().click(); assert.equal(await page.locator(".action.research .research-icon").count(), 2);
+    // Interaction time separates the three purchases in Full Breakdown;
+    // the Quick Guide above still groups the two Comfortable Nests levels.
+    await page.locator(".full-breakdown>summary").first().click(); assert.equal(await page.locator(".action.research .research-icon").count(), 3);
     assert.deepEqual((await page.evaluate(() => VirtueApp.getResult())).actions, S.history(state));
     for (const width of [1440, 1280, 1050, 1000]) {
       await page.setViewportSize({ width, height: 1000 });

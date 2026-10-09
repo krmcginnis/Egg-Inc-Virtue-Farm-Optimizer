@@ -14,4 +14,5 @@ assert.equal(releaseDecision({...input,refType:'tag',refName:'v0.7.4'}).publish,
 assert.deepEqual(releaseDecision({...input,verifyOnly:true,existing:true}),{build:true,publish:false,reason:'Verification only; no release will be created.'});
 for(const version of ['0.7.4-beta','01.7.4','0.7','0.7.4\n','9007199254740992.0.0'])assert.throws(()=>releaseDecision({...input,version}));
 assert.equal(compare('1.0.0','0.99.99'),1);assert.equal(compare('0.7.10','0.7.9'),1);
+assert.equal(releaseDecision({...input,version:'1.0.0',previousVersion:'0.9.14',latestVersion:'0.9.14'}).publish,true);
 console.log('PASS automatic version increases, same-version no-op, duplicate/downgrade guards, exact tags, verification-only mode and numeric versions.');

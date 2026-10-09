@@ -72,6 +72,11 @@ sequence when needed. The last C is delivery-only: research requires an earlier
 C visit. A route with only one C uses its existing research. Other final visits
 can include useful upgrades, gear changes, and required launches.
 
+On research visits, earnings-first orders are compared with existing orders.
+Inactive capacity, such as unused vehicle slots or extra train-car limits, can
+wait until departure. Research needed to unlock earnings can still come earlier.
+Each reordered plan pays its costs and obeys sleep, offline breaks, and sales.
+
 SLEEP, WAITING, AND TIMEZONES
 No Game Interactions During Sleep is checked for new farms and after Start from
 Scratch. Sleep Start defaults to 23:00 and Wake Time to 07:00. Adjust these times
@@ -176,8 +181,10 @@ first. Downloads are verified; inputs, timeline, saved files, and browser
 settings are preserved. The app reopens at the same local address. Failed
 installation or startup restores the previous app. Published releases already
 point to the public GitHub repository; no GitHub password or token is needed.
-If you still use a 1.x version, extract the latest ZIP once; updates never
-downgrade. Direct index.html use remains offline.
+Public v0.x installations can update to v1.0 normally. If you use an early
+internal build numbered above the current public release, extract the current
+ZIP manually; automatic updates never downgrade. Direct index.html use remains
+offline.
 
 DATA AND DEVELOPMENT
 Game data is pinned to Wasmegg commit:

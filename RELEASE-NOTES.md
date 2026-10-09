@@ -1,3 +1,12 @@
+# v1.0.0
+
+- Compare earnings-first research orders on Curiosity visits. Defer inactive capacity until departure where feasible, retain tier prerequisites and complementary production upgrades, and compare actual paid plans through the TE target.
+- Keep the 90-second search budget, owned-gear rules, sleep schedule, fixed 09:00 Pacific events, required missions, and strict saved-plan replay.
+- Tighten research-proposal range validation and include the new ordering checks in Windows release verification.
+- Refresh the Wasmegg comparison and migration guidance. Keep current audit links synchronized during builds and include the workflow's required regression suites in the developer source ZIP.
+- The supplied 12-shift plan still reaches 200 TE in 137d 23h 0m 51s with 18 launches. Earnings-first trials shorten the early research visits by about 10–12 minutes; later sale timing absorbs that gain. The search returns the fastest complete plans found, without a proof of global optimality.
+- Install through Update App → Update & Restart. Public v0.x installations can update normally; saved farms and plans remain compatible.
+
 # v0.9.14
 
 - Add Load Plan to the page header. Restore saved inputs, the selected alternative, and the Purchase Timeline after replay-validating every saved alternative. Invalid files retain the current inputs and timeline.

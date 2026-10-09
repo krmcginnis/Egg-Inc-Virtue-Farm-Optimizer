@@ -90,7 +90,7 @@ const root = path.resolve(__dirname, "..");
     await page.click('[data-tab="planning"]'); await page.selectOption('#strategy','user');
     assert.equal(await page.locator('#effort,#autoSequence').count(),0);
     await page.click('[data-tab="planning"]'); await page.click("#optimize");
-    assert.deepEqual(await page.evaluate(()=>testWorker.lastMessage.options),{width:32,branches:12,maxDepth:1200,maxMs:45000});
+    assert.deepEqual(await page.evaluate(()=>testWorker.lastMessage.options),{width:32,branches:12,maxDepth:1200,maxMs:90000});
     assert.equal(await page.evaluate(()=>testWorker.lastMessage.config.plan.searchEffort),'balanced');
     await page.evaluate(() => testWorker.onmessage({ data: { type: "progress", progress: { phase: "route-search", researchSales: 2, stage: "C2", explored: 2500, bestSeconds: 86400 } } }));
     assert.equal(await page.locator("#run-summary").innerText(), "Finding Fastest Plan · C2");

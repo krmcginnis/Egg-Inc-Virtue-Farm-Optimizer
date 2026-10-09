@@ -1,10 +1,14 @@
-# Wasmegg comparison — v1.5
+# Wasmegg comparison
 
-The v1.5 simulator was checked against the independent Wasmegg TypeScript source at commit `9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67`. The app's game dataset remains pinned to `a089580df4cc6cce8a2f5a9a7dcf86583a2c216d`; the inspected prices and effects agree with the reference source. This is a source comparison, not a claim that the live website's latest build was audited. See [current release audit](AUDIT-v1.5.12.md) for the complete assumptions and release checks.
+The game model was compared with independent Wasmegg TypeScript source at
+commit `9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67`. The app's game dataset remains
+pinned to `a089580df4cc6cce8a2f5a9a7dcf86583a2c216d`. This checks the named source
+versions, rather than the latest live website. See the
+[current release audit](AUDIT-v1.0.0.md) for verification and model limits.
 
-| Independent check | Coverage | Result |
+| Independent check | Historical coverage | Result |
 | --- | ---: | --- |
-| Habitat, laying, shipping, delivery, egg value, online/offline income | 358 states | Agreement within floating-point rounding |
+| Habitat, laying, shipping, delivery, egg value, online/offline income | 358 states | Agreement within floating-point and habitat rounding |
 | Next-level research prices, regular and Friday sale | 13,980 prices | Match within numerical tolerance |
 | Habitat / vehicle / car prices | 228 / 612 / 27 prices | Match within numerical tolerance |
 | Tier unlock rules | 20,048 checks | Exact match |
@@ -12,25 +16,59 @@ The v1.5 simulator was checked against the independent Wasmegg TypeScript source
 | Ship duration, fuel and gem cost | 132 mission/FTL combinations | Exact match |
 | TE thresholds / silo formulas / Soul Egg switch costs | All 98 thresholds, all silo prices, 200 switch states | Match |
 
-The sampled states include a real build timeline and 240 seeded farms with different research, habitats, fleets, Epic Research, claimed TE, colleggtibles, loadouts, video doubler states and permits. The largest observed relative rate difference was `1.7843056e-8` (about **0.0000018%**). One state differed by one chicken after a floating-point ceiling; its downstream laying/earnings differences were within that rounding allowance. Standard-permit offline income includes the 50% factor documented by Wasmegg's Virtue Companion, which the raw Ascension Planner snapshot omits.
+Those historical samples included a supplied build timeline and 240 seeded farms
+with different research, equipment, bonuses, gear, video doubling, and permits.
+The largest observed relative rate difference was about `1.7843e-8`, caused by
+one chicken of floating-point habitat-ceiling rounding. Standard-permit offline
+income includes the 50% factor documented by Wasmegg's Virtue Companion.
 
-## Controlled route comparison
+The separate model audit also checks compounded research discounts, passive
+earnings and delivery, silo exhaustion, daylight saving changes, pending TE,
+ship fuel conservation, and event boundaries in several selected timezones.
+Compound prices can differ by one gem at integer ceilings or a few floating-point
+units at very large prices; the audit records those differences explicitly.
 
-Starting farm: 160 claimed TE (32 per Virtue), zero common research, free Coop/Trike/one silo, Pro permit, supplied gear and max Epic Research/colleggtibles. Start: October 13, 2026, 18:00 Pacific. Target: 200 TE, 160-day limit, 12 new switches, C1/K1 limits 30 minutes, up to three research sales. The user's exact exported 140-day plan was not available; the comparison reconstructs equivalent inputs from the saved farm.
+## Current planner behavior
 
-| Same app inputs | Wasmegg staged strategy | Copied fixed route with Free Routing | Automatic Free Routing |
-| --- | ---: | ---: | ---: |
-| No ships | 141.142006333 days | 141.142006333 days | 141.142006333 days |
-| H1 and H2 each: 7 extended Henerprises + 2 extended Cornish-Hens | 142.463663699 days | 142.463663699 days | 142.463663699 days |
+Automatic Planning and User Selected Sequence use the same route-aware, paid
+purchase model. The planner compares research, physical upgrades, departures,
+owned gear, sale timing, and complete delivery plans within a 90-second budget.
+It returns the fastest complete plans found, with strict replay validation.
+Replay verifies feasibility under the model and does not prove global optimality.
 
-Those three app strategy comparisons use the shared staged candidate engine; they confirm routing parity, not independent proof of optimality. The independent reference calculation above supplies the separate math check. The previously translated Wasmegg three-sale route in `Matched-Wasmegg-Plan.json` replays at about 141.143 days. The app adds switch interaction time and compares online/offline batches with a one-minute minimum; the reference auto-planner uses offline save estimates and zero switch overhead. Differences of minutes do not establish a math error. A different lifetime delivery total, date, gear, event schedule or mission list can change the answer.
+On Curiosity research visits, earnings-first ordering is compared with existing
+orders. Inactive capacity can wait until departure; tier prerequisites and
+complementary upgrades can still come earlier. The last Curiosity visit is
+delivery-only. Earlier verified plans can seed identical-input searches, and
+an earnings-only gear improvement can propose an order that is paid again using
+the actual new gear. Other input changes invalidate those retained candidates.
 
-## Assumptions and differences
+The former fixed-stage routing comparisons are historical development evidence.
+They are not benchmarks for the current solver. The current release audit
+records the supplied 12-shift setup and its paid, sleep-aware replay.
 
-Both planners assume full habitats, fixed artifacts and no sleep schedule. Our app enforces Virtue purchase permissions, lower-tier unlock counts, actual purchase costs, Soul Egg costs, switch limits and C1/K1 deadlines, then replays every result. Pending TE do not improve earnings before ascension.
+## Timing and assumptions
 
-Our app additionally models entered-order H1/H2 launches, gem costs, fueling, occupied slots across visits, residual tank stock and eggs diverted away from TE delivery. It leaves Humility after the final launch, without waiting for the final return. Neither tool predicts ship duration events, mission rewards or future artifacts.
+Game events are fixed at 09:00 America/Los_Angeles, following PST/PDT:
+Monday–Tuesday double earnings and Friday–Saturday common-research cost ×0.30.
+The selected timezone controls sleep and displayed dates. Plan Start is entered
+in the PC's local time.
 
-Silos start at one. Long waits presume regular refills and maintained video doubling. Refill check-ins are not enumerated or counted as earning breaks. A minimum offline break longer than silo coverage is flagged as requiring refills; it cannot be one literal uninterrupted away session with those silos. Full-hab timing remains optimistic below roughly 100 claimed TE.
+Habitats are modeled as full immediately. Chicken growth can make predictions
+too optimistic below about 100 claimed TE. Pending TE do not improve earnings
+before ascension. Automatic gear uses owned artifacts and stones; future finds,
+boosts, drones, running-chicken bonuses, and mission rewards are excluded.
 
-The complete staged opening grid retains all smaller 30-minute budget choices. The additional free-routing search is time-limited and heuristic, so enlarging limits does not guarantee that its independently found winner will be retained. Saved plans never seed a fresh search. These are fastest plans found, not guaranteed global optima.
+Enabled sleep blocks game interactions. Farm production and income continue
+only while silos have coverage, and sleep uses offline earnings. Awake waits
+assume routine refills and maintained video doubling. Refill check-ins are not
+counted as earning breaks.
+
+Planned missions include costs, fueling, tank capacity, existing flights, and
+shared mission slots. Fuel diversion reduces TE delivery and income. All required
+missions must launch, but the final return does not delay completion. Ship
+duration events and future rewards are not predicted.
+
+Changing dates, lifetime delivery totals, sleep, gear, or missions can change
+the resulting plan. Equal settings and strict replay are necessary for useful
+comparisons with an independently generated Wasmegg plan.

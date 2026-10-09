@@ -1,6 +1,6 @@
 'use strict';
 // Optional model audit, separate from solver quality. The reference bundle must
-// export unmodified upstream Wasmegg formulas; see AUDIT-v0.9.12.md.
+// export unmodified upstream Wasmegg formulas; see the current release audit.
 const assert=require('node:assert/strict'),path=require('node:path'),fs=require('node:fs');
 const S=require('../src/simulator.cjs'),T=require('../src/staged-route.cjs'),P=require('../src/ships.cjs'),C=require('../src/colleggtibles.cjs');
 const {fixture}=require('./research-sale-plans.cjs');

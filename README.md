@@ -10,7 +10,10 @@ Start on **Account** to load your account or saved farm. Continue to **Virtue Fa
 
 ## Updates
 
-Earlier releases were renumbered from v1.7.0 to v0.8.0. If you still use a 1.x version, download and extract the latest ZIP once; the updater does not install lower version numbers. Future 0.x releases update normally.
+Earlier internal builds were renumbered from v1.7.0 to v0.8.0. If your internal
+build has a higher version number than the current public release, download and
+extract the current ZIP once; the updater does not install lower version numbers.
+Public v0.x installations can update to v1.0 normally.
 
 Use **Update App → Update & Restart** in the sidebar. Published ZIPs already point to this repository. Updates verify downloads, preserve your current inputs and timeline, and restore the previous app if installation or startup fails. Finish your search or import before updating.
 
@@ -46,6 +49,14 @@ for delivery only. Owned inventory and configured launches are included;
 future mission rewards are not assumed. The search compares sale timing
 internally, with no sale-window selector. The bounded route proposal and purchase
 search does not exhaust every possible route or prove global optimality.
+
+On research-capable Curiosity visits, the solver also compares earnings-first
+purchase orders. Research that raises income with the current farm goes ahead of
+inactive capacity, including unused vehicle slots and train-car limits. Lower-tier
+prerequisites and complementary production upgrades can be bought earlier when
+needed to unlock earnings. Deferred levels are paid before departure. The solver
+compares each visit and opening combinations using actual prices, offline batches,
+sleep, sale deadlines, and the complete continuation to the TE target.
 
 The v0.8.23 solver remains in `src/optimizer-legacy.cjs`, with historical replay
 routed through it. Developers can use `legacySolver: true` when calling solve
@@ -104,7 +115,9 @@ search can still find different-quality paths with different gear.
 
 Run `node tests/sleep-search-quality.cjs` for finite exhaustive sleep, research,
 silo, and shift decisions, and `node tests/earnings-incumbents.cjs` for upgrade
-reexecution and rejection checks. For private baseline comparisons, use:
+reexecution and rejection checks. `node tests/earnings-first-research.cjs` checks
+paid research deferral, tier prerequisites, bottlenecks, and complete replay.
+For private baseline comparisons, use:
 
 ```sh
 node scripts/benchmark-search.cjs --farm ../private-farm.json --baseline ../prior-checkout --budgets 90000 --sleep 23:00,07:00

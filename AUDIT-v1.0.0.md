@@ -1,125 +1,154 @@
-# Egg Inc. Virtue Farm Optimizer v0.9.14 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.0.0 — Release Audit
 
-## v0.9.14 scope and local verification
+## Release candidate status
 
-Load Plan is available in the page header. It restores a Save Plan JSON's
-inputs, selected alternative, and Purchase Timeline using the existing strict
-replay validator for every saved alternative. Load Farm remains compatible
-with plans and game backups. Invalid files retain the current inputs and
-result. File loading is blocked during a search or account import; file
-choosers reset so the same file can be opened again. The plan chooser is
-excluded from saved input drafts. Pending input-refresh timers are cancelled
-when a plan is restored.
+The local v1.0.0 review is complete for the source, model, and browser checks
+listed below. This candidate has not been pushed or published. Native Windows
+launcher/updater checks and anonymous public-feed verification must pass in the
+publication workflow before the release is accepted. Local Linux checks do not
+substitute for those Windows checks.
 
-The final delivered egg rate uses a wrapping flex row so the label, numeric
-rate, /hour suffix, and egg artwork align consistently. How It Works and both
-user guides describe the dedicated loading flow. The solver, model rules,
-normal 90-second budget, and existing replay logic are unchanged.
+## Changes since the accepted v0.9.14 release
 
-Local Chromium checks passed saved-input and selected-alternative restoration,
-all-alternative validation, Save Plan/load round trips, repeated files, single
-plans, malformed/farm-only/corrupt-alternative rejection without losing the
-current plan, Load Farm compatibility, and busy-state handling. Account-import
-browser regressions passed, including disabling Load Plan during import.
-The supplied 12-shift plan restored its original finish timestamp and all
-alternatives without stale state or console errors. Desktop layout checks
-found no horizontal overflow at 1,000, 1,440, and 1,920 px; the final-rate row
-alignment matched at each width. Private farm files and review output remain
-outside tracked source.
+The solver compares earnings-first orders on research-capable Curiosity visits,
+including individual visits and opening combinations. It evaluates actual
+income with the current habitats, vehicles, research, and gear after every
+level. Inactive capacity can wait until departure. Selected lower-tier levels
+remain eligible to unlock earnings, and complementary production upgrades can
+be bought when their chain raises income. All selected levels are paid; projected
+research is used only to rank proposals.
 
-Release preparation passed the versioned app/worker build, release-state,
-publish-preparation, worker, saved-plan, and timeline browser checks. The
-publication workflow passed native Windows solver, updater, package, launcher,
-and anonymous public-feed checks. The accepted result is recorded below;
-published assets retain the release-preparation audit snapshot.
+Paid offline-batch comparisons are retained. Reexecution preserves selected sale
+prices, interaction time, sleep, research deadlines, tank/fuel constraints, and
+missions. Complete continuations are strictly replayed before acceptance. The
+previous feasible plan remains available when a reorder is infeasible or slower.
+The normal search budget remains 90 seconds; proposal comparisons share it.
 
-## Accepted v0.9.14 release verification
+The final review tightened research-range validation to reject gaps, overlapping
+ranges, invalid timestamps, and non-integer/non-finite starting levels. Grouped
+levels without an explicit starting level map every purchased level correctly.
+The bundled Wasmegg comparison and migration guidance now describe current
+behavior. Builds synchronize audit links in the app and comparison document.
+The developer source ZIP includes every public test invoked by its release
+workflow, plus the PowerShell updater test dependency.
 
-Windows run [37961773163](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/37961773163) completed successfully for source commit `23f26a2c9c8bde64dc527769cad7735d69cffd4d`. All solver checks passed, including fixed Pacific events, sleep-search cases, earnings adaptation, and the generated browser worker.
+Four browser tests still described earlier UI behavior. They now target the
+labeled app navigation, preserve separate purchases with interaction time in
+Full Breakdown, focus an existing calibration field, and check the compact
+timezone menu. Quick Guide research-range grouping remains verified. An earlier
+stale search-budget expectation was also updated to the existing 90 seconds.
 
-Native Windows checks passed valid installation, seven invalid archive cases, digest/version rejection, rollback and exact backup restore, user JSON/config preservation, hidden CMD launch and repeat reuse from paths with spaces, successful restart, startup-failure recovery, and legacy-worker recovery. Anonymous update-feed lookup, complete ZIP download, and every app-file checksum passed on Windows PowerShell 5.1.26100.33438.
+## Local verification — October 9, 2026
 
-Independent anonymous verification confirmed v0.9.14 as latest, downloaded both complete assets, checked GitHub digests and manifest size/hash, ZIP CRC, all 169 runtime entries and every file checksum, version/branding, one current audit, and updater repository configuration. It also confirmed the packaged Load Plan button/file chooser/validation text and final-delivery alignment style, along with retained sleep, calendar, rate, and Help behavior.
+`npm ci` and the v1.0.0 app/worker build passed. All 37 available Node/browser
+suites passed, covering paid route/research/physical investment decisions,
+incumbent retention and earnings adaptation, research breakpoints, sleep and
+DST, silo coverage, Pacific events, worker operation, account/backup import,
+save/load/reset, selected saved-plan alternatives, corrupt-file rejection,
+artwork/equipment controls, desktop layouts, timeline rates, and PDF generation.
+Release-state tests explicitly accept a v0.9.14 to v1.0.0 version increase;
+publish-preparation guards passed. No live account import was requested.
 
-The accepted release is [v0.9.14](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v0.9.14). Existing release assets were not replaced. This verification record is a source-only follow-up; the published ZIP retains the release-preparation audit snapshot.
+Independent reference-math verification used unmodified upstream Wasmegg source
+commit `9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67`, independently bundled from the
+app's proposal engine. The pinned app data remain at
+`a089580df4cc6cce8a2f5a9a7dcf86583a2c216d`.
 
-| Asset | GitHub ID | Bytes | SHA-256 |
-| --- | ---: | ---: | --- |
-| Egg-Inc-Virtue-Farm-Optimizer.zip | 625577532 | 8,572,031 | `91ebe8504a62474a8851904b35d14c29f66003dd33def1b3aa9733371bb5e1db` |
-| update-manifest.json | 625577535 | 240 | `4de2fbd9021870e58a9c608e433c7b3c99341cf13d8b8f98ceafabc3c6fdbbd2` |
+| Independent check | Final-review coverage | Result |
+| --- | ---: | --- |
+| Farm snapshots and isolated effects | 738 states | Match within numerical/habitat rounding |
+| Regular/sale research prices | 13,980 | Match within numerical tolerance |
+| Habitat / vehicle / car prices | 228 / 612 / 27 | Match |
+| Research tier unlocks | 41,328 | Exact match |
+| Colleggtible selections | 240 | Exact match |
+| Ship mission/FTL combinations | 132 | Exact match |
+| Compounded research discount prices | 186,400 | At most one gem at safe-integer ceilings or permitted floating-point units |
+| Passive earnings/delivery integrals | 16 | Match |
+| DST sleep integrals | 2 | Match |
+| Fuel conservation/transfer cases | 4 | Match |
+| Pacific event boundary checks in selected zones | 192 | Exact match |
 
-## Inherited v0.9.13 release audit
+The reference samples cover all 56 common research items, 22 Epic Research
+items, 171 artifact variants, 30 stones, 19 habitats, and 12 vehicles. The
+maximum relative rate difference was `1.784305611747559e-8`, caused by one chicken
+of habitat-ceiling rounding. Excluding that case, the maximum was
+`1.0198447235008816e-15`. The compounded-price audit recorded 20,465 differences,
+including 260 safe-integer differences of at most one gem; these are explicitly
+reported rounding differences, not exact integer agreement.
 
-## v0.9.13 scope and local verification
+The small earnings-first regression independently enumerates both legal orders
+of an income upgrade and an unused slot upgrade and matches their minimum paid
+completion time. Additional cases verify productive shipping, complementary
+capacity, tier prerequisites, original sale prices, real offline breaks, invalid
+proposals, deadlines, cancellation, multiple Curiosity visits, and full replay.
+Those finite cases establish correctness within their stated domains; they do
+not establish a global game optimum.
 
-This release enables No Game Interactions During Sleep for fresh/reset farms
-with a 23:00–07:00 default. Saved explicit preferences are retained, including
-disabled sleep; older farms without a schedule still load with sleep disabled.
-The selected timezone continues to control sleep and displayed dates, while
-weekly events remain fixed to 09:00 America/Los_Angeles, following PST/PDT.
+### Supplied 12-shift plan
 
-Shift summaries, completion strips, and PDF exports distinguish shipping
-capacity from delivered eggs. Peak delivery is computed from the simultaneous
-laying/shipping pair in each recorded state, not from separately maximized
-capacities. Final delivery identifies its laying/shipping bottleneck. Displayed
-dates include years, alternative cards show time/shift differences from the
-fastest plan, and summary duration/cost rows align their text and artwork.
+The final v1.0.0 built-worker search used the supplied 160→200 TE inputs,
+12-shift ceiling, owned inventory, 22:00–06:00 Pacific sleep, and required H1/H2
+missions. With a 90-second budget, elapsed time including preparation, finalization,
+and replay was 93.550 seconds. The retained 12-shift plan completed in
+11,919,651.5115304 seconds: 137d 23h 0m 51s, with 40 TE per Virtue and 18 launches.
+Final delivered eggs remained 3.044764300282032q/hour.
 
-Planning reports required non-Humility tank space, including any H2 fuel
-reserved by the route, rather than misleading maximum launch counts based on
-surplus starting fuel. Tank-limit/discard actions remain part of the verified
-timeline. How It Works and the user guides follow the current page flow; Help
-adds topic links and shorter line lengths. PDF assumptions refer to planned
-artifact sets.
+Strict replay and awake-interaction checks passed. Research, habitats, vehicles,
+silos, and mission counts matched the prior plan. Five reordered complete plans
+were replay-verified. The selected plan's C1 was about 10m 8s shorter; an earlier
+paid C1/C2 comparison saved about 12m 7s combined. Later sale timing absorbed those
+gains. A 0.0000174-second completion difference is numerical rounding and is not
+reported as a meaningful speed improvement. Equal-finish selections can differ
+in offline break counts and early-visit duration.
 
-The search rules, game arithmetic, owned-gear requirements, and 90-second
-budget are unchanged. Two supplied automatic plans and a user-defined plan
-strictly replay with unchanged finish timestamps and final rates. The apparent
-delivery mismatch was shipping capacity exceeding egg laying, not a solver
-calculation error. The independent calendar/rate/price checks described during
-the review confirm feasible plans, not global optimality.
+Private account inputs, plans, logs, and review screenshots remain outside
+tracked source and both archives. `VALIDATION.json` records current local results
+and explicitly marks the Windows/public-feed gates as pending.
 
-Local checks passed peak-rate regressions (including opposing gear
-bottlenecks), sleep/default/save/reset behavior, fixed-Pacific events, saved
-replay, the generated worker, and browser timeline rendering. Chromium review
-found no horizontal overflow at 1,000–1,440 px; summary alignment matched at
-1,000, 1,440, and 1,920 px. Supplied plans saved/reloaded successfully. Updated
-PDF exports were rendered and checked for text clipping and footer overlap.
-Private account files and review outputs remain outside tracked source.
+### Release package verification
 
-Release preparation reruns release-state, publish-preparation, build, worker,
-sleep/date, rate, and browser checks. Native Windows solver/updater/package/
-launch checks and public-feed verification passed in the publication workflow.
-The accepted result is recorded below; published assets retain the
-release-preparation audit snapshot. Earlier game-model and release evidence
-is retained as historical validation.
+The runtime ZIP contains 169 files. ZIP CRC, the complete archive's manifest
+size/digest, and every runtime file's size/checksum passed. Version metadata,
+repository configuration, current audit links, and the built earnings-first
+worker match v1.0.0. Source, tests, dependency folders, and private review files
+are excluded from the runtime archive.
 
-## Accepted v0.9.13 release verification
+The curated developer ZIP contains 281 files, including all 18 public suites
+invoked by the bundled release workflow and their source/PowerShell dependencies.
+ZIP CRC and dependency checks passed. A fresh extraction installed dependencies
+with `npm ci --offline`, rebuilt the app and worker, and passed the earnings-first,
+worker, release-state, and publish-preparation suites.
 
-Windows run [37955048540](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/37955048540) completed successfully for source commit `743317b6858921e1ce87a0cdc51600a4d27dbb81`. All solver checks passed, including paired peak-delivery bottlenecks, fixed Pacific events, exhaustive sleep-search cases, earnings adaptation, and the generated browser worker.
+### Windows verification status
 
-Native Windows checks passed valid installation, seven invalid archive cases, digest/version rejection, rollback and exact backup restore, user JSON/config preservation, hidden CMD launch and repeat reuse from paths with spaces, successful restart, startup-failure recovery, and legacy-worker recovery. The anonymous update-feed lookup, complete ZIP download, and every app-file checksum passed on Windows PowerShell 5.1.26100.33438.
+No PowerShell/Windows runtime is available in this local review environment, so
+`tests/update-core.cjs` and `tests/update-launch.cjs` are reserved for the mandatory
+Windows publication workflow. They cover verified download/install, invalid
+archives, rollback, preserved user files, hidden launch/reuse from paths with
+spaces, restart, and startup-failure recovery. The workflow also verifies the
+anonymous public update feed after publication and hides a release if that
+validation fails.
 
-Independent anonymous verification confirmed v0.9.13 as latest, downloaded both complete assets, checked GitHub digests and manifest size/hash, ZIP CRC, all 169 runtime entries and every file checksum, version/branding, one current audit, and updater repository configuration. It also checked the packaged sleep/calendar/earnings code, Sleep & Display Timezone wording, default checked sleep control, Help topic links, delivery/capacity/tank-space labels, and summary alignment styles.
+The last accepted Windows/public-feed result was v0.9.14, source commit
+`23f26a2c9c8bde64dc527769cad7735d69cffd4d`, in run
+[37961773163](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/37961773163).
+That historical success is not a v1.0.0 Windows result.
 
-The accepted release is [v0.9.13](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v0.9.13). Existing release assets were not replaced. This verification record is a source-only follow-up; the published ZIP retains the release-preparation audit snapshot.
+## Remaining model and search limits
 
-| Asset | GitHub ID | Bytes | SHA-256 |
-| --- | ---: | ---: | --- |
-| Egg-Inc-Virtue-Farm-Optimizer.zip | 625434191 | 8,570,514 | `1c636aa844858a0a5da65b8e381e061c466acde4d39f42ae5e20f2c459c0a0ad` |
-| update-manifest.json | 625434192 | 240 | `4d80f092d2fd47a286357c7a31f5466e5b6e682b7bef4ace1c5e9eea34d1e7d7` |
+Habitats are treated as full; growth time below roughly 100 claimed TE can make
+predictions optimistic. Awake waits assume regular silo refills and maintained
+video doubling. Automatic gear uses owned inventory, while manual sets use the
+entered values. Running-chicken bonuses, boosts, gifts, future mission rewards,
+and future gear are excluded. Ship final returns do not delay completion.
+The bounded search returns the fastest complete plans found. Replay validates
+feasibility under these assumptions, rather than proving global optimality.
 
-## Inherited v0.9.12 release audit
+## Inherited historical evidence
 
-## v0.9.12 scope
-
-Weekly game events now use 09:00 America/Los_Angeles, following PST/PDT,
-independently of the selected sleep/display timezone. The release includes
-the clarified timezone label, event regressions, and consolidated game-model
-audit. Optional sleep and silo handling remain available from v0.9.11; enable
-Sleep Hours when generating the next benchmark. The search strategy and normal
-90-second budget are unchanged. The earlier solver/release evidence is retained
-below, followed by the v0.9.12 correction and release verification.
+The following evidence predates v1.0.0. It is retained as model and solver
+validation history and does not imply that v1.0.0 has passed Windows release
+verification or that its solver is globally optimal.
 
 ## Inherited solver scope and search budget — v0.9.11
 
