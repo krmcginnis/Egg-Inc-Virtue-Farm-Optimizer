@@ -39,9 +39,25 @@ Private account files and review outputs remain outside tracked source.
 
 Release preparation reruns release-state, publish-preparation, build, worker,
 sleep/date, rate, and browser checks. Native Windows solver/updater/package/
-launch checks and public-feed verification run in the publication workflow;
-their accepted result will be recorded after completion. Earlier game-model
-and release evidence is retained below as historical validation.
+launch checks and public-feed verification passed in the publication workflow.
+The accepted result is recorded below; published assets retain the
+release-preparation audit snapshot. Earlier game-model and release evidence
+is retained as historical validation.
+
+## Accepted v0.9.13 release verification
+
+Windows run [37955048540](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/37955048540) completed successfully for source commit `743317b6858921e1ce87a0cdc51600a4d27dbb81`. All solver checks passed, including paired peak-delivery bottlenecks, fixed Pacific events, exhaustive sleep-search cases, earnings adaptation, and the generated browser worker.
+
+Native Windows checks passed valid installation, seven invalid archive cases, digest/version rejection, rollback and exact backup restore, user JSON/config preservation, hidden CMD launch and repeat reuse from paths with spaces, successful restart, startup-failure recovery, and legacy-worker recovery. The anonymous update-feed lookup, complete ZIP download, and every app-file checksum passed on Windows PowerShell 5.1.26100.33438.
+
+Independent anonymous verification confirmed v0.9.13 as latest, downloaded both complete assets, checked GitHub digests and manifest size/hash, ZIP CRC, all 169 runtime entries and every file checksum, version/branding, one current audit, and updater repository configuration. It also checked the packaged sleep/calendar/earnings code, Sleep & Display Timezone wording, default checked sleep control, Help topic links, delivery/capacity/tank-space labels, and summary alignment styles.
+
+The accepted release is [v0.9.13](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v0.9.13). Existing release assets were not replaced. This verification record is a source-only follow-up; the published ZIP retains the release-preparation audit snapshot.
+
+| Asset | GitHub ID | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Egg-Inc-Virtue-Farm-Optimizer.zip | 625434191 | 8,570,514 | `1c636aa844858a0a5da65b8e381e061c466acde4d39f42ae5e20f2c459c0a0ad` |
+| update-manifest.json | 625434192 | 240 | `4d80f092d2fd47a286357c7a31f5466e5b6e682b7bef4ace1c5e9eea34d1e7d7` |
 
 ## Inherited v0.9.12 release audit
 
