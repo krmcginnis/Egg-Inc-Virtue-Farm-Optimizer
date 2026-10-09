@@ -68,7 +68,7 @@ function prepare(raw,opts={}){
  researchCostScale:number(f.researchCostScale??1,'Research cost calibration',.000001,1000000),earningsScale:number(f.earningsScale??1,'Earnings calibration',.000001,1000000)};
  if(!opts.artifactReplay&&f.manualFarmData!==true&&Array.isArray(f.artifactInventory))c.artifactModel=Artifacts.compile(f.artifactInventory,pro,c.earningsMode);
  c.ships=Ships.prepare(f,p,number);
- if(!['auto','wasmegg','user','free'].includes(c.strategy))throw Error('Select a valid planning strategy.');if(c.strategy==='wasmegg'&&!c.autoSequence)throw Error('Enable automatic visits for Optimized Sequence.');
+ if(!['auto','wasmegg','user','free'].includes(c.strategy))throw Error('Select a valid planning strategy.');if(c.strategy==='wasmegg'&&!c.autoSequence)throw Error('Automatic Planning requires automatic routing.');
  if(!['quick','balanced','thorough'].includes(p.searchEffort??'balanced'))throw Error('Select a valid search effort.');
  if(!['offline','online'].includes(c.earningsMode))throw Error('Earnings mode must be offline or online.');
  // Validate the selected sleep/display zone even when sleep is disabled.

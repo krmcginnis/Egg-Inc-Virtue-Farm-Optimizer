@@ -12,15 +12,26 @@ const S=require('../src/simulator.cjs'),U=require('../src/shift-summary.cjs'),bl
   const actions=S.history(n),saved=JSON.stringify(actions),result={version:1,start:c.start,end:n.t,seconds:n.t-c.start,actions,target:100,switches:1,frontier:[],explored:0,method:'Synthetic peak-rate regression',termination:'complete'},summary=U.summarize(raw,result);
   assert.equal(summary.shifts.length,2);const first=summary.shifts[0].maxRates;
   assert.equal(first.earning,Math.max(weak.earning*2,earned.earning,shipped.earning));assert.ok(first.earning<earned.earning*2);
-  assert.equal(first.shipping,Math.max(weak.shipping,earned.shipping,shipped.shipping));assert.equal(first.laying,Math.max(weak.laying,earned.laying,shipped.laying));assert.deepEqual(summary.shifts[1].maxRates,{earning:shipped.earning,shipping:shipped.shipping,laying:shipped.laying});
+  assert.equal(first.shipping,Math.max(weak.shipping,earned.shipping,shipped.shipping));assert.equal(first.laying,Math.max(weak.laying,earned.laying,shipped.laying));assert.equal(first.delivery,Math.max(...[weak,earned,shipped].map(r=>Math.min(r.laying,r.shipping))));assert.deepEqual(summary.shifts[1].maxRates,{earning:shipped.earning,shipping:shipped.shipping,laying:shipped.laying,delivery:Math.min(shipped.laying,shipped.shipping)});
   assert.equal(JSON.stringify(actions),saved,'presentation never edits raw actions/reasons');
   // Historical before/after snapshots are optional: reconstruct rate states
   // from the configuration and purchases rather than trusting summary fields.
   const legacy=structuredClone(result);legacy.actions.forEach(a=>{delete a.before;delete a.after;});assert.deepEqual(U.summarize(raw,legacy).shifts.map(s=>s.maxRates),summary.shifts.map(s=>s.maxRates));
   if(mode==='offline'){const dir=path.join(__dirname,'../tmp/shift-rates');fs.mkdirSync(dir,{recursive:true});fs.writeFileSync(path.join(dir,'synthetic-plan.json'),JSON.stringify({version:1,config:raw,result}));fs.writeFileSync(path.join(dir,'walkthrough.pdf'),await Q.create(raw,result));}
  }
+ // Separate laying/shipping peaks can occur under different gear. The peak
+ // delivery must use a simultaneously achievable pair, not min of two peaks.
+ const raw=blank(1791993600);Object.assign(raw.farm,{virtue:'humility',cash:1e30,soulEggs:1e30,manualFarmData:true,proPermit:true,habs:[18,18,18,18],vehicles:Array.from({length:17},(_,i)=>({id:i===0?11:null,cars:1})),loadouts:{current:[],earnings:[],delivery:[]}});
+ Object.assign(raw.plan,{strategy:'user',autoSequence:false,sequence:['humility'],target:1,actionSeconds:0,shiftSeconds:0});
+ const {s,c}=S.prepare(raw),base=S.stats(s,c);
+ c.mods.current.laying=10;c.mods.current.shipping=1;
+ c.mods.delivery.laying=1;c.mods.delivery.shipping=10;
+ c.col.shippingCap*=base.laying/base.shipping;
+ const first=S.stats(s,c);let n=S.advance(s,c,s.t+60,'Collect eggs',true);n=S.buy(n,c,{type:'set',set:'delivery'});const second=S.stats(n,c);n=S.advance(n,c,n.t+60,'Collect eggs',true);
+ const shifts=[{firstIndex:0,lastIndex:S.history(n).length-1,start:s.t,end:n.t}];require('../src/shift-rates.cjs').attach(shifts,S.history(n),s,c);
+ const peak=shifts[0].maxRates;assert.ok(first.laying>first.shipping);assert.ok(second.shipping>second.laying);assert.equal(peak.delivery,Math.max(Math.min(first.laying,first.shipping),Math.min(second.laying,second.shipping)));assert.ok(peak.delivery<Math.min(peak.laying,peak.shipping));
  for(const strategy of ['auto','free','wasmegg'])assert.equal(Strategy.selected({strategy,strategyVersion:2,autoSequence:true}),'wasmegg');
  assert.equal(Strategy.selected({autoSequence:false,sequence:['curiosity']}),'user');assert.equal(Strategy.selected({autoSequence:true,sequence:['curiosity']}),'wasmegg');assert.equal(Strategy.selected({strategy:'user',autoSequence:false}),'user');
  assert.equal(gems('cash Cash CASH cashGained cashew'),'gems Gems GEMS cashGained cashew');
- console.log('PASS per-visit peak earning/shipping/laying, exact event/gear pairing, both earnings modes, calibration, inherited rates, legacy action snapshots, immutable actions, strategy migration and gem wording; PDF generated.');
+ console.log('PASS per-visit peak earning/shipping/laying/delivery, paired delivery bottlenecks across gear changes, exact event/gear pairing, both earnings modes, calibration, inherited rates, legacy action snapshots, immutable actions, strategy migration and gem wording; PDF generated.');
 })().catch(e=>{console.error(e);process.exitCode=1});

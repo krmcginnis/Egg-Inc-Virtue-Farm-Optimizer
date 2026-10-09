@@ -72,12 +72,16 @@ const root = path.resolve(__dirname, "..");
     await load({ version: 1, config: fixture, result }); assert.match(await page.locator("#notice").innerText(), /replayed/);
     assert.doesNotMatch(await page.locator('#result-content').innerText(),/Switch Tradeoffs Found/i);
     assert.ok(await page.locator('.plan-start').evaluate(n=>n.nextElementSibling.classList.contains('plan-end')));
+    assert.match(await page.locator('.plan-start').innerText(),/2026/);
+    assert.match(await page.locator('.final-result').innerText(),/Final delivered egg rate/);
+    assert.equal(await page.locator('.final-result .icon-amount').textContent(),Numbers.format(Math.min(S.stats(state,initial.c).laying,S.stats(state,initial.c).shipping)*3600)+'/hour');
     assert.equal(await page.locator(".shift-summary").count(), 2);
     for (const [i, shift] of summary.shifts.entries()) {
       const group = page.locator(".shift-summary").nth(i);
       assert.equal(await group.locator('.shift-start').getAttribute('datetime'),new Date(shift.start*1000).toISOString());
       assert.ok(await group.locator('.shift-start').evaluate(n=>n.getBoundingClientRect().bottom<=n.nextElementSibling.getBoundingClientRect().top));
-      for(const key of ['earning','shipping','laying']) {
+      assert.equal(await group.locator(':scope>summary [data-rate="shipping"] dt').innerText(),'Maximum Shipping Capacity');
+      for(const key of ['earning','shipping','laying','delivery']) {
         const value=group.locator(':scope>summary .shift-max-rates [data-rate="'+key+'"] dd');
         assert.equal(await value.textContent(),Numbers.format(shift.maxRates[key]*3600)+'/hour');
         assert.ok(await value.locator('[data-unit-icon="'+(key==='earning'?'gem':S.EGGS[shift.egg])+'"] img').isVisible());
@@ -90,7 +94,7 @@ const root = path.resolve(__dirname, "..");
       assert.equal(await group.locator(".guide-complete").count(), 1, "one finish strip even when the shift ends with a break");
       assert.equal(await group.locator(".guide-complete time").getAttribute("datetime"), new Date(shift.end * 1000).toISOString());
       assert.ok(await group.locator(".guide-complete").evaluate(node => node === node.parentElement.lastElementChild));
-      for(const key of ['earning','shipping','laying'])assert.equal(await group.locator('.guide-complete [data-rate="'+key+'"] dd').innerText(),await group.locator(':scope>summary [data-rate="'+key+'"] dd').innerText());
+      for(const key of ['earning','shipping','laying','delivery'])assert.equal(await group.locator('.guide-complete [data-rate="'+key+'"] dd').innerText(),await group.locator(':scope>summary [data-rate="'+key+'"] dd').innerText());
       const pauses = shift.quickGuide.filter(step => step.break).map(step => step.break);
       assert.equal(await group.locator(".guide-break").count(), pauses.length);
       for (const [j, pause] of pauses.entries()) {

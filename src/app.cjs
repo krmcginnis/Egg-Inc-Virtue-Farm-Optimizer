@@ -102,7 +102,7 @@ function dateLocal(t) {
 // Formatting options are fixed. Reuse formatters instead of creating one for
 // every purchase, while preserving each exact date and selected timezone.
 const timestampFormats = new Map();
-function timestamp(t, zone, includeYear = false, compact = false) {
+function timestamp(t, zone, includeYear = true, compact = false) {
   const key = zone + ":" + includeYear + ":" + compact;
   if (!timestampFormats.has(key)) timestampFormats.set(key, new Intl.DateTimeFormat("en-US", { timeZone: zone, year: includeYear ? "numeric" : void 0, month: "short", day: "numeric", weekday: compact ? undefined : "short", hour: "2-digit", minute: "2-digit", second: compact ? undefined : "2-digit", timeZoneName: "short" }));
   return timestampFormats.get(key).format(new Date(t * 1e3));
@@ -884,10 +884,10 @@ function refresh() {
           shipEstimate.append(el("p", "No ships planned for this visit."));
           continue;
         }
-        for (const [i, m2] of run.missions.entries()) {
-          const maximum = Ships.maximum(m2, c.ships.capacity, run.stored, Ships.needed(run.missions.filter((_, j) => j !== i)));
-          shipEstimate.append(el("p", m2.count + " \xD7 " + m2.label + (maximum === null ? "" : " \xB7 Tank maximum with other missions: " + maximum), "ship-estimate-line"));
-        }
+        for (const m2 of run.missions) shipEstimate.append(el("p", m2.count + " \xD7 " + m2.label, "ship-estimate-line"));
+        const targets = run.collectionTargets || run.targets;
+        shipEstimate.append(el("p", "Required non-Humility tank space: " + Ships.format(targets.reduce((sum, n) => sum + n, 0)) + " / " + Ships.format(c.ships.capacity) + ". Humility fuel is produced on the farm."));
+        if (run.stored.reduce((sum, n, i) => sum + Math.max(n, targets[i]), 0) > c.ships.capacity + c.ships.capacity * 1e-12) shipEstimate.append(el("p", "Surplus stored fuel must be discarded to make room. Follow the timeline's tank-limit steps."));
         shipEstimate.append(el("p", "Fuel required: " + run.fuel.map((n, i) => n ? S.NAME[i] + " " + num(n) : "").filter(Boolean).join(" \xB7 ")));
         const missing = (run.collectionTargets || run.targets).map((n, i) => Math.max(0, n - run.stored[i]));
         shipEstimate.append(el("p", missing.some((n) => n) ? (run.visit === 1 ? "Collect before H1: " : "Refill after H1 for H2: ") + missing.map((n, i) => n ? S.NAME[i] + " " + num(n) : "").filter(Boolean).join(" \xB7 ") : "Required non-Humility fuel is already available."));
@@ -897,7 +897,7 @@ function refresh() {
     updatePrimaryAction();
     if (!worker && !dirty) {
       $("run-summary").textContent = result ? duration(result.seconds) + " to target · " + result.switches + " switches" : "Ready to Plan";
-      $("run-detail").textContent = result ? "Validated plan · " + result.pendingTE + " pending TE" : "Minimum time to your Truth Egg target";
+      $("run-detail").textContent = result ? "Validated plan · " + result.pendingTE + " pending TE" : "Search for the fastest plan to your Truth Egg target";
     }
     return true;
   } catch (e) {
@@ -1015,11 +1015,18 @@ function renderResult() {
   host.hidden = false;
   if(r.shiftPlans){
     const choices=el("section",undefined,"card research-sale-comparison"),heading=el("h2","Plans by Shift Count"),row=el("div",undefined,"research-sale-options");
+    const fastest=r.shiftPlans.find(entry=>entry.switches===r.recommendedSwitches)||r.shiftPlans[0];
     choices.append(heading,el("p","Up to three fastest complete plans with distinct shift counts. Finish time comes first; equal times favor fewer shifts.","hint"));
     for(const entry of r.shiftPlans){
       const button=el("button",undefined,"research-sale-option");button.type="button";button.dataset.shifts=entry.switches;button.setAttribute("aria-pressed",String(entry.switches===r.selectedSwitches));
       button.append(el("strong",entry.switches+" New Shift"+(entry.switches===1?"":"s")),el("span",duration(entry.plan.seconds)),el("span","Ends "+timestamp(entry.plan.end,zone),"research-sale-end"));
       if(entry.switches===r.recommendedSwitches)button.append(el("span","Fastest Found","research-sale-best"));
+      else {
+        const extraSeconds=entry.plan.seconds-fastest.plan.seconds,shiftDifference=entry.switches-fastest.switches;
+        const time=extraSeconds>1e-6?duration(extraSeconds)+" slower":"Same finish time";
+        const shifts=shiftDifference?Math.abs(shiftDifference)+" "+(shiftDifference<0?"fewer":"more")+" shift"+(Math.abs(shiftDifference)===1?"":"s"):"";
+        button.append(el("span",[time,shifts].filter(Boolean).join(" \xB7 "),"research-sale-delta"));
+      }
       button.onclick=()=>{result=ShiftPlans.select(result,entry.switches);if(!worker&&!dirty)refresh();else updateArtifactNotes();renderResult();host.querySelector(`[data-shifts="${entry.switches}"]`).focus({preventScroll:true});};row.append(button);
     }
     choices.append(row);host.append(choices);
@@ -1146,8 +1153,8 @@ function renderResult() {
     header.append(el("div", waitTotals(shift), "shift-waits"));
     const peakRates = () => {
       const rates = el("dl", undefined, "shift-max-rates");
-      rates.title = "Highest modeled farm rates during this shift. Earnings use the selected earnings mode and weekly events; laying and shipping show capacity before fuel diversion.";
-      for (const [key, label] of [["earning","Maximum Earning Rate"],["shipping","Maximum Shipping Rate"],["laying","Maximum Egg Laying Rate"]]) {
+      rates.title = "Highest modeled farm rates during this shift. Delivered eggs are limited by the lower of laying and shipping capacity. Rates are before fuel diversion and empty-silo pauses, not averages over the visit.";
+      for (const [key, label] of [["earning","Maximum Earning Rate"],["shipping","Maximum Shipping Capacity"],["laying","Maximum Egg Laying Rate"],["delivery","Maximum Delivered Egg Rate"]]) {
         const item = el("div"); item.dataset.rate = key;
         const value = el("dd"); value.append(Units.amount(key === "earning" ? "gem" : S.EGGS[shift.egg],num(shift.maxRates[key]*3600),"/hour"));
         item.append(el("dt",label),value); rates.append(item);
@@ -1278,10 +1285,13 @@ function renderResult() {
     new MutationObserver(() => { if (full.open) full.fill(); }).observe(full, {attributes:true,attributeFilter:["open"]});
     full.addEventListener("toggle", () => { if (full.open) full.fill(); });
   }
-  const end = el("div", void 0, "card");
+  const end = el("div", void 0, "card final-result");
   const totals = el("p", void 0, "egg-totals");
   for (const [i, count] of r.finalTE.entries()) totals.append(EggIcons.caption(S.EGGS[i], S.NAME[i] + " " + count));
-  end.append(el("h2", "Target available to claim"), el("p", timestamp(r.end, zone)), totals, el("p", r.pendingTE + " pending TE \xB7 final delivery " + num(r.finalStats.delivery * 3600) + "/hour"));
+  const delivery = el("p", r.pendingTE + " pending TE \xB7 Final delivered egg rate ");
+  delivery.append(Units.amount(S.EGGS[summary.shifts.at(-1)?.egg ?? initial.s.egg],num(r.finalStats.delivery * 3600),"/hour"));
+  const limit = r.finalStats.bottleneck === "Balanced" ? "Laying and shipping capacity are balanced." : "Limited by " + r.finalStats.bottleneck.toLowerCase() + ".";
+  end.append(el("h2", "Target available to claim"), el("p", timestamp(r.end, zone)), totals, delivery, el("p", limit + " Delivered eggs use the lower of egg laying and shipping capacity.", "hint"));
   host.append(end);
 }
 function renderSuggestion(suggestion, runConfig = resultConfig, inputsChanged = dirty) {
@@ -1435,7 +1445,7 @@ function optimize() {
         show(data.error, true);
         showPlanningGuidance(data.error, true, inputsChanged);
         $("run-summary").textContent = "Planning could not finish";
-        $("run-detail").textContent = "Review inputs or increase the search budget";
+        $("run-detail").textContent = "Review your target, route, and sleep settings";
         if (data.suggestion) renderSuggestion(data.suggestion, runConfig, inputsChanged);
             } else {
         result = data.result;

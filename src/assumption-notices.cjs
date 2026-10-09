@@ -1,6 +1,6 @@
 'use strict';
 const S=require('./simulator.cjs');
-function startingGear(s,c){return s.egg!==2&&c.earningLoadout?.some(slot=>slot.artifactId)&&!(c.loadouts[s.set]||[]).some(slot=>slot.artifactId)?'Your starting artifact set is empty. Automatic sets can only be equipped on Humility during the run. For a new ascension, equip the earning set before starting and choose Use Earnings Set at Start.':'';}
+function startingGear(s,c){return s.egg!==2&&c.earningLoadout?.some(slot=>slot.artifactId)&&!(c.loadouts[s.set]||[]).some(slot=>slot.artifactId)?'Your starting artifact set is empty. Artifact changes during the run require Humility. For a new ascension, equip your Research & Earnings set on Humility before ascending, then load or enter that starting gear in the app.':'';}
 // Shared context guidance for the form, the saved result and its PDF.
 function notices(s,c){
  const out=[],r=S.stats(s,c);

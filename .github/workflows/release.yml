@@ -73,6 +73,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/timezones.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/shift-rates.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/sleep-schedule.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/silo-comfort.cjs

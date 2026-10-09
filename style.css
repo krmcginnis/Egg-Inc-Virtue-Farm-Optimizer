@@ -444,11 +444,20 @@ aside .update-app{margin-top:auto}
 
 /* Shift dates and peak rates remain readable in compact summary/guide cards. */
 .shift-start{font-size:11px;color:#9db1c7;font-weight:400;line-height:1.5;overflow-wrap:anywhere}
-.shift-max-rates{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 16px;margin:12px 0 0;font-size:11px;line-height:1.5;font-weight:400}
+.shift-max-rates{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 16px;margin:12px 0 0;font-size:11px;line-height:1.5;font-weight:400}
 .shift-max-rates>div{min-width:0}.shift-max-rates dt{color:var(--muted)}.shift-max-rates dd{margin:3px 0 0;color:#dce8f5;font-weight:600;overflow-wrap:anywhere}
 .guide-complete>.shift-max-rates{flex:0 0 100%;margin:5px 0 0}.guide-complete .shift-max-rates dd{color:#bee9cf}
+@media(max-width:1150px){.shift-max-rates{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:500px){.shift-max-rates{grid-template-columns:1fr;gap:6px}.shift-max-rates>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px}.shift-max-rates dt{flex:1;min-width:0}.shift-max-rates dd{flex:0 1 46%;text-align:right;margin:0}}
 @media(forced-colors:active){.shift-max-rates dt,.shift-max-rates dd,.guide-complete .shift-max-rates dd,.shift-start{color:CanvasText}}
+
+/* Help links keep long explanations easy to navigate on desktop. */
+.prose{max-width:85ch}
+.prose h2[id]{scroll-margin-top:24px}
+.help-contents{display:flex;flex-direction:row;flex-wrap:wrap;gap:8px 12px;margin:0 0 24px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.help-contents a{font-size:12px;line-height:1.5;padding:4px 0;text-underline-offset:3px}
+.help-contents a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.research-sale-delta{color:#b8dccd;font-weight:500;line-height:1.5}
 
 /* Unit artwork is framed by visible bounds and centered beside the text. */
 .icon-amount{--unit-size:16px;display:inline-flex;align-items:center;gap:5px;vertical-align:middle;white-space:nowrap;line-height:1.5;font-variant-numeric:tabular-nums}
@@ -465,6 +474,9 @@ aside .update-app{margin-top:auto}
 .gear-picker:has(.ship-choice-grid){width:min(960px,calc(100vw - 48px))}
 .shift-max-rates,.shift-max-rates dt,.shift-max-rates dd{text-align:left}
 .shift-duration .icon-amount,.shift-cost .icon-amount{--unit-size:18px}
+.shift-timing{align-items:flex-end}
+.shift-timing .shift-duration,.shift-timing .shift-cost{display:flex;align-items:center;justify-content:flex-end;gap:4px;line-height:1.5}
+@media(max-width:500px){.shift-timing{align-items:flex-start}.shift-timing .shift-duration,.shift-timing .shift-cost{justify-content:flex-start}}
 @media(max-width:500px){.shift-max-rates>div{display:block}.shift-max-rates dd{margin:3px 0 0;text-align:left}}
 
 /* Complete research-sale alternatives, with one active plan below. */

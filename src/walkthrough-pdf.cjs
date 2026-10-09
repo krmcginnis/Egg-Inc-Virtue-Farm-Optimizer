@@ -8,7 +8,7 @@ function duration(seconds){const total=Math.max(0,Math.ceil(seconds)),d=Math.flo
 function timestamp(t,zone){return new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit',timeZoneName:'short'}).format(new Date(t*1000));}
 function waits(t){return 'Online waiting '+duration(t.onlineSeconds)+' | Offline '+duration(t.offlineSeconds)+' ('+t.offlineBreaks+' breaks)'+(t.interactionSeconds?' | Interactions '+duration(t.interactionSeconds):'')+(t.fuelSeconds?' | Fueling '+duration(t.fuelSeconds):'')+(t.sleepSeconds?' | Sleep included '+duration(t.sleepSeconds):'')+(t.siloEmptySeconds?' | Silos empty during sleep '+duration(t.siloEmptySeconds):'');}
 function switchCost(shift){return shift.hasSwitch?'Switch Cost: '+Numbers.format(shift.soulCost)+' Soul Eggs':'Starting Farm - No Switch Cost';}
-function rateLines(shift){return ['Maximum Earning Rate: '+Numbers.format(shift.maxRates.earning*3600)+' gems/hour','Maximum Shipping Rate: '+Numbers.format(shift.maxRates.shipping*3600)+' eggs/hour','Maximum Egg Laying Rate: '+Numbers.format(shift.maxRates.laying*3600)+' eggs/hour'];}
+function rateLines(shift){return ['Maximum Earning Rate: '+Numbers.format(shift.maxRates.earning*3600)+' gems/hour','Maximum Shipping Capacity: '+Numbers.format(shift.maxRates.shipping*3600)+' eggs/hour','Maximum Egg Laying Rate: '+Numbers.format(shift.maxRates.laying*3600)+' eggs/hour','Maximum Delivered Egg Rate: '+Numbers.format(shift.maxRates.delivery*3600)+' eggs/hour'];}
 async function create(raw,result){
  const summary=U.summarize(raw,result),zone=raw.plan.eventTimezone||'America/Los_Angeles',sleep=Sleep.forPlan(raw.plan,result.start,result.end),pdf=await PDFDocument.create(),normal=F.embed(pdf,fonts.regular,'VirtueSans-Regular'),bold=F.embed(pdf,fonts.bold,'VirtueSans-Bold');
  pdf.setTitle('Egg Inc. Virtue Farm Optimizer - '+result.target+' TE purchase walkthrough');pdf.setAuthor('Egg Inc. Virtue Farm Optimizer');pdf.setSubject('Shift Summaries and purchase targets between online/offline breaks');pdf.setCreator('Egg Inc. Virtue Farm Optimizer '+version);
@@ -32,7 +32,7 @@ async function create(raw,result){
   for(let i=0;i<waitLines.length;i++)draw(waitLines[i],margin+14,y+62+rows.length*24+i*12,8,normal,muted);y+=h+10;
  }
  newPage(true);
- for(const shift of summary.shifts){const rows=chipRows(shift.activities),waitHeight=(wrap(waits(shift),body-28,8).length+3)*12+8;let offset=0;
+ for(const shift of summary.shifts){const rows=chipRows(shift.activities),waitHeight=(wrap(waits(shift),body-28,8).length+rateLines(shift).length)*12+8;let offset=0;
   while(offset<rows.length){const available=bottom-y,remaining=rows.length-offset,fullHeight=62+remaining*24+waitHeight;
    if(fullHeight<=available){card(shift,rows.slice(offset),offset>0,true);break;}
    // Keep a normal card together. Split only cards taller than a fresh page.
@@ -67,9 +67,10 @@ async function create(raw,result){
      let count=0,used=rowsHeight(head);while(count<remaining-1&&used+rows[offset+count].height<=available-54){used+=rows[offset+count].height;count++;}if(count&&rows[offset+count-1].type==='tier')count--;if(count<1){newPage();guideHeader(shift,true);continue;}guideCard(step,index,head.concat(rows.slice(offset,offset+count)),footer,offset>0,false);offset+=count;newPage();guideHeader(shift,true);
     }
    }
-   if(bottom-y<82){newPage();guideHeader(shift,true);}
-   rectangle(margin,y,body,76,rgb(.89,.95,.92));draw('Shift Complete: '+timestamp(shift.end,zone),margin+14,y+10,9,bold,green);
-   rateLines(shift).forEach((value,i)=>draw(value,margin+14,y+29+i*12,8.5,normal,green));y+=86;
+   const completeHeight=40+rateLines(shift).length*12;
+   if(bottom-y<completeHeight+6){newPage();guideHeader(shift,true);}
+   rectangle(margin,y,body,completeHeight,rgb(.89,.95,.92));draw('Shift Complete: '+timestamp(shift.end,zone),margin+14,y+10,9,bold,green);
+   rateLines(shift).forEach((value,i)=>draw(value,margin+14,y+29+i*12,8.5,normal,green));y+=completeHeight+10;
   }
  }
  const shipRuns=result.actions.filter(a=>a.type==='ship-run'&&a.launches?.length);
@@ -85,7 +86,7 @@ async function create(raw,result){
    }
   }
  }
- const prepared=S.prepare(raw,{oneStartingSilo:result.initialSiloRule==='one'||result.actions.some(a=>a.initialSiloRule==='one')}),note=[(sleep?'Assumes full habitats and fixed artifacts. Sleep uses offline earnings, and production pauses after silo coverage expires. Refill before bed. Awake routine silo refills':'Assumes full habitats, fixed artifacts, and no sleep or downtime. Routine silo refills')+' are extra check-ins, excluded from earning-break counts. Follow listed fueling steps. Final ship returns do not delay departure. Use the plan as a starting point; actual results may vary.',...Model.notices(prepared.s,prepared.c)].join(' ');
+ const prepared=S.prepare(raw,{oneStartingSilo:result.initialSiloRule==='one'||result.actions.some(a=>a.initialSiloRule==='one')}),note=[(sleep?'Assumes full habitats and planned artifact sets. Sleep uses offline earnings, and production pauses after silo coverage expires. Refill before bed. Awake routine silo refills':'Assumes full habitats, planned artifact sets, and no sleep or downtime. Routine silo refills')+' are extra check-ins, excluded from earning-break counts. Follow listed fueling steps. Final ship returns do not delay departure. Use the plan as a starting point; actual results may vary.',...Model.notices(prepared.s,prepared.c)].join(' ');
  const noteHeight=wrap(note,body,8).length*12;if(y+noteHeight>bottom)newPage();paragraph(note,y,8);
  for(let i=0;i<pages.length;i++){page=pages[i];page.drawLine({start:{x:margin,y:30},end:{x:width-margin,y:30},thickness:.5,color:line});draw('Generated locally - research items in game order',margin,height-22,7,normal,muted);const footer='Page '+(i+1)+' of '+pages.length;draw(footer,width-margin-normal.widthOfTextAtSize(footer,7),height-22,7,normal,muted);}
  return pdf.save();

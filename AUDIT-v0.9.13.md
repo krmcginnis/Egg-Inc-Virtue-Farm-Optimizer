@@ -1,4 +1,49 @@
-# Egg Inc. Virtue Farm Optimizer v0.9.12 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v0.9.13 — Release Audit
+
+## v0.9.13 scope and local verification
+
+This release enables No Game Interactions During Sleep for fresh/reset farms
+with a 23:00–07:00 default. Saved explicit preferences are retained, including
+disabled sleep; older farms without a schedule still load with sleep disabled.
+The selected timezone continues to control sleep and displayed dates, while
+weekly events remain fixed to 09:00 America/Los_Angeles, following PST/PDT.
+
+Shift summaries, completion strips, and PDF exports distinguish shipping
+capacity from delivered eggs. Peak delivery is computed from the simultaneous
+laying/shipping pair in each recorded state, not from separately maximized
+capacities. Final delivery identifies its laying/shipping bottleneck. Displayed
+dates include years, alternative cards show time/shift differences from the
+fastest plan, and summary duration/cost rows align their text and artwork.
+
+Planning reports required non-Humility tank space, including any H2 fuel
+reserved by the route, rather than misleading maximum launch counts based on
+surplus starting fuel. Tank-limit/discard actions remain part of the verified
+timeline. How It Works and the user guides follow the current page flow; Help
+adds topic links and shorter line lengths. PDF assumptions refer to planned
+artifact sets.
+
+The search rules, game arithmetic, owned-gear requirements, and 90-second
+budget are unchanged. Two supplied automatic plans and a user-defined plan
+strictly replay with unchanged finish timestamps and final rates. The apparent
+delivery mismatch was shipping capacity exceeding egg laying, not a solver
+calculation error. The independent calendar/rate/price checks described during
+the review confirm feasible plans, not global optimality.
+
+Local checks passed peak-rate regressions (including opposing gear
+bottlenecks), sleep/default/save/reset behavior, fixed-Pacific events, saved
+replay, the generated worker, and browser timeline rendering. Chromium review
+found no horizontal overflow at 1,000–1,440 px; summary alignment matched at
+1,000, 1,440, and 1,920 px. Supplied plans saved/reloaded successfully. Updated
+PDF exports were rendered and checked for text clipping and footer overlap.
+Private account files and review outputs remain outside tracked source.
+
+Release preparation reruns release-state, publish-preparation, build, worker,
+sleep/date, rate, and browser checks. Native Windows solver/updater/package/
+launch checks and public-feed verification run in the publication workflow;
+their accepted result will be recorded after completion. Earlier game-model
+and release evidence is retained below as historical validation.
+
+## Inherited v0.9.12 release audit
 
 ## v0.9.12 scope
 

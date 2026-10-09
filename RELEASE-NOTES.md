@@ -1,3 +1,16 @@
+# v0.9.13
+
+- Align shift durations, Truth Egg gains, and Soul Egg costs with their icons and summary dates.
+- Distinguish shipping capacity from delivered eggs in shift summaries, completion strips, and PDFs. Show the peak delivered-egg rate and final laying/shipping bottleneck; replayed plan times are unchanged.
+- Replace misleading ship tank maximum estimates with required non-Humility tank space and a notice when surplus fuel needs to be discarded.
+- Include years in displayed plan dates and show extra time and shift differences on alternative-plan cards.
+- Add topic links and narrower paragraphs to How It Works. Describe PDF assumptions as planned artifact sets.
+- Remove the paragraph below Sleep Start and Wake Time in Planning. Keep sleep behavior explained on How It Works.
+- Check No Game Interactions During Sleep for new farms and Start from Scratch, with a 23:00–07:00 default. Retain saved preferences and older timelines without sleep.
+- Rewrite How It Works and the current user guides around the Account → Virtue Farm → Planning flow. Correct stale sleep, timezone, route, and saved-plan descriptions, and clarify target TE, silo coverage, and what replay validation checks.
+- Replace references to removed controls and describe results as the fastest complete plans found. The solver's search rules and time budget are unchanged.
+- Install through Update App → Update & Restart. Existing saved sleep preferences are retained; new farms start with sleep enabled.
+
 # v0.9.12
 
 - Fix Monday double earnings and Friday research sales to 09:00 America/Los_Angeles, following PST/PDT. The selected Sleep & Display Timezone continues to control sleep and displayed dates.

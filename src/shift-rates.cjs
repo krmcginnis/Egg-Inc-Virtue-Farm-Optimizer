@@ -6,13 +6,14 @@ const S=require('./simulator.cjs');
 function attach(shifts,actions,initial,c){
  let state=S.clone(initial),farmRates=S.stats(state,c);
  for(const shift of shifts){
-  const peak={earning:0,shipping:0,laying:0};
+  const peak={earning:0,shipping:0,laying:0,delivery:0};
   function include(start,end=start){
    let multiplier=S.at(c,start).earnings;
    for(const event of c.calendar)if(event.t>start&&event.t<end)multiplier=Math.max(multiplier,event.earnings);
    peak.earning=Math.max(peak.earning,farmRates.earning*multiplier);
    peak.shipping=Math.max(peak.shipping,farmRates.shipping);
    peak.laying=Math.max(peak.laying,farmRates.laying);
+   peak.delivery=Math.max(peak.delivery,farmRates.delivery);
   }
   for(let i=shift.firstIndex;i<=shift.lastIndex;i++){
    const action=actions[i];state.t=action.t;
