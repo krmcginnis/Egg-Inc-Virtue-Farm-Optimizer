@@ -34,7 +34,11 @@ function saleDeadline(c,count){
 function prepare(raw,route,count,options={}){
  const input={...raw,plan:{...raw.plan,solverVersion:VERSION,saleComparisonVersion:1,strategy:'user',strategyVersion:2,autoSequence:false,sequence:route}};
  const prepared=S.prepare(input,{...options,enforceOpeningCaps:false,oneStartingSilo:true}),c=prepared.c;
- c.routeResearchRule=true;c.finalCStage=c.sequence.lastIndexOf(0);c.researchDeadline=saleDeadline(c,count);
+ c.remainingPlan=raw.plan?.continuation?.version===1;
+ c.routeResearchRule=true;c.finalCStage=c.sequence.lastIndexOf(0)+(c.remainingPlan?1:0);c.researchDeadline=saleDeadline(c,count);
+ // A remaining plan may end on its current research farm, with no shifts left.
+ // Its final C can still buy paid upgrades; fresh full plans keep their separate
+ // build/delivery convention. Replay uses the same continuation rule.
  c.finalResearchStage=c.sequence.slice(0,Math.max(0,c.finalCStage)).lastIndexOf(0);c.researchSales=count;
  c.lastVisits=S.EGGS.map((_,e)=>c.sequence.lastIndexOf(e));
  return {...prepared,input};
@@ -146,7 +150,7 @@ function seedRouteUncached(initial,c,minutes,checkpoint,cache){
  try{for(let stage=initial.stage;stage<c.sequence.length;stage++){
   checkpoint();if(complete(n,c))return better(n,best)?n:best;
   const base=n.path,label=phase(n,c),first=c.sequence.slice(0,stage).every(e=>e!==n.egg);
-  if(n.egg===0&&stage<c.finalCStage&&n.t<c.researchDeadline){
+  if(n.egg===0&&stage<c.finalCStage&&n.t<c.researchDeadline&&!(c.remainingPlan&&stage===c.finalResearchStage)){
    const local=researchContext(n,c);
    if(first)n=recipe(n,local,'C1',timing.research*60,cache,checkpoint);
    if(stage===c.finalResearchStage&&n.t<c.researchDeadline)n=recipe(n,local,'C3',c.researchDeadline-n.t,cache,checkpoint);
@@ -418,7 +422,10 @@ async function visit(start,c,deadline,control){
  // Shared game-specific purchase chains are candidates on ANY entered route,
  // not a separate solver. Retain their intermediate departure points too.
  const generators=[];
- if(start.egg===0&&start.stage<c.finalCStage&&start.t<c.researchDeadline){
+ // The reference build recipes assume later physical upgrade visits. On the
+ // final C of a remaining plan, use bounded paid research traces instead;
+ // this farm may have no shifts left, and tier-unlock proposals can be costly.
+ if(start.egg===0&&start.stage<c.finalCStage&&start.t<c.researchDeadline&&!(c.remainingPlan&&start.stage===c.finalResearchStage)){
   const first=c.sequence.slice(0,start.stage).every(e=>e!==0);
   if(first)generators.push(['C1',180*60]);
   if(start.stage===c.finalResearchStage)generators.push(['C3',c.researchDeadline-start.t]);

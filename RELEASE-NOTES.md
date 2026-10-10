@@ -1,3 +1,13 @@
+# v1.0.2
+
+- Add Plan Progress: check a farm file or refresh from your account, identify repeated visits by lifetime shift count, show purchased upgrades and the next planned step, and retain the original timeline. Save Plan preserves confirmations for waits, fuel transfers, and launch batches.
+- Add Reoptimize Remaining Plan from a checked farm snapshot. Confirm already-launched missions, then search using current upgrades, gems, fuel, flights, target, sleep, timezone, and the unused shift budget. Compare with the original route retimed from the same farm, keep or apply the proposal, and return to the previous plan later.
+- Support final research purchases on remaining plans with no shifts left, using bounded paid comparisons and retaining the replayed original route as a candidate. Fresh full-farm routes retain their existing research and final-delivery rules.
+- Explain research purchases in Summary, Quick Guide, Full Breakdown, and icon tooltips. Show immediate earnings gains, tier unlocks or prerequisite contributions, and capacity prepared for later upgrades. Expand Why These Purchases? to see research grouped under Max Tiers.
+- Preserve progress and remaining-plan comparisons through save/load, reset/undo, and app updates. Add model, browser, and standalone worker regression checks.
+- The supplied 12-shift plan still reaches 200 TE in 137d 23h 0m 51s with 18 launches. Plans remain the fastest complete results found within the search budget.
+- Install through Update App → Update & Restart.
+
 # v1.0.1
 
 - Show research names and effects when hovering over their icons in Summary, Quick Guide, and Full Breakdown. The shared artwork also provides these tooltips on research input pages.

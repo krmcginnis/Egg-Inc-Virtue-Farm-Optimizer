@@ -85,6 +85,12 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/earnings-first-research.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/plan-progress.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/plan-continuation.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/purchase-decisions.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/solver-worker.cjs

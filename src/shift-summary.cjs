@@ -3,6 +3,7 @@ const S=require('./simulator.cjs'),Artifacts=require('./artifact-optimizer.cjs')
 const G=require('./quick-guide.cjs'),Ships=require('./ships.cjs');
 const E=require('./opening-search.cjs');
 const Rates=require('./shift-rates.cjs');
+const Decisions=require('./purchase-decisions.cjs');
 const codes=['C','I','H','R','K'];
 function ranges(values){
  const result=[];for(let i=0;i<values.length;i++){const begin=values[i];let end=begin;while(values[i+1]===end+1)end=values[++i];result.push(begin===end?String(begin):begin+'–'+end);}return result.join(', ');}
@@ -15,6 +16,7 @@ function summarize(raw,result){
  else counters[s.egg]=1; // A zero-duration starting visit still counts as visit 1.
  for(let i=0;i<actions.length;i++){const a=actions[i];if(a.type==='shift'){if(g)g.end=a.t;begin(a.egg,i,a.t,a.phase);g.hasSwitch=true;g.soulCost=Number.isFinite(a.soulCost)?a.soulCost:remainingSoul-(remainingSoul-S.shiftCost({soul:remainingSoul,shiftCount:previousSwitchCount}));remainingSoul-=g.soulCost;previousSwitchCount++;}g.lastIndex=i;if(a.type==='wait'){const dt=a.end-a.t;g.end=a.end;const interaction=/^(Purchase interaction time|Switch overhead)/.test(a.reason||'');if(interaction)g.interactionSeconds+=dt;else if(a.earningsMode==='offline'){g.offlineSeconds+=dt;g.offlineBreaks++;}else {g.onlineSeconds+=dt-(a.forcedOfflineSeconds||0);g.offlineSeconds+=a.forcedOfflineSeconds||0;}if(c.sleep){g.sleepSeconds+=a.sleepSeconds||0;g.siloEmptySeconds+=a.siloEmptySeconds||0;}}else if(a.type==='fuel'){g.fuelSeconds+=a.end-a.t;if(c.sleep){g.sleepSeconds+=require('./sleep-schedule.cjs').seconds(c.sleep,a.t,a.end);g.siloEmptySeconds+=a.siloEmptySeconds||0;}g.end=Math.max(g.end,a.end);}else if(a.type==='ship-run'){for(const key of ['onlineSeconds','offlineSeconds','interactionSeconds','offlineBreaks','fuelSeconds'])g[key]+=a[key]||0;if(c.sleep){g.sleepSeconds+=a.sleepSeconds||0;g.siloEmptySeconds+=a.siloEmptySeconds||0;}g.end=Math.max(g.end,a.end);}else g.end=Math.max(g.end,a.t);}
  if(groups.length)groups.at(-1).end=result.end;
+ const decisions=Decisions.build(s,c,actions);
  let levels=s.r.slice(),eggs=s.eggs.slice(),silos=s.silos;
  for(const shift of groups){const beforeLevels=levels.slice(),beforeTE=Math.max(c.claimed[shift.egg],S.countTE(eggs[shift.egg])),research=new Map(),habs=new Map(),vehicles=new Map(),cars=new Map(),sets=[],siloStart=silos;
   for(let i=shift.firstIndex;i<=shift.lastIndex;i++){const a=actions[i];switch(a.type){
@@ -38,6 +40,12 @@ function summarize(raw,result){
   if(silos!==siloStart)shift.activities.push({kind:'physical',label:'Silos',value:siloStart+' → '+silos});
   for(const action of sets)shift.activities.push(...Artifacts.activities(action));
   shift.quickGuide=G.build(actions.slice(shift.firstIndex,shift.lastIndex+1),{start:shift.start,end:shift.end,silos:siloStart});
+  shift.purchaseDecisions=decisions.filter(p=>p.index>=shift.firstIndex&&p.index<=shift.lastIndex);
+  shift.researchDecisions=[...research].sort((a,b)=>a[0]-b[0]).map(([i,level])=>({i,label:S.D.research[i].name,value:level.from+' → '+level.to,explanation:Decisions.range(shift.purchaseDecisions,i,level.from,level.to)}));
+  for(const activity of shift.activities)if(activity.kind==='research')activity.explanation=shift.researchDecisions.find(p=>p.label===activity.label)?.explanation;
+  for(const step of shift.quickGuide)for(const activity of step.activities)if(activity.kind==='research'){
+   const [from,to]=activity.value.split(' → ').map(Number);activity.explanation=Decisions.range(shift.purchaseDecisions,activity.i,from,to);
+  }
   shift.teGained=Math.max(c.claimed[shift.egg],S.countTE(eggs[shift.egg]))-beforeTE;shift.seconds=shift.end-shift.start;
   if(!shift.activities.length)shift.activities.push({kind:'collection',label:shift.teGained?'Collect Truth Eggs':'Wait / switch'});
  }

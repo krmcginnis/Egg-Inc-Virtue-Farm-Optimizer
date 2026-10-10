@@ -1,3 +1,69 @@
+# Egg Inc. Virtue Farm Optimizer v1.0.2 — Release Audit
+
+## Release preparation
+
+v1.0.2 includes saved-plan progress tracking, remaining-plan reoptimization,
+and research purchase explanations. It is prepared locally; Windows publication
+and public-download verification remain release gates until recorded below.
+
+Progress comparison identifies repeated visits by lifetime shift count and
+checks research and permanent upgrades from a farm snapshot. Waits, fuel
+transfers, and launch batches require explicit confirmation. Original plan
+inputs, actions, and dates remain available. Confirmations are scoped to the
+selected plan and survive save/load, reset/undo, and update recovery.
+
+Remaining-plan search uses the checked farm's upgrades, gems, stored fuel,
+active flights, and remaining shift allowance. It preserves the target, per-egg
+floors, sleep, and display timezone. It starts at the current PC time without
+inventing production since the backup. Launched mission counts must be
+confirmed. The original remaining route is paid and retimed from the same
+snapshot and retained as a candidate when feasible. Proposals require explicit
+application; previous plans and comparisons remain restorable.
+
+Remaining plans may buy research on their final Curiosity visit, including when
+no shifts remain. That visit uses bounded paid comparisons rather than a build
+recipe which assumes later physical upgrade visits. Fresh full-farm planning
+retains its final-C delivery convention and normal 90-second search budget.
+The standalone worker exercises continuation replay and stop/retain behavior.
+
+Research explanations are reconstructed from each purchase's contemporary farm,
+gear, and research levels. They identify immediate earnings gains, actual tier
+unlocks, contributions toward tiers used later, and delayed physical capacity.
+Grouped ranges retain multiple roles and distinguish partially useful levels.
+Historical before/after snapshots and saved explanation text cannot fabricate
+these effects. Summary exposes research hidden by Max Tiers; Quick Guide,
+Full Breakdown, and native icon tooltips show the same effects. Explanation
+rendering does not change replay actions or the supplied 12-shift finish.
+
+The previous implementation checks passed the new model and browser suites,
+saved-plan roundtrips, progress/update recovery, partial ship launches,
+zero-shift continuations, and desktop layouts at 1,000–1,920 pixels. v1.0.2
+release checks and package results are recorded in VALIDATION.json as they
+complete. Native Windows launcher/updater and anonymous feed verification run
+in the release workflow; acceptance is recorded only after those gates pass.
+
+## Completed local v1.0.2 release checks
+
+Dependency installation and the versioned app/worker build passed. Ten local
+suites passed: release intent, safe publish preparation, progress comparison,
+remaining-plan model, purchase explanations, paired shift rates, standalone
+worker, and all three feature browser suites. Browser checks include save/load,
+reset/undo, update recovery, partial launches, repeated visits, and 1,000–1,920
+pixel desktop layouts. The supplied 12-shift plan replays with its same
+137d 23h 0m 51s finish, 200 TE target, and 18 launches.
+
+The runtime archive has 169 entries. ZIP CRC, the archive manifest and every
+runtime checksum passed. The curated source archive has 287 entries, includes
+all 21 release-workflow suites and their source dependencies, and excludes
+private input directories. Version metadata and current audit links match
+v1.0.2. The extracted source archive installs, rebuilds, and passes progress,
+continuation, purchase-explanation, and release-intent checks.
+
+## Inherited accepted release evidence
+
+The following v1.0.1 and earlier results are historical baseline evidence.
+Current v1.0.2 publication and verification are recorded separately above.
+
 # Egg Inc. Virtue Farm Optimizer v1.0.1 — Release Audit
 
 ## Accepted release status

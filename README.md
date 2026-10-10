@@ -8,6 +8,32 @@ Download [the latest app ZIP](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-
 
 Start on **Account** to load your account or saved farm. Continue to **Virtue Farm** to review upgrades, gear, fuel, and flights, then **Planning** to set your target, route, sleep hours, and missions. **Save Farm** retains settings across all three pages. **Load Plan** in the page header restores a **Save Plan** JSON, including its inputs and selected timeline, after replay validation. See **How It Works** for the model's rules and assumptions.
 
+To follow a saved plan, use **Check With Farm File** or **Refresh From Account**
+under **Plan Progress**. The app matches the current visit by lifetime shift
+count, checks research and permanent purchases, and shows the next planned step.
+Confirm waits, fuel transfers, and completed launch batches in the checklist.
+Progress checks keep the original schedule. To update it, confirm **Already
+Launched** counts for each visited Humility batch, including active and returned
+missions, then choose **Reoptimize Remaining Plan**. The search preserves your
+target, per-egg floors, sleep, timezone, and the original plan's unused shifts.
+It starts at the current PC time using the checked farm's upgrades, gems, fuel,
+and flights; no earnings or fuel are assumed since that backup.
+
+Compare the new finish with the original route retimed from the same farm, then
+choose **Use Remaining Plan** or **Keep Original Plan**. Visit labels restart
+from the current farm; the comparison shows total shifts used and remaining.
+**Return to Previous Plan** restores the original after applying a replacement.
+**Save Plan** retains progress, launch counts, the comparison, and any proposed
+replacement. These are fastest-found plans within the search budget, not a proof
+of the globally fastest sequence.
+
+In the Purchase Timeline, **Why These Purchases?** lists research effects for
+each shift, including purchases grouped under Max Tiers. Quick Guide, Full
+Breakdown, and research-icon tooltips also explain immediate earnings gains,
+tier prerequisites, and capacity for later upgrades. Effects are reconstructed
+from the planned farm and gear at purchase time; one purchase can have several
+roles. These explanations do not certify an optimal purchase order.
+
 ## Updates
 
 Earlier internal builds were renumbered from v1.7.0 to v0.8.0. If your internal

@@ -2,11 +2,11 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const O=require('../src/optimizer.cjs'),S=require('../src/simulator.cjs'),{fixture}=require('./research-sale-plans.cjs');
 async function run(){
- const raw=fixture();let result,error;
+ const raw=fixture();let result,error,continuation,progressHook;
  // A worker's self IS its global object. Supply browser APIs, without require
  // or Node modules, and execute the actual generated release bundle.
  const context={setTimeout,clearTimeout,console,structuredClone,performance,TextEncoder,TextDecoder,URL,URLSearchParams,atob,btoa,
-  crypto:require('node:crypto').webcrypto,postMessage(message){if(message.type==='result')result=message.result;if(message.type==='error')error=message.error;}};
+  crypto:require('node:crypto').webcrypto,postMessage(message){if(message.type==='result')result=message.result;if(message.type==='continuation')continuation=message.continuation;if(message.type==='error')error=message.error;if(message.type==='progress')progressHook?.(message.progress);}};
  context.self=context;vm.createContext(context);
  vm.runInContext(fs.readFileSync(require.resolve('../worker-source.js'),'utf8'),context);
  vm.runInContext(context.VIRTUE_WORKER_SOURCE,context);
@@ -43,6 +43,14 @@ async function run(){
  const short=require('./sleep-search-quality.cjs').make({route:'C R C'});Object.assign(short.plan,{strategy:'auto',strategyVersion:2,autoSequence:true,maxShifts:2});result=undefined;
  await context.onmessage({data:{config:short,options:{maxMs:8000,width:8}}});assert.equal(error,undefined);assert.equal(result.switches,2);assert.ok(Math.abs(result.seconds-172832.00099992752)<.05);
  const covered=O.replay(short,JSON.parse(JSON.stringify(result.actions)),true);assert.equal(covered.s.t,result.end);require('./sleep-schedule.cjs').validateInteractions(result.actions,covered.c);
- console.log('PASS built browser worker: standalone search bundle, checkpoint metadata, distinct plans, extra paid silos after earlier delivery visits, shared sleep timezone, earnings-only upgrade reexecution, and independent replay.');
+ // Continuations run through the same standalone bundle, including incumbent
+ // replay and cancellation, rather than a Node-only implementation.
+ const C=require('../src/plan-continuation.cjs'),fixtures=require('./plan-continuation.cjs'),partial=fixtures.partialResearch();
+ await context.onmessage({data:{continuation:partial,options:{maxMs:800,width:4}}});assert.equal(error,undefined);assert.ok(continuation?.result.validatedReplay);assert.equal(continuation.remainingShiftBudget,0);assert.equal(continuation.result.switches,0);assert.ok(continuation.result.end<=continuation.baseline.end+.01);C.verified(continuation.config,JSON.parse(JSON.stringify(continuation.result)));
+ const fleet=fixtures.ships(),index=fleet.result.actions.findIndex(a=>a.type==='ship-run');fleet.progress.launched[index]=[1];continuation=undefined;
+ await context.onmessage({data:{continuation:fleet,options:{maxMs:1200,width:4}}});assert.equal(error,undefined);assert.equal(continuation.consumedShifts,1);assert.equal(continuation.remainingLaunches,2);assert.equal(continuation.result.actions.filter(a=>a.type==='ship-run').reduce((n,a)=>n+a.count,0),2);assert.deepEqual(continuation.config.farm.shipFlights,fleet.progress.snapshot.farm.shipFlights);C.verified(continuation.config,JSON.parse(JSON.stringify(continuation.result)));
+ continuation=undefined;let stopped=false;progressHook=p=>{if(!stopped&&p.bestSeconds!==null&&Number.isFinite(p.bestSeconds)){stopped=true;context.onmessage({data:{cancel:true}});}};
+ await context.onmessage({data:{continuation:partial,options:{maxMs:5000,width:4}}});progressHook=undefined;assert.equal(error,undefined);assert.ok(stopped,'stop after a replayed candidate is available');assert.ok(continuation?.result.validatedReplay);assert.ok(continuation.result.search.retainedPlans>0);assert.ok(continuation.result.end<=continuation.baseline.end+.01);C.verified(continuation.config,JSON.parse(JSON.stringify(continuation.result)));
+ console.log('PASS built browser worker: standalone search bundle, checkpoint metadata, distinct plans, extra paid silos after earlier delivery visits, shared sleep timezone, earnings-only upgrade reexecution, remaining-plan launch/shift accounting, stop-and-keep-original-candidate, and independent replay.');
 }
 run().catch(error=>{console.error(error.message);process.exitCode=1;});

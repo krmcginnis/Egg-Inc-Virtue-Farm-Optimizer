@@ -307,6 +307,17 @@ aside>*{flex-shrink:0}
 .guide-step-heading{gap:8px 16px;flex-wrap:wrap}
 .guide-items{margin-top:12px}
 .guide-item{align-items:center}
+.guide-item.research{flex-wrap:wrap}
+.purchase-explanation{display:block;color:var(--muted);font-size:11px;line-height:1.55;margin-top:4px;overflow-wrap:anywhere}
+.guide-item .purchase-explanation{flex-basis:100%;margin:0;padding-left:30px}
+.purchase-decisions{margin:0;padding:14px 19px;border-top:1px solid var(--line)}
+.purchase-decisions>summary{padding:0;background:transparent;font-size:13px;font-weight:500}
+.purchase-decisions>ul{list-style:none;padding:0;margin:12px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.purchase-decisions li{min-width:0;padding:10px 12px;background:#1b2838;border:1px solid var(--line);border-radius:6px}
+.purchase-decision-label{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px}
+.purchase-decision-label b{color:#8bd8bb;white-space:nowrap}
+.action .purchase-explanation{margin-top:7px}
+@media(max-width:1150px){.purchase-decisions>ul{grid-template-columns:1fr}}
 .guide-break{margin-top:12px;border-radius:6px}
 .guide-step>.guide-break:first-child{margin-top:0}
 .guide-break-heading{display:flex;align-items:baseline;justify-content:space-between;gap:8px 16px;flex-wrap:wrap}
@@ -497,3 +508,24 @@ aside .update-app{margin-top:auto}
 
 #automatic-shift-limit{margin-top:12px}
 .planning-card>label{margin-top:12px}
+
+/* Snapshot-based progress keeps the original walkthrough intact. */
+.plan-progress .inline{align-items:center;margin-bottom:12px}
+.progress-status{font-weight:650;color:var(--accent)}
+.progress-next{padding:12px 15px;border:1px solid #3b5c57;background:#1b302c;border-radius:7px;margin-top:14px}
+.progress-next h3{font-size:13px;margin:0 0 8px}.progress-next p{margin:5px 0;overflow-wrap:anywhere}
+.progress-checklist ul{list-style:none;padding:0;margin:12px 0 0}
+.progress-checklist li{display:flex;align-items:center;gap:12px;border-top:1px solid var(--line);padding:10px 0;flex-wrap:wrap;font-size:12px}
+.progress-checklist li>span:first-child{flex:1 1 260px;overflow-wrap:anywhere}
+.progress-state{color:var(--muted)}.progress-checklist button{padding:7px 10px}
+.plan-progress[data-status="mismatch"] .progress-status{color:#f1ce8b}
+@media print{.plan-progress{display:none}}
+.progress-launches{margin:14px 0}
+.launch-progress-group{border-top:1px solid var(--line);padding:10px 0}
+.launch-progress-group h3{margin:0 0 8px}
+.launch-progress-group label{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:14px;margin:8px 0;font-size:12px}
+.launch-progress-group input{width:120px;flex:0 0 120px}
+.remaining-comparison th{text-align:left;width:40%;font-weight:600}
+.remaining-comparison td,.remaining-comparison th{white-space:normal;overflow-wrap:anywhere;padding:10px}
+.remaining-comparison .inline{margin-top:14px}
+@media print{.remaining-comparison{display:none}}

@@ -5,6 +5,8 @@ const upgradeStandardSequence = require("./sequence-upgrade.cjs"), Route = requi
 const Model = require("./assumption-notices.cjs");
 const Strategy = require("./planning-strategy.cjs"), SalePlans = require("./research-sale-plans.cjs");
 const ShiftPlans = require("./shift-plans.cjs");
+const Progress = require("./plan-progress.cjs");
+const Continuation = require("./plan-continuation.cjs");
 const gemsText = require("./gems-text.cjs");
 const nextAscension = require("./next-ascension.cjs"), U = require("./shift-summary.cjs"), Q = require("./walkthrough-pdf.cjs"), N = require("./export-names.cjs"), V = require("./pdf-preview.cjs"), G = require("./guide-layout.cjs");
 const S = require("./simulator.cjs"), O = require("./optimizer.cjs"), I = require("./importer.cjs"), A = require("./api.cjs"), C = require("./colleggtibles.cjs");
@@ -15,6 +17,7 @@ const EggIcons = require("./egg-icons.cjs");
 const Units = require("./unit-icons.cjs"), Zones = require("./timezones.cjs");
 const Sleep = require("./sleep-schedule.cjs");
 const ResearchIcons = require("./research-icons.cjs");
+const PurchaseDecisions = require("./purchase-decisions.cjs");
 const FarmIcons = require("./farm-icons.cjs");
 const ShipIcons = require("./ship-icons.cjs");
 const PhysicalPreview = require("./physical-preview.cjs");
@@ -28,6 +31,8 @@ const $ = (id) => document.getElementById(id), D = S.D;
 const EID_KEY = "virtue-optimizer.eid.v1", EID_NAME_KEY = "virtue-optimizer.eid-name.v1";
 let savedEid = "", savedEidName = "", eidDraft = "";
 let config = Defaults.freshFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
+let planProgress = null;
+let remainingProposal = null, continuationContext = null;
 const searchOptions = { width: 32, branches: 12, maxDepth: 1200, maxMs: 90e3 };
 let activeLoadoutTab = "current";
 const labels = { account: "Account", farm: "Virtue Farm", planning: "Planning", results: "Purchase timeline", help: "How it works" };
@@ -283,13 +288,16 @@ function markInputsChanged() {
   dirty = !!result || !!worker;
   updateArtifactNotes();
   const stale = $("plan-stale");
-  if (stale) { stale.textContent = "Inputs changed since this plan was generated. This timeline uses the saved inputs from its run. Re-run to update it."; stale.hidden = !dirty; }
+  if (stale) { stale.textContent = stalePlanText(); stale.hidden = !dirty; }
   const next = $("next-ascension");
   if (next) next.disabled = dirty || !!worker || !result || result.target >= 490;
   if (dirty && !worker && result) {
-    $("run-summary").textContent = "Inputs Changed · Re-run Planner";
+    $("run-summary").textContent = planProgress ? "Progress Check · Original Plan" : "Inputs Changed · Re-run Planner";
     $("run-detail").textContent = "The purchase timeline still uses the previous plan's inputs.";
   }
+}
+function stalePlanText() {
+  return planProgress ? "This timeline keeps the original plan's schedule. Progress uses the last checked farm snapshot. Choose Reoptimize Remaining Plan in Plan Progress to update the remaining schedule." : "Inputs changed since this plan was generated. This timeline uses the saved inputs from its run. Re-run to update it.";
 }
 function select(id, options, value) {
   const node = $(id);
@@ -500,7 +508,7 @@ function renderForm() {
   filterResearch();
   return refresh();
 }
-const unsavedInputs = /* @__PURE__ */ new Set(["eid", "file-input", "plan-file-input", "research-filter", "update-repository"]);
+const unsavedInputs = /* @__PURE__ */ new Set(["eid", "file-input", "plan-file-input", "progress-file-input", "research-filter", "update-repository"]);
 function captureDraftInputs() {
   return { version: 1, fields: Object.fromEntries([...document.querySelectorAll("input[id],select[id]")].filter((node) => !unsavedInputs.has(node.id) && !node.closest("dialog")).map((node) => [node.id, node.type === "checkbox" ? { checked: node.checked } : { value: NumericInput.draft(node) }])) };
 }
@@ -557,9 +565,69 @@ function currentFarmImport(backup) {
 function replaySavedResult(savedConfig, savedResult) {
   return ShiftPlans.replay(savedConfig, savedResult, (raw,plan)=>SalePlans.replay(raw,plan,replaySingleResult));
 }
+function restoredProgress(saved, raw, plan) {
+  if (!saved?.snapshot) return null;
+  try {
+    const confirmed = saved.planKey === Progress.key(plan) && Array.isArray(saved.confirmed) ? saved.confirmed : [];
+    const launched = saved.planKey === Progress.key(plan) ? saved.launched || {} : {};
+    Progress.compare(raw, plan, saved.snapshot, {confirmed,launched});
+    return {snapshot:structuredClone(saved.snapshot),confirmed,launched,planKey:Progress.key(plan)};
+  } catch { return null; }
+}
+function applyFarmImport(next, {trackOnly = false} = {}) {
+  if (trackOnly && !result) throw Error("Load a saved plan before checking its progress.");
+  if (result && resultConfig) {
+    const accountOnly = next.importInfo?.scope === "account";
+    if (trackOnly && accountOnly) throw Error("No current Virtue farm was found. Open the farm in the game, sync, and try again.");
+    if (!accountOnly) {
+      Progress.compare(resultConfig, result, next);
+      const previous = Number(planProgress?.snapshot?.importInfo?.timestamp), incoming = Number(next.importInfo?.timestamp);
+      if (previous > 0 && incoming > 0 && incoming < previous) throw Error("This backup is older than the last progress check. Sync the game and use a newer backup.");
+      const matched = planProgress?.planKey === Progress.key(result);
+      planProgress = {snapshot:structuredClone(next),confirmed:matched ? planProgress.confirmed : [],launched:matched ? planProgress.launched || {} : {},planKey:Progress.key(result)};
+      remainingProposal = null;
+    }
+    config = next;
+    clearTimeout(refreshTimer);
+    const valid = renderForm();
+    dirty = true;
+    renderResult();
+    markInputsChanged();
+    tab("results");
+    return {valid,tracked:!accountOnly,retained:true};
+  }
+  config = next; result = null; resultConfig = null; planProgress = null; remainingProposal = null; continuationContext = null; dirty = false;
+  clearTimeout(refreshTimer);
+  const valid = renderForm();
+  $("result-content").hidden = true; $("empty-results").hidden = false;
+  return {valid,tracked:false,retained:false};
+}
 function replaySingleResult(savedConfig, savedResult) {
   const verified = O.replay(savedConfig, savedResult.actions, true, {enforceOpeningCaps:savedResult.openingTimeLimits === true,oneStartingSilo:savedResult.initialSiloRule === "one" ? true : void 0});
   return {...savedResult,actions:S.history(verified.s),start:verified.c.start,end:verified.s.t,seconds:verified.s.t - verified.c.start,switches:verified.s.stage,soulCost:verified.s.lost,target:verified.c.target,finalTE:S.teByEgg(verified.s,verified.c),pendingTE:S.totalTE(verified.s,verified.c) - verified.c.claimedTotal,finalCash:verified.s.cash,finalStats:S.stats(verified.s,verified.c),validatedReplay:true};
+}
+function continuationRequest(start = Date.now()/1000) {
+  return {kind:"continuation",config:structuredClone(resultConfig),result:structuredClone(result),progress:structuredClone(planProgress),start};
+}
+function restoredContinuation(saved, depth = 0, raw = resultConfig) {
+  if (!saved) return null;
+  if (depth > 30 || saved.version !== 1 || !saved.parent?.config || !saved.parent.result) throw Error("Saved remaining-plan comparison is invalid.");
+  const parent = {...saved.parent,result:replaySavedResult(saved.parent.config,saved.parent.result)};
+  parent.progress = restoredProgress(saved.parent.progress,parent.config,parent.result);
+  parent.context = restoredContinuation(saved.parent.context,depth+1,parent.config);
+  const request = {config:parent.config,result:parent.result,progress:parent.progress,start:raw.plan.start};
+  const prepared = Continuation.prepare(request,{now:request.start});
+  if (JSON.stringify(prepared.config) !== JSON.stringify(raw)) throw Error("Saved remaining-plan inputs differ from their starting snapshot.");
+  const baseline = saved.baseline?.actions ? Continuation.verified(raw,saved.baseline) : null;
+  return {...saved,parent,consumedShifts:prepared.consumedShifts,totalShiftBudget:prepared.totalShiftBudget,remainingShiftBudget:prepared.remainingShiftBudget,originalEnd:prepared.originalEnd,baseline,baselineError:baseline ? "" : saved.baselineError || "The saved original-route comparison is unavailable. Check a fresh farm and reoptimize to compare again."};
+}
+function restoredProposal(saved) {
+  if (!saved) return null;
+  const request = continuationRequest(saved.request.start);
+  if (saved.sourceKey !== Continuation.sourceKey(request)) return null;
+  const prepared = Continuation.prepare(request,{now:request.start});
+  if (JSON.stringify(prepared.config) !== JSON.stringify(saved.config)) throw Error("Saved remaining-plan inputs differ from the checked snapshot.");
+  return {...saved,...prepared,report:undefined,request,result:Continuation.verified(saved.config,saved.result),baseline:saved.baseline ? Continuation.verified(saved.config,saved.baseline) : null};
 }
 function restoreUpdateSnapshot(saved, message = "Session restored.") {
   let recoveredResult = null, replayError = "";
@@ -570,6 +638,9 @@ function restoreUpdateSnapshot(saved, message = "Session restored.") {
   config = saved.config;
   result = recoveredResult;
   resultConfig = result ? saved.resultConfig : null;
+  planProgress = result ? restoredProgress(saved.planProgress, resultConfig, result) : null;
+  continuationContext = null; remainingProposal = null;
+  if(result)try{continuationContext=restoredContinuation(saved.continuationContext);remainingProposal=restoredProposal(saved.remainingProposal);}catch(e){replayError+=" "+e.message;}
   dirty = !!result && (saved.dirty || saved.interrupted);
   loadEpoch++;
   clearTimeout(refreshTimer);
@@ -996,25 +1067,149 @@ function actionLabel(a) {
     case "ship-visit":
       return "H" + a.visit + " \xB7 No Ships Planned";
     case "ship-run":
-      return "Launch " + a.count + " planned ships";
+      return "Launch " + a.count + " planned ship" + (a.count === 1 ? "" : "s");
     case "wait":
       return (a.sleepSeconds >= a.end-a.t-0.01 ? "Sleep for " : a.sleepSeconds > 0 ? "Wait (includes sleep) for " : a.earningsMode === "offline" ? "Go offline for " : "Wait online for ") + duration(a.end - a.t);
     default:
       return a.type;
   }
 }
+function purchaseExplanation(host, explanation) {
+  if (!explanation) return;
+  const note = el("small", explanation.text, "purchase-explanation");
+  note.dataset.reasons = [...new Set(explanation.reasons.map(r => r.kind))].join(" ");
+  host.append(note);
+  const icon = host.querySelector(".research-icon");
+  if (icon) icon.title += "\n\n" + explanation.text;
+}
+function renderLaunchProgress(card, report, confirmed, reviewedCounts) {
+  const rows=report.rows.filter(row=>row.action.type==='ship-run'&&row.stage<=report.stage);
+  if(!rows.length)return;
+  const details=el("details",undefined,"progress-launches");details.append(el("summary","Already Launched"),el("p","Enter launches already made in each visited Humility batch, including active flights and missions that have returned. A backup cannot confirm the whole launch history. Confirm zero if the batch has not started.","hint"));
+  for(const row of rows){
+    const a=row.action,group=el("div",undefined,"launch-progress-group"),title=el("h3",a.phase||"H"+(a.visit||1));
+    group.dataset.launchIndex=row.index;
+    const counts=confirmed.includes(row.index)?a.batches.map(b=>b.count):reviewedCounts[row.index];
+    group.append(title,el("p",row.launchesReviewed?"Counts confirmed · "+row.remainingLaunches+" launch"+(row.remainingLaunches===1?"":"es")+" remaining":"Launch counts need confirmation before reoptimizing.","hint"));
+    const inputs=[];
+    for(const [i,batch] of a.batches.entries()){
+      const label=el("label",batch.label+" · "+batch.count+" planned"),input=el("input");input.type="number";input.min=0;input.max=batch.count;input.step=1;input.value=counts?.[i]??0;input.disabled=!!worker||!!importingBackup;input.dataset.launchInput="";input.setAttribute("aria-label",(a.phase||"H"+(a.visit||1))+" "+batch.label+" already launched");label.append(input);group.append(label);inputs.push(input);
+    }
+    const save=el("button","Confirm Launch Counts","secondary");save.type="button";save.disabled=!!worker||!!importingBackup;
+    save.onclick=()=>{
+      try{
+        const launched=inputs.map((input,i)=>{if(input.value.trim()==="")throw Error("Enter an already-launched count, including zero for an unstarted batch.");return S.number(input.value,"Already-launched count",0,a.batches[i].count,true);});
+        planProgress={...planProgress,planKey:Progress.key(result),confirmed:confirmed.filter(i=>i!==row.index),launched:{...reviewedCounts,[row.index]:launched}};
+        remainingProposal=null;renderResult();$("plan-progress").querySelector(".progress-launches").open=true;$("plan-progress").querySelector(`[data-launch-index="${row.index}"] button`)?.focus({preventScroll:true});show("Launch counts confirmed. The remaining search will use the current tank fuel and flights.");
+      }catch(e){show(e.message,true);}
+    };
+    group.append(save);details.append(group);
+  }
+  card.append(details);
+}
+function renderRemainingComparison(host) {
+  if(!remainingProposal&&!continuationContext)return;
+  const proposal=remainingProposal,context=proposal||continuationContext,plan=proposal?.result||result,zone=(proposal?.config||resultConfig).plan.eventTimezone;
+  const card=el("section",undefined,"card remaining-comparison");card.id="remaining-plan-comparison";
+  card.append(el("h2",proposal?"Remaining Plan Comparison":"Remaining Plan"));
+  card.append(el("p",context.consumedShifts+" shift"+(context.consumedShifts===1?"":"s")+" already used · "+plan.switches+" further shift"+(plan.switches===1?"":"s")+" in this plan · "+(context.consumedShifts+plan.switches)+" / "+context.totalShiftBudget+" total shifts.","hint"));
+  card.append(el("p","This timeline starts from the checked farm values at "+timestamp(plan.start,zone)+". Visit labels restart from the current farm. Sleep, timezone, TE target, and per-Virtue goals are retained.","hint"));
+  const table=el("table"),body=el("tbody");
+  for(const [label,end] of [["Original saved finish",context.originalEnd],["Original route from this farm",context.baseline?.end],["Reoptimized remaining plan",plan.end]]){
+    const tr=el("tr");tr.append(el("th",label),el("td",end===undefined?"Could not complete this route from the snapshot":timestamp(end,zone)));body.append(tr);
+  }
+  table.append(body);card.append(table);
+  if(context.baseline){const seconds=context.baseline.end-plan.end;card.append(el("p",Math.abs(seconds)<.01?"Same finish time as the retimed original route.":exactDuration(Math.abs(seconds))+(seconds>0?" earlier":" later")+" than the original route from the same starting farm."));}
+  else if(context.baselineError)card.append(el("p",context.baselineError,"hint"));
+  const controls=el("div",undefined,"inline");
+  if(proposal){
+    const use=el("button","Use Remaining Plan");use.id="use-remaining-plan";
+    const matches=proposal.sourceKey===Continuation.sourceKey(continuationRequest(proposal.request.start));use.disabled=!!worker||!!importingBackup||!matches;
+    if(!matches)card.append(el("p","The selected plan or checked progress changed. Run the remaining search again before using this result.","hint"));
+    use.onclick=()=>{
+      try{
+        if(proposal.sourceKey!==Continuation.sourceKey(continuationRequest(proposal.request.start)))throw Error("The checked plan changed. Run the remaining search again.");
+        const checked=Continuation.verified(proposal.config,proposal.result);
+        const parent={config:structuredClone(resultConfig),result:structuredClone(result),progress:structuredClone(planProgress),context:structuredClone(continuationContext)};
+        continuationContext={version:1,parent,consumedShifts:proposal.consumedShifts,totalShiftBudget:proposal.totalShiftBudget,remainingShiftBudget:proposal.remainingShiftBudget,originalEnd:proposal.originalEnd,baseline:proposal.baseline,baselineError:proposal.baselineError};
+        config=structuredClone(proposal.config);resultConfig=structuredClone(proposal.config);result=checked;planProgress=null;remainingProposal=null;dirty=false;
+        renderForm();renderResult();tab("results");show("Remaining plan applied. Its purchases, fuel, flights, sleep, target, and remaining shift budget passed replay validation.");
+      }catch(e){show(e.message,true);}
+    };
+    const keep=el("button","Keep Original Plan","secondary");keep.id="keep-original-plan";keep.disabled=!!worker||!!importingBackup;keep.onclick=()=>{remainingProposal=null;renderResult();};controls.append(use,keep);
+  }else{
+    const back=el("button","Return to Previous Plan","secondary");back.id="return-previous-plan";back.disabled=!!worker||!!importingBackup;
+    back.onclick=()=>{try{const parent=continuationContext.parent,recovered=replaySavedResult(parent.config,parent.result);result=recovered;resultConfig=structuredClone(parent.config);planProgress=restoredProgress(parent.progress,resultConfig,result);config=structuredClone(planProgress?.snapshot||resultConfig);continuationContext=parent.context;remainingProposal=null;dirty=!!planProgress;renderForm();renderResult();tab("results");show("Previous plan and its checked snapshot restored.");}catch(e){show("Could not restore the previous plan: "+e.message,true);}};controls.append(back);
+  }
+  card.append(controls);host.append(card);
+}
+function renderPlanProgress(host, summary) {
+  const card=el("section",undefined,"card plan-progress"),heading=el("h2","Plan Progress"),controls=el("div",undefined,"inline");
+  card.id="plan-progress"; card.setAttribute("aria-labelledby","plan-progress-heading");heading.id="plan-progress-heading";
+  const file=el("input");file.type="file";file.accept=".json";file.hidden=true;file.id="progress-file-input";
+  const load=el("button","Check With Farm File","secondary");load.id="check-plan-file";load.disabled=!!worker||!!importingBackup;
+  load.onclick=()=>file.click();file.onchange=e=>{if(e.target.files[0])loadFile(e.target.files[0],{trackOnly:true});e.target.value="";};
+  const sync=el("button","Refresh From Account","secondary");sync.id="check-plan-account";sync.disabled=!!worker||!!importingBackup;
+  sync.onclick=()=>{if(!eidForSync()){ $("eid").focus();show("Enter your Egg Inc. ID in the sidebar and press Enter to check this plan against your current farm.");return;}loadEidData();};
+  controls.append(load,sync);card.append(heading,controls,file);
+  card.append(el("p","Check a current Virtue farm against this plan. Research and permanent upgrades are checked from the snapshot. Confirm waits, fuel transfers, and completed launch batches yourself. The original schedule stays visible.","hint"));
+  if(!planProgress){card.append(el("p","Load a current farm file or refresh your account to see your current visit and next step.","hint"));host.append(card);return;}
+  const confirmed=planProgress.planKey===Progress.key(result)?planProgress.confirmed:[];
+  const launched=planProgress.planKey===Progress.key(result)?planProgress.launched||{}:{};
+  let report;try{report=Progress.compare(resultConfig,result,planProgress.snapshot,{confirmed,launched});}catch(e){card.append(el("p","This comparison needs a new farm snapshot: "+e.message,"notice error"));host.append(card);return;}
+  card.dataset.status=report.status;
+  card.append(el("p",report.time?"Snapshot: "+timestamp(report.time,resultConfig.plan.eventTimezone):"Snapshot time not supplied.","hint"));
+  const status=el("p",undefined,"progress-status");status.id="plan-progress-status";status.setAttribute("role","status");
+  const arrival=result.actions.filter(a=>a.type==='shift')[report.stage-1];
+  const visit=report.stage===0?summary.shifts.find(s=>!s.hasSwitch&&s.egg===report.egg):summary.shifts.find(s=>s.firstIndex===result.actions.indexOf(arrival));
+  status.textContent=report.status==='matched'?(visit?.phase||S.NAME[report.egg])+" · "+S.NAME[report.egg]+" · "+report.stage+" new shift"+(report.stage===1?"":"s")+" used":report.status==='claimed-target'?"Target already claimed; this is a new ascension.":"Snapshot does not match this plan's current visit.";
+  card.append(status,el("p",report.confirmedPurchases+" / "+report.purchaseCount+" planned purchases present in the snapshot · "+report.totalTE+" / "+report.target+" TE available (claimed + pending).","hint"));
+  if(report.targetReached)card.append(el("p","The TE target is available. Verify any remaining required steps before ascending.","hint"));
+  for(const warning of report.warnings)card.append(el("p",warning,"hint"));
+  const label=row=>row.action.type==='wait'?row.action.reason||"Wait":actionLabel(row.remainingFrom!==undefined?{...row.action,from:row.remainingFrom}:row.remainingLaunches!==undefined?{...row.action,count:row.remainingLaunches}:row.action);
+  const next=el("div",undefined,"progress-next");next.id="plan-progress-next";
+  next.append(el("h3","Next Planned Step"));
+  if(report.status!=='matched')next.append(el("p","Review the snapshot and the saved plan before continuing."));
+  else if(report.next){next.append(el("p",label(report.next)),el("p","Original schedule: "+timestamp(report.next.action.t,resultConfig.plan.eventTimezone)+(report.next.action.end?" → "+timestamp(report.next.action.end,resultConfig.plan.eventTimezone):""),"hint"));}
+  else next.append(el("p",report.targetReached?"Verify required steps, then claim pending Truth Eggs at ascension.":"No remaining steps in this saved timeline. Check TE progress before ascending."));
+  card.append(next);
+  if(report.status==='matched'){
+    const details=el("details",undefined,"progress-checklist");details.append(el("summary","Current Visit Checklist"));
+    const groups=new Map();
+    for(const row of report.rows.filter(r=>r.stage===report.stage&&r.action.type!=='shift'&&r.status!=='interaction'&&r.status!=='superseded')){
+      const a=row.action,k=['research','hab','vehicle','car','silo'].includes(a.type)?a.type+":"+(a.i??a.slot??'silos'):"step:"+row.index;
+      groups.set(k,row);
+    }
+    const list=el("ul");
+    for(const row of groups.values()){
+      const a=row.action,description=a.type==='research'?D.research[a.i].name+" · current "+(planProgress.snapshot.farm.research[D.research[a.i].id]||0)+" / visit target "+a.to:a.type==='silo'?"Silos · visit target "+row.siloTarget:label(row);
+      const item=el("li"),text=el("span",description),state=el("span",row.status==='present'?"Present in snapshot":row.status==='confirmed'?"Confirmed by you":row.status==='target-met'?"TE target available":"Still to check","progress-state");
+      item.dataset.progressIndex=row.index;item.append(text,state);
+      if(row.canConfirm){const button=el("button",row.status==='confirmed'?"Undo Confirmation":"Mark Done","secondary");button.type="button";button.disabled=!!worker||!!importingBackup;button.onclick=()=>{const ids=new Set(confirmed),counts={...launched};if(row.status==='confirmed'){ids.delete(row.index);delete counts[row.index];}else ids.add(row.index);planProgress={...planProgress,planKey:Progress.key(result),confirmed:[...ids],launched:counts};remainingProposal=null;renderResult();const checklist=$("plan-progress").querySelector(".progress-checklist");if(checklist)checklist.open=true;$("plan-progress").querySelector(`[data-progress-index="${row.index}"] button`)?.focus({preventScroll:true});};item.append(button);}
+      list.append(item);
+    }
+    details.append(list);card.append(details);
+    renderLaunchProgress(card,report,confirmed,launched);
+    const reopt=el("button","Reoptimize Remaining Plan");reopt.id="reoptimize-remaining";reopt.disabled=!!worker||!!importingBackup;
+    let prepared;try{prepared=Continuation.prepare(continuationRequest());}catch(e){reopt.disabled=true;card.append(el("p",e.message,"hint"));}
+    if(prepared)card.append(el("p","Search from the current PC time using the checked farm values · up to "+prepared.remainingShiftBudget+" further shift"+(prepared.remainingShiftBudget===1?"":"s")+" · "+prepared.remainingLaunches+" launch"+(prepared.remainingLaunches===1?"":"es")+" remaining. No earnings or fuel are assumed since the snapshot.","hint"));
+    reopt.onclick=()=>optimize(continuationRequest());card.append(reopt);
+  }
+  host.append(card);
+}
 function renderResult() {
   const r = result, zone = resultConfig.plan.eventTimezone, host = $("result-content"), summary = U.summarize(resultConfig, r);
   if (!worker) {
-    $("run-summary").textContent = duration(r.seconds) + " to target \xB7 " + r.switches + " switches";
-    $("run-detail").textContent = "Validated plan \xB7 " + r.pendingTE + " pending TE";
+    $("run-summary").textContent = planProgress ? "Progress Check · Original Plan" : duration(r.seconds) + " to target \xB7 " + r.switches + " switches";
+    $("run-detail").textContent = planProgress ? "The original timeline remains visible below." : "Validated plan \xB7 " + r.pendingTE + " pending TE";
   }
   result.summary = summary;
   host.replaceChildren();
   $("empty-results").hidden = true;
   host.hidden = false;
+  renderRemainingComparison(host);
   if(r.shiftPlans){
-    const choices=el("section",undefined,"card research-sale-comparison"),heading=el("h2","Plans by Shift Count"),row=el("div",undefined,"research-sale-options");
+    const choices=el("section",undefined,"card research-sale-comparison"),heading=el("h2",continuationContext?"Plans by Remaining Shift Count":"Plans by Shift Count"),row=el("div",undefined,"research-sale-options");
     const fastest=r.shiftPlans.find(entry=>entry.switches===r.recommendedSwitches)||r.shiftPlans[0];
     choices.append(heading,el("p","Up to three fastest complete plans with distinct shift counts. Finish time comes first; equal times favor fewer shifts.","hint"));
     for(const entry of r.shiftPlans){
@@ -1032,7 +1227,7 @@ function renderResult() {
     choices.append(row);host.append(choices);
   }
   const card = el("div", void 0, "card result-summary"), head = el("div", void 0, "result-header");
-  head.append(el("h2", "Target " + r.target + " TE in " + duration(r.seconds)));
+  head.append(el("h2", (planProgress ? "Original Plan · " : continuationContext ? "Remaining Plan · " : "") + "Target " + r.target + " TE in " + duration(r.seconds)));
   const tools = el("div", void 0, "inline");
   const txt = el("button", "Export Walkthrough", "secondary");
   txt.onclick = async () => {
@@ -1057,10 +1252,10 @@ function renderResult() {
   };
   txt.title = "Open a PDF with shift summaries and the quick guide in a new tab";
   const json = el("button", "Save plan", "secondary");
-  json.onclick = () => saveBlob(N.plan(resultConfig, r.seconds, r.selectedResearchSales, r.selectedSwitches), JSON.stringify({ version: 1, config: resultConfig, result: r }, null, 2));
+  json.onclick = () => saveBlob(N.plan(resultConfig, r.seconds, r.selectedResearchSales, r.selectedSwitches), JSON.stringify({ version: 1, config: resultConfig, result: r, ...(planProgress ? {progress:planProgress} : {}),...(continuationContext ? {continuation:continuationContext} : {}),...(remainingProposal ? {remainingProposal} : {}) }, null, 2));
   const expand = el("button", "Expand all", "secondary");
   expand.onclick = () => {
-    const items = [...host.querySelectorAll(".timeline-group, .full-breakdown")], open = items.some(d => !d.open);
+    const items = [...host.querySelectorAll(".timeline-group, .full-breakdown, .purchase-decisions")], open = items.some(d => !d.open);
     for (const d of items) { if (open) d.fill?.(); d.open = open; }
     expand.textContent = open ? "Collapse All" : "Expand All";
   };
@@ -1081,6 +1276,8 @@ function renderResult() {
     config.uiProvenance = {...config.uiProvenance, ...Object.fromEntries(["farm", "account", "progress", "fuel", "flights"].map(group => [group, "plan"]))};
     result = null;
     resultConfig = null;
+    planProgress = null;
+    remainingProposal = null; continuationContext = null;
     dirty = false;
     renderForm();
     $("result-content").hidden = true;
@@ -1100,14 +1297,15 @@ function renderResult() {
   const c1 = summary.shifts.find((s) => s.phase === "C1"), k1 = summary.shifts.find((s) => s.phase === "K1");
   if (c1 && k1 && r.openingTimeLimits) diagnostics.append(el("p", "Opening duration: C1 " + exactDuration(c1.seconds) + " (limit " + (resultConfig.plan.c1MaxMinutes ?? 60) + " min) \xB7 K1 " + exactDuration(k1.seconds) + " (limit " + (resultConfig.plan.k1MaxMinutes ?? 60) + " min).", "hint"));
   if (r.baselineSeconds) diagnostics.append(el("p", "No-upgrade comparison: " + duration(r.baselineSeconds) + " \u2192 " + duration(r.seconds) + ".", "hint"));
-  diagnostics.append(el("p", "Purchase paths and departure times are compared along the selected route. Saved plans never seed a search.", "hint"), el("p", "Online waits under 10 seconds are hidden; their time remains included.", "hint"));
+  diagnostics.append(el("p", "Purchase paths and departure times are compared along the selected route. Identical-input saved plans can seed a search; progress checks retain the original timeline.", "hint"), el("p", "Online waits under 10 seconds are hidden; their time remains included.", "hint"));
   card.append(diagnostics);
-  const stale = el("div", "Inputs changed since this plan was generated. This timeline uses the saved inputs from its run. Re-run to update it.", "notice stale-plan");
+  const stale = el("div", stalePlanText(), "notice stale-plan");
   stale.id = "plan-stale";
   stale.hidden = !dirty;
   stale.setAttribute("role", "status");
   card.append(stale);
   host.append(card);
+  renderPlanProgress(host, summary);
   const initial = S.prepare(resultConfig, { oneStartingSilo: r.initialSiloRule === "one" || r.actions.some((a) => a.initialSiloRule === "one") }), guidance = el("div", void 0, "model-notices");
   guidance.append(el("p", Model.maintenance(initial.s, initial.c, r.finalStats)));
   for (const message of Model.notices(initial.s, initial.c)) guidance.append(el("p", message));
@@ -1145,6 +1343,11 @@ function renderResult() {
       const chip = el("span", void 0, "activity-chip " + activity.kind);
       chip.append(activity.kind === "research" ? ResearchIcons.captionName(activity.label) : FarmIcons.activityCaption(activity));
       if (activity.value) chip.append(el("b", activity.value));
+      if (activity.explanation) {
+        chip.title = activity.explanation.text;
+        const icon = chip.querySelector(".research-icon");
+        if (icon) icon.title += "\n\n" + activity.explanation.text;
+      }
       chips.append(chip);
     }
     header.append(chips);
@@ -1163,6 +1366,17 @@ function renderResult() {
     };
     header.append(peakRates());
     group.append(header);
+    if (shift.researchDecisions.length) {
+      const why = el("details", undefined, "purchase-decisions"), list = el("ul");
+      why.append(el("summary", "Why These Purchases?"), el("p", "Effects at purchase time, using the planned farm and gear. A purchase can raise earnings, unlock research, and prepare later capacity.", "hint"));
+      for (const purchase of shift.researchDecisions) {
+        const item = el("li"), label = el("div", undefined, "purchase-decision-label");
+        label.append(ResearchIcons.caption(D.research[purchase.i].id, purchase.label), el("b", purchase.value));
+        item.dataset.researchIndex = purchase.i;
+        item.append(label); purchaseExplanation(item, purchase.explanation); list.append(item);
+      }
+      why.append(list); group.append(why);
+    }
     const guide = el("div", void 0, "quick-guide");
     guide.append(el("h3", "Quick guide"));
     if (shift.phase === "H2" && !equipActions.length) appendGear(guide,null,true);
@@ -1185,6 +1399,7 @@ function renderResult() {
           if (activity.kind === "research") row.dataset.researchIndex = activity.i;
           row.append(activity.kind === "research" ? ResearchIcons.caption(D.research[activity.i].id, activity.label) : FarmIcons.activityCaption(activity));
           if (activity.value) row.append(el("b", activity.value));
+          purchaseExplanation(row, activity.explanation);
           list.append(row);
         }
         section.append(list);
@@ -1277,6 +1492,7 @@ function renderResult() {
         detail.append(el("p", a.type === "shift" ? "Gems Reset \xB7 " + num(a.soulCost) + " Soul Eggs spent" : "Cost " + num(a.cost) + " \xB7 gems remaining " + num(a.bank)));
         detail.append(el("p", "Delivery " + num(a.before.delivery * 3600) + " \u2192 " + num(a.after.delivery * 3600) + "/hour \xB7 earnings " + num(a.after.earning * 3600) + "/hour", "delta"));
       }
+      if (a.type === "research") purchaseExplanation(detail, PurchaseDecisions.range(shift.purchaseDecisions, a.i, a.from, a.to));
       row.append(time, detail);
       fragment.append(row);
       }
@@ -1314,6 +1530,8 @@ function renderSuggestion(suggestion, runConfig = resultConfig, inputsChanged = 
     }
     config = structuredClone(suggestion.config);
     resultConfig = structuredClone(suggestion.config);
+    planProgress = null;
+    remainingProposal = null; continuationContext = null;
     result = suggestion.result;
     dirty = false;
     renderForm();
@@ -1360,16 +1578,23 @@ function busy(active) {
   if (active) $("optimize").disabled = true;
   if ($("next-ascension")) $("next-ascension").disabled = active || !!importingBackup || dirty || !result || result.target >= 490;
   for (const id of ["load-file", "load-plan", "eid"]) $(id).disabled = active || !!importingBackup;
+  for (const node of document.querySelectorAll("#check-plan-file,#check-plan-account,.progress-checklist button")) node.disabled = active || !!importingBackup;
+  for (const node of document.querySelectorAll(".progress-launches input,.progress-launches button,#keep-original-plan,#return-previous-plan")) node.disabled = active || !!importingBackup;
+  if($("reoptimize-remaining")){let unavailable=false;try{Continuation.prepare(continuationRequest());}catch{unavailable=true;}$("reoptimize-remaining").disabled=active||!!importingBackup||unavailable;}
+  if($("use-remaining-plan"))$("use-remaining-plan").disabled=active||!!importingBackup||!remainingProposal||remainingProposal.sourceKey!==Continuation.sourceKey(continuationRequest(remainingProposal.request.start));
   $("eid").setAttribute("aria-busy", String(!!importingBackup));
 }
-function optimize() {
-  if (importingBackup) return;
-  if (!refresh()) return;
-  const runConfig = structuredClone(config);
+function optimize(request) {
+  if (worker || importingBackup) return;
+  const resuming=request?.kind==="continuation";
+  let runConfig;
+  if(resuming){try{runConfig=Continuation.prepare(request).config;}catch(e){show(e.message,true);return;}}
+  else{if(!refresh())return;runConfig=structuredClone(config);delete runConfig.plan.continuation;}
+  if(remainingProposal){remainingProposal=null;renderResult();}
   $("search-limits").textContent = "Automatic purchase and departure timing · " + (runConfig.plan.autoSequence?"up to "+runConfig.plan.maxShifts+" new shifts":"entered route")+" · search budget " + exactDuration(searchOptions.maxMs / 1000) + ".";
   dirty = false;
-  if ($("plan-stale")) { $("plan-stale").textContent = "A new search is running. This timeline is the previous plan; the completed search will replace it."; $("plan-stale").hidden = false; }
-  show("Searching research orders and switch timing. You can keep using the interface.");
+  if ($("plan-stale")) { $("plan-stale").textContent = resuming ? "Searching the remaining plan from the checked snapshot. The original timeline stays available for comparison." : "A new search is running. This timeline is the previous plan; the completed search will replace it."; $("plan-stale").hidden = false; }
+  show(resuming?"Reoptimizing the remaining plan. Completed upgrades, current fuel and flights, and the remaining shift budget are retained.":"Searching research orders and switch timing. You can keep using the interface.");
   tab("results");
   busy(true);
   $("run-summary").textContent = "Searching\u2026";
@@ -1447,9 +1672,14 @@ function optimize() {
         showPlanningGuidance(data.error, true, inputsChanged);
         $("run-summary").textContent = "Planning could not finish";
         $("run-detail").textContent = "Review your target, route, and sleep settings";
-        if (data.suggestion) renderSuggestion(data.suggestion, runConfig, inputsChanged);
-            } else {
+        if (data.suggestion&&!resuming) renderSuggestion(data.suggestion, runConfig, inputsChanged);
+      } else if(resuming&&data.type==="continuation"){
+        remainingProposal={...data.continuation,request:structuredClone(request)};
+        dirty=!!result;renderResult();show("Remaining search finished. Compare the new finish with the original route from the same farm before choosing a timeline.");
+      } else {
         result = data.result;
+        planProgress = null;
+        remainingProposal = null; continuationContext = null;
         resultConfig = runConfig;
         if (!dirty) refresh();
         renderResult();
@@ -1472,9 +1702,9 @@ function optimize() {
     $("run-summary").textContent = "Worker error";
     $("run-detail").textContent = "Review inputs and try the search again";
     };
-  worker.postMessage({ config: runConfig, options: { ...searchOptions, ...(result && resultConfig ? { incumbent: { config: resultConfig, result } } : {}) } });
+  worker.postMessage(resuming?{continuation:request,options:{...searchOptions}}:{ config: runConfig, options: { ...searchOptions, ...(result && resultConfig ? { incumbent: { config: resultConfig, result } } : {}) } });
 }
-async function loadFile(file, {planOnly = false} = {}) {
+async function loadFile(file, {planOnly = false, trackOnly = false} = {}) {
   const epoch = loadEpoch;
   try {
     if (worker || importingBackup) throw Error("Stop or finish the current search or account import before loading a file.");
@@ -1484,26 +1714,41 @@ async function loadFile(file, {planOnly = false} = {}) {
     if (worker || importingBackup) throw Error("Stop or finish the current search or account import before loading a file.");
     if (planOnly && !(raw.version === 1 && raw.config && raw.result)) throw Error("Select a saved plan JSON created with Save Plan. Use Load Farm for farm inputs or a game backup.");
     if (raw.version === 1 && raw.config && raw.result) {
+      if (trackOnly) throw Error("Select a current farm file or game backup. Use Load Plan to replace the saved timeline.");
       const recovered = replaySavedResult(raw.config, raw.result);
+      const tracking = restoredProgress(raw.progress, raw.config, recovered);
       clearTimeout(refreshTimer);
-      config = raw.config;
+      config = structuredClone(tracking?.snapshot || raw.config);
       result = recovered;
       resultConfig = structuredClone(raw.config);
-      dirty = false;
-      result.summary = U.summarize(config, result);
+      planProgress = tracking;
+      continuationContext = null; remainingProposal = null;
+      let continuationNotice = "";
+      try{continuationContext=restoredContinuation(raw.continuation);remainingProposal=restoredProposal(raw.remainingProposal);}catch(e){continuationNotice=" "+e.message;}
+      dirty = !!tracking;
+      result.summary = U.summarize(resultConfig, result);
       renderForm();
       renderResult();
+      if (tracking) markInputsChanged();
       tab("results");
-      const oldLimits = result.solverVersion !== 2 && !result.openingTimeLimits && U.openingViolations(config, result).length;
-      show(oldLimits ? "Saved plan loaded and replayed. This older plan exceeds the current C1/K1 limits. Re-run the planner to enforce them." : "Saved plan loaded and replayed.", !!oldLimits);
+      const oldLimits = result.solverVersion !== 2 && !result.openingTimeLimits && U.openingViolations(resultConfig, result).length;
+      const progressNotice = (raw.progress && !tracking ? " Saved progress could not be restored; check a new farm snapshot." : "") + continuationNotice;
+      show((oldLimits ? "Saved plan loaded and replayed. This older plan exceeds the current C1/K1 limits. Re-run the planner to enforce them." : "Saved plan loaded and replayed.") + progressNotice, !!oldLimits || !!progressNotice);
           return;
     }
     const savedFarm = raw.version === 1 && raw.farm;
     const next = savedFarm ? raw : currentFarmImport(raw);
     for (const [key, length] of [["claimed", 5], ["delivered", 5], ["habs", 4], ["vehicles", 17]]) if (!Array.isArray(next.farm[key]) || next.farm[key].length !== length) throw Error("Farm file needs " + length + " " + key + " entries.");
+    if (trackOnly || !savedFarm && result) {
+      const checked = applyFarmImport(next, {trackOnly});
+      show(checked.tracked ? "Farm progress checked. Your original plan and schedule are retained." : "Account information loaded. No current Virtue farm was found; the previous plan comparison is retained.");
+      return;
+    }
     config = next;
     result = null;
     resultConfig = null;
+    planProgress = null;
+    remainingProposal = null; continuationContext = null;
     dirty = false;
     clearTimeout(refreshTimer);
     const valid = renderForm();
@@ -1554,7 +1799,7 @@ $("plan-file-input").onchange = (e) => {
 $("clear-data").onclick = () => {
   let saved;
   try { saved = gather(); } catch { saved = {...structuredClone(config), draftInputs:captureDraftInputs()}; }
-  resetSnapshot = {config:saved,result,resultConfig,dirty:dirty || !!worker && !!result,tab:document.querySelector("[data-tab].active").dataset.tab,loadoutTab:activeLoadoutTab};
+  resetSnapshot = {config:saved,result,resultConfig,planProgress,remainingProposal,continuationContext,dirty:dirty || !!worker && !!result,tab:document.querySelector("[data-tab].active").dataset.tab,loadoutTab:activeLoadoutTab};
   $("reset-undo").hidden = false;
   loadEpoch++;
   importingBackup = null;
@@ -1565,6 +1810,8 @@ $("clear-data").onclick = () => {
   config = Defaults.freshFarm();
   result = null;
   resultConfig = null;
+  planProgress = null;
+  remainingProposal = null; continuationContext = null;
   dirty = false;
   $("file-input").value = "";
   $("plan-file-input").value = "";
@@ -1583,7 +1830,7 @@ $("undo-reset").onclick = () => {
   const restoreTab = resetSnapshot.tab, restoreLoadout = resetSnapshot.loadoutTab;
   worker?.terminate(); worker = null; importingBackup = null; busy(false);
   loadEpoch++; clearTimeout(refreshTimer);
-  ({config,result,resultConfig,dirty} = resetSnapshot);
+  ({config,result,resultConfig,planProgress,remainingProposal,continuationContext,dirty} = resetSnapshot);
   resetSnapshot = null;
   $("reset-undo").hidden = true;
   renderForm();
@@ -1624,16 +1871,9 @@ async function loadEidData() {
     } catch { }
     showEidIdentity();
     const next = currentFarmImport(b);
-    config = next;
-    result = null;
-    resultConfig = null;
-    dirty = false;
-    clearTimeout(refreshTimer);
-    const valid = renderForm();
-    $("result-content").hidden = true;
-    $("empty-results").hidden = false;
+    const applied = applyFarmImport(next), valid = applied.valid;
     const message = next.importInfo.scope === "account" ? "Account information has been loaded, but no current Virtue farm was found. Your starting farm, start time, and planning goals are retained." : "Account information and the current Virtue farm have been loaded. Your planning goals are retained.";
-    show(message + (valid ? " Review backup age and assumptions before planning." : " Your draft is retained; review the marked inputs before planning."), !valid);
+    show(message + (applied.retained ? applied.tracked ? " Farm progress checked; your original plan and schedule are retained." : " Your original plan and previous progress comparison are retained." : "") + (valid ? " Review backup age and assumptions before planning." : " Your draft is retained; review the marked inputs before planning."), !valid);
   } catch (e) {
     if (epoch === loadEpoch) show(e.message, true);
   } finally {
@@ -1833,7 +2073,7 @@ document.addEventListener("change", (e) => {
   }
 });
 document.addEventListener("input", (e) => {
-  if (!e.target.matches("input,select") || unsavedInputs.has(e.target.id) || e.target.closest("#gear-picker,#date-picker")) return;
+  if (!e.target.matches("input,select") || unsavedInputs.has(e.target.id) || e.target.closest("#gear-picker,#date-picker,.progress-launches")) return;
   if (Object.values(editingGroups).some(group => group.toggles.includes(e.target.id))) return;
   if (e.target.id === "sequence" || e.target.id === "virtue") updateSequenceCount();
   const group = e.target.closest("#account-basic-fields") ? "account"
@@ -1882,7 +2122,7 @@ AppUpdates.initialize({
     let saved;
     try { saved = gather(); }
     catch { saved = {...structuredClone(config), draftInputs:captureDraftInputs()}; }
-    return {version:1,savedAt:Date.now()/1000,config:saved,result,resultConfig,dirty,interrupted:!!worker,tab:document.querySelector("[data-tab].active").dataset.tab,loadoutTab:activeLoadoutTab};
+    return {version:1,savedAt:Date.now()/1000,config:saved,result,resultConfig,planProgress,remainingProposal,continuationContext,dirty,interrupted:!!worker,tab:document.querySelector("[data-tab].active").dataset.tab,loadoutTab:activeLoadoutTab};
   },
   restore: restoreUpdateSnapshot
 });
