@@ -1,4 +1,33 @@
-# Egg Inc. Virtue Farm Optimizer v1.0.0 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.0.1 — Release Audit
+
+## Release candidate status
+
+v1.0.1 adds native desktop hover tooltips to the shared research icon renderer.
+Each tooltip shows the research name and its game effect description. This
+covers Summary, Quick Guide, Full Breakdown, and research input pages. Existing
+text labels and decorative artwork accessibility are retained. The solver,
+research data, saved-plan schema, purchase grouping, and timing are unchanged.
+
+`npm ci` and the v1.0.1 app/worker build passed. The research-artwork browser
+suite passed across replayed Summary, Quick Guide, and Full Breakdown views,
+research inputs, saved-farm roundtrips, desktop layouts, offline use, and missing
+artwork. The built app contains the research name/effect tooltip assignment.
+Release-state and publish-preparation guards also passed.
+The Windows release workflow must still pass its solver, updater, launcher,
+packaging, and anonymous public-feed checks before publication is accepted.
+The current release status is recorded in `VALIDATION.json`.
+
+The runtime ZIP contains 169 files; ZIP CRC, the archive manifest size/digest,
+and every runtime file checksum passed. The curated source ZIP contains 281
+files, including all 18 suites used by its release workflow and their
+dependencies. Version metadata, current audit links, and the compiled tooltip
+assignment match v1.0.1. Private review inputs are excluded from both archives.
+
+## Inherited v1.0.0 release evidence
+
+The following checks and publication results belong to v1.0.0. They are retained
+as baseline evidence; they are not a claim that v1.0.1 has already passed its
+release gates. The solver and model are unchanged by v1.0.1.
 
 ## Accepted release status
 

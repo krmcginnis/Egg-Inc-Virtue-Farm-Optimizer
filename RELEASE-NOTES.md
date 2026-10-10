@@ -1,3 +1,9 @@
+# v1.0.1
+
+- Show research names and effects when hovering over their icons in Summary, Quick Guide, and Full Breakdown. The shared artwork also provides these tooltips on research input pages.
+- Keep the existing plan calculations, saved-plan format, and purchase grouping.
+- Install through Update App → Update & Restart.
+
 # v1.0.0
 
 - Compare earnings-first research orders on Curiosity visits. Defer inactive capacity until departure where feasible, retain tier prerequisites and complementary production upgrades, and compare actual paid plans through the TE target.

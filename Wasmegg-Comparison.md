@@ -4,7 +4,7 @@ The game model was compared with independent Wasmegg TypeScript source at
 commit `9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67`. The app's game dataset remains
 pinned to `a089580df4cc6cce8a2f5a9a7dcf86583a2c216d`. This checks the named source
 versions, rather than the latest live website. See the
-[current release audit](AUDIT-v1.0.0.md) for verification and model limits.
+[current release audit](AUDIT-v1.0.1.md) for verification and model limits.
 
 | Independent check | Historical coverage | Result |
 | --- | ---: | --- |

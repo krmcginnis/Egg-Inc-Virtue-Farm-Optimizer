@@ -1,146 +1,114 @@
 {
-  "version": "1.0.0",
-  "date": "2026-10-09T20:20:27.928969+00:00",
-  "status": "accepted-public-release",
-  "currentAudit": "AUDIT-v1.0.0.md",
-  "published": true,
-  "nativeWindowsTested": true,
-  "pendingReleaseGates": [],
-  "localSuitesPassed": [
-    "earnings-first-research.cjs",
-    "earnings-incumbents.cjs",
-    "equipment-flow-browser.cjs",
-    "farm-artwork-browser.cjs",
-    "game-model-audit.cjs",
-    "import-account-browser.cjs",
-    "investment-search.cjs",
-    "loadout-artwork-browser.cjs",
-    "opening-discount.cjs",
-    "page-navigation-browser.cjs",
-    "physical-picker-browser.cjs",
-    "physical-preview.cjs",
-    "planning-clarity-browser.cjs",
-    "planning-controls-browser.cjs",
-    "prepare-publish.cjs",
-    "reference-math.cjs",
-    "release-state.cjs",
-    "research-artwork-browser.cjs",
-    "research-breakpoints.cjs",
-    "research-sale-plans-browser.cjs",
-    "research-sale-plans.cjs",
-    "route-solver.cjs",
-    "saved-plan-loading-browser.cjs",
-    "search-quality.cjs",
-    "shift-rates.cjs",
-    "silo-comfort.cjs",
-    "sleep-controls.cjs",
-    "sleep-schedule.cjs",
-    "sleep-search-quality.cjs",
-    "solver-worker.cjs",
-    "subscription-import.cjs",
-    "timeline-readability-browser.cjs",
-    "timezones.cjs",
-    "ui-polish-browser.cjs",
-    "update-error-browser.cjs",
-    "vehicle-presentation.cjs",
-    "visual-gear-browser.cjs"
+  "version": "1.0.1",
+  "date": "2026-10-10T01:33:25.272164+00:00",
+  "status": "local-release-candidate",
+  "currentAudit": "AUDIT-v1.0.1.md",
+  "published": false,
+  "nativeWindowsTested": false,
+  "pendingReleaseGates": [
+    "native Windows solver/updater/launcher verification",
+    "anonymous public update feed and complete asset verification"
   ],
-  "independentModel": {
-    "referenceCommit": "9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67",
-    "states": 738,
-    "researchPrices": 13980,
-    "habPrices": 228,
-    "vehiclePrices": 612,
-    "carPrices": 27,
-    "tierChecks": 41328,
-    "colleggtibleSelections": 240,
-    "shipChecks": 132,
-    "maxRelativeError": 1.784305611747559e-08,
-    "maxRelativeErrorWithoutHabRounding": 1.0198447235008816e-15,
-    "maxHabRoundingDifference": 1,
-    "isolatedCoverage": {
-      "commonResearch": 56,
-      "epicResearch": 22,
-      "artifacts": 171,
-      "stones": 30,
-      "habs": 19,
-      "vehicles": 12
+  "localSuitesPassed": [
+    "research-artwork-browser.cjs",
+    "release-state.cjs",
+    "prepare-publish.cjs"
+  ],
+  "scope": "Research icon native hover tooltips: name and effect; solver and saved-plan schema unchanged.",
+  "baselineEvidence": {
+    "version": "1.0.0",
+    "publication": {
+      "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.0",
+      "sourceCommit": "efdee7c6ab2dbcd1a7055eb0ccdb7daec70ecc64",
+      "workflowRunId": 37985709711,
+      "workflowJobId": 114007058539,
+      "workflowConclusion": "success",
+      "workflowSuitesPassed": 18,
+      "windowsPowerShellVersion": "5.1.26100.33438",
+      "nativeUpdaterAndLauncherPassed": true,
+      "anonymousWindowsFeedPassed": true,
+      "independentAnonymousDownloadsPassed": true,
+      "archiveCRCAndEveryFileChecksumPassed": true,
+      "runtimeFiles": 169,
+      "assets": [
+        {
+          "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
+          "id": 626071854,
+          "size": 8576789,
+          "digest": "sha256:bf40e6794edd9db9b106f1f1cc5f9fb783435e0aa901ced5c0801c2ca6f925c6"
+        },
+        {
+          "name": "update-manifest.json",
+          "id": 626071855,
+          "size": 239,
+          "digest": "sha256:3bd767f1d6aa5921a17b7f268b20a02a6ee76cecdc478757ba18dc2106f1e81c"
+        }
+      ],
+      "publishedAuditIsPrepublicationSnapshot": true
+    },
+    "independentModel": {
+      "referenceCommit": "9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67",
+      "states": 738,
+      "researchPrices": 13980,
+      "habPrices": 228,
+      "vehiclePrices": 612,
+      "carPrices": 27,
+      "tierChecks": 41328,
+      "colleggtibleSelections": 240,
+      "shipChecks": 132,
+      "maxRelativeError": 1.784305611747559e-08,
+      "maxRelativeErrorWithoutHabRounding": 1.0198447235008816e-15,
+      "maxHabRoundingDifference": 1,
+      "isolatedCoverage": {
+        "commonResearch": 56,
+        "epicResearch": 22,
+        "artifacts": 171,
+        "stones": 30,
+        "habs": 19,
+        "vehicles": 12
+      }
+    },
+    "compoundAndTimingAudit": {
+      "compoundResearchPrices": 186400,
+      "priceRoundingDifferences": 20465,
+      "integerPriceDifferences": 260,
+      "maxIntegerPriceDifference": 1,
+      "passiveIntegrals": 16,
+      "dstIntegrals": 2,
+      "fuelCases": 4,
+      "eventBoundaryChecks": 192
+    },
+    "suppliedPlanBenchmark": {
+      "budgetMs": 90000,
+      "elapsedMs": 93550,
+      "shifts": 12,
+      "seconds": 11919651.5115304,
+      "baselineSeconds": 11919651.511547804,
+      "meaningfulCompletionImprovement": false,
+      "finalTE": [
+        40,
+        40,
+        40,
+        40,
+        40
+      ],
+      "launches": 18,
+      "deliveryPerHour": 3044764300282032,
+      "strictReplay": true,
+      "awakeInteractions": true,
+      "unchangedResearchEquipmentAndMissions": true,
+      "researchOrderComparisons": 5
     }
   },
-  "compoundAndTimingAudit": {
-    "compoundResearchPrices": 186400,
-    "priceRoundingDifferences": 20465,
-    "integerPriceDifferences": 260,
-    "maxIntegerPriceDifference": 1,
-    "passiveIntegrals": 16,
-    "dstIntegrals": 2,
-    "fuelCases": 4,
-    "eventBoundaryChecks": 192
-  },
-  "suppliedPlanBenchmark": {
-    "budgetMs": 90000,
-    "elapsedMs": 93550,
-    "shifts": 12,
-    "seconds": 11919651.5115304,
-    "baselineSeconds": 11919651.511547804,
-    "meaningfulCompletionImprovement": false,
-    "finalTE": [
-      40,
-      40,
-      40,
-      40,
-      40
-    ],
-    "launches": 18,
-    "deliveryPerHour": 3044764300282032,
-    "strictReplay": true,
-    "awakeInteractions": true,
-    "unchangedResearchEquipmentAndMissions": true,
-    "researchOrderComparisons": 5
-  },
+  "dependencyInstallAndBuildPassed": true,
   "packages": {
+    "version": "1.0.1",
     "runtimeFiles": 169,
     "sourceFiles": 281,
     "workflowSuitesIncluded": 18,
     "crcAndEveryRuntimeChecksum": true,
     "matchingMetadataAndAuditLinks": true,
     "sourceTestDependencies": true,
-    "privateInputDirectoriesExcluded": true,
-    "sourceExtractionOfflineInstallAndBuild": true,
-    "sourceExtractionSuitesPassed": [
-      "earnings-first-research.cjs",
-      "solver-worker.cjs",
-      "release-state.cjs",
-      "prepare-publish.cjs"
-    ]
-  },
-  "publication": {
-    "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.0",
-    "sourceCommit": "efdee7c6ab2dbcd1a7055eb0ccdb7daec70ecc64",
-    "workflowRunId": 37985709711,
-    "workflowJobId": 114007058539,
-    "workflowConclusion": "success",
-    "workflowSuitesPassed": 18,
-    "windowsPowerShellVersion": "5.1.26100.33438",
-    "nativeUpdaterAndLauncherPassed": true,
-    "anonymousWindowsFeedPassed": true,
-    "independentAnonymousDownloadsPassed": true,
-    "archiveCRCAndEveryFileChecksumPassed": true,
-    "runtimeFiles": 169,
-    "assets": [
-      {
-        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
-        "id": 626071854,
-        "size": 8576789,
-        "digest": "sha256:bf40e6794edd9db9b106f1f1cc5f9fb783435e0aa901ced5c0801c2ca6f925c6"
-      },
-      {
-        "name": "update-manifest.json",
-        "id": 626071855,
-        "size": 239,
-        "digest": "sha256:3bd767f1d6aa5921a17b7f268b20a02a6ee76cecdc478757ba18dc2106f1e81c"
-      }
-    ],
-    "publishedAuditIsPrepublicationSnapshot": true
+    "privateInputDirectoriesExcluded": true
   }
 }

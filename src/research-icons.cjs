@@ -1,13 +1,17 @@
 "use strict";
 // Decorative artwork only; research IDs, input labels and calculations are retained.
 const catalog = require("../assets/brand/research-icons.json");
-const commonIds = new Map(require("./game-data.json").research.map(research => [research.name, research.id]));
+const data = require("./game-data.json");
+const commonIds = new Map(data.research.map(research => [research.name, research.id]));
+const researchById = new Map([...data.research, ...data.epic].map(research => [research.id, research]));
 function icon(id) {
   const asset = catalog.icons[id];
   if (!asset) return null;
   const image = document.createElement("span"), scale = 24 / catalog.iconSize;
   image.className = "research-icon";
   image.setAttribute("aria-hidden", "true");
+  const research = researchById.get(id);
+  if (research) image.title = research.name + "\n" + research.description;
   image.style.backgroundImage = 'url("' + catalog.asset + '")';
   image.style.backgroundSize = catalog.width * scale + "px " + catalog.height * scale + "px";
   image.style.backgroundPosition = -asset.x * scale + "px " + -asset.y * scale + "px";
