@@ -1,10 +1,40 @@
 # Egg Inc. Virtue Farm Optimizer v1.0.2 — Release Audit
 
-## Release preparation
+## Accepted v1.0.2 publication — October 9, 2026 (Pacific)
+
+v1.0.2 is published and accepted. Windows run
+[38023306042](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/38023306042)
+passed for source commit `85e1fa0c508ccc9d435538712dbf185160ba5486`.
+All 21 workflow suites passed, including the new progress, continuation, and
+purchase-explanation checks and the standalone generated worker.
+
+Native updater checks passed verified installation, invalid-archive and digest
+rejection, rollback, exact backup restoration, retained user JSON/config, and
+stage-tamper rejection. Native launcher checks passed hidden CMD launch/reuse
+from paths with spaces, successful restart, startup-failure recovery, and
+legacy-worker recovery. The anonymous update feed, complete download, and every
+file checksum passed on Windows PowerShell 5.1.26100.33438.
+
+Independent anonymous verification confirmed v1.0.2 as the latest stable
+release, downloaded both complete assets, and verified GitHub digests, manifest
+size/hash, ZIP CRC, all 169 runtime entries, every file checksum, current audit
+links, repository/version metadata, and all three new feature entry points.
+
+The accepted release is
+[v1.0.2](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.2).
+This verification record is a source-only follow-up. Published assets retain
+the prepublication audit snapshot.
+
+| Asset | ID | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Egg-Inc-Virtue-Farm-Optimizer.zip | 626972021 | 8,597,823 | `710f77ffb3555ac240abb8efa0fc94ce73af07e37107e20dcf63506a3270c515` |
+| update-manifest.json | 626972025 | 239 | `ba38e59994aa19567f460c7a1f03d7eef39d601cb48f0c97f4a8b690f4bfb1fe` |
+
+## Release preparation snapshot
 
 v1.0.2 includes saved-plan progress tracking, remaining-plan reoptimization,
-and research purchase explanations. It is prepared locally; Windows publication
-and public-download verification remain release gates until recorded below.
+and research purchase explanations. This section records the local preparation
+snapshot before the accepted publication described above.
 
 Progress comparison identifies repeated visits by lifetime shift count and
 checks research and permanent upgrades from a farm snapshot. Waits, fuel
