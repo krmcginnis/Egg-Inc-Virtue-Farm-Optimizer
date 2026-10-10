@@ -1,8 +1,8 @@
 # Egg Inc. Virtue Farm Optimizer v1.0.1 — Release Audit
 
-## Release candidate status
+## Accepted release status
 
-v1.0.1 adds native desktop hover tooltips to the shared research icon renderer.
+v1.0.1 is published and accepted. It adds native desktop hover tooltips to the shared research icon renderer.
 Each tooltip shows the research name and its game effect description. This
 covers Summary, Quick Guide, Full Breakdown, and research input pages. Existing
 text labels and decorative artwork accessibility are retained. The solver,
@@ -13,8 +13,9 @@ suite passed across replayed Summary, Quick Guide, and Full Breakdown views,
 research inputs, saved-farm roundtrips, desktop layouts, offline use, and missing
 artwork. The built app contains the research name/effect tooltip assignment.
 Release-state and publish-preparation guards also passed.
-The Windows release workflow must still pass its solver, updater, launcher,
-packaging, and anonymous public-feed checks before publication is accepted.
+The Windows release workflow passed its solver, updater, launcher, packaging,
+and anonymous public-feed checks. Independent anonymous downloads also passed
+archive and file checksum verification.
 The current release status is recorded in `VALIDATION.json`.
 
 The runtime ZIP contains 169 files; ZIP CRC, the archive manifest size/digest,
@@ -23,11 +24,38 @@ files, including all 18 suites used by its release workflow and their
 dependencies. Version metadata, current audit links, and the compiled tooltip
 assignment match v1.0.1. Private review inputs are excluded from both archives.
 
+## Accepted v1.0.1 publication — October 9, 2026
+
+Windows run [38013764440](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/38013764440)
+completed successfully for source commit `2659764b4542ef3766a69a4056c56f7e4c9d2015`.
+All 18 workflow suites passed, including solver/replay, research ordering, sleep,
+Pacific events, and the generated worker. Native updater checks passed verified
+installation, seven invalid archive cases, digest rejection, rollback, exact
+backup restoration, user JSON/config preservation, and stage-tamper rejection.
+Native launcher checks passed hidden CMD launch/reuse from paths with spaces,
+successful restart, startup-failure recovery, and legacy-worker recovery.
+
+The anonymous update feed, complete ZIP download, and every app-file checksum
+passed on Windows PowerShell 5.1.26100.33438. Independent anonymous verification
+confirmed v1.0.1 as the latest stable release, downloaded both complete assets,
+and verified GitHub digests, manifest size/hash, ZIP CRC, all 169 runtime entries,
+every file checksum, current audit links, repository/version metadata, and the
+compiled research-name/effect tooltip assignment.
+
+The accepted release is [v1.0.1](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.1).
+This is a source-only verification follow-up. Published assets retain the
+pre-publication audit snapshot; no existing assets were replaced.
+
+| Asset | ID | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Egg-Inc-Virtue-Farm-Optimizer.zip | 626692114 | 8,577,808 | `690f1db5be6f8749fba1e28b40a50acccb267707dc3682ab8adc0b39d8359b30` |
+| update-manifest.json | 626692111 | 239 | `1da33fad6510fe1b13b00ad52dbaf9b36e534ca9b35ebb31bfff19c68f4a89b9` |
+
 ## Inherited v1.0.0 release evidence
 
 The following checks and publication results belong to v1.0.0. They are retained
-as baseline evidence; they are not a claim that v1.0.1 has already passed its
-release gates. The solver and model are unchanged by v1.0.1.
+as baseline evidence. v1.0.1 acceptance is recorded separately above.
+The solver and model are unchanged by v1.0.1.
 
 ## Accepted release status
 
