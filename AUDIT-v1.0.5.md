@@ -1,5 +1,40 @@
 # Egg Inc. Virtue Farm Optimizer v1.0.5 — Release Audit
 
+## Accepted v1.0.5 publication — October 15, 2026 (Pacific)
+
+v1.0.5 is published and accepted. Windows run
+[38789659130](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/38789659130)
+passed for source commit `8cf036a6d66742b9c4bc9d839f3cf3a06c77fdc7`.
+All 22 workflow suites passed, including recorded automatic gear restoration,
+current artifact/stone ownership, retained original-route candidates, and the
+standalone generated worker. Local browser checks also passed the full
+comparison/apply/save/load/return flow. The extracted curated source installed,
+rebuilt, and passed continuation, release-intent, and staged-publishing checks.
+
+Native Windows checks verified installation, seven invalid archive cases,
+digest rejection, rollback, exact backup restoration, retained user JSON/config,
+stage tampering, hidden CMD launch/reuse from paths with spaces, successful
+restart, startup-failure recovery, and legacy-worker recovery. The anonymous
+public feed, full ZIP download, and every app-file checksum passed on Windows
+PowerShell 5.1.26100.33438.
+
+Independent anonymous public downloads verified the latest tag and reviewed
+source commit, both complete assets and GitHub digests, manifest size/hash,
+ZIP CRC, all 169 runtime entries and every file checksum, version/repository
+metadata, current audit links, and the compiled artifact recovery in both app
+and worker bundles. The supplied farm reproduction and its March 1 retained
+finish are documented in the preparation snapshot below.
+
+The accepted release is
+[v1.0.5](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.5).
+This acceptance record is a source-only follow-up. Published assets retain
+the prepublication audit snapshot.
+
+| Asset | ID | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Egg-Inc-Virtue-Farm-Optimizer.zip | 644853558 | 8,605,816 | `bc8dd7daa9c20277e1ab332921e7e29cbbb7761d49fcd8d64d71abf5cf77929a` |
+| update-manifest.json | 644853560 | 239 | `c8e22e89517c1e24a82d1c970963642ca04a5a3e6225a5607cf749bcfa8b17ee` |
+
 ## v1.0.5 release preparation — October 15, 2026
 
 Continuation previously rejected saved automatic artifact names that were not
