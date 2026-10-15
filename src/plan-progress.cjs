@@ -1,5 +1,6 @@
 'use strict';
 const S=require('./simulator.cjs');
+const Guide=require('./quick-guide.cjs');
 const manualTypes=new Set(['fuel','fuel-dump','ship-run','ship-visit','wait']);
 const interaction=a=>a.type==='wait'&&/^(Purchase interaction time|Switch overhead)/.test(a.reason||'');
 function key(result){return JSON.stringify([result.start,result.end,result.target,result.actions]);}
@@ -53,12 +54,14 @@ function compare(raw,result,current,{confirmed=[],launched={},now=Date.now()/100
    const counts=launched?.[row.index],valid=Array.isArray(counts)&&counts.length===a.batches?.length&&counts.every((n,i)=>Number.isInteger(n)&&n>=0&&n<=a.batches[i].count);
    row.launchesReviewed=valid||supplied.has(row.index);
    row.remainingLaunches=supplied.has(row.index)?0:a.count-(valid?counts.reduce((n,x)=>n+x,0):0);
+   row.remainingBatches=(a.batches||[]).map((b,i)=>({...b,count:supplied.has(row.index)?0:b.count-(valid?counts[i]:0)})).filter(b=>b.count>0);
    if(valid&&row.remainingLaunches===0)row.status='confirmed';
   }
   if(a.type==='set'&&matchedEquip&&row.stage===offset&&row.index<matchedEquip.index)row.status='superseded';
   if(a.type==='wait'&&report.targetReached&&/^(Collect .*Truth Egg|Deliver enough eggs)/.test(a.reason||''))row.status='target-met';
   row.canConfirm=manualTypes.has(a.type)&&!interaction(a)&&(row.stage===offset||a.type==='ship-run'&&row.stage<offset);
   if(a.type==='research'&&!done)row.remainingFrom=s.r[a.i];
+  if(a.type==='car'&&!done)row.remainingFromCars=s.v[a.slot].cars;
   report.rows.push(row);
  }
  // A reached visit does not prove the earlier route was followed or upgrades paid.
@@ -70,11 +73,15 @@ function compare(raw,result,current,{confirmed=[],launched={},now=Date.now()/100
   const active=report.rows.filter(row=>row.stage===offset&&row.action.type!=='shift'&&row.status!=='interaction');
   for(const [i,row] of active.entries()){
    if(['present','confirmed','superseded','target-met'].includes(row.status))continue;
-   if(row.action.type==='wait'&&['Go offline, then return to collect earnings','Accumulate cash online'].includes(row.action.reason)){
+   if(row.action.type==='wait'&&['Go offline, then return to collect earnings','Accumulate cash online','One offline break to fund a batch of purchases'].includes(row.action.reason)){
     // A funding wait needs no extra confirmation once its following purchase
     // is observed. Passive delivery/sleep waits still need checking.
-    const following=active.slice(i+1).find(r=>r.action.type!=='wait');
-    if(following&&following.status==='present'){row.status='superseded';continue;}
+    const following=[];
+    for(const next of active.slice(i+1)){
+     if(Guide.visibleWait(next.action))break;
+     if(next.action.type!=='wait')following.push(next);
+    }
+    if(following.length&&following.every(r=>['present','confirmed','superseded'].includes(r.status))){row.status='superseded';continue;}
    }
    report.next=row;break;
   }
@@ -82,4 +89,17 @@ function compare(raw,result,current,{confirmed=[],launched={},now=Date.now()/100
  }
  return report;
 }
-module.exports={compare,key,snapshot};
+function nextGroup(report,current){
+ if(report.status!=='matched'||!report.next||report.next.action.type==='shift')return null;
+ const remaining=report.rows.filter(row=>row.stage===report.stage&&row.index>=report.next.index&&!['present','confirmed','superseded','target-met'].includes(row.status));
+ const actions=remaining.map(row=>{
+  const a=row.action;
+  if(a.type==='research')return {...a,from:row.remainingFrom??a.from};
+  if(a.type==='car')return {...a,fromCars:row.remainingFromCars??a.fromCars};
+  if(a.type==='ship-run'&&row.remainingLaunches!==a.count)return {...a,count:row.remainingLaunches,batches:row.remainingBatches};
+  return a;
+ });
+ if(!actions.length)return null;
+ return Guide.build(actions,{start:actions[0].t,end:Math.max(...actions.map(a=>a.end??a.t)),silos:current.farm.silos??1})[0]||null;
+}
+module.exports={compare,key,snapshot,nextGroup};

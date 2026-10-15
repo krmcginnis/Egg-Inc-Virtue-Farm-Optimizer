@@ -108,7 +108,7 @@ const root = path.resolve(__dirname, "..");
       assert.equal(await group.locator(".guide-break").count(), pauses.length);
     }
     assert.deepEqual(await page.locator(".shift-summary").first().locator(".guide-step").first().locator("[data-research-index]").evaluateAll(nodes => nodes.map(node => Number(node.dataset.researchIndex))), [0, 1, 4]);
-    assert.ok(await page.locator(".guide-item.research").evaluateAll(nodes => nodes.every(node => { const name = node.firstElementChild.getBoundingClientRect(), level = node.lastElementChild.getBoundingClientRect(); return Math.abs((name.top + name.bottom - level.top - level.bottom) / 2) < 1; })), "research targets stay beside their names");
+    assert.ok(await page.locator(".guide-item.research").evaluateAll(nodes => nodes.every(node => { const name = node.querySelector('.research-caption').getBoundingClientRect(), level = node.querySelector('b').getBoundingClientRect(); return Math.abs((name.top + name.bottom - level.top - level.bottom) / 2) < 1; })), "research targets stay beside their names");
     assert.match(await page.locator(".shift-summary").first().locator(".guide-overhead").innerText(), /3s/);
     assert.equal(await page.locator(".shift-summary").last().locator(".guide-step-heading").count(), 0, "a wait-only shift needs no duplicate purchase heading");
     assert.deepEqual((await page.evaluate(() => VirtueApp.getResult())).actions, result.actions);

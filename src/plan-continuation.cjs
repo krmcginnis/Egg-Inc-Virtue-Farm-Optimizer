@@ -32,12 +32,28 @@ function prepare(request,{now=Date.now()/1000}={}){
  }
  const remaining=runs.filter(run=>run.remaining>0);
  if(remaining.length>2)throw Error('Use at most two remaining Humility launch visits.');
- const current=structuredClone(progress.snapshot),config={...current,plan:{...structuredClone(original.plan),start,target:result.target,solverVersion:2,strategyVersion:2,maxShifts:remainingShiftBudget,maxSwitches:remainingShiftBudget,sequence:route,autoSequence:Strategy.automatic(original.plan),ships:remaining.length?{mode:'custom-two-visits',slots:original.plan.ships?.slots??3,visits:[0,1].map(i=>({missions:remaining[i]?.missions||[]}))}:{mode:'none'},continuation:{version:1,totalShiftBudget,consumedShifts,remainingShiftBudget,snapshotTime:report.time}}};
+ const current=structuredClone(progress.snapshot),automatic=Strategy.automatic(original.plan),slots=original.plan.ships?.slots??3;
+ let launchVisits=remaining.map(run=>({missions:run.missions})),consolidatedLaunchVisits=false;
+ if(remaining.length===2&&route.filter(egg=>egg==='humility').length===1){
+  const missions=[];for(const m of remaining.flatMap(run=>run.missions)){const last=missions.at(-1);if(last?.ship===m.ship&&last.duration===m.duration)last.count+=m.count;else missions.push({...m});}
+  try{
+   Ships.prepare(current.farm,{ships:{mode:'custom-two-visits',slots,visits:[{missions},{missions:[]}]}},S.number);
+   launchVisits=[{missions}];consolidatedLaunchVisits=true;
+  }catch(e){if(!automatic)throw Error('Unlaunched ships remain from an earlier Humility visit and cannot all fit in the one remaining launch visit: '+e.message+' Add another H to the remaining route or use Automatic Planning within the remaining shift budget.');}
+ }
+ if(remaining.length&&remainingShiftBudget===0&&report.egg!==2)throw Error('Ships still need to launch, but no shifts remain to reach Humility. Review the launch counts and shift allowance.');
+ // A completed current H is not a launch opportunity when the remaining fuel
+ // must be collected on the way to the next H. Keep that empty visit explicit.
+ if(report.egg===2&&launchVisits.length===1&&remaining[0]?.stage>report.stage&&route.slice(1).includes('humility')){
+  const next=Ships.prepare(current.farm,{ships:{mode:'custom-two-visits',slots,visits:[launchVisits[0],{missions:[]}]}},S.number);
+  if(next.targets.some((amount,i)=>amount>next.stored[i]+Math.max(1,amount)*1e-12))launchVisits=[{missions:[]},launchVisits[0]];
+ }
+ const config={...current,plan:{...structuredClone(original.plan),start,target:result.target,solverVersion:2,strategyVersion:2,maxShifts:remainingShiftBudget,maxSwitches:remainingShiftBudget,sequence:route,autoSequence:automatic,ships:remaining.length?{mode:'custom-two-visits',slots,visits:[0,1].map(i=>({missions:launchVisits[i]?.missions||[]}))}:{mode:'none'},continuation:{version:1,totalShiftBudget,consumedShifts,remainingShiftBudget,snapshotTime:report.time}}};
  delete config.draftInputs;
  // Keep the exact target, floors, sleep/display zone and account/farm values.
  // No completed purchase, past income, fuel transfer or launch is simulated again.
  S.prepare(config);
- return {config,report,route,runs,remainingLaunches:remaining.reduce((n,r)=>n+r.remaining,0),totalShiftBudget,consumedShifts,remainingShiftBudget,sourceKey:sourceKey(request),originalEnd:result.end,snapshotTime:report.time};
+ return {config,report,route,runs,consolidatedLaunchVisits,remainingLaunches:remaining.reduce((n,r)=>n+r.remaining,0),totalShiftBudget,consumedShifts,remainingShiftBudget,sourceKey:sourceKey(request),originalEnd:result.end,snapshotTime:report.time};
 }
 function verified(config,result){
  return ShiftPlans.replay(config,result,(raw,plan)=>{
@@ -56,6 +72,7 @@ function baseline(prepared,{checkpoint=()=>{}}={}){
  if(runs.some(run=>run.stage<report.stage&&run.remaining>0))throw Error('An earlier visit has unlaunched ships; completing them requires a different remaining route.');
  const {s,c}=R.prepare(config,route,3);let n=s;
  const context={...c,shipReplay:true,sleepReplay:false,deferShips:true};
+ if(n.egg===2&&c.ships.mode==='custom-two-visits'&&c.ships.enabled&&c.ships.runs[0].count===0)n=Ships.launch(n,context);
  for(const row of report.rows.filter(row=>row.stage>=report.stage)){
   checkpoint();if(S.reached(n,c))break;
   const a=row.action;

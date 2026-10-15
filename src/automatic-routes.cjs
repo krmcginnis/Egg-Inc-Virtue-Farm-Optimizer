@@ -5,6 +5,9 @@ function permutations(items){if(!items.length)return [[]];return items.flatMap((
 function generate(raw){
  const ceiling=limit(raw),pool=new Map(),start=raw.farm.virtue;
  function add(codes,priority=20){const route=Route.normalize(codes,start),shifts=route.length-1;if(shifts>ceiling)return;const key=route.join(' '),old=pool.get(key);if(!old||priority<old.priority)pool.set(key,{route,shifts,priority});}
+ // A continuation's known suffix already fits its remaining shift allowance
+ // and mission/refill visits. Keep it ahead of fresh-ascension presets.
+ if(raw.plan?.continuation?.version===1&&raw.plan.sequence)add(raw.plan.sequence,-2);
  const preset=Route.normalize(undefined,start),hEnding=[...preset.slice(0,-3),'integrity','resilience','humility'];
  add(preset,0);add(hEnding,1);
  for(const [index,route] of [preset,hEnding].entries()){const alternate=route.slice(),firstC=alternate.indexOf('curiosity');if(alternate[firstC+1]==='kindness'&&alternate[firstC+2]==='integrity'){[alternate[firstC+1],alternate[firstC+2]]=[alternate[firstC+2],alternate[firstC+1]];add(alternate,1.1+index*.1);}}

@@ -758,7 +758,10 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    }
   }
  }
- if(!recommended)throw Error(entries.find(e=>e.error)?.error||'No feasible plan found within the route and search budget.');
+ if(!recommended){
+  if(raw.plan?.continuation?.version===1&&Strategy.automatic(raw.plan))throw Error('No complete remaining plan was found within the search budget. Check the farm snapshot, outstanding launches, and remaining shifts, or keep following the original plan.');
+  throw Error(entries.find(e=>e.error)?.error||'No feasible plan found within the route and search budget.');
+ }
  if(options.returnComparisons!==true){
   const top=[...byShift.values()].sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0).slice(0,3);
   if(!cancelled()){

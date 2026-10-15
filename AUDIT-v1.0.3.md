@@ -1,3 +1,66 @@
+# Egg Inc. Virtue Farm Optimizer v1.0.3 — Release Audit
+
+## Release preparation
+
+v1.0.3 contains the reviewed remaining-plan routing fix and purchase-batch
+presentation changes. Windows release and public-download checks remain gates
+until the accepted publication is recorded separately.
+
+Automatic remaining searches consider the saved remaining route before fresh
+ascension presets. Outstanding launch batches can be consolidated on the one
+remaining Humility visit only when mission-group limits and tank requirements
+fit. Mission order, outstanding counts, active flights, fuel costs, and the
+remaining shift ceiling are retained. If completed H1 leaves H2 fuel to collect,
+the empty current visit remains explicit so launches follow the required refill.
+Fixed routes that cannot accommodate their outstanding launches fail with an
+explanation. A bounded automatic miss reports remaining-search guidance.
+
+Next Planned Step shows the complete upcoming purchase batch, omits completed
+upgrades, and adjusts partial research/car level ranges from the snapshot. Its
+funding break has a large duration. An observed completed batch supersedes its
+funding wait; observing only part of a batch does not. Manual wait confirmation
+and original-plan dates remain available. New views are reconstructed from the
+saved plan and checked farm rather than trusted cached presentation data.
+
+Quick Guide and the PDF place funding waits before their dependent purchases.
+Trailing delivery waits remain standalone and fuel transfers remain after their
+setup action. The regrouping retains every raw action and every wait/fuel block
+with its original duration. Ship launch schedules, target TE, sleep, and model
+rates are unchanged by the presentation work.
+
+The implementation review passed model, route, standalone-worker, save/load,
+update-recovery, and browser checks. Desktop review covered 1,000–1,920 pixels.
+The saved 12-shift plan replays with the same 137d 23h 0m 51s finish, 200 TE target,
+and 18 launches; all 94 visible wait/fuel blocks and their total duration are
+preserved. The full 64-page PDF passed page-bound checks; rendered walkthrough
+pages and the new next-batch panel passed visual review. The synthetic export
+also confirms an 11m 31s funding break appears before its purchase batch.
+
+Current versioned build, package and release results are recorded in
+VALIDATION.json as they complete. The Windows workflow includes the new
+quick-guide-order suite. The updated bedtime test uses the next UTC bedtime
+rather than a fixed historical date.
+
+## Completed local v1.0.3 release checks
+
+Dependency installation and the versioned app/worker build passed. All 15 local
+release checks passed: release intent and safe preparation; progress and
+continuation models; quick-guide order; shift rates and vehicle presentation;
+purchase explanations; route solver and standalone worker; progress,
+continuation, timeline, research-artwork, and purchase-explanation browser flows.
+
+Both packages passed ZIP CRC, manifest size/hash, every runtime file checksum,
+metadata, current audit links, and private-input exclusions. The runtime has
+169 entries. The curated source has 288 entries, including all 22 workflow
+suites and their source dependencies. An extracted source install/build passed,
+as did its progress, continuation, guide-order, and release-intent tests.
+Native Windows and independent public-download acceptance remain pending below.
+
+## Inherited accepted release evidence
+
+The following v1.0.2 and earlier results are historical baseline evidence.
+Current v1.0.3 publication and verification are recorded separately above.
+
 # Egg Inc. Virtue Farm Optimizer v1.0.2 — Release Audit
 
 ## Accepted v1.0.2 publication — October 9, 2026 (Pacific)

@@ -514,6 +514,10 @@ aside .update-app{margin-top:auto}
 .progress-status{font-weight:650;color:var(--accent)}
 .progress-next{padding:12px 15px;border:1px solid #3b5c57;background:#1b302c;border-radius:7px;margin-top:14px}
 .progress-next h3{font-size:13px;margin:0 0 8px}.progress-next p{margin:5px 0;overflow-wrap:anywhere}
+.progress-next .guide-break-duration{font-size:28px;line-height:1.15;color:#e4f6ee}
+.progress-batch-heading{font-size:13px;margin:16px 0 4px}
+.progress-batch-items .guide-tier{margin-top:9px}
+.progress-next .guide-break{margin-top:12px}
 .progress-checklist ul{list-style:none;padding:0;margin:12px 0 0}
 .progress-checklist li{display:flex;align-items:center;gap:12px;border-top:1px solid var(--line);padding:10px 0;flex-wrap:wrap;font-size:12px}
 .progress-checklist li>span:first-child{flex:1 1 260px;overflow-wrap:anywhere}

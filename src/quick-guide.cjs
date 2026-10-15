@@ -1,6 +1,8 @@
 'use strict';
 const Artifacts=require('./artifact-optimizer.cjs'),S=require('./simulator.cjs'),Ships=require('./ships.cjs');
 // Display-only grouping. Raw actions remain the source for replay and timing.
+const interaction=a=>a.type==='wait'&&/^(Purchase interaction time|Switch overhead)/.test(a.reason||'');
+const visibleWait=a=>a.type==='wait'&&!interaction(a)&&(a.earningsMode==='offline'||a.sleepSeconds>0||a.end-a.t>=10);
 function build(actions,{start,end,silos=0}){
  const groups=[];let g,research,habs,vehicles,cars,sets,siloStart;
  function begin(time){g={start:time,purchaseEnd:time,end:time,activities:[],break:null,hiddenOnlineSeconds:0,interactionSeconds:0};research=new Map();habs=new Map();vehicles=new Map();cars=new Map();sets=new Map();siloStart=silos;}
@@ -29,6 +31,17 @@ function build(actions,{start,end,silos=0}){
    else g.hiddenOnlineSeconds+=seconds;
    break;}
  }}
- finish(end);return groups;
+ finish(end);
+ // A funding wait belongs to the purchases it precedes. Fuel collection stays
+ // after its setup action; trailing delivery waits remain standalone steps.
+ const ordered=[];let before=null;
+ for(const group of groups){
+  const after=group.break?.mode==='fuel'?group.break:null;
+  const step={...group,start:before?.start??group.start,purchaseStart:group.start,end:after?.end??group.purchaseEnd,break:before,afterBreak:after};
+  if(step.activities.length||step.break||step.afterBreak||step.purchaseEnd>step.purchaseStart)ordered.push(step);
+  before=group.break&&group.break.mode!=='fuel'?group.break:null;
+ }
+ if(before)ordered.push({start:before.start,purchaseStart:before.end,purchaseEnd:before.end,end:before.end,activities:[],break:before,afterBreak:null,hiddenOnlineSeconds:0,interactionSeconds:0});
+ return ordered;
 }
-module.exports={build};
+module.exports={build,visibleWait,interaction};

@@ -91,6 +91,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/purchase-decisions.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/quick-guide-order.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/solver-worker.cjs

@@ -1,3 +1,13 @@
+# v1.0.3
+
+- Fix remaining-plan mission routing: retain the saved route's remaining visits as the first automatic candidate; complete outstanding launches on one remaining Humility visit when their tank requirements fit, preserving mission counts and the shift allowance.
+- Keep required fuel-refill stops when H1 is finished but H2 still needs fuel. Give remaining-search guidance when no complete candidate is found, rather than reporting a rejected candidate's fixed-route error.
+- Show the full upcoming purchase batch in Next Planned Step, adjusted for upgrades already in the checked farm. Display the planned offline-break duration in large text above the purchases to make on return.
+- Place funding breaks at the beginning of the purchase groups they fund in Quick Guide and the PDF walkthrough. Keep final delivery waits separate and fuel collection after tank setup. Preserve all waits, their durations, and the underlying replay actions.
+- Add regressions for batch progress, wait ordering, leftover launches, later fuel collection, saved-route retention, and desktop layouts. Make the bedtime test independent of the current date.
+- The saved 12-shift plan still replays to 200 TE in 137d 23h 0m 51s with 18 launches.
+- Install through Update App → Update & Restart.
+
 # v1.0.2
 
 - Add Plan Progress: check a farm file or refresh from your account, identify repeated visits by lifetime shift count, show purchased upgrades and the next planned step, and retain the original timeline. Save Plan preserves confirmations for waits, fuel transfers, and launch batches.

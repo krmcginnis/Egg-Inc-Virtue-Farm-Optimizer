@@ -85,6 +85,19 @@ function backup(active=true,timestamp=start+500){return {userName:'ProgressTeste
   await page.evaluate(doc=>{globalThis.finishProgressRead=null;globalThis.pendingProgressRead=VirtueApp.loadFile({text:()=>new Promise(r=>{globalThis.finishProgressRead=()=>r(JSON.stringify(doc));})},{trackOnly:true});},snapshot(2,start+800));
   await page.click('#clear-data');await page.evaluate(async()=>{finishProgressRead();await pendingProgressRead;});assert.equal(await page.evaluate(()=>VirtueApp.getResult()),null);assert.match(await page.locator('#notice').innerText(),/Data cleared/);
   await load(saved);await check(snapshot());hold=true;const heldReset=new Promise(r=>heldArrived=r);await page.click('#check-plan-account');await heldReset;await page.click('#clear-data');hold=false;releaseHeld();await page.waitForFunction(()=>!document.getElementById('eid').disabled);assert.equal(await page.evaluate(()=>VirtueApp.getResult()),null);
+  // The next funding break includes the full on-return purchase batch and
+  // actual remaining research levels rather than a single action or date math.
+  const batchInitial=S.prepare(raw);let batchState=S.advance(batchInitial.s,batchInitial.c,batchInitial.s.t+691,'One offline break to fund a batch of purchases',true,'offline');
+  for(const i of [0,0,1])batchState=S.buy(batchState,batchInitial.c,{type:'research',i});
+  const batchDoc={version:1,config:raw,result:{...saved.result,actions:S.history(batchState),end:batchState.t,seconds:batchState.t-start}};
+  await load(batchDoc);await check(snapshot(1));
+  assert.equal(await page.locator('#plan-progress-next .guide-break-duration').innerText(),'11m 31s');
+  assert.ok(await page.locator('#plan-progress-next .guide-break-duration').evaluate(n=>parseFloat(getComputedStyle(n).fontSize)>=26));
+  assert.deepEqual(await page.locator('#plan-progress-next .guide-item.research').evaluateAll(nodes=>nodes.map(n=>[n.dataset.researchIndex,n.querySelector('b').textContent])),[['0','1 → 2'],['1','0 → 1']]);
+  const shift=page.locator('.shift-summary').first();await shift.locator(':scope>summary').click();
+  const group=shift.locator('.guide-step').first();assert.ok(await group.evaluate(n=>n.querySelector('.guide-break').compareDocumentPosition(n.querySelector('.guide-items'))&Node.DOCUMENT_POSITION_FOLLOWING));
+  const groupedSaved=await exportPlan();await load(groupedSaved);assert.equal(await page.locator('#plan-progress-next .guide-break-duration').innerText(),'11m 31s');
+  for(const width of [1920,1440,1000]){await page.setViewportSize({width,height:1000});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.locator('#plan-progress-next').screenshot({path:path.join(out,'next-batch-'+width+'.png')});}
   assert.deepEqual(errors,[]);assert.deepEqual(requestErrors,[]);
   console.log('PASS saved-plan progress browser flow: current file/account, partial research, repeated C visits, original timeline/dates, manual confirm/undo/focus, save/load/reset/update recovery, alternate isolation, malformed/stale/mismatched snapshots, no-active-farm handling, busy/reset guards, and desktop layouts.');
  }finally{releaseHeld?.();await browser?.close();await new Promise(r=>server.close(r));}

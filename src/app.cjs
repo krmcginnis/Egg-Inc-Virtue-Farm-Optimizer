@@ -1082,6 +1082,17 @@ function purchaseExplanation(host, explanation) {
   const icon = host.querySelector(".research-icon");
   if (icon) icon.title += "\n\n" + explanation.text;
 }
+function breakCard(pause, zone, sleep) {
+  const box=el("div",undefined,"guide-break "+pause.mode),heading=el("div",undefined,"guide-break-heading");
+  const resume=el("time",(Sleep.sleeping(sleep,pause.end)?"Wait Ends ":"Resume ")+timestamp(pause.end,zone,true),"guide-resume");
+  resume.dateTime=new Date(pause.end*1000).toISOString();
+  heading.append(el("b",pause.mode==="fuel"?"Fuel Collection":pause.sleepSeconds>=pause.seconds-0.01?"Sleep":pause.sleepSeconds>0?"Wait Including Sleep":pause.mode==="offline"?"Offline Break":"Online Wait"),el("strong",exactDuration(pause.seconds),"guide-break-duration"));
+  box.append(heading,resume,el("span","Starts "+timestamp(pause.start,zone)));
+  if(pause.reason)box.append(el("small",pause.reason));
+  if(pause.siloEmptySeconds>0)box.append(el("small","Production paused after silos emptied: "+exactDuration(pause.siloEmptySeconds)+"."));
+  if(pause.sleepSeconds>0)box.append(el("small","Sleep included: "+exactDuration(pause.sleepSeconds)+". Refill silos before bed."));
+  return box;
+}
 function renderLaunchProgress(card, report, confirmed, reviewedCounts) {
   const rows=report.rows.filter(row=>row.action.type==='ship-run'&&row.stage<=report.stage);
   if(!rows.length)return;
@@ -1170,7 +1181,23 @@ function renderPlanProgress(host, summary) {
   const next=el("div",undefined,"progress-next");next.id="plan-progress-next";
   next.append(el("h3","Next Planned Step"));
   if(report.status!=='matched')next.append(el("p","Review the snapshot and the saved plan before continuing."));
-  else if(report.next){next.append(el("p",label(report.next)),el("p","Original schedule: "+timestamp(report.next.action.t,resultConfig.plan.eventTimezone)+(report.next.action.end?" → "+timestamp(report.next.action.end,resultConfig.plan.eventTimezone):""),"hint"));}
+  else if(report.next){
+    const batch=Progress.nextGroup(report,planProgress.snapshot),zone=resultConfig.plan.eventTimezone;
+    next.append(el("p",label(report.next)),el("p","Original schedule: "+timestamp(report.next.action.t,zone)+(report.next.action.end?" → "+timestamp(report.next.action.end,zone):""),"hint"));
+    if(batch?.break)next.append(breakCard(batch.break,zone,Sleep.forPlan(resultConfig.plan,result.start,result.end)));
+    if(batch?.activities.length){
+      next.append(el("h4",batch.break?"On Return, Complete This Batch":"Complete This Batch","progress-batch-heading"));
+      const items=el("div",undefined,"progress-batch-items");
+      for(const tier of G.groups(batch.activities)){
+        const section=el("section",undefined,"guide-tier");section.dataset.tier=tier.tier??"other";section.append(el("h5",tier.label));
+        const list=el("ul",undefined,"guide-item-list");
+        for(const activity of tier.items){const row=el("li",undefined,"guide-item "+activity.kind);if(activity.kind==='research')row.dataset.researchIndex=activity.i;row.append(activity.kind==='research'?ResearchIcons.caption(D.research[activity.i].id,activity.label):FarmIcons.activityCaption(activity));if(activity.value)row.append(el("b",activity.value));list.append(row);}
+        section.append(list);items.append(section);
+      }
+      next.append(items);
+    }
+    if(batch?.afterBreak)next.append(breakCard(batch.afterBreak,zone,Sleep.forPlan(resultConfig.plan,result.start,result.end)));
+  }
   else next.append(el("p",report.targetReached?"Verify required steps, then claim pending Truth Eggs at ascension.":"No remaining steps in this saved timeline. Check TE progress before ascending."));
   card.append(next);
   if(report.status==='matched'){
@@ -1193,6 +1220,7 @@ function renderPlanProgress(host, summary) {
     const reopt=el("button","Reoptimize Remaining Plan");reopt.id="reoptimize-remaining";reopt.disabled=!!worker||!!importingBackup;
     let prepared;try{prepared=Continuation.prepare(continuationRequest());}catch(e){reopt.disabled=true;card.append(el("p",e.message,"hint"));}
     if(prepared)card.append(el("p","Search from the current PC time using the checked farm values · up to "+prepared.remainingShiftBudget+" further shift"+(prepared.remainingShiftBudget===1?"":"s")+" · "+prepared.remainingLaunches+" launch"+(prepared.remainingLaunches===1?"":"es")+" remaining. No earnings or fuel are assumed since the snapshot.","hint"));
+    if(prepared?.consolidatedLaunchVisits)card.append(el("p","Unlaunched ships from an earlier Humility visit are included in the remaining launch visit. All outstanding missions and their fuel costs are retained.","hint"));
     reopt.onclick=()=>optimize(continuationRequest());card.append(reopt);
   }
   host.append(card);
@@ -1384,9 +1412,10 @@ function renderResult() {
     for (const [index, step] of shift.quickGuide.entries()) {
       const block = el("section", void 0, "guide-step"), stepHead = el("div", void 0, "guide-step-heading");
       if (step.activities.length || step.shipRun) {
-        stepHead.append(el("h4", step.activities.length ? "Purchase group " + (index + 1) : "Ship launches"), el("time", timestamp(step.start, zone), "guide-start"));
+        stepHead.append(el("h4", step.shipRun ? "Ship launches" : "Purchase group " + (index + 1)), el("time", "Purchases "+timestamp(step.purchaseStart, zone), "guide-start"));
         block.append(stepHead);
       }
+      if(step.break)block.append(breakCard(step.break,zone,initial.c.sleep));
       const items = el("div", void 0, "guide-items");
       for (const action of equipActions) if (!shownGear.has(action) && action.t >= step.start && action.t <= step.purchaseEnd) { appendGear(block,action); shownGear.add(action); }
       for (const tier of G.groups(step.activities.filter(a=>a.kind !== "artifact"))) {
@@ -1421,16 +1450,7 @@ function renderResult() {
         block.append(details);
       }
       if (step.hiddenOnlineSeconds || step.interactionSeconds) block.append(el("p", [step.hiddenOnlineSeconds ? "Brief online waits included: " + exactDuration(step.hiddenOnlineSeconds) : "", step.interactionSeconds ? "Interactions: " + exactDuration(step.interactionSeconds) : ""].filter(Boolean).join(" \xB7 "), "guide-overhead"));
-      if (step.break) {
-        const pause = step.break, breakBox = el("div", void 0, "guide-break " + pause.mode), breakHeading = el("div", void 0, "guide-break-heading"), resume = el("time", (Sleep.sleeping(initial.c.sleep,pause.end) ? "Wait Ends " : "Resume ") + timestamp(pause.end, zone, true), "guide-resume");
-        resume.dateTime = new Date(pause.end * 1e3).toISOString();
-        breakHeading.append(el("b", pause.mode === "fuel" ? "Fuel Collection" : pause.sleepSeconds >= pause.seconds-0.01 ? "Sleep" : pause.sleepSeconds > 0 ? "Wait Including Sleep" : pause.mode === "offline" ? "Offline Break" : "Online Wait"), el("strong", exactDuration(pause.seconds), "guide-break-duration"));
-        breakBox.append(breakHeading, resume, el("span", "Starts " + timestamp(pause.start, zone)));
-        if (pause.reason) breakBox.append(el("small", pause.reason));
-        if (pause.siloEmptySeconds > 0) breakBox.append(el("small", "Production paused after silos emptied: " + exactDuration(pause.siloEmptySeconds) + "."));
-        if (pause.sleepSeconds > 0) breakBox.append(el("small", "Sleep included: " + exactDuration(pause.sleepSeconds) + ". Refill silos before bed."));
-        block.append(breakBox);
-      }
+      if(step.afterBreak)block.append(breakCard(step.afterBreak,zone,initial.c.sleep));
       guide.append(block);
     }
     if (equipActions.length) carriedGear = equipGear(equipActions.at(-1));

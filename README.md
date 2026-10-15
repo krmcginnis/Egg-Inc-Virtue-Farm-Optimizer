@@ -34,6 +34,13 @@ tier prerequisites, and capacity for later upgrades. Effects are reconstructed
 from the planned farm and gear at purchase time; one purchase can have several
 roles. These explanations do not certify an optimal purchase order.
 
+Next Planned Step lists the entire upcoming purchase batch using the checked
+farm's remaining research levels. Its planned break duration appears in large
+text. Funding breaks precede their purchases in Quick Guide and the exported
+walkthrough; final delivery waits appear separately. Dates and durations remain
+from the original plan until you reoptimize. Remaining mission routing preserves
+all outstanding launches, required fuel stops, and the unused shift allowance.
+
 ## Updates
 
 Earlier internal builds were renumbered from v1.7.0 to v0.8.0. If your internal

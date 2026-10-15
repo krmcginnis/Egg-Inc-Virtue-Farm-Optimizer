@@ -74,3 +74,19 @@ f.plan={target:'unfinished',ships:{mode:'bad'},sequence:[],sleep:{enabled:true,s
 f=live(raw);f.importInfo.timestamp=Infinity;assert.throws(()=>check(raw,r,f),/snapshot timestamp/);f.importInfo.timestamp=1e100;assert.throws(()=>check(raw,r,f),/snapshot timestamp/);
 const pristine=[structuredClone(raw),structuredClone(r),live(raw)];const before=JSON.stringify(pristine);check(...pristine);assert.equal(JSON.stringify(pristine),before,'comparison must not change the saved plan or snapshot');assert.notEqual(P.key(r),P.key({...r,actions:[...r.actions,{type:'wait'}]}));
 console.log('PASS snapshot progress: repeated visits, partial research, permanent upgrades, silo baseline, gear, manual waits/fuel/launches, funding waits, TE/floors, ascension/stale/mismatched backups, draft independence, and immutable inputs.');
+// The next step lists every remaining purchase funded by its preceding break.
+const fundedGroupPlan=plan([
+ {type:'wait',t:start,end:start+70,reason:'One offline break to fund a batch of purchases',earningsMode:'offline'},
+ {type:'research',i:0,from:0,to:1,t:start+70},
+ {type:'research',i:0,from:1,to:3,t:start+70},
+ {type:'research',i:1,from:0,to:2,t:start+70},
+ {type:'wait',t:start+70,end:start+170,reason:'One offline break to fund a batch of purchases',earningsMode:'offline'},
+ {type:'research',i:1,from:2,to:3,t:start+170}
+]);
+const partialBatch=live(raw);partialBatch.farm.research.comfy_nests=2;
+let batchReport=check(raw,fundedGroupPlan,partialBatch),batch=P.nextGroup(batchReport,partialBatch);
+assert.equal(batch.break.seconds,70);assert.deepEqual(batch.activities.map(a=>[a.i,a.value]),[[0,'2 → 3'],[1,'0 → 2']]);
+partialBatch.farm.research.comfy_nests=3;batchReport=check(raw,fundedGroupPlan,partialBatch);assert.equal(batchReport.next.index,0,'one completed research does not confirm a whole funded batch');
+partialBatch.farm.research.nutritional_sup=2;batchReport=check(raw,fundedGroupPlan,partialBatch);assert.equal(batchReport.next.index,4,'all purchases present supersede their funding break');batch=P.nextGroup(batchReport,partialBatch);assert.equal(batch.break.seconds,100);assert.equal(batch.activities[0].value,'2 → 3');
+batchReport=check(raw,fundedGroupPlan,live(raw),{confirmed:[0]});batch=P.nextGroup(batchReport,live(raw));assert.equal(batch.break,null);assert.equal(batch.activities.length,2);
+assert.equal(P.nextGroup({status:'mismatch'},live(raw)),null);
