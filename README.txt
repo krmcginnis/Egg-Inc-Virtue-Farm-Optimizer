@@ -186,6 +186,11 @@ internal build numbered above the current public release, extract the current
 ZIP manually; automatic updates never downgrade. Direct index.html use remains
 offline.
 
+If an older version says it cannot preserve the session for restart, save your
+farm and plan first. Choose Start from Scratch, update, then use Load Plan to
+restore the saved plan. You can also extract the latest full app ZIP and load
+your saved files there.
+
 DATA AND DEVELOPMENT
 Game data is pinned to Wasmegg commit:
   a089580df4cc6cce8a2f5a9a7dcf86583a2c216d

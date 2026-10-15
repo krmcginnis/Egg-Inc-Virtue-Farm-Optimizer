@@ -1,4 +1,42 @@
-# Egg Inc. Virtue Farm Optimizer v1.0.3 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.0.4 — Release Audit
+
+## v1.0.4 release preparation — October 15, 2026
+
+v1.0.4 contains the updater and navigation fixes described below.
+Update recovery stores the complete sanitized handoff in IndexedDB and waits
+for its transaction to commit before submitting installation. Earlier
+localStorage handoffs remain readable, and smaller sessions can fall back to
+localStorage when IndexedDB is unavailable. Restoration chooses the newest
+valid handoff and consumes it after successful recovery. Failed preservation
+blocks installation. No browser data is cleared to make room for an update.
+
+Sidebar navigation remembers separate scroll positions without rebuilding the
+timeline or closing expanded shifts. Mouse and keyboard navigation retain the
+position; loading a plan or intentionally navigating to a new result starts at
+the top. Model, search, and saved-plan calculations are unchanged.
+
+Local browser checks cover a complete plan exceeding 6 MiB, the real
+localStorage quota with filled storage, exact post-restart config/result
+equality, consumed-session cleanup, legacy handoffs, fallback storage,
+unavailable storage, aborted storage transactions, rollback/error display,
+and independent tab positions at
+1,000 and 1,440 pixels. Current release acceptance below describes the
+published v1.0.3 assets. Native v1.0.4 Windows checks and independent public
+download verification remain release gates until recorded as accepted.
+
+## Completed local v1.0.4 release checks
+
+Dependency installation and the versioned app/worker build passed. The six
+focused model/browser suites from implementation passed, and the v1.0.4 build
+passed release intent, safe staged publishing, standalone worker, oversized
+update recovery, and mouse/keyboard progress/navigation checks.
+
+Both packages passed CRC, runtime manifest size/hash, every runtime-file
+checksum, version/repository metadata, audit links, and private-input
+exclusions. The runtime has 169 entries. The curated source has 289 entries,
+including all 22 Windows workflow suites and their source dependencies.
+
+## Inherited v1.0.3 publication evidence
 
 ## Accepted v1.0.3 publication — October 15, 2026 (Pacific)
 

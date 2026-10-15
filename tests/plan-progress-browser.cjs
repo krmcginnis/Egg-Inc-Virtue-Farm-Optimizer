@@ -42,6 +42,26 @@ function backup(active=true,timestamp=start+500){return {userName:'ProgressTeste
   const state=()=>page.evaluate(()=>({config:VirtueApp.getConfig(),result:VirtueApp.getResult(),progress:document.getElementById('plan-progress').innerText}));
   await load(saved);assert.ok(await page.locator('#check-plan-file').isVisible());assert.match(await page.locator('#plan-progress').innerText(),/Load a current farm file/);
   const original=await page.evaluate(()=>VirtueApp.getResult());
+  // Each sidebar tab retains its own position without rebuilding the timeline
+  // or closing an expanded shift. Loading another plan starts at its summary.
+  for(const width of [1440,1000]){
+    await page.setViewportSize({width,height:1000});
+    await page.evaluate(()=>{document.querySelector('.shift-summary').open=true;scrollTo(0,1000);});
+    const resultScroll=await page.evaluate(()=>scrollY);assert.ok(resultScroll>200);
+    await page.click('[data-tab="farm"]');await page.evaluate(()=>scrollTo(0,800));const farmScroll=await page.evaluate(()=>scrollY);assert.ok(farmScroll>200);
+    await page.click('[data-tab="planning"]');await page.click('[data-tab="results"]');
+    assert.ok(Math.abs(await page.evaluate(()=>scrollY)-resultScroll)<2,'return to the same timeline position at '+width);
+    assert.ok(await page.locator('.shift-summary').first().evaluate(n=>n.open));
+    await page.click('[data-tab="results"]');assert.ok(Math.abs(await page.evaluate(()=>scrollY)-resultScroll)<2,'selecting the active tab preserves its position');
+    await page.locator('[data-tab="help"]').focus();await page.keyboard.press('Enter');
+    await page.locator('[data-tab="farm"]').focus();await page.keyboard.press('Enter');
+    assert.ok(Math.abs(await page.evaluate(()=>scrollY)-farmScroll)<2,'keyboard navigation restores the farm position');
+    await page.locator('[data-tab="results"]').focus();await page.keyboard.press('Enter');
+    assert.ok(Math.abs(await page.evaluate(()=>scrollY)-resultScroll)<2,'keyboard navigation restores the timeline position');
+    await load(saved);assert.equal(await page.evaluate(()=>scrollY),0,'loading a plan starts at the top');
+  }
+  await page.setViewportSize({width:1440,height:1000});
+  console.log('PASS mouse and keyboard tab navigation retains separate scroll positions and open shifts at 1440/1000px; a newly loaded plan starts at the summary.');
   await check(snapshot());assert.equal(await page.locator('#plan-progress').getAttribute('data-status'),'matched');assert.match(await page.locator('#plan-progress-status').innerText(),/C1.*0 new shifts/);assert.match(await page.locator('#plan-progress-next').innerText(),/Comfortable Nests 1 → 2/);
   assert.match(await page.locator('#plan-progress').innerText(),/EDT/,'snapshot dates use the saved selected display zone');assert.match(await page.locator('#plan-stale').innerText(),/original plan's schedule/);assert.match(await page.locator('.result-summary h2').innerText(),/Original Plan/);assert.deepEqual(await page.evaluate(()=>VirtueApp.getResult()),original,'checking a farm preserves the original timeline');
   await check(snapshot(2,start+200));assert.match(await page.locator('#plan-progress-next').innerText(),/Synthetic earning break/,'elapsed backup time does not confirm a wait');

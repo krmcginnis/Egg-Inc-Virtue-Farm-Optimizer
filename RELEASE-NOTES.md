@@ -1,3 +1,11 @@
+# v1.0.4
+
+- Preserve large update sessions in IndexedDB instead of depending on the small localStorage quota. Retain legacy session recovery and a localStorage fallback; wait for the session transaction to commit before installation.
+- Remember each sidebar tab's scroll position, including expanded purchase timelines, for mouse and keyboard navigation. Newly loaded plans still open at the top.
+- Document the save/reset/update/reload workaround for older installations that cannot preserve a large session.
+
+- Install through Update App → Update & Restart. If an older updater cannot preserve a large session, save the farm and plan, choose Start from Scratch, update, then reload the saved plan.
+
 # v1.0.3
 
 - Fix remaining-plan mission routing: retain the saved route's remaining visits as the first automatic candidate; complete outstanding launches on one remaining Humility visit when their tank requirements fit, preserving mission counts and the shift allowance.

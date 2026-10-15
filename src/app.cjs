@@ -112,7 +112,10 @@ function timestamp(t, zone, includeYear = true, compact = false) {
   if (!timestampFormats.has(key)) timestampFormats.set(key, new Intl.DateTimeFormat("en-US", { timeZone: zone, year: includeYear ? "numeric" : void 0, month: "short", day: "numeric", weekday: compact ? undefined : "short", hour: "2-digit", minute: "2-digit", second: compact ? undefined : "2-digit", timeZoneName: "short" }));
   return timestampFormats.get(key).format(new Date(t * 1e3));
 }
-function tab(name, focusHeading = false) {
+const pageScroll = new Map();
+function tab(name, focusHeading = false, resumeScroll = false) {
+  const previous = document.querySelector('[data-tab].active')?.dataset.tab;
+  if (previous) pageScroll.set(previous, {left:window.scrollX, top:window.scrollY});
   const section = name === "artifacts" ? "artifacts-card" : name === "research" ? "common-research-card" : null;
   if (section) name = "farm";
   if (!labels[name]) name = "account";
@@ -124,7 +127,9 @@ function tab(name, focusHeading = false) {
   document.querySelectorAll("[data-page]").forEach((x) => x.hidden = x.dataset.page !== name);
   $("page-title").textContent = titleCase(labels[name]);
   updatePrimaryAction();
-  window.scrollTo({ top: 0 });
+  const position = resumeScroll && pageScroll.get(name) || {left:0, top:0};
+  pageScroll.set(name, position);
+  window.scrollTo({...position, behavior:'instant'});
   SelectionReadout.refresh();
   if (focusHeading) $("page-title").focus({ preventScroll: true });
   if (section) { if (section === "common-research-card") $("common-research-details").open = true; $(section).scrollIntoView({block:"start"}); }
@@ -2023,7 +2028,7 @@ $("stop").onclick = () => {
   $("stop").disabled = true;
   $("stop").textContent = "Finishing Best Plan\u2026";
 };
-document.querySelectorAll("[data-tab]").forEach((b) => b.onclick = (event) => tab(b.dataset.tab, event.detail === 0));
+document.querySelectorAll("[data-tab]").forEach((b) => b.onclick = (event) => tab(b.dataset.tab, event.detail === 0, true));
 $("review-inputs").onclick = reviewInputs;
 // Keep fixed controls from hiding focused fields at narrow widths or zoom.
 const runBar = document.querySelector(".run-bar");

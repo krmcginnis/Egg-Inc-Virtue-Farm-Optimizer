@@ -50,6 +50,11 @@ Public v0.x installations can update to v1.0 normally.
 
 Use **Update App → Update & Restart** in the sidebar. Published ZIPs already point to this repository. Updates verify downloads, preserve your current inputs and timeline, and restore the previous app if installation or startup fails. Finish your search or import before updating.
 
+If an older version reports that it cannot preserve the session, use **Save Farm**
+and **Save Plan** first. Then choose **Start from Scratch**, update, and reload the
+saved plan with **Load Plan**. Alternatively, extract the latest full app ZIP
+and load your saved files there.
+
 Saved farms and plans stay on your PC. EID import uses a read-only unofficial Egg Inc. endpoint; no game changes are made. Personal account snapshots are excluded from this repository and releases.
 
 ## Development and publishing

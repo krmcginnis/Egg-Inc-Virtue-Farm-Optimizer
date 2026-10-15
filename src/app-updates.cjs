@@ -1,7 +1,8 @@
 'use strict';
 const VERSION = require('./version.cjs');
 const Snapshot = require('./update-snapshot.cjs');
-const HANDOFF = 'virtue-optimizer.update-session.v1';
+const Session = require('./update-session.cjs');
+const HANDOFF = Session.HANDOFF;
 const LAST_ERROR = 'virtue-optimizer.update-error.v1';
 function initialize({isBusy, capture, restore}) {
   const $ = id => document.getElementById(id);
@@ -10,6 +11,7 @@ function initialize({isBusy, capture, restore}) {
   let lastError = '';
   try { lastError = localStorage.getItem(LAST_ERROR) || ''; } catch { }
   const local = location.protocol === 'http:' && location.hostname === '127.0.0.1' && Number(location.port) >= 8765 && Number(location.port) <= 8790 && !!globalThis.VIRTUE_PROXY_TOKEN;
+  let recovering = local;
   function errorDetails() {
     $('update-error').hidden = !lastError;
     $('update-error-text').textContent = lastError;
@@ -27,7 +29,7 @@ function initialize({isBusy, capture, restore}) {
   function clearError() { lastError = ''; try { localStorage.removeItem(LAST_ERROR); } catch { } errorDetails(); }
   function controls() {
     check.disabled = checking || updating || !local;
-    install.disabled = !release || checking || updating || isBusy();
+    install.disabled = !release || checking || updating || recovering || isBusy();
     $('update-configure').disabled = checking || updating || !local;
     $('update-repository').disabled = checking || updating || !local;
     $('update-close').disabled = updating;
@@ -92,7 +94,7 @@ function initialize({isBusy, capture, restore}) {
     finally { checking = false; controls(); }
   };
   install.onclick = async () => {
-    if (!release || updating || isBusy()) { message('Finish or stop your search or account import before updating.', true); return; }
+    if (!release || updating || recovering || isBusy()) { message('Finish or stop your search or account import before updating.', true); return; }
     updating = true; controls();
     let restarting = false;
     try {
@@ -110,7 +112,7 @@ function initialize({isBusy, capture, restore}) {
       const saved = capture();
       if (!Snapshot.valid(saved)) throw Error('The current session could not be preserved. Save your farm and plan before retrying.');
       try {
-        localStorage.setItem(HANDOFF, JSON.stringify({version:VERSION,snapshot:Snapshot.sanitize(saved)}));
+        await Session.save({version:VERSION,snapshot:Snapshot.sanitize(saved)});
       } catch { throw Error('Your browser cannot preserve this session for the restart. Save your farm and plan, then free some browser storage and retry.'); }
       message('Installing and restarting. Your farm and settings have been preserved...');
       // A connection interruption can occur after the helper accepts the restart.
@@ -131,7 +133,7 @@ function initialize({isBusy, capture, restore}) {
       }
       throw Error('The restart is taking longer than expected. Close the launcher and open Start-Virtue-Optimizer.cmd again; your preserved session will be restored.');
     } catch (error) {
-      if (!restarting) { try { localStorage.removeItem(HANDOFF); } catch { } }
+      if (!restarting) await Session.clear();
       message(error.message, true);
       release = null;
     } finally { updating = false; controls(); }
@@ -144,17 +146,16 @@ function initialize({isBusy, capture, restore}) {
       // A manual refresh can arrive while the replacement helper is starting.
       for (let attempt = 0; state.pending && attempt < 75; attempt++) { await pause(1000); state = await api('health'); }
       if (state.pending) return;
-      let saved;
-      try { saved = JSON.parse(localStorage.getItem(HANDOFF)); } catch { }
+      const saved = await Session.load();
       if (saved && Snapshot.valid(saved.snapshot)) {
-        try { restore(saved.snapshot, state.result?.message || 'Your session was restored after updating the app.'); localStorage.removeItem(HANDOFF); }
+        try { restore(saved.snapshot, state.result?.message || 'Your session was restored after updating the app.'); await Session.clear(); }
         catch { message('Your preserved session is still available. Restart the app or load your saved farm.', true); }
       }
       if (state.result?.ok === false) {
         // Keep restart/rollback failures visible independently of farm notices.
         dialog.showModal(); message(state.result.message, true); controls();
       } else if (state.result) api('acknowledge', {}).catch(() => {});
-    })().catch(() => {});
+    })().catch(() => {}).finally(() => { recovering = false; controls(); });
   }
   return {active:() => updating};
 }

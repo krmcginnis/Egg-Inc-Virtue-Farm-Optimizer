@@ -1,38 +1,42 @@
 {
-  "version": "1.0.3",
-  "date": "2026-10-15T18:12:36.523953+00:00",
-  "status": "accepted-public-release",
-  "currentAudit": "AUDIT-v1.0.3.md",
-  "published": true,
-  "nativeWindowsTested": true,
-  "pendingReleaseGates": [],
+  "version": "1.0.4",
+  "date": "2026-10-15T18:27:26.532983+00:00",
+  "status": "release-preparation",
+  "currentAudit": "AUDIT-v1.0.4.md",
+  "published": false,
+  "nativeWindowsTested": false,
+  "pendingReleaseGates": [
+    "Native Windows workflow and updater/launcher verification",
+    "Anonymous public feed and complete download verification"
+  ],
   "localSuitesPassed": [
-    "release-state.cjs",
-    "prepare-publish.cjs",
-    "plan-progress.cjs",
-    "plan-continuation.cjs",
-    "quick-guide-order.cjs",
-    "shift-rates.cjs",
-    "vehicle-presentation.cjs",
-    "purchase-decisions.cjs",
-    "route-solver.cjs",
-    "solver-worker.cjs",
+    "update-error-browser.cjs",
+    "page-navigation-browser.cjs",
     "plan-progress-browser.cjs",
     "plan-continuation-browser.cjs",
-    "timeline-readability-browser.cjs",
-    "research-artwork-browser.cjs",
-    "purchase-decisions-browser.cjs"
+    "plan-progress.cjs",
+    "plan-continuation.cjs",
+    "release-state.cjs",
+    "prepare-publish.cjs",
+    "solver-worker.cjs"
   ],
-  "scope": "Remaining-plan mission routing and refill handling; upcoming purchase batches with large break durations; funding waits before purchases in app and PDF.",
+  "scope": "Large-session update recovery and sidebar scroll restoration.",
+  "localEvidence": [
+    "Complete replayable plan over 6 MiB exceeds the actual localStorage quota and restores unchanged with filled localStorage.",
+    "Consumed IndexedDB handoffs are cleared; legacy handoffs and localStorage fallback remain compatible.",
+    "Unavailable storage and an aborted write transaction prevent installation.",
+    "Mouse and keyboard tab navigation retain separate scroll positions and expanded timeline groups at 1000 and 1440 pixels.",
+    "Loading a plan starts at the top; existing continuation, save/load, reset/undo, progress and update recovery checks passed."
+  ],
   "baselineEvidence": {
-    "version": "1.0.2",
+    "version": "1.0.3",
     "publication": {
-      "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.2",
-      "sourceCommit": "85e1fa0c508ccc9d435538712dbf185160ba5486",
-      "workflowRunId": 38023306042,
-      "workflowJobId": 114128752751,
+      "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.3",
+      "sourceCommit": "daad592b0b4ff9a847229588093c6bb747a1fe5f",
+      "workflowRunId": 38782938097,
+      "workflowJobId": 116587528359,
       "workflowConclusion": "success",
-      "workflowSuitesPassed": 21,
+      "workflowSuitesPassed": 22,
       "windowsPowerShellVersion": "5.1.26100.33438",
       "nativeUpdaterAndLauncherPassed": true,
       "anonymousWindowsFeedPassed": true,
@@ -42,58 +46,57 @@
       "assets": [
         {
           "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
-          "id": 626972021,
-          "size": 8597823,
-          "digest": "sha256:710f77ffb3555ac240abb8efa0fc94ce73af07e37107e20dcf63506a3270c515"
+          "id": 644730254,
+          "size": 8601898,
+          "digest": "sha256:6c2e4e545773d73c7b7412b805f61e79b6c0851bf3a4aef70743b779f98ed092"
         },
         {
           "name": "update-manifest.json",
-          "id": 626972025,
+          "id": 644730256,
           "size": 239,
-          "digest": "sha256:ba38e59994aa19567f460c7a1f03d7eef39d601cb48f0c97f4a8b690f4bfb1fe"
+          "digest": "sha256:47418839ceb79fe6c8e202ebeeea34f9ee9ec374b820e65edbdf36346a216875"
         }
       ],
       "publishedAuditIsPrepublicationSnapshot": true
     },
     "inheritedEvidence": {
-      "version": "1.0.1",
+      "version": "1.0.2",
       "publication": {
-        "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.1",
-        "sourceCommit": "2659764b4542ef3766a69a4056c56f7e4c9d2015",
-        "workflowRunId": 38013764440,
-        "workflowJobId": 114099422728,
+        "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.2",
+        "sourceCommit": "85e1fa0c508ccc9d435538712dbf185160ba5486",
+        "workflowRunId": 38023306042,
+        "workflowJobId": 114128752751,
         "workflowConclusion": "success",
-        "workflowSuitesPassed": 18,
+        "workflowSuitesPassed": 21,
         "windowsPowerShellVersion": "5.1.26100.33438",
         "nativeUpdaterAndLauncherPassed": true,
         "anonymousWindowsFeedPassed": true,
         "independentAnonymousDownloadsPassed": true,
         "archiveCRCAndEveryFileChecksumPassed": true,
-        "compiledResearchTooltipsPresent": true,
         "runtimeFiles": 169,
         "assets": [
           {
             "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
-            "id": 626692114,
-            "size": 8577808,
-            "digest": "sha256:690f1db5be6f8749fba1e28b40a50acccb267707dc3682ab8adc0b39d8359b30"
+            "id": 626972021,
+            "size": 8597823,
+            "digest": "sha256:710f77ffb3555ac240abb8efa0fc94ce73af07e37107e20dcf63506a3270c515"
           },
           {
             "name": "update-manifest.json",
-            "id": 626692111,
+            "id": 626972025,
             "size": 239,
-            "digest": "sha256:1da33fad6510fe1b13b00ad52dbaf9b36e534ca9b35ebb31bfff19c68f4a89b9"
+            "digest": "sha256:ba38e59994aa19567f460c7a1f03d7eef39d601cb48f0c97f4a8b690f4bfb1fe"
           }
         ],
         "publishedAuditIsPrepublicationSnapshot": true
       },
       "inheritedEvidence": {
-        "version": "1.0.0",
+        "version": "1.0.1",
         "publication": {
-          "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.0",
-          "sourceCommit": "efdee7c6ab2dbcd1a7055eb0ccdb7daec70ecc64",
-          "workflowRunId": 37985709711,
-          "workflowJobId": 114007058539,
+          "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.1",
+          "sourceCommit": "2659764b4542ef3766a69a4056c56f7e4c9d2015",
+          "workflowRunId": 38013764440,
+          "workflowJobId": 114099422728,
           "workflowConclusion": "success",
           "workflowSuitesPassed": 18,
           "windowsPowerShellVersion": "5.1.26100.33438",
@@ -101,133 +104,121 @@
           "anonymousWindowsFeedPassed": true,
           "independentAnonymousDownloadsPassed": true,
           "archiveCRCAndEveryFileChecksumPassed": true,
+          "compiledResearchTooltipsPresent": true,
           "runtimeFiles": 169,
           "assets": [
             {
               "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
-              "id": 626071854,
-              "size": 8576789,
-              "digest": "sha256:bf40e6794edd9db9b106f1f1cc5f9fb783435e0aa901ced5c0801c2ca6f925c6"
+              "id": 626692114,
+              "size": 8577808,
+              "digest": "sha256:690f1db5be6f8749fba1e28b40a50acccb267707dc3682ab8adc0b39d8359b30"
             },
             {
               "name": "update-manifest.json",
-              "id": 626071855,
+              "id": 626692111,
               "size": 239,
-              "digest": "sha256:3bd767f1d6aa5921a17b7f268b20a02a6ee76cecdc478757ba18dc2106f1e81c"
+              "digest": "sha256:1da33fad6510fe1b13b00ad52dbaf9b36e534ca9b35ebb31bfff19c68f4a89b9"
             }
           ],
           "publishedAuditIsPrepublicationSnapshot": true
         },
-        "independentModel": {
-          "referenceCommit": "9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67",
-          "states": 738,
-          "researchPrices": 13980,
-          "habPrices": 228,
-          "vehiclePrices": 612,
-          "carPrices": 27,
-          "tierChecks": 41328,
-          "colleggtibleSelections": 240,
-          "shipChecks": 132,
-          "maxRelativeError": 1.784305611747559e-08,
-          "maxRelativeErrorWithoutHabRounding": 1.0198447235008816e-15,
-          "maxHabRoundingDifference": 1,
-          "isolatedCoverage": {
-            "commonResearch": 56,
-            "epicResearch": 22,
-            "artifacts": 171,
-            "stones": 30,
-            "habs": 19,
-            "vehicles": 12
+        "inheritedEvidence": {
+          "version": "1.0.0",
+          "publication": {
+            "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.0",
+            "sourceCommit": "efdee7c6ab2dbcd1a7055eb0ccdb7daec70ecc64",
+            "workflowRunId": 37985709711,
+            "workflowJobId": 114007058539,
+            "workflowConclusion": "success",
+            "workflowSuitesPassed": 18,
+            "windowsPowerShellVersion": "5.1.26100.33438",
+            "nativeUpdaterAndLauncherPassed": true,
+            "anonymousWindowsFeedPassed": true,
+            "independentAnonymousDownloadsPassed": true,
+            "archiveCRCAndEveryFileChecksumPassed": true,
+            "runtimeFiles": 169,
+            "assets": [
+              {
+                "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
+                "id": 626071854,
+                "size": 8576789,
+                "digest": "sha256:bf40e6794edd9db9b106f1f1cc5f9fb783435e0aa901ced5c0801c2ca6f925c6"
+              },
+              {
+                "name": "update-manifest.json",
+                "id": 626071855,
+                "size": 239,
+                "digest": "sha256:3bd767f1d6aa5921a17b7f268b20a02a6ee76cecdc478757ba18dc2106f1e81c"
+              }
+            ],
+            "publishedAuditIsPrepublicationSnapshot": true
+          },
+          "independentModel": {
+            "referenceCommit": "9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67",
+            "states": 738,
+            "researchPrices": 13980,
+            "habPrices": 228,
+            "vehiclePrices": 612,
+            "carPrices": 27,
+            "tierChecks": 41328,
+            "colleggtibleSelections": 240,
+            "shipChecks": 132,
+            "maxRelativeError": 1.784305611747559e-08,
+            "maxRelativeErrorWithoutHabRounding": 1.0198447235008816e-15,
+            "maxHabRoundingDifference": 1,
+            "isolatedCoverage": {
+              "commonResearch": 56,
+              "epicResearch": 22,
+              "artifacts": 171,
+              "stones": 30,
+              "habs": 19,
+              "vehicles": 12
+            }
+          },
+          "compoundAndTimingAudit": {
+            "compoundResearchPrices": 186400,
+            "priceRoundingDifferences": 20465,
+            "integerPriceDifferences": 260,
+            "maxIntegerPriceDifference": 1,
+            "passiveIntegrals": 16,
+            "dstIntegrals": 2,
+            "fuelCases": 4,
+            "eventBoundaryChecks": 192
+          },
+          "suppliedPlanBenchmark": {
+            "budgetMs": 90000,
+            "elapsedMs": 93550,
+            "shifts": 12,
+            "seconds": 11919651.5115304,
+            "baselineSeconds": 11919651.511547804,
+            "meaningfulCompletionImprovement": false,
+            "finalTE": [
+              40,
+              40,
+              40,
+              40,
+              40
+            ],
+            "launches": 18,
+            "deliveryPerHour": 3044764300282032,
+            "strictReplay": true,
+            "awakeInteractions": true,
+            "unchangedResearchEquipmentAndMissions": true,
+            "researchOrderComparisons": 5
           }
-        },
-        "compoundAndTimingAudit": {
-          "compoundResearchPrices": 186400,
-          "priceRoundingDifferences": 20465,
-          "integerPriceDifferences": 260,
-          "maxIntegerPriceDifference": 1,
-          "passiveIntegrals": 16,
-          "dstIntegrals": 2,
-          "fuelCases": 4,
-          "eventBoundaryChecks": 192
-        },
-        "suppliedPlanBenchmark": {
-          "budgetMs": 90000,
-          "elapsedMs": 93550,
-          "shifts": 12,
-          "seconds": 11919651.5115304,
-          "baselineSeconds": 11919651.511547804,
-          "meaningfulCompletionImprovement": false,
-          "finalTE": [
-            40,
-            40,
-            40,
-            40,
-            40
-          ],
-          "launches": 18,
-          "deliveryPerHour": 3044764300282032,
-          "strictReplay": true,
-          "awakeInteractions": true,
-          "unchangedResearchEquipmentAndMissions": true,
-          "researchOrderComparisons": 5
         }
       }
     }
   },
-  "dependencyInstallAndBuildPassed": true,
-  "localPackages": {
-    "version": "1.0.3",
+  "buildPassed": true,
+  "packageChecks": {
+    "version": "1.0.4",
     "runtimeFiles": 169,
-    "sourceFiles": 288,
+    "sourceFiles": 289,
     "workflowSuitesIncluded": 22,
     "crcAndEveryRuntimeChecksum": true,
     "matchingMetadataAndAuditLinks": true,
     "sourceTestDependencies": true,
     "privateInputDirectoriesExcluded": true
-  },
-  "sourcePackageRebuildPassed": true,
-  "suppliedPlanReplay": {
-    "shifts": 12,
-    "seconds": 11919651.511547804,
-    "targetTE": 200,
-    "launches": 18,
-    "finishUnchanged": true,
-    "visibleWaitAndFuelBlocks": 94,
-    "waitDurationsPreserved": true
-  },
-  "pdfReview": {
-    "fullPlanPages": 64,
-    "pageBoundsPassed": true,
-    "fundingBreakBeforePurchases": true,
-    "visualReviewPassed": true
-  },
-  "publication": {
-    "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.3",
-    "sourceCommit": "daad592b0b4ff9a847229588093c6bb747a1fe5f",
-    "workflowRunId": 38782938097,
-    "workflowJobId": 116587528359,
-    "workflowConclusion": "success",
-    "workflowSuitesPassed": 22,
-    "windowsPowerShellVersion": "5.1.26100.33438",
-    "nativeUpdaterAndLauncherPassed": true,
-    "anonymousWindowsFeedPassed": true,
-    "independentAnonymousDownloadsPassed": true,
-    "archiveCRCAndEveryFileChecksumPassed": true,
-    "runtimeFiles": 169,
-    "assets": [
-      {
-        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
-        "id": 644730254,
-        "size": 8601898,
-        "digest": "sha256:6c2e4e545773d73c7b7412b805f61e79b6c0851bf3a4aef70743b779f98ed092"
-      },
-      {
-        "name": "update-manifest.json",
-        "id": 644730256,
-        "size": 239,
-        "digest": "sha256:47418839ceb79fe6c8e202ebeeea34f9ee9ec374b820e65edbdf36346a216875"
-      }
-    ],
-    "publishedAuditIsPrepublicationSnapshot": true
   }
 }
