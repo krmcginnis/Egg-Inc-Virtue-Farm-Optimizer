@@ -1,5 +1,41 @@
 # Egg Inc. Virtue Farm Optimizer v1.0.6 — Release Audit
 
+## Accepted v1.0.6 publication — October 15, 2026 (Pacific)
+
+v1.0.6 is published and accepted. Windows run
+[38793700773](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/38793700773)
+passed for source commit `09371e51fa07c8d90d1540dfa5d0b331d8e2e9c2`.
+All 22 workflow suites passed, including source-backup timestamp boundaries,
+retained original-route candidates, repeated reoptimization, and the standalone
+generated worker. Local browser checks also passed immediate next-step display,
+actual protobuf/account refresh with the same and later pre-start backups,
+older-backup rejection, save/load, reset/undo, update recovery, and return to
+the previous plan. The extracted curated source installed, rebuilt, and passed
+progress-model, release-intent, and staged-publishing checks.
+
+Native Windows checks verified installation, seven invalid archive cases,
+digest rejection, rollback, exact backup restoration, retained user JSON/config,
+stage tampering, hidden CMD launch/reuse from paths with spaces, successful
+restart, startup-failure recovery, and legacy-worker recovery. The anonymous
+public feed, full ZIP download, and every app-file checksum passed on Windows
+PowerShell 5.1.26100.33438.
+
+Independent anonymous public downloads verified the latest tag and reviewed
+source commit, both complete assets and GitHub digests, manifest size/hash,
+ZIP CRC, all 169 runtime entries and every file checksum, version/repository
+metadata, current audit links, the source-backup check in both compiled bundles,
+and the immediate next-step behavior in the app bundle.
+
+The accepted release is
+[v1.0.6](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.6).
+This acceptance record is a source-only follow-up. Published assets retain
+the prepublication audit snapshot.
+
+| Asset | ID | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Egg-Inc-Virtue-Farm-Optimizer.zip | 644928769 | 8,607,345 | `480ed069336816134ea700cc657faffa4a57ea5f29e9f1e2d1a4239f88d7ade8` |
+| update-manifest.json | 644928767 | 239 | `3fd3b7ccae0cfedef7a8115ecf0ab8eb10e8f2122b8cfbf8be4d86b4cae87b90` |
+
 ## v1.0.6 release preparation — October 15, 2026
 
 v1.0.6 fixes a freshness check that compared account backup time
