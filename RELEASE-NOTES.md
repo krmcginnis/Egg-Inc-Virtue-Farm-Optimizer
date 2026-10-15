@@ -1,3 +1,11 @@
+# v1.0.6
+
+- Match remaining-plan progress against the backup used to create the plan, even when the new schedule starts later. Keep older-backup, future-time, ascension, visit, and upgrade checks.
+- Show Next Planned Step immediately after Use Remaining Plan using the checked farm. Retain that snapshot through account refresh, save/load, reset/undo, and update recovery, with remaining-plan labels.
+- Add regressions for the same account backup, newer backups that still precede the schedule, older rejected backups, and repeated reoptimization through the compiled worker.
+
+- Install through Update App → Update & Restart. The checked farm and next planned step are retained.
+
 # v1.0.5
 
 - Restore recorded automatic artifact sets when replaying the original remaining route. Check the current inventory's artifacts and pooled socketed/loose stones, or equivalent configured manual loadouts, before reusing a saved set name.

@@ -27,6 +27,10 @@ from the current farm; the comparison shows total shifts used and remaining.
 replacement. These are fastest-found plans within the search budget, not a proof
 of the globally fastest sequence.
 
+**Use Remaining Plan** immediately shows the next planned step from the checked
+farm. Refreshing may return the same backup; it remains usable when it is at
+least as recent as the snapshot that started this remaining plan.
+
 In the Purchase Timeline, **Why These Purchases?** lists research effects for
 each shift, including purchases grouped under Max Tiers. Quick Guide, Full
 Breakdown, and research-icon tooltips also explain immediate earnings gains,

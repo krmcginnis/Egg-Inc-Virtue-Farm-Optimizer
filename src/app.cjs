@@ -297,12 +297,12 @@ function markInputsChanged() {
   const next = $("next-ascension");
   if (next) next.disabled = dirty || !!worker || !result || result.target >= 490;
   if (dirty && !worker && result) {
-    $("run-summary").textContent = planProgress ? "Progress Check · Original Plan" : "Inputs Changed · Re-run Planner";
+    $("run-summary").textContent = planProgress ? "Progress Check · " + (continuationContext ? "Remaining Plan" : "Original Plan") : "Inputs Changed · Re-run Planner";
     $("run-detail").textContent = "The purchase timeline still uses the previous plan's inputs.";
   }
 }
 function stalePlanText() {
-  return planProgress ? "This timeline keeps the original plan's schedule. Progress uses the last checked farm snapshot. Choose Reoptimize Remaining Plan in Plan Progress to update the remaining schedule." : "Inputs changed since this plan was generated. This timeline uses the saved inputs from its run. Re-run to update it.";
+  return planProgress ? "This timeline keeps the " + (continuationContext ? "remaining" : "original") + " plan's schedule. Progress uses the last checked farm snapshot. Choose Reoptimize Remaining Plan in Plan Progress to update the remaining schedule." : "Inputs changed since this plan was generated. This timeline uses the saved inputs from its run. Re-run to update it.";
 }
 function select(id, options, value) {
   const node = $(id);
@@ -1146,9 +1146,11 @@ function renderRemainingComparison(host) {
       try{
         if(proposal.sourceKey!==Continuation.sourceKey(continuationRequest(proposal.request.start)))throw Error("The checked plan changed. Run the remaining search again.");
         const checked=Continuation.verified(proposal.config,proposal.result);
+        const startingProgress={snapshot:structuredClone(proposal.request.progress.snapshot),confirmed:[],launched:{},planKey:Progress.key(checked)};
+        if(Progress.compare(proposal.config,checked,startingProgress.snapshot).status!=='matched')throw Error("The starting farm no longer matches this remaining plan. Check the farm and run the remaining search again.");
         const parent={config:structuredClone(resultConfig),result:structuredClone(result),progress:structuredClone(planProgress),context:structuredClone(continuationContext)};
         continuationContext={version:1,parent,consumedShifts:proposal.consumedShifts,totalShiftBudget:proposal.totalShiftBudget,remainingShiftBudget:proposal.remainingShiftBudget,originalEnd:proposal.originalEnd,baseline:proposal.baseline,baselineError:proposal.baselineError};
-        config=structuredClone(proposal.config);resultConfig=structuredClone(proposal.config);result=checked;planProgress=null;remainingProposal=null;dirty=false;
+        config=structuredClone(proposal.config);resultConfig=structuredClone(proposal.config);result=checked;planProgress=startingProgress;remainingProposal=null;dirty=false;
         renderForm();renderResult();tab("results");show("Remaining plan applied. Its purchases, fuel, flights, sleep, target, and remaining shift budget passed replay validation.");
       }catch(e){show(e.message,true);}
     };
@@ -1188,7 +1190,7 @@ function renderPlanProgress(host, summary) {
   if(report.status!=='matched')next.append(el("p","Review the snapshot and the saved plan before continuing."));
   else if(report.next){
     const batch=Progress.nextGroup(report,planProgress.snapshot),zone=resultConfig.plan.eventTimezone;
-    next.append(el("p",label(report.next)),el("p","Original schedule: "+timestamp(report.next.action.t,zone)+(report.next.action.end?" → "+timestamp(report.next.action.end,zone):""),"hint"));
+    next.append(el("p",label(report.next)),el("p",(continuationContext?"Remaining plan schedule: ":"Original schedule: ")+timestamp(report.next.action.t,zone)+(report.next.action.end?" → "+timestamp(report.next.action.end,zone):""),"hint"));
     if(batch?.break)next.append(breakCard(batch.break,zone,Sleep.forPlan(resultConfig.plan,result.start,result.end)));
     if(batch?.activities.length){
       next.append(el("h4",batch.break?"On Return, Complete This Batch":"Complete This Batch","progress-batch-heading"));
@@ -1233,8 +1235,8 @@ function renderPlanProgress(host, summary) {
 function renderResult() {
   const r = result, zone = resultConfig.plan.eventTimezone, host = $("result-content"), summary = U.summarize(resultConfig, r);
   if (!worker) {
-    $("run-summary").textContent = planProgress ? "Progress Check · Original Plan" : duration(r.seconds) + " to target \xB7 " + r.switches + " switches";
-    $("run-detail").textContent = planProgress ? "The original timeline remains visible below." : "Validated plan \xB7 " + r.pendingTE + " pending TE";
+    $("run-summary").textContent = planProgress ? "Progress Check · " + (continuationContext ? "Remaining Plan" : "Original Plan") : duration(r.seconds) + " to target \xB7 " + r.switches + " switches";
+    $("run-detail").textContent = planProgress ? "The saved timeline remains visible below." : "Validated plan \xB7 " + r.pendingTE + " pending TE";
   }
   result.summary = summary;
   host.replaceChildren();
@@ -1260,7 +1262,7 @@ function renderResult() {
     choices.append(row);host.append(choices);
   }
   const card = el("div", void 0, "card result-summary"), head = el("div", void 0, "result-header");
-  head.append(el("h2", (planProgress ? "Original Plan · " : continuationContext ? "Remaining Plan · " : "") + "Target " + r.target + " TE in " + duration(r.seconds)));
+  head.append(el("h2", (continuationContext ? "Remaining Plan · " : planProgress ? "Original Plan · " : "") + "Target " + r.target + " TE in " + duration(r.seconds)));
   const tools = el("div", void 0, "inline");
   const txt = el("button", "Export Walkthrough", "secondary");
   txt.onclick = async () => {

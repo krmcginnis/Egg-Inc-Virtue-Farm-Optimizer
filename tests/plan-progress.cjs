@@ -69,6 +69,16 @@ f=live(raw);f.farm.claimed[0]=6;assert.equal(check(raw,r,f).status,'mismatch');
 const deliveredRaw=farm();deliveredRaw.farm.delivered[0]=S.D.te[7];assert.equal(check(deliveredRaw,r,live(raw)).status,'mismatch');
 f=live(raw);f.farm.virtue='kindness';assert.equal(check(raw,r,f).status,'mismatch');f=live(raw,99);assert.equal(check(raw,r,f).status,'mismatch');f=live(raw);f.farm.shiftCount--;assert.equal(check(raw,r,f).status,'mismatch');
 f=live(raw);f.importInfo.timestamp=start-1;assert.match(check(raw,r,f).warnings.join(' '),/predates/);f.importInfo.timestamp=now+301;assert.match(check(raw,r,f).warnings.join(' '),/future/);delete f.importInfo;report=check(raw,r,f);assert.equal(report.status,'matched');assert.equal(report.time,null);assert.match(report.warnings.join(' '),/No snapshot timestamp/);
+// A remaining plan starts after its source backup. That backup and later
+// backups remain usable; earlier or unrelated data must still be rejected.
+{
+let f;const remainingRaw=structuredClone(raw),sourceTime=start-600;remainingRaw.importInfo={timestamp:sourceTime};remainingRaw.plan.continuation={version:1,snapshotTime:sourceTime};
+for(const time of [sourceTime,sourceTime+1,start-1,start,start+1]){const current=live(raw);current.importInfo.timestamp=time;const matched=check(remainingRaw,r,current);assert.equal(matched.status,'matched','remaining snapshot boundary '+time);assert.equal(matched.next.index,0);}
+f=live(raw);f.importInfo.timestamp=sourceTime-1;report=check(remainingRaw,r,f);assert.equal(report.status,'mismatch');assert.match(report.warnings.join(' '),/older than the starting farm snapshot/);
+f=live(raw);f.importInfo.timestamp=start-1;
+for(const change of [x=>delete x.importInfo,x=>x.plan.continuation.version=2,x=>x.plan.continuation.snapshotTime=sourceTime-1,x=>x.plan.continuation.snapshotTime=NaN,x=>x.plan.continuation.snapshotTime=null,x=>{x.importInfo.timestamp=start+1;x.plan.continuation.snapshotTime=start+1;}]){const unrelated=structuredClone(remainingRaw);change(unrelated);assert.equal(check(unrelated,r,f).status,'mismatch','invalid/unbound continuation metadata cannot relax the plan-start guard');}
+f=live(raw);f.importInfo.timestamp=sourceTime;f.farm.virtue='kindness';assert.equal(check(remainingRaw,r,f).status,'mismatch');f=live(raw);f.importInfo.timestamp=now+301;assert.match(check(remainingRaw,r,f).warnings.join(' '),/future/);
+}
 // Comparisons validate farm values but do not depend on an unfinished planning draft.
 f.plan={target:'unfinished',ships:{mode:'bad'},sequence:[],sleep:{enabled:true,start:'bad'}};assert.equal(check(raw,r,f).status,'matched');f.farm.research[S.D.research[0].id]=999;assert.throws(()=>check(raw,r,f),/level/);
 f=live(raw);f.importInfo.timestamp=Infinity;assert.throws(()=>check(raw,r,f),/snapshot timestamp/);f.importInfo.timestamp=1e100;assert.throws(()=>check(raw,r,f),/snapshot timestamp/);

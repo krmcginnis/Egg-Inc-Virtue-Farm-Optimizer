@@ -1,4 +1,47 @@
-# Egg Inc. Virtue Farm Optimizer v1.0.5 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.0.6 — Release Audit
+
+## v1.0.6 release preparation — October 15, 2026
+
+v1.0.6 fixes a freshness check that compared account backup time
+against the reoptimized schedule's later PC start. A remaining plan now accepts
+its starting backup or a newer backup. The lower bound is used only when valid
+continuation metadata matches the saved starting farm's import timestamp and
+does not exceed the plan start. Other plans retain their plan-start check;
+unbound/invalid metadata cannot relax it. Future-time, ascension, lifetime
+shift, Virtue, delivered-egg, and required-upgrade checks remain active, and an
+account refresh older than the last successful check still leaves it intact.
+
+Applying a remaining plan now retains the actual checked farm as progress on
+the new timeline, with a new plan key and empty manual confirmations/launch
+counts. Next Planned Step appears immediately. Remaining-plan headings and
+dates remain labeled as remaining-plan output after subsequent refreshes.
+
+The app/worker build and five focused suites passed: progress model,
+continuation model, generated worker, progress browser, and continuation
+browser. The latter uses the actual protobuf/account path to apply a plan,
+refresh with the same pre-start backup, reject an older backup, and accept a
+newer backup still before the schedule start. It also checks apply/save/load,
+update recovery, and return-to-previous behavior. Repeated reoptimization with
+the same backup passed through the generated worker. The supplied farm case
+now matches, produces a next batch, rejects an older backup, and retains replay
+validity without changing either input file. Native v1.0.6 Windows checks and
+independent public-download acceptance remain release gates until recorded as
+accepted. The v1.0.5 evidence below describes the previously published assets.
+
+## Completed local v1.0.6 checks
+
+Dependency installation and the versioned app/worker build passed. All seven
+local suites passed: progress model, continuation model, standalone generated
+worker, progress browser, continuation browser, release intent, and safe staged
+publishing. The extracted curated source independently installed, rebuilt,
+and passed progress-model, release-intent, and staged-publishing checks.
+
+The runtime ZIP contains 169 entries and the curated source contains 289 files,
+including all 22 workflow suites and their local dependencies. Both ZIP CRCs,
+every runtime file checksum, archive/manifest size and hash, version/repository
+metadata, current audit links, and the compiled timestamp/apply fixes passed.
+Generated bundles and private input directories are excluded from source;
+private input directories are excluded from runtime.
 
 ## Accepted v1.0.5 publication — October 15, 2026 (Pacific)
 

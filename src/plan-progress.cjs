@@ -29,7 +29,14 @@ function compare(raw,result,current,{confirmed=[],launched={},now=Date.now()/100
  if(live.c.claimed.some((n,i)=>n!==base.c.claimed[i])){
   report.status=live.c.claimedTotal>=result.target&&(raw.plan.floors||[]).every((n,i)=>live.c.claimed[i]>=n)?'claimed-target':'mismatch';warnings.push('Claimed Truth Eggs changed. This snapshot belongs to a different ascension; the saved visit sequence cannot be matched.');
  }else if(!visit||visit.egg!==s.egg){report.status='mismatch';warnings.push('The current Virtue and lifetime shift count do not match this plan. Check that this is the same account and ascension.');}
- if(time&&time<result.start){report.status='mismatch';warnings.push('This backup predates the plan start. Sync the game and check a newer backup.');}
+ // Remaining plans start at the PC time, using a previously checked backup.
+ // That same backup (or a newer one) remains valid after applying the plan.
+ // Bind the continuation timestamp to the actual saved starting snapshot;
+ // unrelated/malformed metadata must not loosen ordinary freshness checks.
+ const continuation=raw.plan?.continuation,sourceTime=Number(raw.importInfo?.timestamp);
+ const remainingStart=continuation?.version===1&&Number.isFinite(continuation.snapshotTime)&&continuation.snapshotTime>0&&continuation.snapshotTime===sourceTime&&sourceTime<=result.start;
+ const earliest=remainingStart?sourceTime:result.start;
+ if(time&&time<earliest){report.status='mismatch';warnings.push(remainingStart?'This backup is older than the starting farm snapshot for this remaining plan. Sync the game and check a newer backup.':'This backup predates the plan start. Sync the game and check a newer backup.');}
  if(time&&time>now+300){report.status='mismatch';warnings.push('The backup timestamp is in the future. Check the backup time before following this plan.');}
  if(s.eggs.some((n,i)=>n+Math.max(1,base.s.eggs[i])*1e-12<base.s.eggs[i])){report.status='mismatch';warnings.push('Lifetime delivered eggs are below the saved starting values. Check the account and ascension.');}
  if(!time)warnings.push('No snapshot timestamp was supplied. Visit and purchase checks use the entered farm values; calendar timing cannot be checked.');
