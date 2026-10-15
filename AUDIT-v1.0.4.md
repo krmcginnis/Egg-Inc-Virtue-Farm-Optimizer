@@ -1,5 +1,41 @@
 # Egg Inc. Virtue Farm Optimizer v1.0.4 — Release Audit
 
+## Accepted v1.0.4 publication — October 15, 2026 (Pacific)
+
+v1.0.4 is published and accepted. Windows run
+[38785990902](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/38785990902)
+passed for source commit `e351bf3f24e2f03d77b81ff8a7f9d47c9732e519`.
+All 22 workflow suites passed. Native checks verified installation, seven
+invalid archives, digest rejection, rollback, exact backup restoration,
+retained user JSON/config, stage tampering, hidden CMD launch/reuse from paths
+with spaces, successful restart, startup-failure recovery, and legacy-worker
+recovery. The anonymous public update feed, full ZIP download, and every app
+file checksum passed on Windows PowerShell 5.1.26100.33438.
+
+Local browser regressions verified exact restoration of a complete plan over
+6 MiB with full localStorage, consumed handoff cleanup, legacy handoffs,
+fallback storage, and blocking installation after unavailable storage or an
+aborted write transaction. Mouse and keyboard navigation retained independent
+tab positions and expanded shifts at 1,000 and 1,440 pixels. Progress and
+remaining-plan save/load/reset/update recovery passed. The extracted curated
+source independently installed, rebuilt, and passed release intent, staged
+publishing, and progress-model checks.
+
+Independent anonymous public downloads verified the latest tag and reviewed
+source commit, both complete assets and GitHub digests, manifest size/hash,
+ZIP CRC, all 169 runtime entries and every file checksum, version/repository
+metadata, current audit links, and the compiled recovery/scroll fixes.
+
+The accepted release is
+[v1.0.4](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.4).
+This acceptance record is a source-only follow-up. Published assets retain
+the prepublication audit snapshot.
+
+| Asset | ID | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Egg-Inc-Virtue-Farm-Optimizer.zip | 644787104 | 8,603,891 | `ea64b3671ef7f0e181fe01f576df010793fda662393f65d749257c8b9099c9b1` |
+| update-manifest.json | 644787111 | 239 | `7cf7db8f2372ce291a4ef0811b247a4d317c7de3b90136ccd71855b1ec92d03b` |
+
 ## v1.0.4 release preparation — October 15, 2026
 
 v1.0.4 contains the updater and navigation fixes described below.
