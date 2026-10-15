@@ -1,3 +1,10 @@
+# v1.0.5
+
+- Restore recorded automatic artifact sets when replaying the original remaining route. Check the current inventory's artifacts and pooled socketed/loose stones, or equivalent configured manual loadouts, before reusing a saved set name.
+- Retain that replayed route as the remaining search's baseline so a fresh search cannot replace it with a slower result. Add model, standalone-worker, and browser save/load regressions for this case.
+
+- Install through Update App → Update & Restart, then check the current farm and reoptimize the remaining plan.
+
 # v1.0.4
 
 - Preserve large update sessions in IndexedDB instead of depending on the small localStorage quota. Retain legacy session recovery and a localStorage fallback; wait for the session transaction to commit before installation.

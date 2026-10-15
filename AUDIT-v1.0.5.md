@@ -1,4 +1,43 @@
-# Egg Inc. Virtue Farm Optimizer v1.0.4 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.0.5 — Release Audit
+
+## v1.0.5 release preparation — October 15, 2026
+
+Continuation previously rejected saved automatic artifact names that were not
+yet registered in the fresh search context, even when the snapshot owned all
+the recorded gear. That prevented original-route replay and removed its
+candidate from the search. The fix restores recorded set contents on
+demand, validates the generated content key and permit, and checks artifact
+quantities and the complete owned stone pool. Manual farms may recover an
+equivalent configured loadout despite slot/socket ordering. Missing gear or
+insufficient stones still prevent that original route from being used.
+
+The supplied saved plan and all alternatives replayed. At the reported
+October 15, 2026 11:37:29 PDT remaining-plan start, the fixed original route
+finishes March 1, 2027 at 00:30:23 PST, versus the original saved 07:00:59 PST
+finish. A search with the normal 90-second budget retained that baseline and
+returned the same finish, reaching 200 TE with six further shifts and all
+351 outstanding launches. Independent replay and sleep-interaction checks
+passed, and both input files remained unchanged. This is a feasible retained
+candidate, not proof of the globally fastest remaining plan.
+
+The app/worker build, continuation model suite, generated standalone worker,
+and continuation browser flows passed. Regressions cover automatic generated
+names, fixed and automatic routing, retained candidates, inventory and stone
+shortages, socketed/loose stone equivalence, manual loadout equivalence,
+tampered set content, immutable inputs, and apply/save/load/return behavior.
+Native v1.0.5 Windows checks and independent public-download acceptance remain
+release gates until recorded as accepted. The v1.0.4 evidence below describes
+the previously published assets.
+
+## Completed local v1.0.5 checks
+
+Dependency installation and the versioned app/worker build passed. All five
+local release suites passed: continuation model, standalone generated worker,
+continuation browser, release intent, and safe staged publishing. The supplied
+case's normal-budget search and independent replay are recorded above. Package
+acceptance is recorded in VALIDATION.json as it completes.
+
+## Inherited v1.0.4 publication evidence
 
 ## Accepted v1.0.4 publication — October 15, 2026 (Pacific)
 

@@ -1,6 +1,6 @@
 'use strict';
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http');
-const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),C=require('../src/plan-continuation.cjs'),P=require('../src/plan-progress.cjs'),{partialResearch,ships}=require('./plan-continuation.cjs');
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE||'playwright'),C=require('../src/plan-continuation.cjs'),P=require('../src/plan-progress.cjs'),{partialResearch,ships,automaticArtifacts}=require('./plan-continuation.cjs');
 const root=path.resolve(__dirname,'..'),request=partialResearch(),fleet=ships();
 (async()=>{
  let available=false,installed=false;
@@ -34,6 +34,12 @@ const root=path.resolve(__dirname,'..'),request=partialResearch(),fleet=ships();
   await search();await page.click('#keep-original-plan');assert.deepEqual(await page.evaluate(()=>VirtueApp.getResult()),original);assert.equal(await page.locator('#remaining-plan-comparison').count(),0);
   // A new snapshot invalidates a completed proposal, never silently applies it.
   await search();await track(request.progress.snapshot);assert.equal(await page.locator('#use-remaining-plan').count(),0);assert.deepEqual(await page.evaluate(()=>VirtueApp.getResult()),original);
+  // The saved automatic artifact name is absent from a fresh context. Its
+  // recorded owned gear must restore the original-route baseline in the worker
+  // and remain replayable through apply, save/load and return to the old plan.
+  const gear=automaticArtifacts();await load({version:1,config:gear.config,result:gear.result});await track(gear.progress.snapshot);await search();
+  const withGear=await exportPlan();assert.equal(withGear.remainingProposal.baselineError,'');assert.ok(withGear.remainingProposal.baseline);assert.ok(withGear.remainingProposal.result.search.retainedPlans>0);assert.ok(withGear.remainingProposal.result.end<=withGear.remainingProposal.baseline.end+.01);assert.doesNotMatch(await page.locator('#remaining-plan-comparison').innerText(),/unavailable|Could not complete/);
+  await page.click('#use-remaining-plan');const gearAccepted=await exportPlan();await page.click('#clear-data');await load(gearAccepted);C.verified(gearAccepted.config,gearAccepted.result);assert.ok(await page.locator('#return-previous-plan').isVisible());await page.click('#return-previous-plan');assert.equal((await page.evaluate(()=>VirtueApp.getResult())).end,gear.result.end);
   // Ship progress includes a partial visited batch and an untouched future batch.
   await load({version:1,config:fleet.config,result:fleet.result});await track(fleet.progress.snapshot);assert.ok(await page.locator('#reoptimize-remaining').isDisabled());assert.match(await page.locator('#plan-progress').innerText(),/Confirm already-launched counts/);await page.locator('.progress-launches>summary').click();const index=fleet.result.actions.findIndex(a=>a.type==='ship-run');
   const group=page.locator(`[data-launch-index="${index}"]`);await group.locator('input').fill('3');await group.getByRole('button',{name:'Confirm Launch Counts'}).click();assert.match(await page.locator('#notice').innerText(),/Already-launched count/);assert.ok(await page.locator('#reoptimize-remaining').isDisabled());

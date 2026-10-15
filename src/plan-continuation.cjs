@@ -1,7 +1,37 @@
 'use strict';
 const S=require('./simulator.cjs'),P=require('./plan-progress.cjs'),R=require('./route-solver.cjs'),O=require('./optimizer.cjs');
 const Ships=require('./ships.cjs'),L=require('./optimizer-legacy.cjs'),Strategy=require('./planning-strategy.cjs'),ShiftPlans=require('./shift-plans.cjs');
+const Artifacts=require('./artifact-optimizer.cjs');
 const paid=new Set(['research','hab','vehicle','car','silo','set']);
+function restoreArtifactSet(action,c){
+ if(c.loadouts[action.set])return;
+ // Automatic sets have immutable content names, generated only when a search
+ // visits that branch. A fresh continuation has not registered those names yet.
+ // Recover the recorded gear, checking today's inventory rather than assuming
+ // that every artifact and stone from the original plan is still available.
+ const recorded=S.recordedArtifactSets([action])[action.set];
+ if(!recorded)throw Error('The original artifact setup is unavailable in this snapshot.');
+ const slots=S.validateLoadout(recorded,c.pro?4:2);
+ let available;
+ if(c.artifactModel){
+  const artifacts=new Map(),stones=new Map();
+  for(const item of c.artifactModel.inventory){
+   if(item.kind==='stone')stones.set(item.id,(stones.get(item.id)||0)+item.quantity);
+   else{artifacts.set(item.id,(artifacts.get(item.id)||0)+item.quantity);for(const id of item.stones)stones.set(id,(stones.get(id)||0)+item.quantity);}
+  }
+  available=slots.filter(slot=>slot.artifactId).every(slot=>{
+   const count=artifacts.get(slot.artifactId)||0;artifacts.set(slot.artifactId,count-1);if(count<1)return false;
+   return slot.stones.filter(Boolean).every(id=>{const count=stones.get(id)||0;stones.set(id,count-1);return count>=1;});
+  });
+ }else{
+  // Manual farms allow their configured sets, including equivalent slot and
+  // socket orderings, without adding unconfigured gear from an older plan.
+  const key=loadout=>Artifacts.signature(loadout.filter(slot=>slot.artifactId).map(slot=>({artifactId:slot.artifactId,stones:slot.stones.filter(Boolean).slice().sort()})).sort((a,b)=>a.artifactId.localeCompare(b.artifactId)));
+  available=Object.values(c.loadouts).some(loadout=>key(loadout)===key(slots));
+ }
+ if(!available)throw Error('The original artifact setup needs artifacts or stones that are unavailable in this snapshot.');
+ c.loadouts[action.set]=slots;c.mods[action.set]=S.modifiers(slots);
+}
 function sourceKey(request){return JSON.stringify([request.config,request.result.start,request.result.end,request.result.target,request.result.actions,request.progress]);}
 function prepare(request,{now=Date.now()/1000}={}){
  const {config:original,result,progress}=request;
@@ -100,7 +130,7 @@ function baseline(prepared,{checkpoint=()=>{}}={}){
   }else if(a.type==='ship-visit')continue;
   else if(paid.has(a.type)||a.type==='shift'){
    if(a.type==='set'&&a.set===n.set)continue;
-   if(a.type==='set'&&!c.loadouts[a.set])throw Error('The original artifact setup is unavailable in this snapshot.');
+   if(a.type==='set')restoreArtifactSet(a,c);
    const ready=S.afford(n,context,a);if(!ready)throw Error('A remaining purchase cannot be funded on the original route.');n=S.buy(ready,context,a);
   }else throw Error('Unsupported remaining action: '+a.type);
  }
