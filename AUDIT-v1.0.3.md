@@ -1,10 +1,42 @@
 # Egg Inc. Virtue Farm Optimizer v1.0.3 — Release Audit
 
-## Release preparation
+## Accepted v1.0.3 publication — October 15, 2026 (Pacific)
+
+v1.0.3 is published and accepted. Windows run
+[38782938097](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/38782938097)
+passed for source commit `daad592b0b4ff9a847229588093c6bb747a1fe5f`.
+All 22 workflow suites passed, including remaining missions/refill handling,
+purchase-batch progress, guide ordering, and the standalone generated worker.
+
+Native updater checks passed verified installation, seven invalid archive
+cases, digest rejection, rollback, exact backup restoration, retained user
+JSON/config, and stage-tamper rejection. Native launcher checks passed hidden
+CMD launch/reuse from paths with spaces, successful restart, startup-failure
+recovery, and legacy-worker recovery. The anonymous public feed, complete ZIP
+download, and every app-file checksum passed on Windows PowerShell
+5.1.26100.33438.
+
+Independent anonymous downloads verified the latest stable tag and reviewed
+source commit, both complete assets and GitHub digests, manifest size/hash,
+ZIP CRC, all 169 runtime entries and every file checksum, version/repository
+metadata, current audit links, the upcoming purchase-batch UI, large break
+duration styling, and compiled remaining-mission handling.
+
+The accepted release is
+[v1.0.3](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.3).
+This record is a source-only verification follow-up. Published assets retain
+the prepublication audit snapshot.
+
+| Asset | ID | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Egg-Inc-Virtue-Farm-Optimizer.zip | 644730254 | 8,601,898 | `6c2e4e545773d73c7b7412b805f61e79b6c0851bf3a4aef70743b779f98ed092` |
+| update-manifest.json | 644730256 | 239 | `47418839ceb79fe6c8e202ebeeea34f9ee9ec374b820e65edbdf36346a216875` |
+
+## Release preparation snapshot
 
 v1.0.3 contains the reviewed remaining-plan routing fix and purchase-batch
-presentation changes. Windows release and public-download checks remain gates
-until the accepted publication is recorded separately.
+presentation changes. This section records the local preparation snapshot before the accepted
+publication described above.
 
 Automatic remaining searches consider the saved remaining route before fresh
 ascension presets. Outstanding launch batches can be consolidated on the one
@@ -54,7 +86,7 @@ metadata, current audit links, and private-input exclusions. The runtime has
 169 entries. The curated source has 288 entries, including all 22 workflow
 suites and their source dependencies. An extracted source install/build passed,
 as did its progress, continuation, guide-order, and release-intent tests.
-Native Windows and independent public-download acceptance remain pending below.
+Native Windows and independent public-download acceptance are recorded above.
 
 ## Inherited accepted release evidence
 
