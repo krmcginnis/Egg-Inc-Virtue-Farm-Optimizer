@@ -1,5 +1,41 @@
 # Egg Inc. Virtue Farm Optimizer v1.0.7 — Release Audit
 
+## Accepted v1.0.7 publication — October 16, 2026 (Pacific)
+
+v1.0.7 is published and accepted. Windows run
+[38974262303](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/38974262303)
+passed for source commit `51d84b872bacf7ca84373bb6a3d7a573f400a6dd`.
+All 22 workflow suites passed, including calendar/wake timestamp boundaries,
+resource and launch guards, completed funding batches, retained original-route
+candidates, and the standalone generated worker. Local browser checks passed
+actual account refresh, checklist evidence, upcoming purchase grouping,
+unchanged manual confirmations and schedules, save/load, and update recovery.
+The supplied saved plan and current farm also passed the actual browser flow.
+The extracted curated source installed, rebuilt, and passed progress-model,
+release-intent, and staged-publishing checks.
+
+Native Windows checks verified installation, seven invalid archive cases,
+digest rejection, rollback, exact backup restoration, retained user JSON/config,
+stage tampering, hidden CMD launch/reuse from paths with spaces, successful
+restart, startup-failure recovery, and legacy-worker recovery. The anonymous
+public feed, full ZIP download, and every app-file checksum passed on Windows
+PowerShell 5.1.26100.33438.
+
+Independent anonymous public downloads verified the latest tag and reviewed
+source commit, both complete assets and GitHub digests, manifest size/hash,
+ZIP CRC, all 169 runtime entries and every file checksum, version/repository
+metadata, current audit links, and the compiled progress checklist fix.
+
+The accepted release is
+[v1.0.7](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.7).
+This acceptance record is a source-only follow-up. Published assets retain
+the prepublication audit snapshot.
+
+| Asset | ID | Bytes | SHA-256 |
+| --- | ---: | ---: | --- |
+| Egg-Inc-Virtue-Farm-Optimizer.zip | 648783284 | 8,609,197 | `a3740a0aeec990eff36f60c0c8a06e8af0f73865f7589700bb452bf412d185cb` |
+| update-manifest.json | 648783282 | 239 | `8d2ffc50bad2649bd33f463776b747ce296b8db5062f507b505c5a9fde209f56` |
+
 ## v1.0.7 release preparation — October 16, 2026
 
 A checked backup from October 16 at 15:01:53 PDT still displayed the Friday
