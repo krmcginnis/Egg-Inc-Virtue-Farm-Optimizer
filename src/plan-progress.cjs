@@ -3,6 +3,8 @@ const S=require('./simulator.cjs');
 const Guide=require('./quick-guide.cjs');
 const manualTypes=new Set(['fuel','fuel-dump','ship-run','ship-visit','wait']);
 const interaction=a=>a.type==='wait'&&/^(Purchase interaction time|Switch overhead)/.test(a.reason||'');
+const calendarWaits=new Set(['Wait for the Friday research sale','Wait for double earnings','Wait for the weekly event boundary','Preserve cash for the Friday research sale','Preserve the proposed research sale','Compare research purchases during the next sale','Compare departure at a weekly event boundary']);
+const clockWait=a=>a.type==='wait'&&(calendarWaits.has(a.reason)||/^Sleep hours; resume (?:ship )?interactions at wake time$/.test(a.reason||''));
 function key(result){return JSON.stringify([result.start,result.end,result.target,result.actions]);}
 function snapshot(raw){
  // Farm validation must not depend on unfinished target, route or sleep inputs.
@@ -78,14 +80,18 @@ function compare(raw,result,current,{confirmed=[],launched={},now=Date.now()/100
  if(report.rows.some(row=>row.stage<offset&&['fuel','fuel-dump','ship-run','ship-visit'].includes(row.action.type)&&row.status!=='confirmed'))warnings.push('Earlier fuel transfers or launch batches have not been confirmed. Reaching this visit does not prove they were completed; review the original walkthrough.');
  if(report.status==='matched'){
   const active=report.rows.filter(row=>row.stage===offset&&row.action.type!=='shift'&&row.status!=='interaction');
+  // Calendar and wake-time conditions can be checked from the backup clock.
+  // The PC clock alone does not advance progress, and elapsed resource waits
+  // still need observed purchases, delivered eggs, or manual confirmation.
+  for(const row of active)if(row.status==='pending'&&time&&clockWait(row.action)&&Number.isFinite(row.action.end)&&row.action.end>=row.action.t&&time>=row.action.end){row.status='elapsed';row.canConfirm=false;}
   for(const [i,row] of active.entries()){
-   if(['present','confirmed','superseded','target-met'].includes(row.status))continue;
+   if(['present','confirmed','superseded','target-met','elapsed'].includes(row.status))continue;
    if(row.action.type==='wait'&&['Go offline, then return to collect earnings','Accumulate cash online','One offline break to fund a batch of purchases'].includes(row.action.reason)){
     // A funding wait needs no extra confirmation once its following purchase
-    // is observed. Passive delivery/sleep waits still need checking.
+    // is observed. Resource and delivery waits still need evidence.
     const following=[];
     for(const next of active.slice(i+1)){
-     if(Guide.visibleWait(next.action))break;
+     if(Guide.visibleWait(next.action)&&(next.status!=='elapsed'||following.length))break;
      if(next.action.type!=='wait')following.push(next);
     }
     if(following.length&&following.every(r=>['present','confirmed','superseded'].includes(r.status))){row.status='superseded';continue;}
@@ -98,7 +104,7 @@ function compare(raw,result,current,{confirmed=[],launched={},now=Date.now()/100
 }
 function nextGroup(report,current){
  if(report.status!=='matched'||!report.next||report.next.action.type==='shift')return null;
- const remaining=report.rows.filter(row=>row.stage===report.stage&&row.index>=report.next.index&&!['present','confirmed','superseded','target-met'].includes(row.status));
+ const remaining=report.rows.filter(row=>row.stage===report.stage&&row.index>=report.next.index&&!['present','confirmed','superseded','target-met','elapsed'].includes(row.status));
  const actions=remaining.map(row=>{
   const a=row.action;
   if(a.type==='research')return {...a,from:row.remainingFrom??a.from};

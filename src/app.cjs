@@ -1170,7 +1170,7 @@ function renderPlanProgress(host, summary) {
   const sync=el("button","Refresh From Account","secondary");sync.id="check-plan-account";sync.disabled=!!worker||!!importingBackup;
   sync.onclick=()=>{if(!eidForSync()){ $("eid").focus();show("Enter your Egg Inc. ID in the sidebar and press Enter to check this plan against your current farm.");return;}loadEidData();};
   controls.append(load,sync);card.append(heading,controls,file);
-  card.append(el("p","Check a current Virtue farm against this plan. Research and permanent upgrades are checked from the snapshot. Confirm waits, fuel transfers, and completed launch batches yourself. The original schedule stays visible.","hint"));
+  card.append(el("p","Check a current Virtue farm against this plan. Research, permanent upgrades, and ended calendar or sleep waits are checked from the snapshot. Confirm other waits, fuel transfers, and completed launch batches yourself. The saved schedule stays visible.","hint"));
   if(!planProgress){card.append(el("p","Load a current farm file or refresh your account to see your current visit and next step.","hint"));host.append(card);return;}
   const confirmed=planProgress.planKey===Progress.key(result)?planProgress.confirmed:[];
   const launched=planProgress.planKey===Progress.key(result)?planProgress.launched||{}:{};
@@ -1217,7 +1217,7 @@ function renderPlanProgress(host, summary) {
     const list=el("ul");
     for(const row of groups.values()){
       const a=row.action,description=a.type==='research'?D.research[a.i].name+" · current "+(planProgress.snapshot.farm.research[D.research[a.i].id]||0)+" / visit target "+a.to:a.type==='silo'?"Silos · visit target "+row.siloTarget:label(row);
-      const item=el("li"),text=el("span",description),state=el("span",row.status==='present'?"Present in snapshot":row.status==='confirmed'?"Confirmed by you":row.status==='target-met'?"TE target available":"Still to check","progress-state");
+      const item=el("li"),text=el("span",description),state=el("span",row.status==='present'?"Present in snapshot":row.status==='confirmed'?"Confirmed by you":row.status==='target-met'?"TE target available":row.status==='elapsed'?"Wait ended by snapshot time":"Still to check","progress-state");
       item.dataset.progressIndex=row.index;item.append(text,state);
       if(row.canConfirm){const button=el("button",row.status==='confirmed'?"Undo Confirmation":"Mark Done","secondary");button.type="button";button.disabled=!!worker||!!importingBackup;button.onclick=()=>{const ids=new Set(confirmed),counts={...launched};if(row.status==='confirmed'){ids.delete(row.index);delete counts[row.index];}else ids.add(row.index);planProgress={...planProgress,planKey:Progress.key(result),confirmed:[...ids],launched:counts};remainingProposal=null;renderResult();const checklist=$("plan-progress").querySelector(".progress-checklist");if(checklist)checklist.open=true;$("plan-progress").querySelector(`[data-progress-index="${row.index}"] button`)?.focus({preventScroll:true});};item.append(button);}
       list.append(item);

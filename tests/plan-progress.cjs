@@ -13,7 +13,7 @@ const raw=farm(),r=plan([
  {type:'shift',egg:0},
  {type:'research',i:0,from:1,to:2},
  {type:'fuel',egg:0,amount:100},
- {type:'wait',end:start+100,reason:'Sleep hours; resume interactions at wake time'},
+ {type:'wait',end:start+1200,reason:'Sleep hours; resume interactions at wake time'},
  {type:'shift',egg:1},
  {type:'hab',slot:0,id:2},
  {type:'shift',egg:3},
@@ -48,10 +48,27 @@ assert.equal(check(noFreeSilo,initialOne,live(noFreeSilo)).status,'mismatch','a 
 // Never treat elapsed time, stored fuel, or returned flights as launch proof.
 const manual=plan([{type:'wait',end:start+20,reason:'Sleep hours; resume interactions at wake time'},{type:'fuel',egg:0,amount:100},{type:'ship-run',count:2},{type:'ship-visit',visit:2},{type:'fuel-dump'}]);
 f=live(raw);f.importInfo.timestamp=now;f.farm.fuelTank.amounts.curiosity=100;f.farm.shipFlights=[{slot:1,returnAt:start+30}];
-report=check(raw,manual,f);assert.ok(report.rows.every(row=>row.status==='pending'));assert.equal(report.next.index,0);assert.equal(check(raw,manual,f,{confirmed:[0,1,2,3,4]}).next,null);
-// Only a funding wait may be superseded by its observed following purchase.
+report=check(raw,manual,f);assert.equal(report.rows[0].status,'elapsed');assert.ok(report.rows.slice(1).every(row=>row.status==='pending'));assert.equal(report.next.index,1);assert.equal(check(raw,manual,f,{confirmed:[0,1,2,3,4]}).next,null);
+// Observed purchases supersede funding waits; snapshot time proves sleep ended.
 const funding=plan([{type:'wait',end:start+20,reason:'Go offline, then return to collect earnings'},{type:'research',i:0,from:0,to:1},{type:'wait',end:start+60,reason:'Sleep hours; resume interactions at wake time'},{type:'research',i:1,from:0,to:1}]);
-f=live(raw);f.farm.research={[S.D.research[0].id]:1,[S.D.research[1].id]:1};report=check(raw,funding,f);assert.equal(report.rows[0].status,'superseded');assert.equal(report.next.index,2,'sleep wait still needs confirmation');
+f=live(raw);f.farm.research={[S.D.research[0].id]:1,[S.D.research[1].id]:1};report=check(raw,funding,f);assert.equal(report.rows[0].status,'superseded');assert.equal(report.rows[2].status,'elapsed');assert.equal(report.next,null);
+const undatedFunding=structuredClone(f);delete undatedFunding.importInfo;assert.equal(check(raw,funding,undatedFunding).next.index,2,'without a backup clock, sleep still needs confirmation');
+// Passed sale/earnings/wake times must not block the current purchase batch.
+{
+ const reasons=['Wait for the Friday research sale','Wait for double earnings','Wait for the weekly event boundary','Preserve cash for the Friday research sale','Preserve the proposed research sale','Compare research purchases during the next sale','Compare departure at a weekly event boundary','Sleep hours; resume interactions at wake time','Sleep hours; resume ship interactions at wake time'];
+ for(const reason of reasons){
+  const clockPlan=plan([{type:'wait',end:start+60,reason,earningsMode:'offline'},{type:'research',i:0,from:0,to:1,t:start+60}]),current=live(raw);
+  current.importInfo.timestamp=start+59;assert.equal(check(raw,clockPlan,current).next.index,0,'the PC clock does not complete '+reason);
+  for(const t of [start+60,start+1000]){current.importInfo.timestamp=t;const checked=check(raw,clockPlan,current);assert.equal(checked.rows[0].status,'elapsed');assert.equal(checked.rows[0].canConfirm,false);assert.equal(checked.next.index,1);const group=P.nextGroup(checked,current);assert.equal(group.break,null);assert.equal(group.activities[0].value,'0 → 1');}
+  delete current.importInfo;assert.equal(check(raw,clockPlan,current).next.index,0,'undated snapshots do not complete '+reason);
+  current.importInfo={timestamp:now+301};assert.equal(check(raw,clockPlan,current).status,'mismatch');assert.equal(check(raw,clockPlan,current).rows[0].status,'pending');
+ }
+ const resourcePlan=plan([{type:'wait',end:start+20,reason:'Collect 5 Truth Eggs'},{type:'wait',end:start+30,reason:'Wait for an earlier ship to return'},{type:'research',i:0,from:0,to:1}]);
+ const current=live(raw);assert.equal(check(raw,resourcePlan,current).next.index,0,'time alone proves neither delivery milestones nor ship work');assert.ok(check(raw,resourcePlan,current).rows.slice(0,2).every(row=>row.status==='pending'));
+ const missedPurchase=plan([{type:'research',i:0,from:0,to:1},{type:'wait',end:start+60,reason:reasons[0]},{type:'research',i:1,from:0,to:1,t:start+60}]);const checked=check(raw,missedPurchase,current);assert.equal(checked.next.index,0,'ended waits do not bypass an unpurchased upgrade');assert.equal(checked.rows[1].status,'elapsed');assert.equal(P.nextGroup(checked,current).break,null,'elapsed waits never reappear in the next batch');
+ const overnightFunding=plan([{type:'wait',end:start+20,reason:'Go offline, then return to collect earnings'},{type:'wait',end:start+60,reason:reasons[7]},{type:'research',i:0,from:0,to:1,t:start+60}]);current.farm.research[S.D.research[0].id]=1;const overnight=check(raw,overnightFunding,current);assert.equal(overnight.rows[0].status,'superseded','an ended sleep wait cannot hide the observed funded purchase');assert.equal(overnight.rows[1].status,'elapsed');assert.equal(overnight.next,null);
+ const separateBatches=plan([{type:'wait',end:start+20,reason:'Go offline, then return to collect earnings'},{type:'research',i:0,from:0,to:1,t:start+20},{type:'wait',end:start+60,reason:reasons[7]},{type:'research',i:1,from:0,to:1,t:start+60}]);const separate=check(raw,separateBatches,current);assert.equal(separate.rows[0].status,'superseded','a completed funding batch does not inherit the next batch after sleep');assert.equal(separate.next.index,3);
+}
 const grouped=plan([{type:'research',i:0,from:0,to:5}]);assert.equal(check(raw,grouped,f).next.remainingFrom,1);
 // Actual equipped gear supersedes older sets only in the current visit.
 const artifact=S.D.artifacts.find(a=>a.target==='research cost'),other=S.D.artifacts.find(a=>a.target==='egg laying rate');assert.ok(artifact&&other);

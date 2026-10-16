@@ -1,3 +1,10 @@
+# v1.0.7
+
+- Advance past ended research-sale, earnings-event, and sleep waits using the checked backup timestamp. Show the actual unfinished step and purchase batch instead of an already-ended calendar break.
+- Label these waits as ended by the snapshot time in Current Visit Checklist. Preserve the saved schedule and manual confirmations; the PC clock alone does not confirm purchases, resource waits, fuel transfers, or launches.
+- Keep funding-wait inference from observed purchases working across an ended sleep wait. Add timestamp-boundary, account-refresh, save/load, and update-recovery regressions.
+- Install through Update App → Update & Restart, then refresh Plan Progress or check a current farm file. Existing saved plans remain usable.
+
 # v1.0.6
 
 - Match remaining-plan progress against the backup used to create the plan, even when the new schedule starts later. Keep older-backup, future-time, ascension, visit, and upgrade checks.

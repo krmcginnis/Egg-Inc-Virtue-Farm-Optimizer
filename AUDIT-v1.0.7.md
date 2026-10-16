@@ -1,4 +1,60 @@
-# Egg Inc. Virtue Farm Optimizer v1.0.6 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.0.7 — Release Audit
+
+## v1.0.7 release preparation — October 16, 2026
+
+A checked backup from October 16 at 15:01:53 PDT still displayed the Friday
+research-sale wait ending at 09:00 PDT. That wait was treated as a manual step,
+even though the calendar condition had ended and its following purchases were
+already present. Calendar-event and wake-time waits now receive an elapsed
+state when the checked snapshot reaches their end. Elapsed waits cannot block
+Next Planned Step or reappear as a break in its purchase batch. The checklist
+labels the backup evidence instead of asking for a second manual confirmation.
+
+The backup clock is required; advancing the PC clock alone does not complete
+a wait. Resource accumulation, delivered-egg milestones, fuel transfers, and
+launch batches retain their observed/manual checks. An unpurchased upgrade
+still blocks progress even when a later calendar wait has ended. Funding waits
+can be superseded by observed following purchases across an elapsed wake-time
+wait. Manual confirmations, plan actions, schedules, and the solver's search
+rules remain unchanged. Earlier timestamp, ascension, visit, and required-upgrade
+guards remain active.
+
+The supplied farm matches its saved plan and now selects the funding break
+ending at 15:53:33 PDT followed by Atomic Purification 26 → 27. Its 28 present
+purchases are retained. The saved plan replays successfully and both input files
+remain unchanged. The original finish is retained; this change updates progress
+display rather than reoptimizing the saved schedule.
+
+Native v1.0.7 Windows checks and independent public-download acceptance remain
+release gates until recorded as accepted. The v1.0.6 evidence below describes
+the previously published assets.
+
+## Completed local v1.0.7 checks
+
+Dependency installation and the versioned app/worker build passed. All seven
+local suites passed: progress model, continuation model, standalone generated
+worker, progress browser, continuation browser, release intent, and safe staged
+publishing. Regressions cover backup times immediately before, exactly at, and
+after calendar/wake boundaries; undated and future backups; unpurchased upgrades;
+resource and launch guards; funding/sleep boundaries; and removal of elapsed
+waits from the upcoming purchase batch. The browser checks real protobuf account
+refresh, unchanged manual confirmations and schedules, save/load, and update
+recovery. The extracted curated source independently installed, rebuilt, and
+passed progress-model, release-intent, and staged-publishing checks.
+
+The supplied 21 MB saved plan loaded and replayed in the actual browser app.
+Its restored progress and a separate check with the supplied current farm both
+selected Atomic Purification 26 → 27 after the 15:53 PDT funding break. The old
+sale wait is labeled ended by snapshot time in the checklist. The replayed
+schedule and both uploaded input files remained unchanged; no browser errors
+were observed.
+
+The runtime ZIP contains 169 entries and the curated source contains 289 files,
+including all 22 workflow suites and their local dependencies. Both ZIP CRCs,
+every runtime file checksum, archive/manifest size and hash, version/repository
+metadata, current audit links, and the compiled progress fix passed. Generated
+bundles and private input directories are excluded from source; private input
+directories are excluded from runtime.
 
 ## Accepted v1.0.6 publication — October 15, 2026 (Pacific)
 

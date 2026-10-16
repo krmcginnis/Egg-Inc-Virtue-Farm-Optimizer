@@ -11,7 +11,9 @@ Start on **Account** to load your account or saved farm. Continue to **Virtue Fa
 To follow a saved plan, use **Check With Farm File** or **Refresh From Account**
 under **Plan Progress**. The app matches the current visit by lifetime shift
 count, checks research and permanent purchases, and shows the next planned step.
-Confirm waits, fuel transfers, and completed launch batches in the checklist.
+Sale, earnings-event, and sleep waits advance when their end time is reached
+in the checked backup. Confirm other waits, fuel transfers, and completed launch
+batches in the checklist. The PC clock alone does not confirm farm progress.
 Progress checks keep the original schedule. To update it, confirm **Already
 Launched** counts for each visited Humility batch, including active and returned
 missions, then choose **Reoptimize Remaining Plan**. The search preserves your
