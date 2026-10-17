@@ -1,4 +1,69 @@
-# Egg Inc. Virtue Farm Optimizer v1.0.8 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.0.9 — Release Audit
+
+## v1.0.9 search refinements — October 17, 2026
+
+v1.0.9 implements isolated paid-prefix reuse, new paid purchase packages,
+adaptive additional comparisons and compatible saved-alternative seeding.
+The accepted v1.0.8 publication evidence is retained below as prior evidence.
+The default search allowance remains 90 seconds. Results remain bounded
+fastest-found plans rather than a proof of global optimality.
+
+Prefix reuse is limited to the same starting state, prepared context and
+execution mode, with a 768-entry cap and cloned states. Reuse stops before
+delivery allocation, whose goals depend on later edits. All comparisons pay
+actual prices and interaction time. Competitive candidates independently
+replay their complete histories before entering the winners; losing paid
+trials avoid a redundant second replay.
+
+New packages compare up to four additional purchases, including complementary
+laying/shipping capacity, tier fillers, habitats, engines and cars. Their
+paid states continue both the saved purchase suffix and an earlier departure
+variant. Already-paid template targets are skipped without granting unpaid
+levels. Growth and completion share bounded slices and cancellation checks.
+The adaptive queue explores distinct package, economics and timing passes,
+prioritizes kinds that improve retained plans, and stops at exhaustion, the
+job cap, cancellation or the remaining time limit.
+
+Saved alternatives must replay their source plan, match the visited farm
+prefix, and retime from the same checked farm and selected plan's original
+shift allowance. Historical/current ship batches must match before reviewed
+launch counts are remapped; remaining mission configurations must agree.
+Unavailable or incompatible alternatives are skipped. A larger supplied
+case exposed automatic equips generated from a replay context losing their
+gear snapshots. Automatic equip actions now retain those snapshots even
+when the inventory-search model is absent.
+
+### Paired compiled-worker comparisons
+
+The published v1.0.8 worker and updated standalone worker used the same
+supplied inputs, historical start times, width 12 and 90-second budgets.
+Heavy comparison jobs ran sequentially. Each result passed complete replay,
+awake-interaction checks, target/floor checks and launch accounting. Uploaded
+files were unchanged. These are single paired trials, not runtime guarantees.
+
+| Case | Published / updated elapsed | Published / updated economics comparisons | New package comparisons | Fastest finish |
+| --- | --- | --- | --- | --- |
+| Original remaining plan | 32.5 s / 46.8 s | 280 / 964 | 128 | Unchanged: `1803891264.1683307` |
+| Followup continuation | 33.0 s / 62.5 s | 325 / 1,105 | 632 | Unchanged: `1803913247.141548` |
+
+Both fastest results retain six shifts, 40 TE on each Virtue and 351 launches.
+The updated search spends more of the allowed time comparing alternatives.
+In the followup case its five-shift alternative also improved from
+`1813018291.392286` to `1805767484.5196815`, a gain of 83.9214 days. That
+alternative independently replays to 200 TE, satisfies the configured floors
+and retains all 351 launches; the six-shift choice still finishes earlier.
+
+A separate same-work prefix comparison ran 53 proposals with retained and
+rescheduled calendar waits. All 106 outcomes, including 82 completed paid
+comparisons, matched exactly with reuse enabled or disabled. Reuse recorded
+1,960 hits; measured execution was 1,142 ms without reuse and 1,043 ms with
+reuse. This small timing sample is illustrative; exact outcome equivalence
+and avoiding repeated work are the stronger evidence.
+
+All 19 local regression suites passed, including the compiled standalone
+worker, search refinements, purchase economics, launch accounting and sleep.
+Local results are recorded in `VALIDATION.json`. Windows workflow, native
+updater/launcher and anonymous public-release checks remain release gates.
 
 ## Accepted v1.0.8 publication — October 17, 2026 (Pacific)
 

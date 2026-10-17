@@ -3,6 +3,7 @@ const S=require('./simulator.cjs'),L=require('./optimizer-legacy.cjs');
 const Sleep=require('./sleep-schedule.cjs');
 const EarningsFirst=require('./earnings-first-research.cjs');
 const Economics=require('./purchase-economics.cjs');
+const identity=s=>s,always=()=>true;
 
 // A declared earnings setup can propose an additional purchase order when
 // starting gear earns more. It is never equipped by this search. Execute its
@@ -33,8 +34,10 @@ function earningWait(s,c,action){
  throw Error('Proposed earnings wait exceeds the planning limit.');
 }
 function deliveryWait(action){return action.type==='wait'&&/^(Collect .* (?:share of the Truth Egg target|Truth Egg milestones)|Deliver enough eggs to reach the Truth Egg target)/.test(action.reason||'');}
-function execute(initial,c,actions,{compress=false,retime=false,recomputeFunding=false,preserveCalendar=true,earningsFirst=false,beforeAction=s=>s,reallocate=()=>true,checkpoint=()=>{}}={}){
+function execute(initial,c,actions,{compress=false,retime=false,recomputeFunding=false,preserveCalendar=true,honorTargets=false,earningsFirst=false,beforeAction=identity,reallocate=always,checkpoint=()=>{},prefixes=null}={}){
  let n=initial;
+ if(prefixes&&(earningsFirst||beforeAction!==identity||reallocate!==always))throw Error('Schedule prefix reuse requires unmodified paid action execution.');
+ let node=prefixes?.bind(initial,c,{compress,retime,recomputeFunding,preserveCalendar,honorTargets})||null;
  const lastPurchase=recomputeFunding?actions.reduce((last,a,i)=>Economics.purchase(a)?i:last,-1):-1;
  const deliveryTargets=new Map(),eggs=initial.eggs.slice();
  if(recomputeFunding)for(const a of actions)if(a.type==='wait'){
@@ -43,7 +46,16 @@ function execute(initial,c,actions,{compress=false,retime=false,recomputeFunding
  for(let index=0;index<actions.length;index++){
   const action=actions[index];
   checkpoint();
+  if(honorTargets&&S.reached(n,c))return n;
   n=beforeAction(n,action);
+  // Newly paid packages can already satisfy a later template purchase. Keep
+  // its actual selected target, never charge for it again or skip an unpaid
+  // prerequisite. Silo targets are attached by the complete source timeline.
+  if(honorTargets&&(action.type==='research'&&n.r[action.i]>=action.to||action.type==='hab'&&n.h[action.slot]!==null&&n.h[action.slot]>=action.id||action.type==='vehicle'&&n.v[action.slot].id!==null&&n.v[action.slot].id>=action.id||action.type==='car'&&n.v[action.slot]?.id===11&&n.v[action.slot].cars>=action.toCars||action.type==='silo'&&Number.isInteger(action.siloTarget)&&n.silos>=action.siloTarget||action.type==='set'&&n.set===action.set))continue;
+  // Delivery allocation depends on later edits and their original egg goals.
+  // Never reuse a prefix at or beyond that first delivery-allocation decision.
+  if(deliveryWait(action))node=null;
+  if(node){const hit=prefixes.get(node,action);if(hit){n=S.clone(hit.state);node=hit;continue;}}
   if((earningsFirst===true||Array.isArray(earningsFirst)&&earningsFirst.includes(n.stage))&&n.egg===0&&action.type!=='shift'){
    let end=index;while(end<actions.length&&actions[end].type!=='shift')end++;
    const visit=actions.slice(index,end);
@@ -91,6 +103,7 @@ function execute(initial,c,actions,{compress=false,retime=false,recomputeFunding
    if((c.sleep||retime)&&['research','hab','vehicle','car','silo','set','shift'].includes(action.type)){const ready=S.afford(n,actual,action);if(!ready)throw Error('Proposed interaction cannot be funded while awake within the planning limit.');n=ready;}
    n=S.buy(n,actual,action);
   }
+  if(node)node=prefixes.put(node,action,n);
  }
  return S.reached(n,c)?n:L.tail(n,c);
 }

@@ -29,7 +29,7 @@ function closure(initial,c,actions,removed,{stop=actions.length,checkpoint=()=>{
  return drop;
 }
 function coherent(initial,c,actions,checkpoint){const removed=closure(initial,c,actions,[],{checkpoint});return removed!==null&&removed.size===0;}
-function proposals(initial,c,actions,{limit=16,maxProposals=72,checkpoint=()=>{}}={}){
+function proposals(initial,c,actions,{limit=16,offset=0,maxProposals=72,checkpoint=()=>{}}={}){
  const stages=[];let stage=initial.stage;
  for(const a of actions){if(a.type==='shift')stage++;stages.push(stage);}
  const items=actions.map((a,index)=>({a,index,stage:stages[index]})).filter(({a})=>purchase(a)&&Number.isFinite(a.cost)&&a.cost>=0);
@@ -67,7 +67,7 @@ function proposals(initial,c,actions,{limit=16,maxProposals=72,checkpoint=()=>{}
   const prefix=actions.slice(0,target).filter((_,i)=>!drop.has(i)),suffix=actions.slice(target);
   add(kind,root,[...prefix,...block.map(a=>time!==undefined?{...a,t:time}:a),...suffix]);
  }
- for(const root of anchors){
+ for(const root of anchors.slice(offset)){
   checkpoint();if(output.length>=maxProposals)break;
   const {a,index,stage}=root;
   omit(root,[index]);

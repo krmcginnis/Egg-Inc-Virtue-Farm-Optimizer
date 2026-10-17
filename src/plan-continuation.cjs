@@ -32,8 +32,10 @@ function restoreArtifactSet(action,c){
  if(!available)throw Error('The original artifact setup needs artifacts or stones that are unavailable in this snapshot.');
  c.loadouts[action.set]=slots;c.mods[action.set]=S.modifiers(slots);
 }
+// Other saved alternatives are search seeds. The selected plan, checked farm
+// and progress remain authoritative; retain compatibility with saved proposals.
 function sourceKey(request){return JSON.stringify([request.config,request.result.start,request.result.end,request.result.target,request.result.actions,request.progress]);}
-function prepare(request,{now=Date.now()/1000}={}){
+function prepare(request,{now=Date.now()/1000,budget=null}={}){
  const {config:original,result,progress}=request;
  if(!progress?.snapshot)throw Error('Check this plan with a current farm snapshot before reoptimizing.');
  const matched=progress.planKey===P.key(result),confirmed=matched&&Array.isArray(progress.confirmed)?progress.confirmed:[],launched=matched?(progress.launched||{}):{};
@@ -43,8 +45,8 @@ function prepare(request,{now=Date.now()/1000}={}){
  if(start<now-300)throw Error('The remaining search must start at the current PC time. Check the farm again before reoptimizing.');
  if(report.time&&report.time>start+1)throw Error('The backup time is ahead of the PC clock. Sync the game and check the time before reoptimizing.');
  const prior=original.plan.continuation;
- const totalShiftBudget=S.number(prior?.totalShiftBudget??result.switches??result.actions.filter(a=>a.type==='shift').length,'Original shift budget',0,30,true);
- const alreadyUsed=S.number(prior?.consumedShifts??0,'Already used shifts',0,totalShiftBudget,true);
+ const totalShiftBudget=S.number(budget?.total??prior?.totalShiftBudget??result.switches??result.actions.filter(a=>a.type==='shift').length,'Original shift budget',0,30,true);
+ const alreadyUsed=S.number(budget?.usedBefore??prior?.consumedShifts??0,'Already used shifts',0,totalShiftBudget,true);
  const consumedShifts=alreadyUsed+report.stage,remainingShiftBudget=totalShiftBudget-consumedShifts;
  if(remainingShiftBudget<0)throw Error('The farm has already used the original plan’s shift budget.');
  const route=[S.EGGS[report.egg],...report.rows.filter(row=>row.stage>report.stage&&row.action.type==='shift').map(row=>S.EGGS[row.action.egg])];
@@ -137,14 +139,52 @@ function baseline(prepared,{checkpoint=()=>{}}={}){
  if(!S.reached(n,c)){const end=L.tail(n,c);if(!end)throw Error('The original route cannot finish within its remaining shift budget.');n=end;}
  return packageState(config,n,c,route);
 }
+function visits(raw,result,through){return [raw.farm.virtue,...result.actions.filter(a=>a.type==='shift').slice(0,through).map(a=>S.EGGS[a.egg])];}
+function launchRows(result){let stage=0;return result.actions.flatMap((action,index)=>{if(action.type==='shift')stage++;return action.type==='ship-run'?[{action,index,stage}]:[];});}
+function batchKey(action){return JSON.stringify(action.batches?.map(b=>[b.ship,b.duration,b.count]));}
+function alternativeProgress(request,plan,stage){
+ const source=launchRows(request.result).filter(r=>r.stage<=stage),target=launchRows(plan).filter(r=>r.stage<=stage),progress=request.progress;
+ const launched={};
+ for(let i=0;i<Math.max(source.length,target.length);i++){
+  const a=source[i],b=target[i];
+  // Past launch reviews are meaningful only for the same visited H and
+  // ordered mission batches. Never borrow counts from a future/different H.
+  if(!a||!b||a.stage!==b.stage||batchKey(a.action)!==batchKey(b.action))throw Error('Saved alternative has incompatible reviewed launch batches.');
+  const counts=progress.confirmed?.includes(a.index)?a.action.batches.map(x=>x.count):progress.launched?.[a.index];
+  if(!Array.isArray(counts))throw Error('Saved alternative needs an independent launch review.');
+  launched[b.index]=counts.slice();
+ }
+ return {snapshot:progress.snapshot,confirmed:[],launched,planKey:P.key(plan)};
+}
+function alternatives(request,prepared,{checkpoint=()=>{}}={}){
+ const output=[];
+ try{ShiftPlans.validate(request.result);}catch{return output;}
+ const selected=request.result.selectedSwitches??request.result.switches;
+ for(const entry of request.result.shiftPlans||[]){
+  try{checkpoint();}catch{break;}if(entry.switches===selected)continue;
+  try{
+   const plan=verified(request.config,entry.plan);
+   if(plan.target!==request.result.target||JSON.stringify(visits(request.config,plan,prepared.report.stage))!==JSON.stringify(visits(request.config,request.result,prepared.report.stage)))continue;
+   const progress=alternativeProgress(request,plan,prepared.report.stage),other=prepare({...request,result:plan,progress},{now:request.start,budget:{total:prepared.totalShiftBudget,usedBefore:prepared.consumedShifts-prepared.report.stage}});
+   if(other.remainingShiftBudget!==prepared.remainingShiftBudget||other.consumedShifts!==prepared.consumedShifts||JSON.stringify(other.config.plan.ships)!==JSON.stringify(prepared.config.plan.ships))continue;
+   // The shared farm/target/mission context stays authoritative. Automatic
+   // alternatives may have their own suffix; fixed user routes remain fixed.
+   const candidate=baseline({...other,config:prepared.config},{checkpoint});
+   output.push({sourceSwitches:entry.switches,remainingSwitches:candidate.switches,end:candidate.end,plan:candidate});
+  }catch{try{checkpoint();}catch{break;}}
+ }
+ return output;
+}
 async function search(request,options={},progress=()=>{},cancelled=()=>false){
  const prepared=prepare(request),deadline=Date.now()+Math.min(5000,Math.max(100,Number(options.maxMs??90000)*.1));
  progress({phase:'route-search',stage:'Original Route',explored:0,bestSeconds:null});
  let originalRoute=null,baselineError='';
  try{originalRoute=baseline(prepared,{checkpoint:()=>{if(cancelled()||Date.now()>deadline)throw Error('Original route comparison interrupted.');}});}catch(e){baselineError=e.message;}
- const result=await O.solve(prepared.config,{...options,incumbent:originalRoute?{config:prepared.config,result:originalRoute}:undefined},progress,cancelled);
+ let retained=[];
+ if(!options.disableSavedAlternatives)try{retained=alternatives(request,prepared,{checkpoint:()=>{if(cancelled()||Date.now()>deadline)throw Error('Saved alternative comparison interrupted.');}});}catch{}
+ const result=await O.solve(prepared.config,{...options,incumbent:originalRoute?{config:prepared.config,result:originalRoute}:undefined,incumbents:retained.map(x=>({config:prepared.config,result:x.plan}))},progress,cancelled);
  const checked=verified(prepared.config,result);
  if(originalRoute&&checked.end>originalRoute.end+.01)throw Error('The remaining search discarded its validated original-route candidate.');
- return {...prepared,report:undefined,result:checked,baseline:originalRoute,baselineError};
+ return {...prepared,report:undefined,result:checked,baseline:originalRoute,baselineError,retainedAlternatives:retained.map(({plan,...summary})=>summary)};
 }
-module.exports={prepare,baseline,verified,search,sourceKey};
+module.exports={prepare,baseline,verified,search,alternatives,sourceKey};

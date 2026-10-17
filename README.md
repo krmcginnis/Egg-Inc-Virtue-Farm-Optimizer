@@ -110,6 +110,19 @@ and completes and replays each alternative. Complementary capacity can still
 be bought early when it improves the complete plan. These comparisons retain
 the baseline and share the existing bounded search budget.
 
+Further refinement compares new paid purchase packages, including complementary
+laying/shipping upgrades, tier prerequisites and engine/car chains. It also tests
+additional departure timings. Distinct passes share the remaining search time;
+successful kinds receive more attention, and an exhausted queue stops early.
+Identical schedule prefixes reuse isolated paid states, while candidates that
+can improve the result receive independent full replay before acceptance.
+
+Reoptimizing a checked farm also retimes compatible saved shift-count alternatives
+as starting candidates. The current farm, original shift allowance and remaining
+launches stay authoritative. An alternative with a different visited prefix or
+incompatible launch review is skipped. Automatic artifact snapshots remain in
+new continuations so a saved alternative can replay independently.
+
 The v0.8.23 solver remains in `src/optimizer-legacy.cjs`, with historical replay
 routed through it. Developers can use `legacySolver: true` when calling solve
 for rollback testing.
@@ -169,6 +182,9 @@ Run `node tests/sleep-search-quality.cjs` for finite exhaustive sleep, research,
 silo, and shift decisions, and `node tests/earnings-incumbents.cjs` for upgrade
 reexecution and rejection checks. `node tests/earnings-first-research.cjs` checks
 paid research deferral, tier prerequisites, bottlenecks, and complete replay.
+`node tests/search-refinements.cjs` checks prefix equivalence, new paid packages,
+adaptive work, saved alternatives and partial launch-review mapping. The compiled
+worker tests exercise these paths independently of the source modules.
 For private baseline comparisons, use:
 
 ```sh

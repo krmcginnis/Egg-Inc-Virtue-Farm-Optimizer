@@ -133,7 +133,9 @@ function artifactChoices(s,c){
  const r=stats(s,c),economy=Artifacts.bestEarnings(c.artifactModel,r,researchNeeded(s));
  const seen=new Set();return [s.set,registerAutomatic(c,economy.research.loadout,'earnings'),registerAutomatic(c,economy.income.loadout,'income'),registerAutomatic(c,Artifacts.bestDelivery(c.artifactModel,r).loadout,'delivery')].filter(key=>{const signature=Artifacts.signature(c.loadouts[key]);if(seen.has(signature))return false;seen.add(signature);return true;});
 }
-function artifactAction(set,c){return {type:'set',set,...(c.artifactModel?{loadout:c.loadouts[set],setLabel:Artifacts.label(set)}:{})};}
+// Replayed contexts retain paid automatic sets without the inventory search
+// model. New continuations still need their snapshots in standalone history.
+function artifactAction(set,c){return {type:'set',set,...(c.artifactModel||/^auto-(delivery|earnings|income)-/.test(set)?{loadout:c.loadouts[set],setLabel:Artifacts.label(set)}:{})};}
 function recordedArtifactSets(actions){const sets={};for(const a of actions.filter(a=>a.type==='set'&&Array.isArray(a.loadout))){if(/^auto-(delivery|earnings|income)-/.test(a.set)&&Artifacts.key(a.loadout)!==a.set.replace(/^auto-(earnings|income)-/,'auto-delivery-'))throw Error('Saved automatic artifact set does not match its recorded gear.');if(sets[a.set]&&Artifacts.signature(sets[a.set])!==Artifacts.signature(a.loadout))throw Error('Saved artifact set has conflicting gear snapshots.');sets[a.set]=a.loadout;}return sets;}
 function record(s,action){return {...s,path:{prev:s.path,action},depth:s.depth+1};}
 const OFFLINE_MIN_SECONDS=60;
@@ -170,8 +172,8 @@ function mutate(s,c,a){const n=clone(s);switch(a.type){case 'research':n.r[a.i]+
 function buy(s,c,a,log=true){if(a.type==='fuel-dump')return Ships.trim(s,c,log);if(a.type==='fuel')return Ships.store(s,c,number(a.amount,'Stored fuel amount'),log);if(a.type==='ship-run'||a.type==='ship-visit')return Ships.launch(s,c.shipReplay?{...c,shipLaunchOrder:a.launchOrder??'optimized'}:c,log);if(!c.shipReplay){if(a.type==='shift')s=Ships.beforeShift(s,c,log);if(!c.deferShips&&s.egg===2&&Ships.pending(s,c)&&Ships.ready(s,c))s=Ships.launch(s,c,log);}s=interactionReady(s,c,a.type==='shift'?c.shiftSeconds:c.actionsSeconds,log);if(!allowed(s,c,a))throw Error('Action is unavailable on this Virtue or its prerequisites are unmet.');if(a.type==='research'&&c.routeResearchRule&&s.t+c.actionsSeconds>c.researchDeadline+1e-6)throw Error('Research purchase exceeds its sale window.');const cost=price(s,c,a);if(!Number.isFinite(cost)||cost<0)throw Error('Purchase has no valid price.');if(cost>s.cash+Math.max(1,cost)*1e-12)throw Error('Purchase is not affordable.');const before=stats(s,c);let n=mutate(s,c,a);n.cash=Math.max(0,n.cash-cost);const after=stats(n,c);
  if(log)n=record(n,{...a,type:a.type,t:s.t,egg:a.type==='shift'?a.egg:s.egg,fromEgg:s.egg,cost,from:a.type==='research'?s.r[a.i]:undefined,to:a.type==='research'?n.r[a.i]:undefined,fromCars:a.type==='car'?s.v[a.slot].cars:undefined,toCars:a.type==='car'?n.v[a.slot].cars:undefined,bank:n.cash,soulCost:a.type==='shift'?s.soul-n.soul:0,before:{delivery:before.delivery,laying:before.laying,shipping:before.shipping,earning:before.earning},after:{delivery:after.delivery,laying:after.laying,shipping:after.shipping,earning:after.earning}});
  const dt=a.type==='shift'?c.shiftSeconds:c.actionsSeconds;if(dt&&n.t+dt>c.end)throw Error('Action interaction time exceeds the planning limit.');if(dt)n=advance(n,c,n.t+dt,a.type==='shift'?'Switch overhead; habitats fill immediately':'Purchase interaction time',log,'online');if(!c.shipReplay&&a.type==='shift'&&!c.deferShips&&n.egg===2&&Ships.pending(n,c)&&Ships.ready(n,c))n=Ships.launch(n,c,log);return n;}
-function afford(s,c,a){
- if(c.sleep)return affordWithSleep(s,c,a);
+function afford(s,c,a,checkpoint){
+ checkpoint?.();if(c.sleep)return affordWithSleep(s,c,a,checkpoint);
  if(!allowed(s,c,a))return null;const firstCost=price(s,c,a);if(firstCost<=s.cash+Math.max(1,firstCost)*1e-12)return s;
  const r=stats(s,c),latest=Math.min(c.end,visitDeadline(s,c)-c.actionsSeconds);let best=null;
  // Compare staying online with leaving for a full minute (or longer). Scan
@@ -181,6 +183,7 @@ function afford(s,c,a){
   const rate=mode==='offline'?r.offline:r.online,minimum=s.t+(mode==='offline'?offlineMinimum(c):0);if(rate<=0)continue;
   let t=s.t,cash=s.cash;
   for(let guard=0;guard<c.calendar.length+2&&t<latest;guard++){
+   checkpoint?.();
    if(best&&t>=best.t)break;
    const ev=at(c,t),cost=price({...s,t},c,a),end=Math.min(ev.next,latest),income=rate*ev.earnings;
    const ready=Math.max(minimum,t+Math.max(0,cost-cash)/income+.001);
@@ -190,7 +193,7 @@ function afford(s,c,a){
  }
  return best;
 }
-function affordWithSleep(start,c,a){
+function affordWithSleep(start,c,a,checkpoint){
  if(!allowed(start,c,a))return null;
  const duration=a.type==='shift'?c.shiftSeconds:c.actionsSeconds;
  const latest=Math.min(c.end,visitDeadline(start,c),a.type==='research'&&c.routeResearchRule?c.researchDeadline:Infinity)-duration;
@@ -202,6 +205,7 @@ function affordWithSleep(start,c,a){
   if(mode==='offline'&&(c.earningsMode!=='offline'||r.offline<=r.online))continue;
   const minimum=s.t+(mode==='offline'?offlineMinimum(c):0);let t=s.t,cash=s.cash;
   for(let guard=0;guard<c.calendar.length+c.sleep.intervals.length*3+4&&t<latest;guard++){
+   checkpoint?.();
    if(best&&t>=best.t)break;
    const coverage=r.siloHours*3600,ev=at(c,t),end=Math.min(ev.next,Sleep.productionBoundary(c.sleep,t,coverage),latest),rate=Sleep.producing(c.sleep,t,coverage)?(Sleep.sleeping(c.sleep,t)||mode==='offline'?r.offline:r.online):0;
    const income=rate*ev.earnings,cost=price({...s,t},c,a);

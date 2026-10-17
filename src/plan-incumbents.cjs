@@ -1,4 +1,5 @@
 'use strict';
+const W=require('./waiting-objective.cjs');
 function canonical(value){
  if(Array.isArray(value))return value.map(canonical);
  if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])]));
@@ -18,4 +19,12 @@ function restore(raw,incumbent,replay){
  }catch{}
  return items;
 }
-module.exports={key,restore};
+function restoreMany(raw,primary,additional,replay){
+ const output=[],seen=new Set();
+ for(const source of [primary,...(Array.isArray(additional)?additional.slice(0,16):[])])for(const item of restore(raw,source,replay)){
+  const {path,depth,...state}=item.state,id=JSON.stringify([item.route,item.count,state,W.offlineBreaks(item.state)]);
+  if(!seen.has(id)){seen.add(id);output.push(item);}
+ }
+ return output;
+}
+module.exports={key,restore,restoreMany};

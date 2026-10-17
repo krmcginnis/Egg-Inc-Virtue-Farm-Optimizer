@@ -1,3 +1,14 @@
+# v1.0.9
+
+- Reuse unchanged paid simulation prefixes and independently replay competitive candidates, allowing more purchase comparisons within the existing search budget.
+- Compare new paid purchase packages, including complementary laying/shipping capacity, tier prerequisites and engine/car dependencies, through the full TE goal.
+- Use remaining search time for distinct additional purchase and departure passes, adapting their priority to improvements and stopping when the queue is exhausted.
+- Revalidate and retime compatible saved shift-count alternatives when reoptimizing a checked farm. Preserve the original shift allowance, current upgrades, remaining missions and reviewed launch counts.
+- Preserve automatic artifact snapshots when creating continuations from replayed plans, so saved alternatives remain independently replayable.
+
+- In the supplied followup comparison, the five-shift alternative improves by about 84 days while the fastest six-shift finish remains unchanged. Results remain bounded fastest-found plans.
+- Install through Update App → Update & Restart, then reoptimize from a checked farm to use the expanded search.
+
 # v1.0.8
 
 - Compare research, habitats, vehicles, train cars and silos by complete paid TE completion time. Test skipping purchase chains, buying productive upgrades first, waiting for a research sale, and using a later eligible Virtue visit.
