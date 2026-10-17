@@ -1,6 +1,7 @@
 'use strict';
 const assert=require('node:assert/strict'),S=require('../src/simulator.cjs'),R=require('../src/route-solver.cjs');
 const E=require('../src/earnings-first-research.cjs'),P=require('../src/schedule-proposals.cjs'),L=require('../src/optimizer-legacy.cjs');
+const V=require('../src/purchase-economics.cjs');
 const {fixture}=require('./research-sale-plans.cjs');
 function farm(){
  const raw=fixture();Object.assign(raw.plan,{start:1791993600,strategy:'user',autoSequence:false,sequence:'C K C H C',target:101,solverVersion:2,actionSeconds:.3});
@@ -11,6 +12,19 @@ function farm(){
 function proposed(s,c,ids){return ids.map(id=>({type:'research',i:S.RMAP[id],from:s.r[S.RMAP[id]],to:s.r[S.RMAP[id]]+1,t:s.t}));}
 function pay(s,c,actions){let n=s;for(const a of actions){const ready=S.afford(n,c,a);assert.ok(ready);n=S.buy(ready,c,a);}return n;}
 function marked(n,route){return S.history(n).map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:2,sequence:route,researchSales:3}});}
+function missedSale(){
+ const raw=fixture(),route=['curiosity','resilience','integrity','humility','kindness'];
+ Object.assign(raw.plan,{start:Date.parse('2026-10-17T10:00:00-07:00')/1000,strategy:'user',autoSequence:false,sequence:route,target:200,maxShifts:4,maxSwitches:4,solverVersion:2,maxDays:366,ships:{mode:'none'},sleep:{enabled:false},actionSeconds:.3,continuation:{version:1}});
+ Object.assign(raw.farm.research,{atomic_purification:27,wormhole_dampening:6});raw.farm.vehicles=raw.farm.vehicles.map(v=>({...v,cars:10}));raw.farm.earningsScale=1;
+ let p=R.prepare(raw,route,3);const a={type:'research',i:S.RMAP.atomic_purification},cost=S.price(p.s,p.c,a);
+ // Use the supported calibration to make four days of income equal the
+ // purchase price, while retaining real prices and paid production upgrades.
+ raw.farm.earningsScale=cost/(S.stats(p.s,p.c).earning*4*86400);raw.farm.cash=cost/4;p=R.prepare(raw,route,3);
+ let n=S.buy(S.afford(p.s,p.c,a),p.c,a);const sale=p.c.calendar.find(e=>e.t>n.t&&e.sale===.3);n=S.advance(n,p.c,sale.t,'Wait for the Friday research sale');
+ for(let i=6;i<10;i++){const purchase={type:'research',i:S.RMAP.wormhole_dampening};n=S.buy(S.afford(n,p.c,purchase),p.c,purchase);}
+ n=L.tail(n,p.c);assert.ok(n);
+ return {raw,route,plan:{solverVersion:2,start:p.c.start,end:n.t,seconds:n.t-p.c.start,switches:n.stage,target:p.c.target,actions:marked(n,route)}};
+}
 async function run(){
  const raw=farm(),route=R.routes(raw)[0],p=R.prepare(raw,route,3),s={...p.s,cash:0},c={...p.c};
  // Normalize only this tiny synthetic context's income so the funding waits
@@ -95,6 +109,23 @@ async function run(){
  await R.compareResearchOrders(full,{state:baseline,route:R.routes(full)[0],count:3},Date.now()+5000,{...control,cancelled:()=>true,consider:()=>assert.fail('cancelled comparison')});
  const found=await R.solve(full,{maxMs:500,width:4,incumbent:{config:full,result:{solverVersion:2,end:baseline.t,seconds:baseline.t-prepared.c.start,switches:baseline.stage,actions:template}}});
  assert.ok(found.end<=baseline.t+1e-6);assert.ok(found.search.researchOrderComparisons>0);
+ // After a missed sale, compare buying at full price, omitting the terminal
+ // income level, and deferring it to the next sale. Recompute all funding and
+ // complete the paid TE route; a local earnings score cannot choose for us.
+ const missed=missedSale(),missedInput=JSON.stringify(missed),mp=R.prepare(missed.raw,missed.route,3),edits=V.proposals(mp.s,mp.c,missed.plan.actions).filter(x=>x.i===S.RMAP.atomic_purification&&['omit','next-sale'].includes(x.kind));
+ assert.deepEqual(edits.map(x=>x.kind),['omit','next-sale']);const ends=[];
+ for(const edit of edits){const p=R.prepare(missed.raw,missed.route,3),candidate=P.execute(p.s,p.c,edit.actions,{retime:true,recomputeFunding:true});assert.ok(candidate);assert.ok(candidate.t<missed.plan.end-100);assert.equal(R.replay(missed.raw,marked(candidate,missed.route)).s.t,candidate.t);ends.push(candidate.t);
+  const paid=S.history(candidate).find(a=>a.type==='research'&&a.i===S.RMAP.atomic_purification);
+  if(edit.kind==='omit'){assert.equal(paid,undefined);assert.equal(candidate.r[S.RMAP.atomic_purification],27);}
+  else{assert.ok(paid);assert.equal(S.at(p.c,paid.t).sale,.3);const original=missed.plan.actions.find(a=>a.type==='research'&&a.i===paid.i);assert.ok(Math.abs(paid.cost/original.cost-.3)<1e-12);}
+ }
+ const values={researchValueComparisons:0,cancelled:()=>false,yield:async()=>{},consider:n=>{assert.equal(R.replay(missed.raw,marked(n,missed.route)).s.t,n.t);}};
+ await R.compareResearchValue(missed.raw,{state:R.replay(missed.raw,missed.plan.actions,true).s,route:missed.route,count:3},Date.now()+5000,values);assert.ok(values.researchValueComparisons>=2);
+ const valueFound=await R.solve(missed.raw,{maxMs:1200,width:4,incumbent:{config:missed.raw,result:missed.plan}});assert.ok(valueFound.search.researchValueComparisons>0);assert.ok(valueFound.end<=Math.min(...ends)+1e-6);assert.equal(JSON.stringify(missed),missedInput);
+ const noComparison={...values,consider:()=>assert.fail('cancelled or timed-out value comparison')};const item={state:R.replay(missed.raw,missed.plan.actions,true).s,route:missed.route,count:3};
+ await R.compareResearchValue(missed.raw,item,Date.now()+5000,{...noComparison,cancelled:()=>true});await R.compareResearchValue(missed.raw,item,0,noComparison);
+ const unlockActions=marked(pay(q.s,q.c,needed),R.routes(blank)[0]),omitUnlock=V.proposals(q.s,q.c,unlockActions).find(x=>x.kind==='omit'&&x.i===S.RMAP.nutritional_sup);assert.ok(omitUnlock);assert.ok(!omitUnlock.actions.some(a=>a.type==='research'),'omitting the tier prerequisite also removes the dependent higher-tier purchase');
+ const invalid=structuredClone(edits[0].actions);invalid.find(a=>a.type==='research').from=99;assert.throws(()=>P.execute(mp.s,mp.c,invalid,{retime:true,recomputeFunding:true}),/differs from the paid farm/);
  console.log('PASS earnings-first research: exhaustive two-order funding optimum, inactive slots versus productive shipping, complementary capacity, tier unlocks, sale prices, offline minimums, invalid/deadline/cancellation guards, both C visits, full paid replay and solver/incumbent integration.');
 }
-module.exports={run};if(require.main===module)run().catch(e=>{console.error(e.stack);process.exitCode=1;});
+module.exports={run,missedSale};if(require.main===module)run().catch(e=>{console.error(e.stack);process.exitCode=1;});

@@ -2,6 +2,7 @@
 const S=require('./simulator.cjs'),L=require('./optimizer-legacy.cjs');
 const Sleep=require('./sleep-schedule.cjs');
 const EarningsFirst=require('./earnings-first-research.cjs');
+const Economics=require('./purchase-economics.cjs');
 
 // A declared earnings setup can propose an additional purchase order when
 // starting gear earns more. It is never equipped by this search. Execute its
@@ -32,8 +33,13 @@ function earningWait(s,c,action){
  throw Error('Proposed earnings wait exceeds the planning limit.');
 }
 function deliveryWait(action){return action.type==='wait'&&/^(Collect .* (?:share of the Truth Egg target|Truth Egg milestones)|Deliver enough eggs to reach the Truth Egg target)/.test(action.reason||'');}
-function execute(initial,c,actions,{compress=false,retime=false,earningsFirst=false,beforeAction=s=>s,reallocate=()=>true,checkpoint=()=>{}}={}){
+function execute(initial,c,actions,{compress=false,retime=false,recomputeFunding=false,preserveCalendar=true,earningsFirst=false,beforeAction=s=>s,reallocate=()=>true,checkpoint=()=>{}}={}){
  let n=initial;
+ const lastPurchase=recomputeFunding?actions.reduce((last,a,i)=>Economics.purchase(a)?i:last,-1):-1;
+ const deliveryTargets=new Map(),eggs=initial.eggs.slice();
+ if(recomputeFunding)for(const a of actions)if(a.type==='wait'){
+  eggs[a.egg]+=a.eggsGained||0;if(deliveryWait(a))deliveryTargets.set(a,eggs[a.egg]);
+ }
  for(let index=0;index<actions.length;index++){
   const action=actions[index];
   checkpoint();
@@ -53,6 +59,14 @@ function execute(initial,c,actions,{compress=false,retime=false,earningsFirst=fa
   }
   // Delivery is reallocated from the actual paid build and current progress.
   if(deliveryWait(action)&&reallocate(n,action)){
+   // A moved investment may now follow a delivery stop. Keep that stop's
+   // actual egg goal until the edited purchases have been paid; handing the
+   // route to the delivery tail here would silently drop those purchases.
+   if(recomputeFunding&&index<lastPurchase){
+    const missing=Math.max(0,deliveryTargets.get(action)-n.eggs[n.egg]),rate=S.stats(n,c).delivery;
+    if(missing>0)n=S.advance(n,c,S.productionEnd(n,c,missing/rate),action.reason,true,action.earningsMode||'auto');
+    continue;
+   }
    const end=L.tail(n,c);if(!end)throw Error('Proposed build has no feasible delivery tail.');return end;
   }
   if(action.type==='wait'){
@@ -60,10 +74,14 @@ function execute(initial,c,actions,{compress=false,retime=false,earningsFirst=fa
    const interaction=/interaction time|Switch overhead/.test(action.reason||'');
    if((c.sleep||retime)&&(interaction||/^Sleep hours/.test(action.reason||'')))continue;
    const boundary=c.calendar.some(e=>Number.isFinite(e.t)&&Math.abs(e.t-action.end)<.01);
+   // Purchase edits change how much cash must be raised. Reusing the old
+   // funding wait would conceal the benefit of omitting or deferring a level.
+   if(recomputeFunding&&(!boundary||!preserveCalendar))continue;
    const cashWait=!interaction&&!boundary&&action.cashGained>0;
    const end=boundary?Math.max(n.t,action.end):n.t+(compress&&cashWait?earningWait(n,c,action):duration);
    if(end>n.t)n=S.advance(n,c,end,action.reason,true,action.earningsMode||'auto');
   }else{
+   if(recomputeFunding&&Economics.purchase(action)&&!Economics.matches(n,c,action))throw Error('Proposed purchase differs from the paid farm or its prerequisites.');
    if(action.type==='research'&&S.at(c,action.t).sale===.3&&S.at(c,n.t).sale!==.3){
     const sale=c.calendar.find(e=>e.t>=n.t&&e.sale===.3);
     if(!sale||sale.t>=c.researchDeadline)throw Error('Proposed research misses its sale window.');

@@ -85,6 +85,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/earnings-first-research.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/purchase-economics.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/plan-progress.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/plan-continuation.cjs

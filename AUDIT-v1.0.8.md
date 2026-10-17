@@ -1,4 +1,92 @@
-# Egg Inc. Virtue Farm Optimizer v1.0.7 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.0.8 — Release Audit
+
+## v1.0.8 purchase-economics comparison — October 17, 2026
+
+The supplied applied remaining plan correctly used the current full price for
+Atomic Purification 27 → 28, but retained an economically inferior purchase.
+The value multiplier changes from 3.7× to 3.8×: a 2.7027027% earnings gain,
+with no delivery-rate gain. It costs 10.2784145625 Td and initially adds
+19.7648530925 D/hour, a simple payback of 21.668 normal-earnings days.
+
+A paired replay held every other purchase and time in the saved Curiosity
+visit fixed. Including weekly earnings events, subsequent paid research,
+sleep, silo coverage, and the fuel diversion, that level adds only
+7.93536296196 Td before leaving Curiosity. Its cost exceeds that income by
+2.34305160054 Td. Both paired runs deliver the same eggs through departure.
+
+Complete paid continuations reproduce the saved finish exactly. Omitting
+that level finishes 4h 33m 51s earlier. Deferring it to October 23, 2026 at
+09:00 PDT costs 3.08352436875 Td and finishes 6h 6m 28s earlier: March 1,
+2027 at 00:54:24 PST instead of 07:00:52 PST. Both retain 200 TE, with 40 TE
+on each Virtue, six further shifts, and all 351 launches. Strict replay and
+sleep-interaction checks pass; the uploaded inputs remain unchanged.
+
+### Capacity-ordering findings and broader fix
+
+The route scorer gives projected capacity, tier unlocks and fleet slots value
+before they produce current earnings. These projections rank proposals only;
+they never supply free capacity. The earnings-first reorder pass improves
+some orders but retains every selected level and preserves the original order
+among upgrades with any immediate income gain. Neither mechanism alone
+compares whether a whole purchase chain is worth its cost and timing.
+
+The new purchase-economics pass covers every common-research category plus
+habitats, vehicles, train cars and silos. It proposes omitting a purchase and
+its dependent levels, moving it behind productive purchases in the same
+visit, waiting for the next research sale, or moving it to the next eligible
+Virtue visit. It also compares omitting a visit's combined capacity research.
+Complementary laying/shipping capacity, tier counts, fleet slots, engines,
+car levels and train-length research are checked together. A deferral cannot
+move a prerequisite beyond a purchase that needs it; an omission removes
+invalid dependents rather than granting free levels or cheaper car levels.
+
+Every accepted comparison starts from the actual farm, recomputes funding,
+pays current prices and interaction overhead, and completes the TE route.
+Delivery stops before deferred purchases retain their actual egg goals, so
+the delivery-tail allocator cannot silently skip those purchases. Calendar
+waits are compared both retained and rescheduled: discarding an event wait
+can worsen offline funding and sleep timing. Both variants require strict
+paid replay, with the existing target, ship, inventory, sleep and shift rules.
+
+The baseline remains eligible. Acceptance uses full completion time and the
+existing tie preferences, not a fixed payback threshold or speculative
+capacity. Better plans may therefore buy idle capacity early when it enables
+a useful later investment. The pass shares the existing refinement budget:
+up to 16 purchase anchors, 72 edits and two calendar variants per pass, with
+up to three passes to combine improvements. This is a broader bounded search,
+not exhaustive enumeration of every purchase combination or a global optimum.
+
+### Verification
+
+With the normal 90-second budget and the original supplied saved plan, the
+broader solver completed in 26.352 seconds, performed 407 verified purchase
+economics comparisons (371 involving research), retained both original shift
+candidates, and recovered the same six-hour improvement described above.
+A separate run seeded with the already-improved plan retained its finish.
+
+A controlled unused-train-capacity case finishes 21.3627 seconds earlier by
+buying income first, with identical selected research and goals. Six legal
+orders are independently enumerated; the comparison retains a plan at least
+as fast as their best. Omitting a productive habitat-capacity research level
+instead adds 391,580.2313 seconds, demonstrating why capacity must not be
+blanket-deferred or removed. Regressions cover all physical upgrade types,
+research/engine/car/fleet dependencies, later eligible visits, delivery stops
+before deferred purchases, actual prices, cancellation and immutable inputs.
+
+The app and standalone worker build passed, along with 14 focused suites:
+purchase economics, earnings-first research, worker, investment search,
+route solver, search quality, research breakpoints, earnings incumbents,
+research-sale plans, continuation, sleep search quality, sleep schedule,
+silo comfort and purchase-decision explanations. The compiled worker checks
+both missed-sale income research and unused capacity. Exhaustive research
+and sleep-quality fixtures retain zero completion-time gaps.
+
+Release-intent and staged-publishing suites also passed. Local runtime
+packaging verified 169 files; the curated source package contains 291 files.
+
+The v1.0.8 release is prepared with local verification complete. Native Windows
+checks and public-feed acceptance are pending. The accepted v1.0.7 evidence
+below describes the previous release.
 
 ## Accepted v1.0.7 publication — October 16, 2026 (Pacific)
 

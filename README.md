@@ -102,6 +102,14 @@ needed to unlock earnings. Deferred levels are paid before departure. The solver
 compares each visit and opening combinations using actual prices, offline batches,
 sleep, sale deadlines, and the complete continuation to the TE target.
 
+The purchase-economics pass also compares research, habitats, vehicles, train
+cars and silos against omitting their dependent purchase chains, buying income
+first, waiting for a research sale, or buying on a later eligible Virtue visit.
+It checks tier counts, fleet slots, engines and train length, pays actual costs,
+and completes and replays each alternative. Complementary capacity can still
+be bought early when it improves the complete plan. These comparisons retain
+the baseline and share the existing bounded search budget.
+
 The v0.8.23 solver remains in `src/optimizer-legacy.cjs`, with historical replay
 routed through it. Developers can use `legacySolver: true` when calling solve
 for rollback testing.

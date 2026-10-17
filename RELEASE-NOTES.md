@@ -1,3 +1,12 @@
+# v1.0.8
+
+- Compare research, habitats, vehicles, train cars and silos by complete paid TE completion time. Test skipping purchase chains, buying productive upgrades first, waiting for a research sale, and using a later eligible Virtue visit.
+- Account for complementary laying/shipping capacity, tier unlocks, fleet slots, engines and train length. Pay actual prices, recompute funding and preserve delivery goals before deferred purchases; compare retained and rescheduled calendar waits.
+- Keep the original candidate and accept only verified improvements within the existing search budget. The comparisons are bounded and do not prove a global optimum.
+- The supplied missed-sale case defers Atomic Purification 27 → 28 to October 23 at 09:00 Pacific, reduces its cost from 10.278 Td to 3.084 Td, and finishes 6h 6m 28s earlier with the same 200 TE, six shifts, and 351 launches.
+
+- Install through Update App → Update & Restart, then reoptimize the remaining plan to compare purchase choices from the checked farm. Existing saved plans remain usable.
+
 # v1.0.7
 
 - Advance past ended research-sale, earnings-event, and sleep waits using the checked backup timestamp. Show the actual unfinished step and purchase batch instead of an already-ended calendar break.

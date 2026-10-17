@@ -17,6 +17,10 @@ async function run(){
  await context.onmessage({data:{config:raw,options:{maxMs:100,incumbent:{config:raw,result:previous}}}});
  assert.equal(error,undefined);assert.ok(result?.search.retainedPlans>0);
  for(const entry of previous.shiftPlans){const kept=result.shiftPlans.find(p=>p.switches===entry.switches);assert.ok(kept);assert.ok(kept.plan.seconds<=entry.plan.seconds);assert.equal(O.replay(raw,kept.plan.actions).s.t,kept.plan.end);}
+ const missed=require('./earnings-first-research.cjs').missedSale();result=undefined;
+ await context.onmessage({data:{config:missed.raw,options:{maxMs:1500,width:4,incumbent:{config:missed.raw,result:missed.plan}}}});assert.equal(error,undefined);assert.ok(result?.validatedReplay);assert.ok(result.search.researchValueComparisons>0);assert.ok(result.end<missed.plan.end-100,'the compiled worker compares missed-sale research against paid omission/deferral');assert.equal(O.replay(missed.raw,result.actions).s.t,result.end);
+ const capacity=require('./purchase-economics.cjs').capacityPlan();result=undefined;
+ await context.onmessage({data:{config:capacity.raw,options:{maxMs:1500,width:4,incumbent:{config:capacity.raw,result:capacity.plan}}}});assert.equal(error,undefined);assert.ok(result?.validatedReplay);assert.ok(result.search.purchaseEconomicsComparisons>0);assert.ok(result.end<capacity.plan.end-20,'the compiled worker compares inactive capacity against productive spending');assert.equal(O.replay(capacity.raw,result.actions).s.t,result.end);
  const comfort=fixture();Object.assign(comfort.farm,{virtue:'kindness',cash:1e80,silos:1});Object.assign(comfort.plan,{strategy:'user',autoSequence:false,sequence:'K R C',solverVersion:2,target:102,floors:[20,20,20,21,21]});
  result=undefined;await context.onmessage({data:{config:comfort,options:{maxMs:2500}}});assert.equal(error,undefined);assert.ok(result?.validatedReplay);assert.ok(result.finalStats.siloHours>=24);
  const checked=O.replay(comfort,JSON.parse(JSON.stringify(result.actions)),true);assert.equal(checked.s.t,result.end);assert.equal(checked.s.silos,8);assert.ok(S.reached(checked.s,checked.c));
