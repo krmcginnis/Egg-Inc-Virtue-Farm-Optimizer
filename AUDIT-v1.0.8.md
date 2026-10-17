@@ -1,5 +1,38 @@
 # Egg Inc. Virtue Farm Optimizer v1.0.8 — Release Audit
 
+## Accepted v1.0.8 publication — October 17, 2026 (Pacific)
+
+v1.0.8 is published and accepted. Windows run
+[39067254199](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/39067254199)
+passed all 23 workflow suites for source commit
+`4ffaea728b0e52b0da25b5d9a6ac5c3086f86754` (job `117497371965`).
+This includes the new dependency-aware purchase-economics tests and the
+compiled worker's capacity-versus-income and missed-sale comparisons.
+
+Native Windows tests passed installation, seven bad archive cases, digest
+rejection, rollback, exact backup restoration, user JSON/config preservation,
+stage tampering, hidden CMD launch/reuse from paths with spaces, successful
+restart, startup-failure recovery and legacy-worker recovery. The anonymous
+public update feed, complete ZIP download and all app-file checksums passed
+on Windows PowerShell 5.1.26100.33438.
+
+Independent anonymous downloads verified the latest tag and source commit,
+both asset sizes and GitHub SHA-256 digests, update-manifest hash, ZIP CRC,
+all 169 runtime entries and every file checksum, version/repository metadata,
+current audit links and the compiled purchase-economics implementation.
+
+Published assets:
+
+- ZIP: 8,616,036 bytes; asset `651538972`; SHA-256
+  `0d6f6883617eeea26f951c00a4a17f23f2ec1a8045254f69a7c82ca06b9ca5f3`.
+- Update manifest: 239 bytes; asset `651538977`; SHA-256
+  `118b200d5189c38a3d092acec8c5bf8b81e75eada20b77c7148fe7c99ed9f653`.
+
+The immutable published ZIP contains the reviewed prepublication audit.
+This acceptance evidence was added afterward in source; published assets
+remain unchanged. Install through Update App → Update & Restart, then
+reoptimize the remaining plan to compare purchases from the checked farm.
+
 ## v1.0.8 purchase-economics comparison — October 17, 2026
 
 The supplied applied remaining plan correctly used the current full price for
@@ -84,9 +117,8 @@ and sleep-quality fixtures retain zero completion-time gaps.
 Release-intent and staged-publishing suites also passed. Local runtime
 packaging verified 169 files; the curated source package contains 291 files.
 
-The v1.0.8 release is prepared with local verification complete. Native Windows
-checks and public-feed acceptance are pending. The accepted v1.0.7 evidence
-below describes the previous release.
+The native Windows and public-feed gates subsequently passed; see the accepted
+v1.0.8 publication above. The v1.0.7 evidence below describes the previous release.
 
 ## Accepted v1.0.7 publication — October 16, 2026 (Pacific)
 

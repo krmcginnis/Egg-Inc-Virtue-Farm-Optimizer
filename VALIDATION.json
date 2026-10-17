@@ -1,7 +1,7 @@
 {
-  "date": "2026-10-17T20:32:45.320526+00:00",
-  "published": false,
-  "nativeWindowsTested": false,
+  "date": "2026-10-17T20:39:14.650660+00:00",
+  "published": true,
+  "nativeWindowsTested": true,
   "scope": "Dependency-aware paid purchase-economics comparisons across common research, habitats, vehicles, train cars and silos; omission, order, next-sale and later-visit alternatives judged by full TE completion time.",
   "buildPassed": true,
   "suppliedCase": {
@@ -55,13 +55,9 @@
     "boundedSearchNotGlobalProof": true
   },
   "version": "1.0.8",
-  "status": "prepared-pending-native-release-validation",
+  "status": "accepted-public-release",
   "currentAudit": "AUDIT-v1.0.8.md",
-  "pendingReleaseGates": [
-    "Windows workflow suites and native updater/launcher",
-    "Anonymous Windows public feed",
-    "Independent anonymous public asset verification"
-  ],
+  "pendingReleaseGates": [],
   "localSuitesPassed": [
     "purchase-economics.cjs",
     "earnings-first-research.cjs",
@@ -466,5 +462,37 @@
     }
   },
   "localRuntimeFiles": 169,
-  "localSourcePackageFiles": 291
+  "localSourcePackageFiles": 291,
+  "publication": {
+    "version": "1.0.8",
+    "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.8",
+    "sourceCommit": "4ffaea728b0e52b0da25b5d9a6ac5c3086f86754",
+    "runtimeFiles": 169,
+    "independentAnonymousDownloadsPassed": true,
+    "archiveCRCAndEveryFileChecksumPassed": true,
+    "versionAuditAndRepositoryPassed": true,
+    "compiledPurchaseEconomicsPassed": true,
+    "assets": [
+      {
+        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
+        "id": 651538972,
+        "size": 8616036,
+        "digest": "sha256:0d6f6883617eeea26f951c00a4a17f23f2ec1a8045254f69a7c82ca06b9ca5f3"
+      },
+      {
+        "name": "update-manifest.json",
+        "id": 651538977,
+        "size": 239,
+        "digest": "sha256:118b200d5189c38a3d092acec8c5bf8b81e75eada20b77c7148fe7c99ed9f653"
+      }
+    ],
+    "workflowRunId": 39067254199,
+    "workflowJobId": 117497371965,
+    "workflowConclusion": "success",
+    "workflowSuitesPassed": 23,
+    "windowsPowerShellVersion": "5.1.26100.33438",
+    "nativeUpdaterAndLauncherPassed": true,
+    "anonymousWindowsFeedPassed": true,
+    "publishedAuditIsPrepublicationSnapshot": true
+  }
 }
