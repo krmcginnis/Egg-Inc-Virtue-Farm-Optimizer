@@ -1,8 +1,8 @@
 {
-  "date": "2026-10-17T22:53:36.136307+00:00",
-  "status": "prepared-for-publication",
-  "published": false,
-  "nativeWindowsTested": false,
+  "date": "2026-10-17T23:00:03.963678+00:00",
+  "status": "accepted-public-release",
+  "published": true,
+  "nativeWindowsTested": true,
   "buildPassed": true,
   "scope": "Isolated paid schedule-prefix reuse, new complementary purchase packages, adaptive additional passes, compatible saved alternatives and replayed automatic artifact snapshot preservation.",
   "defaultBudgetMs": 90000,
@@ -125,10 +125,7 @@
     "Fastest six-shift finish unchanged in both supplied cases; extra time is spent exploring alternatives.",
     "No proof of global optimality."
   ],
-  "pendingReleaseGates": [
-    "Windows workflow and native validation",
-    "Anonymous public feed and asset verification"
-  ],
+  "pendingReleaseGates": [],
   "version": "1.0.10",
   "currentAudit": "AUDIT-v1.0.10.md",
   "baselineEvidence": {
@@ -642,5 +639,38 @@
       "reason": "Built-worker saved-alternative assertion used only a 100 ms precheck; fixture budget increased and assertion stacks retained. Source solver suites passed.",
       "productionAlgorithmChangedByTestFix": false
     }
-  ]
+  ],
+  "publication": {
+    "version": "1.0.10",
+    "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.0.10",
+    "sourceCommit": "4086ecc3e25bfe73e1fa16073507ea5e37106465",
+    "runtimeFiles": 169,
+    "independentAnonymousDownloadsPassed": true,
+    "archiveCRCAndEveryFileChecksumPassed": true,
+    "versionAuditAndRepositoryPassed": true,
+    "compiledPurchaseEconomicsPassed": true,
+    "compiledSearchRefinementsPassed": true,
+    "assets": [
+      {
+        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
+        "id": 651832128,
+        "size": 8626891,
+        "digest": "sha256:92144cd22588279fe37a52d8285380e65860db6adca51ad22ac4691b25c37c6f"
+      },
+      {
+        "name": "update-manifest.json",
+        "id": 651832129,
+        "size": 240,
+        "digest": "sha256:72fb09fa581cc256a6798baf89d87d975587a78d3cc0c4bcb641896877d0cbeb"
+      }
+    ],
+    "workflowRunId": 39076957465,
+    "workflowJobId": 117525981811,
+    "workflowConclusion": "success",
+    "workflowSuitesPassed": 24,
+    "windowsPowerShellVersion": "5.1.26100.33438",
+    "nativeUpdaterAndLauncherPassed": true,
+    "anonymousWindowsFeedPassed": true,
+    "publishedAuditIsPrepublicationSnapshot": true
+  }
 }

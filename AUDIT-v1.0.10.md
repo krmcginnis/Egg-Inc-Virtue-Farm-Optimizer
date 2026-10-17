@@ -1,5 +1,37 @@
 # Egg Inc. Virtue Farm Optimizer v1.0.10 — Release Audit
 
+## Accepted v1.0.10 publication — October 17, 2026 (Pacific)
+
+v1.0.10 is published and accepted. Windows run
+[39076957465](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/39076957465)
+passed all 24 workflow suites for source commit
+`4086ecc3e25bfe73e1fa16073507ea5e37106465` (job `117525981811`). This includes the new search-refinement
+suite and the compiled worker's package, adaptive-pass and saved-alternative paths.
+
+Native Windows updater and launcher checks passed installation, invalid
+archives, digest/version rejection, rollback, exact backup restoration,
+user JSON/config preservation, stage tampering, hidden launch/reuse from
+paths with spaces, successful restart and startup/legacy-worker recovery.
+The anonymous public feed, complete ZIP download and every runtime file
+checksum passed on Windows PowerShell 5.1.26100.33438.
+
+Independent anonymous downloads verified the latest tag and source commit,
+both asset sizes and GitHub SHA-256 digests, update-manifest hash, ZIP CRC,
+all 169 runtime entries, every file checksum, version/repository
+metadata, the current audit link and the compiled search refinements.
+
+Published assets:
+
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8,626,891 bytes; asset `651832128`; SHA-256
+  `92144cd22588279fe37a52d8285380e65860db6adca51ad22ac4691b25c37c6f`.
+- update-manifest.json: 240 bytes; asset `651832129`; SHA-256
+  `72fb09fa581cc256a6798baf89d87d975587a78d3cc0c4bcb641896877d0cbeb`.
+
+The immutable published ZIP contains the reviewed prepublication audit.
+This acceptance evidence was added afterward in source; published assets
+remain unchanged. Install through Update App → Update & Restart, then
+reoptimize from a checked farm to use the expanded search.
+
 ## v1.0.10 search refinements — October 17, 2026
 
 v1.0.10 implements isolated paid-prefix reuse, new paid purchase packages,
@@ -62,8 +94,9 @@ and avoiding repeated work are the stronger evidence.
 
 All 19 local regression suites passed, including the compiled standalone
 worker, search refinements, purchase economics, launch accounting and sleep.
-Local results are recorded in `VALIDATION.json`. Windows workflow, native
-updater/launcher and anonymous public-release checks remain release gates.
+Local results are recorded in `VALIDATION.json`. The Windows workflow,
+native updater/launcher and anonymous public-release gates passed as
+recorded in the acceptance evidence above.
 
 ### Unpublished v1.0.9 preparation attempt
 
