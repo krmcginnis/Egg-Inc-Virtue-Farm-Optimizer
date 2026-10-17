@@ -1,4 +1,4 @@
-# v1.0.9
+# v1.0.10
 
 - Reuse unchanged paid simulation prefixes and independently replay competitive candidates, allowing more purchase comparisons within the existing search budget.
 - Compare new paid purchase packages, including complementary laying/shipping capacity, tier prerequisites and engine/car dependencies, through the full TE goal.

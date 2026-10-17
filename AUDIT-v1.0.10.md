@@ -1,8 +1,8 @@
-# Egg Inc. Virtue Farm Optimizer v1.0.9 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.0.10 — Release Audit
 
-## v1.0.9 search refinements — October 17, 2026
+## v1.0.10 search refinements — October 17, 2026
 
-v1.0.9 implements isolated paid-prefix reuse, new paid purchase packages,
+v1.0.10 implements isolated paid-prefix reuse, new paid purchase packages,
 adaptive additional comparisons and compatible saved-alternative seeding.
 The accepted v1.0.8 publication evidence is retained below as prior evidence.
 The default search allowance remains 90 seconds. Results remain bounded
@@ -64,6 +64,18 @@ All 19 local regression suites passed, including the compiled standalone
 worker, search refinements, purchase economics, launch accounting and sleep.
 Local results are recorded in `VALIDATION.json`. Windows workflow, native
 updater/launcher and anonymous public-release checks remain release gates.
+
+### Unpublished v1.0.9 preparation attempt
+
+The first Windows run, `39076593602`, passed the solver/model suites and the
+new source search-refinement suite, then stopped on the built worker's saved-
+alternative count assertion. Its 800 ms search allowed only a 100 ms shared
+original/alternative precheck, making the integration assertion timing-sensitive
+on that runner. No v1.0.9 release or assets were published. The worker fixture
+now allows a 10-second search (1-second precheck), leaves adaptive coverage
+to its dedicated fixture, and prints full assertion stacks.
+The production search budget and algorithms are unchanged by this test fix.
+A fresh version reruns the complete automatic Windows release path.
 
 ## Accepted v1.0.8 publication — October 17, 2026 (Pacific)
 

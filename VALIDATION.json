@@ -1,5 +1,5 @@
 {
-  "date": "2026-10-17T22:48:00.148010+00:00",
+  "date": "2026-10-17T22:53:36.136307+00:00",
   "status": "prepared-for-publication",
   "published": false,
   "nativeWindowsTested": false,
@@ -129,8 +129,8 @@
     "Windows workflow and native validation",
     "Anonymous public feed and asset verification"
   ],
-  "version": "1.0.9",
-  "currentAudit": "AUDIT-v1.0.9.md",
+  "version": "1.0.10",
+  "currentAudit": "AUDIT-v1.0.10.md",
   "baselineEvidence": {
     "date": "2026-10-17T20:39:14.650660+00:00",
     "published": true,
@@ -630,5 +630,17 @@
     }
   },
   "localRuntimeFiles": 169,
-  "localSourcePackageFiles": 295
+  "localSourcePackageFiles": 295,
+  "releasePreparationAttempts": [
+    {
+      "version": "1.0.9",
+      "sourceCommit": "b5c59f225f3df5e34f62625606935d6911e8db00",
+      "workflowRunId": 39076593602,
+      "workflowJobId": 117524906991,
+      "status": "failed-before-publication",
+      "published": false,
+      "reason": "Built-worker saved-alternative assertion used only a 100 ms precheck; fixture budget increased and assertion stacks retained. Source solver suites passed.",
+      "productionAlgorithmChangedByTestFix": false
+    }
+  ]
 }
