@@ -1,5 +1,37 @@
 # Egg Inc. Virtue Farm Optimizer v1.1.0 — Release Audit
 
+## Accepted v1.1.0 publication — October 18, 2026 (UTC)
+
+v1.1.0 is published and accepted. Windows run
+[39088277036](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/39088277036)
+passed all 26 workflow suites for source commit
+`a05f2ad64542e1f217e93c16ee1a2b1b2e8722a0` (job `117559346680`). This includes the new efficiency and real worker-pool suites, compiled
+worker checks, and the remaining-plan and purchase-economics regressions.
+
+Native Windows updater and launcher checks passed installation, invalid
+archives, digest/version rejection, rollback, exact backup restoration,
+user JSON/config preservation, stage tampering, hidden launch/reuse from
+paths with spaces, successful restart and startup/legacy-worker recovery.
+The anonymous public feed, complete ZIP download and every runtime file
+checksum passed on Windows PowerShell 5.1.26100.33438.
+
+Independent anonymous downloads verified the latest tag and source commit,
+both asset sizes and GitHub SHA-256 digests, update-manifest hash, ZIP CRC,
+all 169 runtime entries, every file checksum, version/repository
+metadata, the current audit link and the compiled search refinements.
+
+Published assets:
+
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8,643,813 bytes; asset `652183110`; SHA-256
+  `d2c0c553f1a952671ec97f7228931b8cd2488354e5cc981fef25aa99c63f0ef4`.
+- update-manifest.json: 239 bytes; asset `652183109`; SHA-256
+  `2b2074c4fe6166012b341d1eb1f191b8ecedf418847f6c45608089ff2560486a`.
+
+The immutable published ZIP contains the reviewed prepublication audit.
+This acceptance evidence was added afterward in source; published assets
+remain unchanged. Install through Update App → Update & Restart, then
+reoptimize from a checked farm to use the expanded search.
+
 ## v1.1.0 efficiency review
 
 This release combines profiled calculation savings with bounded backtracking,
@@ -74,8 +106,8 @@ of habitat rounding in sampled states, and at most one gem at integer research
 prices in the combined-discount audit. The built app was also exercised in JSDOM
 with two actual worker threads, including result merging, summary regeneration
 and restored controls. Canvas rendering was outside that DOM integration check.
-Windows-only updater/launcher tests require PowerShell and are deferred to the
-mandatory Windows release workflow; no native Windows success is claimed here.
+Local validation lacked PowerShell, so native updater/launcher checks ran in the
+mandatory Windows workflow. Those gates passed as recorded above.
 
 Initial route and refined-wait implementations repeatedly restarted opening
 recipes, spending about 52 seconds in a pass without a useful improvement.
@@ -89,7 +121,7 @@ attempts are excluded from the accepted efficiency measurements.
 The public workflow adds search-efficiency and real worker-pool regression suites.
 Local regression, independent reference-model, package and application integration
 results are recorded in `VALIDATION.json`. Windows workflow, native updater/launcher
-and anonymous public asset verification remain release gates until accepted.
+and anonymous public asset verification passed as recorded above.
 
 The historical audits below preserve prior model limits and publication evidence.
 Their measurements refer to those earlier versions, not to v1.1.0.

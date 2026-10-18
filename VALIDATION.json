@@ -1,10 +1,10 @@
 {
-  "date": "2026-10-18T01:55:36.839132+00:00",
+  "date": "2026-10-18T02:03:53.843844+00:00",
   "version": "1.1.0",
   "currentAudit": "AUDIT-v1.1.0.md",
-  "status": "local-validated-awaiting-windows-publication",
-  "published": false,
-  "nativeWindowsTested": false,
+  "status": "accepted-public-release",
+  "published": true,
+  "nativeWindowsTested": true,
   "buildPassed": true,
   "scope": "Exact research and TE math reuse, direct calendar generation, safe production bounds, bounded discarded branch recovery, purchase and route neighborhoods, refined departure timing and independent shared-incumbent worker islands.",
   "defaultBudgetMs": 90000,
@@ -362,11 +362,7 @@
   "applicationIntegration": "Built app loaded in JSDOM with two actual worker threads: loaded farm, optimize action, merged verified result, regenerated summary and restored controls.",
   "localRuntimeFiles": 169,
   "localSourcePackageFiles": 305,
-  "pendingReleaseGates": [
-    "Automatic Windows workflow, including both new suites",
-    "Native Windows updater/launcher and anonymous Windows feed verification",
-    "Independent anonymous public assets, digests, manifest and every runtime checksum"
-  ],
+  "pendingReleaseGates": [],
   "limits": [
     "Bounded search does not prove global optimality.",
     "Two supplied farms and local hardware do not establish general runtime or quality guarantees.",
@@ -908,5 +904,39 @@
       }
     }
   },
-  "localWindowsCheckStatus": "PowerShell unavailable locally (spawnSync pwsh ENOENT); updater and launcher checks remain mandatory Windows workflow gates."
+  "localWindowsCheckStatus": "PowerShell unavailable locally (spawnSync pwsh ENOENT); updater and launcher checks remain mandatory Windows workflow gates.",
+  "publication": {
+    "version": "1.1.0",
+    "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.1.0",
+    "sourceCommit": "a05f2ad64542e1f217e93c16ee1a2b1b2e8722a0",
+    "runtimeFiles": 169,
+    "independentAnonymousDownloadsPassed": true,
+    "archiveCRCAndEveryFileChecksumPassed": true,
+    "versionAuditAndRepositoryPassed": true,
+    "compiledPurchaseEconomicsPassed": true,
+    "compiledSearchRefinementsPassed": true,
+    "compiledEfficiencyAndWorkerPoolPassed": true,
+    "assets": [
+      {
+        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
+        "id": 652183110,
+        "size": 8643813,
+        "digest": "sha256:d2c0c553f1a952671ec97f7228931b8cd2488354e5cc981fef25aa99c63f0ef4"
+      },
+      {
+        "name": "update-manifest.json",
+        "id": 652183109,
+        "size": 239,
+        "digest": "sha256:2b2074c4fe6166012b341d1eb1f191b8ecedf418847f6c45608089ff2560486a"
+      }
+    ],
+    "workflowRunId": 39088277036,
+    "workflowJobId": 117559346680,
+    "workflowConclusion": "success",
+    "workflowSuitesPassed": 26,
+    "windowsPowerShellVersion": "5.1.26100.33438",
+    "nativeUpdaterAndLauncherPassed": true,
+    "anonymousWindowsFeedPassed": true,
+    "publishedAuditIsPrepublicationSnapshot": true
+  }
 }
