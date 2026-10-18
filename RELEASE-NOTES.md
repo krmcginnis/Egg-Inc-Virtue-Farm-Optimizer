@@ -1,3 +1,13 @@
+# v1.1.0
+
+- Reduce repeated research math, calendar polling, checkpoint key work and TE allocation overhead while preserving the model's calculations.
+- Revisit promising discarded branches and compare related purchase families, nearby farm orders and finer paid departure timings. Use conservative mathematical bounds to avoid unproductive branches.
+- Search with two independent background workers on machines reporting at least four logical cores, otherwise one. Share only independently replayed complete candidates; preserve verified winners after cancellation or a sibling failure.
+- Preserve paid visit prefixes during route edits, including completed openings. Retain up to three distinct shift-count choices and validate remaining missions, sleep, prices and interaction time.
+- In two supplied saved-plan tests, the default two-worker search used about 13% and 48% less time than v1.0.10. The fastest six-shift finishes stayed intact, and the followup five-shift alternative finished about 2.9 days earlier. Results vary by farm and hardware.
+- Research sources, measured efficiency and limitations are recorded in the current audit and repository search-research notes. Search remains bounded and does not prove a global optimum.
+- Install through Update App → Update & Restart, then reoptimize from a checked farm to use the expanded search. Existing saved plans remain usable.
+
 # v1.0.10
 
 - Reuse unchanged paid simulation prefixes and independently replay competitive candidates, allowing more purchase comparisons within the existing search budget.

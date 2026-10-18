@@ -3,14 +3,15 @@
 // exporting the named functions from the unmodified Wasmegg TypeScript source.
 // This intentionally does not use the app's bundled purchase proposal engine.
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
-const S=require('../src/simulator.cjs'),C=require('../src/colleggtibles.cjs'),P=require('../src/ships.cjs'),T=require('../src/staged-route.cjs');
+const S=require('../src/simulator.cjs'),C=require('../src/colleggtibles.cjs'),P=require('../src/ships.cjs'),T=require('../src/staged-route.cjs'),Solver=require('../src/route-solver.cjs');
 if(!process.env.WASMEGG_REFERENCE)throw Error('Set WASMEGG_REFERENCE to a bundle of the pinned unmodified Wasmegg source (see audit).');
 const R=require(path.resolve(process.env.WASMEGG_REFERENCE));
 const report={referenceCommit:'9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67',states:0,researchPrices:0,habPrices:0,vehiclePrices:0,carPrices:0,tierChecks:0,colleggtibleSelections:0,shipChecks:0,maxRelativeError:0,maxRelativeErrorWithoutHabRounding:0,maxHabRoundingDifference:0,roundingStates:0};
 let seed=0x15cafe;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/2**32;},pick=n=>Math.floor(random()*n);
 function close(a,b,label,rel=1e-10,absolute=0){assert.ok(Math.abs(a-b)<=Math.max(absolute,Math.max(1,Math.abs(b))*rel),label+': '+a+' != '+b);}
 const plan=process.env.WASMEGG_AUDIT_PLAN ? JSON.parse(fs.readFileSync(process.env.WASMEGG_AUDIT_PLAN)) : {config:require('../src/blank-farm.cjs')(1790812800),result:{actions:[]}};
-const raw=structuredClone(plan.config),{s:initial,c:base}=S.prepare(raw);
+const raw=structuredClone(plan.config),marker=plan.result.actions[0]?.routeSearch;
+const {s:initial,c:base}=marker?Solver.prepare(raw,marker.sequence,marker.researchSales,{artifactReplay:true,artifactSets:S.recordedArtifactSets(plan.result.actions)}):S.prepare(raw);
 function snapshot(s,c){
  const a=S.stats(s,c),{state,context}=T.adapt(s,c),b=R.computeSnapshot(state,context,{skipGrowth:true,skipEpochConversion:true});report.states++;
  const habDelta=Math.abs(a.hab-b.habCapacity);report.maxHabRoundingDifference=Math.max(report.maxHabRoundingDifference,habDelta);if(habDelta)report.roundingStates++;

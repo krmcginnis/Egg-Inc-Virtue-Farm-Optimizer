@@ -91,4 +91,4 @@ function proposals(initial,c,actions,{limit=16,offset=0,maxProposals=72,checkpoi
  for(const group of visits.values())if(group.length>1)omit(group[0],group.map(x=>x.index));
  return output;
 }
-module.exports={purchase,matches,closure,proposals};
+module.exports={purchase,matches,closure,coherent,proposals};

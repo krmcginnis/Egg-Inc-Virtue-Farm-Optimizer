@@ -1,4 +1,98 @@
-# Egg Inc. Virtue Farm Optimizer v1.0.10 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.1.0 — Release Audit
+
+## v1.1.0 efficiency review
+
+This release combines profiled calculation savings with bounded backtracking,
+conservative production bounds, larger purchase families, nearby route edits,
+finer departure timing and independent background search islands. Primary
+research sources, adopted ideas and limitations are documented in
+[SEARCH-RESEARCH.md](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/blob/main/SEARCH-RESEARCH.md).
+The default allowance remains 90 seconds. Results remain fastest-found plans
+within bounded search, with no global optimality guarantee.
+
+Research-only aggregate multipliers are cached per prepared farm and every hit
+validates the complete research vector. Cloned vectors inherit cache metadata
+without sharing mutable research levels. Weak identity tables stay out of
+structured-cloned contexts and are rebuilt lazily. Gear, capacity, events, calibration and
+cash remain live. Pacific event generation directly tests actual weekly event
+boundaries, including DST, instead of polling each quarter hour. Exact dense
+multiple-choice DP replaces allocation maps without a convexity assumption.
+Deeply frozen calendars use context-local identities in checkpoint keys;
+mutable calendars retain complete value checks.
+
+Safe pruning uses relaxed remaining egg demand and an optimistic free-upgrade
+production ceiling. It preserves missing shift-count comparisons and never uses
+the ordinary ranking heuristic as a proof. A bounded reserve revisits discarded
+paid states. Purchase neighborhoods omit or move related families with dependency
+closure; route edits reuse the completed paid prefix and depart it once rather
+than restarting an already-completed opening recipe. Every competitive alternative
+pays actual costs, interactions, sleep and mission time and independently replays.
+
+The app uses two independent workers when the browser reports at least four
+logical cores, otherwise one. The coordinator supports up to four, falls back
+when worker creation fails, and merges only complete independently replayed
+candidates for the same farm/rules. Workers use different portfolio priorities
+and exchange verified winners under a common deadline. Cancellation retains
+verified candidates; one sibling's failure does not erase another's complete plan.
+
+### Efficiency measurements
+
+Final paired measurements and model/regression results are recorded in
+`VALIDATION.json`. Fixed-work farm stats were identical across 96 varied states;
+three 250,000-call trials had median times of 530.8 ms for v1.0.10 and 130.3 ms
+for the updated calculation (4.07× faster). This is a calculation benchmark,
+not a claim that every complete search is 4.07× faster.
+
+Complete searches compare the exact published v1.0.10 worker with the updated
+standalone worker and worker pool. Inputs, advancing historical wall clocks,
+width 16 and 90-second allowances match. Heavy trials run sequentially. Returned
+plans independently replay, satisfy sleep/floors/targets and retain all 351
+launches; supplied files remain unchanged. Two supplied farms do not establish
+performance for all farms or hardware. Private inputs and full diagnostic plans
+remain outside source.
+
+| Saved-plan case | v1.0.10, one worker | v1.1.0, one worker | v1.1.0, two workers |
+| --- | ---: | ---: | ---: |
+| Original | 32.617 s | 20.854 s | 28.539 s |
+| Followup continuation | 44.746 s | 21.135 s | 23.259 s |
+
+The one-worker runs used about 36% and 53% less time; the default two-worker
+runs used about 13% and 48% less time while examining 17,339 and 17,416 states
+versus 6,963 and 7,072 in the published worker. Parallelism is additional search
+diversity, not a guaranteed linear speedup over one updated worker. The fastest
+six-shift ends remain `1803891264.1683307` and `1803913247.141548`, respectively.
+The followup five-shift alternative improves from `1805767484.514458` to
+`1805514722.2043824`, about 2.9255 days earlier. Every returned alternative in
+these trials independently replayed and retained its required launches.
+
+All 24 locally runnable workflow suites passed. The optional independent
+Wasmegg audit passed 751 farm/intermediate/isolated states, 13,980 research prices,
+42,056 tier checks and all catalog categories. A separate model audit covered
+186,400 combined-discount prices, passive/DST integrations, fuel and Pacific
+events. Existing floating/ceiling rounding limits remain: at most four chickens
+of habitat rounding in sampled states, and at most one gem at integer research
+prices in the combined-discount audit. The built app was also exercised in JSDOM
+with two actual worker threads, including result merging, summary regeneration
+and restored controls. Canvas rendering was outside that DOM integration check.
+Windows-only updater/launcher tests require PowerShell and are deferred to the
+mandatory Windows release workflow; no native Windows success is claimed here.
+
+Initial route and refined-wait implementations repeatedly restarted opening
+recipes, spending about 52 seconds in a pass without a useful improvement.
+Profiling exposed opening-recipe work after the shared visit had already been
+paid, or after a refined wait should have departed the current visit. Reusing and departing the completed prefix reduced an
+isolated source comparison from about 6 seconds to 0.15 seconds. Failed tuning
+attempts are excluded from the accepted efficiency measurements.
+
+### Release gates
+
+The public workflow adds search-efficiency and real worker-pool regression suites.
+Local regression, independent reference-model, package and application integration
+results are recorded in `VALIDATION.json`. Windows workflow, native updater/launcher
+and anonymous public asset verification remain release gates until accepted.
+
+The historical audits below preserve prior model limits and publication evidence.
+Their measurements refer to those earlier versions, not to v1.1.0.
 
 ## Accepted v1.0.10 publication — October 17, 2026 (Pacific)
 

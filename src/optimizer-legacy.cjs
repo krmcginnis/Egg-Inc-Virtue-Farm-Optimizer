@@ -2,6 +2,7 @@
 const formatNumber=require('./number-format.cjs').format;
 const S=require('./simulator.cjs'),F=require('./feasibility.cjs'),T=require('./staged-route.cjs'),B=require('./offline-batch.cjs'),U=require('./shift-summary.cjs');const {D,stats,clone,teByEgg,totalTE,reached,advance,buy,afford,allowed,price,at,history}=S;
 const W=require('./waiting-objective.cjs');
+const Goals=require('./te-goals.cjs');
 const E=require('./opening-search.cjs'),Ships=require('./ships.cjs'),SalePlans=require('./research-sale-plans.cjs');
 function remainingEggs(s,c){return c.autoSequence&&s.stage<c.maxSwitches?[0,1,2,3,4]:c.autoSequence?[s.egg]:c.sequence.slice(s.stage);}
 function finishHere(s,c){if(c.ships?.enabled&&!s.shipsDone){if(s.egg!==2)return null;try{s=Ships.launch(s,c);}catch{return null;}if(!s.shipsDone)return null;}const te=teByEgg(s,c);if(c.floors.some((n,i)=>i!==s.egg&&n>te[i]))return null;const needed=Math.max(c.floors[s.egg],c.target-te.reduce((sum,n,i)=>sum+(i===s.egg?0:n),0));if(needed>98)return null;if(needed<=te[s.egg])return reached(s,c)?s:null;const r=stats(s,c);if(r.delivery<=0)return null;const t=S.productionEnd(s,c,Math.max(0,D.te[needed-1]-s.eggs[s.egg])/r.delivery)+0.001;if(t>S.visitDeadline(s,c))return null;return advance(s,c,t,'Deliver enough eggs to reach the Truth Egg target');}
@@ -12,9 +13,7 @@ function completionGoals(s,c){
  if(c.ships?.mode==='efficient-two-visits'&&s.shipRuns===1&&!s.shipsDone){const r=stats(s,c),hen=c.ships.missions[0],corv=c.ships.corvette,maxCorvs=2*Math.floor(hen.seconds/corv.seconds),diversion=(7*hen.fuel[2]+maxCorvs*corv.fuel[2])/r.laying,delivery=Math.max(0,2*hen.seconds-diversion)*r.delivery;if(Number.isFinite(delivery)){s=clone(s);s.eggs[2]+=delivery;}}
  const te=teByEgg(s,c),minimum=c.floors.map((n,i)=>Math.max(0,n-te[i]));const needed=Math.max(0,c.target-totalTE(s,c),minimum.reduce((a,b)=>a+b,0)),available=new Set(remainingEggs(s,c));
  const visitLimit=c.autoSequence?Math.min(4,c.maxSwitches-s.stage):4;
- let dp=new Map([['0:0',{cost:0,goals:[]}]]);
- for(let egg=0;egg<5;egg++){const next=new Map();for(const [key,value]of dp){const [total,visits]=key.split(':').map(Number);const max=available.has(egg)?Math.min(98-te[egg],needed-total):0;for(let k=minimum[egg];k<=max;k++){const count=visits+(k>0&&egg!==s.egg?1:0);if(count>visitLimit)continue;const cost=value.cost+(k?Math.max(0,D.te[te[egg]+k-1]-s.eggs[egg]):0),id=(total+k)+':'+count,old=next.get(id);if(!old||cost<old.cost)next.set(id,{cost,goals:value.goals.concat(te[egg]+k)});}}dp=next;}
- let best=null,leastVisits=Infinity;for(const [key,value]of dp){const [total,visits]=key.split(':').map(Number);if(total===needed&&(!best||value.cost<best.cost||value.cost===best.cost&&visits<leastVisits)){best=value;leastVisits=visits;}}return best?.goals||null;
+ return Goals.allocate(te,s.eggs,minimum,needed,available,visitLimit,s.egg);
 }
 function tailPlain(s,c){
  if(c.ships?.enabled&&!s.shipsDone&&s.egg===2&&Ships.ready(s,c)){try{s=Ships.launch(s,c);}catch{return null;}}

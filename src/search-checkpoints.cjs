@@ -6,8 +6,16 @@ const S=require('./simulator.cjs'),W=require('./waiting-objective.cjs');
 class Checkpoints {
  constructor({maxEntries=256,maxActions=40000}={}){
   this.entries=new Map();this.models=new WeakMap();this.nextModel=0;
+  this.references=new WeakMap();this.nextReference=0;
   this.maxEntries=maxEntries;this.maxActions=maxActions;this.actions=0;
   this.hits=0;this.misses=0;this.evictions=0;
+ }
+ reference(value){
+  if(!value||typeof value!=='object')return value;
+  if(this.references.has(value))return this.references.get(value);
+  if(!Array.isArray(value)||!Object.isFrozen(value)||!value.every(item=>item&&Object.isFrozen(item)))return value;
+  if(!this.references.has(value))this.references.set(value,++this.nextReference);
+  return this.references.get(value);
  }
  key(s,c,operation,localPurchases=false){
   let model=null;
@@ -20,7 +28,7 @@ class Checkpoints {
   const context={start:c.start,end:c.end,claimed:c.claimed,epic:c.epic,col:c.col,
    pro:c.pro,video:c.video,earningsMode:c.earningsMode,earningsScale:c.earningsScale,
    researchCostScale:c.researchCostScale,offlineMinSeconds:c.offlineMinSeconds,
-   actionsSeconds:c.actionsSeconds,shiftSeconds:c.shiftSeconds,calendar:c.calendar,
+   actionsSeconds:c.actionsSeconds,shiftSeconds:c.shiftSeconds,calendar:this.reference(c.calendar),
    sleep:c.sleep?[c.sleep.start,c.sleep.end,c.sleep.timezone]:undefined,
    routeResearchRule:c.routeResearchRule,researchDeadline:c.researchDeadline,
    researchAllowed:s.stage<c.finalCStage,enforceOpeningCaps:c.enforceOpeningCaps,

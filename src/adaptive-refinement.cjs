@@ -9,7 +9,7 @@ async function run({jobs,deadline,cancelled=()=>false,quality=()=>({revision:0,b
   if(Date.now()>=deadline){termination='budget';break;}
   const pending=jobs().filter(job=>!done.has(job.id));if(!pending.length)break;
   const priority=job=>{const h=kinds.get(job.kind);return !h?1e9-job.level:(1+h.improvements+Math.log1p(h.gainSeconds))/(10+h.elapsedMs)/(1+job.level*.25);};
-  pending.sort((a,b)=>priority(b)-priority(a)||a.level-b.level||a.id.localeCompare(b.id));
+  pending.sort((a,b)=>priority(b)-priority(a)||a.level-b.level||(b.priority||0)-(a.priority||0)||a.id.localeCompare(b.id));
   const job=pending[0],before=quality(),started=Date.now(),slice=Math.min(maxSliceMs,Math.max(1,(deadline-started)/Math.min(4,pending.length)));
   done.add(job.id);progress(job);
   try{await job.run(Math.min(deadline,started+slice));}catch{}

@@ -176,7 +176,7 @@ function alternatives(request,prepared,{checkpoint=()=>{}}={}){
  return output;
 }
 async function search(request,options={},progress=()=>{},cancelled=()=>false){
- const prepared=prepare(request),deadline=Date.now()+Math.min(5000,Math.max(100,Number(options.maxMs??90000)*.1));
+ const prepared=prepare(request),deadline=Math.min(options.absoluteDeadline??Infinity,Date.now()+Math.min(5000,Math.max(100,Number(options.maxMs??90000)*.1)));
  progress({phase:'route-search',stage:'Original Route',explored:0,bestSeconds:null});
  let originalRoute=null,baselineError='';
  try{originalRoute=baseline(prepared,{checkpoint:()=>{if(cancelled()||Date.now()>deadline)throw Error('Original route comparison interrupted.');}});}catch(e){baselineError=e.message;}

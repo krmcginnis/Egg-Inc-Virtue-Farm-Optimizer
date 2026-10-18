@@ -4,7 +4,7 @@ from pathlib import Path
 root=Path(__file__).resolve().parent.parent
 version=json.loads((root/'package.json').read_text())['version']
 out=root.parent/f'Egg-Inc-Virtue-Farm-Optimizer-GitHub-Setup-v{version}.zip'
-files=[Path(n) for n in ['package.json','package-lock.json','index.html','style.css','session.js','Start-Virtue-Optimizer.cmd','Local-Helper.ps1','Update-Core.ps1','Update-App.ps1','README.md','README.txt','RELEASE-NOTES.md','GitHub-Setup.md','THIRD-PARTY-LICENSE.txt','Wasmegg-Comparison.md',f'AUDIT-v{version}.md','VALIDATION.json','AGENTS.md','.gitignore','.github/workflows/release.yml','tests/update-core.ps1']]
+files=[Path(n) for n in ['package.json','package-lock.json','index.html','style.css','session.js','Start-Virtue-Optimizer.cmd','Local-Helper.ps1','Update-Core.ps1','Update-App.ps1','README.md','README.txt','RELEASE-NOTES.md','GitHub-Setup.md','THIRD-PARTY-LICENSE.txt','Wasmegg-Comparison.md','SEARCH-RESEARCH.md',f'AUDIT-v{version}.md','VALIDATION.json','AGENTS.md','.gitignore','.github/workflows/release.yml','tests/update-core.ps1']]
 # Include the public regression suites used by the bundled release workflow.
 # Other local tests and private review fixtures remain outside this archive.
 workflow=(root/'.github/workflows/release.yml').read_text()

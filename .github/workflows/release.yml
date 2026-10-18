@@ -65,6 +65,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/route-solver.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/search-efficiency.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/search-quality.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/investment-search.cjs
@@ -98,6 +100,8 @@ jobs:
           node tests/quick-guide-order.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/search-pool.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/solver-worker.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

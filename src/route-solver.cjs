@@ -17,6 +17,10 @@ const Economics=require('./purchase-economics.cjs');
 const {Prefixes}=require('./schedule-prefixes.cjs');
 const Packages=require('./purchase-packages.cjs');
 const Adaptive=require('./adaptive-refinement.cjs');
+const Bounds=require('./search-bounds.cjs');
+const {Reserve}=require('./search-reserve.cjs');
+const Neighborhoods=require('./purchase-neighborhoods.cjs');
+const RouteNeighborhoods=require('./route-neighborhoods.cjs');
 function better(a,b){if(!a)return false;if(!b)return true;if(a.t<b.t-1e-6)return true;if(a.t>b.t+1e-6)return false;if(a.stage!==b.stage)return a.stage<b.stage;if(Comfort.preferred(a,b))return true;if(Comfort.preferred(b,a))return false;return W.offlineBreaks(a)<W.offlineBreaks(b);}
 const VERSION=2,letters=['C','I','H','R','K'];
 
@@ -117,7 +121,7 @@ function dominates(a,b,c){
  let aligned=a;try{if(a.t<b.t)aligned=S.advance(a,c,b.t,'Dominance comparison',false);}catch{return false;}
  return aligned.cash+Math.max(1,b.cash)*1e-12>=b.cash&&aligned.eggs.every((n,i)=>n+Math.max(1,b.eggs[i])*1e-12>=b.eggs[i])&&aligned.fuel.every((n,i)=>n+Math.max(1,b.fuel[i])*1e-12>=b.fuel[i]);
 }
-function prune(states,c,width){
+function prune(states,c,width,reserve){
  const buckets=new Map();
  for(const s of states){const key=stateKey(s),same=buckets.get(key)||[];if(same.some(x=>dominates(x,s,c)))continue;buckets.set(key,same.filter(x=>!dominates(s,x,c)).concat(s));}
  const all=[...buckets.values()].flat(),chosen=new Set();
@@ -127,7 +131,9 @@ function prune(states,c,width){
  const quota=Math.max(1,Math.floor(width/orderings.length));
  for(const rank of orderings){const ranked=all.map(s=>({s,value:rank(s)})).sort((a,b)=>a.value-b.value);for(const x of ranked.slice(0,quota))chosen.add(x.s);}
  for(const s of all.map(s=>({s,value:estimate(s,c)})).sort((a,b)=>a.value-b.value).map(x=>x.s)){if(chosen.size>=width)break;chosen.add(s);}
- return [...chosen].slice(0,width);
+ const kept=[...chosen].slice(0,width);
+ if(reserve){const selected=new Set(kept);reserve(all.filter(s=>!selected.has(s)).sort((a,b)=>estimate(a,c)-estimate(b,c)).slice(0,6));}
+ return kept;
 }
 function tag(s,base,label){
  const actions=[];for(let p=s.path;p&&p!==base;p=p.prev)actions.push(p.action);
@@ -239,11 +245,14 @@ async function unlockDepartures(states,c,deadline,control){
  return proposed;
 }
 
-function purchasePrefixes(initial,c,actions,include,checkpoint=()=>{}){
+function purchasePrefixes(initial,c,actions,include,checkpoint=()=>{},waits){
  let n=initial;const states=[initial];
  for(const action of actions){
   checkpoint();
-  if(action.type==='wait'){if(include(n))states.push(...CalendarDepartures.duringWait(n,c,action).filter(include));n=S.advance(n,c,action.end,action.reason,true,action.earningsMode||'auto');}
+  if(action.type==='wait'){
+   if(waits&&include(n)&&action.cashGained>0&&!Schedules.deliveryWait(action)&&action.end-action.t>=600&&!/interaction time|Switch overhead/.test(action.reason||''))waits.push({state:n,action});
+   if(include(n))states.push(...CalendarDepartures.duringWait(n,c,action).filter(include));n=S.advance(n,c,action.end,action.reason,true,action.earningsMode||'auto');
+  }
   else n=S.buy(n,{...c,actionsSeconds:action.type==='ship-run'?c.actionsSeconds:0,shiftSeconds:0,shipReplay:true},action);
   // Wait records include the full purchase interaction. Never branch from
   // an instant between paying and completing that interaction.
@@ -543,7 +552,7 @@ async function comparePurchaseEconomics(raw,item,deadline,control,proposalOption
  try{for(let pass=0;pass<(proposalOptions.passes??3);pass++){
   const actions=S.history(current.state);
   const checkpoint=()=>{if(control.cancelled()||Date.now()>=deadline)throw Error('Purchase-economics comparison interrupted');};
-  let proposals;try{proposals=Economics.proposals(context.s,context.c,actions,{...proposalOptions,checkpoint});}catch{return;}
+  let proposals;try{proposals=(proposalOptions.neighborhoods?Neighborhoods:Economics).proposals(context.s,context.c,actions,{...proposalOptions,checkpoint});}catch{return;}
   let best=current;
   const calendarWait=actions.some(a=>a.type==='wait'&&context.c.calendar.some(e=>Number.isFinite(e.t)&&Math.abs(e.t-a.end)<.01));
   for(const proposed of proposals)for(const preserveCalendar of calendarWait?[true,false]:[true]){
@@ -580,8 +589,8 @@ function refinementPrefixData(raw,item,control,checkpoint){
  const cache=control.refinementPrefixes;
  if(control.refinementPrefixCache!==false&&cache.has(item.state)){control.refinementPrefixHits=(control.refinementPrefixHits||0)+1;return cache.get(item.state);}
  const actions=S.history(item.state),{s,c}=prepare(raw,item.route,item.count,{artifactReplay:true,artifactSets:S.recordedArtifactSets(actions)});
- const states=purchasePrefixes(s,c,actions,n=>[0,1,3,4].includes(n.egg),checkpoint);let silos=s.silos;
- const timeline=actions.map(a=>a.type==='silo'?{...a,siloTarget:++silos}:a),data={s,c,states,timeline};
+ const waits=[],states=purchasePrefixes(s,c,actions,n=>[0,1,3,4].includes(n.egg),checkpoint,waits);let silos=s.silos;
+ const timeline=actions.map(a=>a.type==='silo'?{...a,siloTarget:++silos}:a),data={s,c,states,timeline,waits,fine:new Map()};
  control.refinementPrefixMisses=(control.refinementPrefixMisses||0)+1;if(control.refinementPrefixCache!==false)cache.set(item.state,data);return data;
 }
 async function comparePurchasePackages(raw,item,deadline,control,{depth=3,limit=4}={}){
@@ -600,6 +609,7 @@ async function comparePurchasePackages(raw,item,deadline,control,{depth=3,limit=
    const index=timeline.findIndex(a=>a.t>=anchors[i].t-.00001),suffix=index<0?[]:timeline.slice(index),shift=suffix.findIndex(a=>a.type==='shift');
    const leave=shift<0?suffix.filter(a=>['fuel','fuel-dump'].includes(a.type)):[...suffix.slice(0,shift).filter(a=>['fuel','fuel-dump'].includes(a.type)),...suffix.slice(shift)];
    for(const candidate of grown.candidates)for(const actions of [leave,suffix])for(const preserveCalendar of [true,false]){
+    if(control.canImprove&&!control.canImprove(candidate.state,c,item.route))continue;
     check();const state=Schedules.execute(candidate.state,c,actions,{retime:true,recomputeFunding:true,honorTargets:true,preserveCalendar,checkpoint:check});if(!state)continue;
     control.packageComparisons=(control.packageComparisons||0)+1;
     if(control.worthwhile&&!control.worthwhile(state,item.route)){await control.yield();continue;}
@@ -616,18 +626,55 @@ async function compareAdditionalTimings(raw,item,deadline,control,timing){
  const checkpoint=()=>{if(control.cancelled()||Date.now()>=deadline)throw Error('Additional timing comparison interrupted');};
  let data;try{data=refinementPrefixData(raw,item,control,checkpoint);}catch{return;}
  const {c}=data,states=data.states.filter(n=>[0,1,4].includes(n.egg)&&n.stage<c.finalCStage);
- const anchors=Breakpoints.select(states,c,4);
+ const anchors=Breakpoints.select(states,c,4),fine=new Set(),level=timing.refineLevel??0;
+ if(control.fineTiming!==false){
+  if(!data.fine.has(level)){
+   const visits=new Map();for(const wait of data.waits)if([0,1,4].includes(wait.state.egg)&&wait.state.stage<c.finalCStage){const list=visits.get(wait.state.stage)||[];list.push(wait);visits.set(wait.state.stage,list);}
+   const samples=[];for(const list of visits.values())for(const wait of list.sort((a,b)=>(b.action.end-b.action.t)-(a.action.end-a.action.t)).slice(0,2)){
+    checkpoint();samples.push(...CalendarDepartures.fractions(wait.state,c,wait.action,[[.5],[.25,.75],[.125,.375,.625,.875]][level]||[.5]));
+   }
+   data.fine.set(level,samples);
+  }
+  const samples=data.fine.get(level),chosen=Breakpoints.select(samples,c,4);for(const state of chosen){anchors.push(state);fine.add(state);}
+ }
  for(const state of anchors){
   if(control.cancelled()||Date.now()>=deadline)break;
   try{
-   const end=seedRoute(state,c,timing,checkpoint,control.checkpoints);if(!end)continue;
+   // A refined point inside a funding wait is an alternative departure,
+   // not permission to restart the current opening's purchase recipe.
+   const start=fine.has(state)&&state.stage+1<c.sequence.length?S.buy(state,c,{type:'shift',egg:c.sequence[state.stage+1]}):state;
+   const end=seedRoute(start,c,timing,checkpoint,control.checkpoints);if(!end)continue;
    control.additionalTimingComparisons++;
+   if(fine.has(state))control.fineTimingComparisons=(control.fineTimingComparisons||0)+1;
    if(control.worthwhile&&!control.worthwhile(end,item.route)){await control.yield();continue;}
    const marked=S.history(end).map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:VERSION,sequence:item.route,researchSales:item.count}}),verified=replay(raw,marked,true);
    if(verified.s.t!==end.t)throw Error('Additional timing replay differs from its paid continuation.');
    control.context=verified.c;control.route=item.route;control.consider(verified.s);
   }catch{}
   await control.yield();
+ }
+}
+async function compareRouteNeighborhoods(raw,item,deadline,control,level){
+ const checkpoint=()=>{if(control.cancelled()||Date.now()>=deadline)throw Error('Route-neighborhood comparison interrupted');};
+ if(!Strategy.automatic(raw.plan||{}))return;
+ let data;try{data=refinementPrefixData(raw,item,control,checkpoint);}catch{return;}
+ const proposals=RouteNeighborhoods.proposals(item.route,raw.farm.virtue,Automatic.limit(raw)).slice(level*3,level*3+3);
+ for(const route of proposals){
+  try{
+   checkpoint();const changed=route.findIndex((egg,i)=>egg!==item.route[i]),first=changed<0?route.length:changed;
+   const {s,c}=prepare(raw,route,item.count,{artifactReplay:true,artifactSets:{...item.context.loadouts,...S.recordedArtifactSets(data.timeline)}});
+   let prefix=data.states.filter(n=>n.stage<first).at(-1)||s,stage=0,valid=true;
+   for(const action of S.history(prefix)){if(action.type==='shift')stage++;if(action.type==='research'&&stage>=c.finalCStage){valid=false;break;}}
+   if(!valid)prefix=s;
+   // The common paid visit is already complete. Depart it once rather than
+   // running its opening recipe again under every nearby route.
+   else if(prefix.stage+1<c.sequence.length)prefix=S.buy(prefix,c,{type:'shift',egg:c.sequence[prefix.stage+1]});
+   const state=seedRoute(prefix,c,{research:90+level*60,vehicles:120},checkpoint,control.checkpoints);if(!state)continue;
+   control.routeNeighborhoodComparisons=(control.routeNeighborhoodComparisons||0)+1;
+   if(control.worthwhile&&!control.worthwhile(state,route))continue;
+   const actions=S.history(state).map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:VERSION,sequence:route,researchSales:item.count}}),verified=replay(raw,actions,true);
+   if(verified.s.t!==state.t)throw Error('Route neighborhood differs from independent replay');control.context=verified.c;control.route=route;control.consider(verified.s);
+  }catch{}await control.yield();
  }
 }
 async function refineRemainingBudget(raw,byShift,byRoute,deadline,control,progress){
@@ -639,12 +686,26 @@ async function refineRemainingBudget(raw,byShift,byRoute,deadline,control,progre
    for(let level=0;level<3;level++){
     if(control.packageSearch!==false)output.push({id:id+':packages:'+level,kind:'packages',level,run:end=>comparePurchasePackages(raw,item,end,control,{depth:level+2,limit:3+level,timing:[90,180,300][level]})});
     if(control.economicsEnabled!==false)output.push({id:id+':economics:'+level,kind:'economics',level,run:end=>comparePurchaseEconomics(raw,item,end,control,{offset:[0,16,32][level],limit:[16,32,56][level],maxProposals:96,passes:1})});
-    if(control.extraTimings!==false)output.push({id:id+':timing:'+level,kind:'timing',level,run:end=>compareAdditionalTimings(raw,item,end,control,[{research:90,vehicles:90},{research:300,vehicles:120},{research:120,vehicles:300}][level])});
+    if(control.extraTimings!==false)output.push({id:id+':timing:'+level,kind:'timing',level,run:end=>compareAdditionalTimings(raw,item,end,control,[{research:90,vehicles:90,refineLevel:0},{research:300,vehicles:120,refineLevel:1},{research:120,vehicles:300,refineLevel:2}][level])});
+    if(control.neighborhoods!==false)output.push({id:id+':neighborhood:'+level,kind:'neighborhood',level,run:end=>comparePurchaseEconomics(raw,item,end,control,{neighborhoods:true,limit:8+level*4,maxProposals:48,passes:1})});
+    if(control.routeNeighborhoods&&Strategy.automatic(raw.plan||{}))output.push({id:id+':routes:'+level,kind:'routes',level,run:end=>compareRouteNeighborhoods(raw,item,end,control,level)});
    }
   }
-  return output;
+  for(const item of control.reserve?.peek(4)||[])output.push({id:'reserve:'+item.id,kind:'recovery',level:0,run:async end=>{
+   const paid=control.reserve.take(item.id);if(!paid||!control.canImprove(paid.state,paid.context,paid.route))return;
+   const checkpoint=()=>{if(control.cancelled()||Date.now()>=end)throw Error('Reserved branch comparison interrupted');};
+   for(const timing of [{research:90,vehicles:120},{research:180,vehicles:180}]){
+    try{checkpoint();const state=seedRoute(paid.state,paid.context,timing,checkpoint,control.checkpoints);if(!state)continue;
+     control.reservedComparisons=(control.reservedComparisons||0)+1;if(control.worthwhile&&!control.worthwhile(state,paid.route))continue;
+     const actions=S.history(state).map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:VERSION,sequence:paid.route,researchSales:paid.count}}),verified=replay(raw,actions,true);
+     if(verified.s.t!==state.t)throw Error('Reserved branch differs from independent replay');control.context=verified.c;control.route=paid.route;control.consider(verified.s);
+    }catch{}await control.yield();
+   }
+  }});
+  const order=control.portfolioVariant%4===3?['recovery','routes','neighborhood','packages','timing','economics']:control.portfolioVariant%4===1?['timing','routes','recovery','neighborhood','economics','packages']:control.portfolioVariant%4===2?['neighborhood','packages','recovery','routes','timing','economics']:[];
+  return output.map(job=>({...job,priority:order.length?order.length-order.indexOf(job.kind):0}));
  };
- control.adaptive=await Adaptive.run({jobs,deadline,cancelled:control.cancelled,quality:()=>({revision:control.improvements,best:Math.min(...[...byShift.values()].map(x=>x.state.t))}),yield:control.yield,progress:job=>progress({phase:'route-search',stage:'Refinement',phaseLabel:'Comparing '+({packages:'larger paid purchase packages',economics:'additional purchase orders',timing:'additional departure timings'}[job.kind]),elapsedMs:Date.now()-control.started,explored:control.explored})});
+ control.adaptive=await Adaptive.run({jobs,deadline,cancelled:control.cancelled,quality:()=>({revision:control.improvements,best:Math.min(...[...byShift.values()].map(x=>x.state.t))}),yield:control.yield,progress:job=>progress({phase:'route-search',stage:'Refinement',phaseLabel:'Comparing '+({packages:'larger paid purchase packages',economics:'additional purchase orders',timing:'additional departure timings',neighborhood:'larger purchase neighborhoods',recovery:'reserved purchase branches',routes:'nearby farm orders'}[job.kind]),elapsedMs:Date.now()-control.started,explored:control.explored})});
 }
 function finalize(raw,best,c,route,count,control,termination){
  let actions=S.history(best);
@@ -658,33 +719,62 @@ function finalize(raw,best,c,route,count,control,termination){
   finalTE:S.teByEgg(s,c),pendingTE:S.totalTE(s,c)-c.claimedTotal,finalCash:s.cash,finalStats:S.stats(s,c),actions,
   frontier:[{switches:s.stage,seconds:s.t-c.start,soulCost:s.lost}],sourceCommit:S.D.commit,validatedReplay:true,
   artifactRecommendations:best.artifactRecommendations||null,...(best.siloComfort?{siloComfort:best.siloComfort}:{}),artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions),search:{automaticVisitTiming:true,routesCompared:control.routesCompared,statesExamined:control.explored,continuationsCompared:control.continuationsCompared,
-   checkpoints:control.checkpoints?.summary(),lookaheadNodes:control.lookaheadNodes,lookaheadChains:control.lookaheadChains,lookaheadComparisons:control.lookaheadComparisons,
-   openingComparisons:control.openingComparisons,conservativeComparisons:control.conservativeComparisons,physicalComparisons:control.physicalComparisons,deliveryResearchComparisons:control.deliveryResearchComparisons,researchOrderComparisons:control.researchOrderComparisons,researchValueComparisons:control.researchValueComparisons,purchaseEconomicsComparisons:control.purchaseEconomicsComparisons,economicsReplays:control.economicsReplays,economicsPrefixHits:control.economicsPrefixHits,economicsPrefixMisses:control.economicsPrefixMisses,refinementPrefixHits:control.refinementPrefixHits,refinementPrefixMisses:control.refinementPrefixMisses,packageNodes:control.packageNodes,packageComparisons:control.packageComparisons,packageReplays:control.packageReplays,additionalTimingComparisons:control.additionalTimingComparisons,adaptive:control.adaptive,recoveryComparisons:control.recoveryComparisons,breakpointAnchors:control.breakpointAnchors,breakpointComparisons:control.breakpointComparisons,retainedPlans:control.retainedPlans,earningsAdaptations:control.earningsAdaptations}};
- return {...result,summary:Summary.summarize(raw,result)};
+   portfolioVariant:control.portfolioVariant,sharedImports:control.sharedImports||0,checkpoints:control.checkpoints?.summary(),lookaheadNodes:control.lookaheadNodes,lookaheadChains:control.lookaheadChains,lookaheadComparisons:control.lookaheadComparisons,
+   openingComparisons:control.openingComparisons,conservativeComparisons:control.conservativeComparisons,physicalComparisons:control.physicalComparisons,deliveryResearchComparisons:control.deliveryResearchComparisons,researchOrderComparisons:control.researchOrderComparisons,researchValueComparisons:control.researchValueComparisons,purchaseEconomicsComparisons:control.purchaseEconomicsComparisons,economicsReplays:control.economicsReplays,economicsPrefixHits:control.economicsPrefixHits,economicsPrefixMisses:control.economicsPrefixMisses,refinementPrefixHits:control.refinementPrefixHits,refinementPrefixMisses:control.refinementPrefixMisses,packageNodes:control.packageNodes,packageComparisons:control.packageComparisons,packageReplays:control.packageReplays,additionalTimingComparisons:control.additionalTimingComparisons,fineTimingComparisons:control.fineTimingComparisons,routeNeighborhoodComparisons:control.routeNeighborhoodComparisons,adaptive:control.adaptive,boundChecks:control.boundChecks,boundPruned:control.boundPruned,reserve:control.reserve?.summary(),reservedComparisons:control.reservedComparisons,recoveryComparisons:control.recoveryComparisons,breakpointAnchors:control.breakpointAnchors,breakpointComparisons:control.breakpointComparisons,retainedPlans:control.retainedPlans,earningsAdaptations:control.earningsAdaptations}};
+ return control.compactResults?result:{...result,summary:Summary.summarize(raw,result)};
 }
 async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  if(options.legacySolver===true){const input=structuredClone(raw);delete input.plan.solverVersion;return L.solve(input,options,progress,cancelled);}
  const incumbents=Incumbents.restoreMany(raw,options.incumbent,options.incumbents,replay);
  if(Strategy.automatic(raw.plan||{}))Automatic.limit(raw);
- const routeOptions=options.returnComparisons===true&&Strategy.automatic(raw.plan||{})?presetRoutes(raw):routes(raw),started=Date.now(),maxMs=S.number(options.maxMs??90000,'Search time',100,600000);
+ let routeOptions=options.returnComparisons===true&&Strategy.automatic(raw.plan||{})?presetRoutes(raw):routes(raw),started=Date.now();let maxMs=S.number(options.maxMs??90000,'Search time',100,600000);
+ if(Number.isFinite(options.absoluteDeadline))maxMs=Math.max(100,Math.min(maxMs,options.absoluteDeadline-started));
+ const variant=Number(options.portfolioVariant)||0;if(variant%4===2)routeOptions=routeOptions.slice().reverse();else if(variant%4===3)routeOptions=[...routeOptions.filter((_,i)=>i%2),...routeOptions.filter((_,i)=>i%2===0)];
  const width=Math.min(16,S.number(options.width??12,'Search width',4,512,true));
  const entries=[],byShift=new Map(),byRoute=new Map(),searchContexts=[],control={started,width,explored:0,routesCompared:0,continuationsCompared:0,
   checkpoints:options.disableCheckpoints?null:new Checkpoints(),lookahead:!options.disableLookahead,lookaheadNodes:0,lookaheadChains:0,lookaheadComparisons:0,
   openingComparisons:0,conservativeComparisons:0,physicalComparisons:0,deliveryResearchComparisons:0,researchOrderComparisons:0,researchValueComparisons:0,purchaseEconomicsComparisons:0,economicsReplays:0,economicsPrefixHits:0,economicsPrefixMisses:0,schedulePrefixes:!options.disableSchedulePrefixes,verifyAllEconomics:!!options.verifyAllEconomics,refinementPrefixCache:!options.disableRefinementPrefixCache,refinementPrefixHits:0,refinementPrefixMisses:0,packageSearch:!options.disablePurchasePackages,extraTimings:!options.disableAdditionalTimings,economicsEnabled:!options.disableResearchValue,packageNodes:0,packageComparisons:0,packageReplays:0,additionalTimingComparisons:0,improvements:0,adaptive:null,recoveryComparisons:0,breakpointAnchors:0,breakpointComparisons:0,retainedPlans:0,earningsAdaptations:0,
-  cancelled,yield:()=>new Promise(r=>setTimeout(r,0))};let recommended=null,overall=null,retained=null;
+  compactResults:!!options.compactResults,portfolioVariant:variant,reserve:options.disableRecovery?null:new Reserve(),neighborhoods:!options.disableNeighborhoods,routeNeighborhoods:!options.disableRouteNeighborhoods,fineTiming:!options.disableFineTiming,fineTimingComparisons:0,routeNeighborhoodComparisons:0,boundChecks:0,boundPruned:0,reservedComparisons:0,cancelled,yield:()=>new Promise(r=>setTimeout(r,0))};let recommended=null,overall=null,retained=null;
+ let pendingCandidate=null,lastCandidate=0;
+ control.yield=async()=>{
+  if(pendingCandidate&&options.onCandidate&&(Date.now()-lastCandidate>1500||lastCandidate===0)){
+   const item=pendingCandidate;pendingCandidate=null;lastCandidate=Date.now();
+   try{options.onCandidate({config:raw,result:finalize(raw,item.state,item.context,item.route,item.count,{...control,compactResults:true},'Shared search candidate')});}catch{}
+  }
+  await new Promise(r=>setTimeout(r,0));
+  if(options.takeIncumbents){
+   const seeds=options.takeIncumbents(),previousContext=control.context,previousRoute=control.route;
+   for(const seed of seeds||[])for(const item of Incumbents.restore(raw,seed,replay)){control.context=item.context;control.route=item.route;control.consider(item.state);control.sharedImports=(control.sharedImports||0)+1;}
+   control.context=previousContext;control.route=previousRoute;
+  }
+ };
  for(const count of options.returnComparisons===true?Plans.COUNTS:[3]){
   if(cancelled()&&!incumbents.some(item=>item.count===count)){entries.push({researchSales:count,status:'not-completed',error:'Search stopped before this sale option completed.'});continue;}
   const deadline=started+maxMs*count/3*(options.returnComparisons===true?1:.72);let best=null,bestContext=null,bestRoute=null,lastError='';
   control.consider=state=>{
    if(!state||!complete(state,control.context))return;
    const item={state,context:control.context,route:control.route,count},previous=byShift.get(state.stage);
-   if(better(state,previous?.state)){byShift.set(state.stage,item);control.improvements++;}
+   if(better(state,previous?.state)){byShift.set(state.stage,item);control.improvements++;pendingCandidate=item;}
    // A slightly faster H-ending plan must not erase an I-ending purchase
    // path that can supply a valid shorter shift-count comparison.
    const routeKey=JSON.stringify([count,control.route]);if(better(state,byRoute.get(routeKey)?.state))byRoute.set(routeKey,item);
    if(better(state,best)){best=state;bestContext=control.context;bestRoute=control.route;}
   };
   control.worthwhile=(state,route)=>better(state,byShift.get(state.stage)?.state)||better(state,byRoute.get(JSON.stringify([count,route]))?.state);
+  control.canImprove=(state,c,route)=>{
+   if(options.disableSafeBounds)return true;
+   control.boundChecks=(control.boundChecks||0)+1;
+   try{
+    const first=Bounds.minimumStage(state,c),last=c.autoSequence?c.maxSwitches:c.sequence.length-1;
+    if(first===Infinity){control.boundPruned=(control.boundPruned||0)+1;return false;}
+    for(let shifts=first;shifts<=last;shifts++)if(!byShift.has(shifts))return true;
+    const routeBest=byRoute.get(JSON.stringify([count,route]));if(!routeBest)return true;
+    const earliest=Bounds.earliest(state,c);
+    if(earliest<=routeBest.state.t+.01)return true;
+    for(let shifts=first;shifts<=last;shifts++)if(earliest<=byShift.get(shifts).state.t+.01)return true;
+    control.boundPruned=(control.boundPruned||0)+1;return false;
+   }catch{return true;}
+  };
   for(const item of incumbents)if(item.count===count){control.context=item.context;control.route=item.route;control.consider(item.state);control.retainedPlans++;}
   if((!options.disableResearchOrder||!options.disableResearchValue)&&!cancelled()&&incumbents.length){
    const orderDeadline=Math.min(deadline,started+Math.min(5000,maxMs*.08));
@@ -737,7 +827,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
     }
    }
    const openingCaches=new Map();
-   for(const [c1MaxMinutes,k1MaxMinutes] of [[180,180],[180,120],[60,60],[30,30],[60,180],[180,60],[300,300]])for(const item of openings){
+   for(const [c1MaxMinutes,k1MaxMinutes] of (variant%4===3?[[120,180],[180,240],[240,240],[60,120],[120,60],[30,180],[300,180]]:variant%4===1?[[90,120],[120,90],[240,120],[60,180],[180,60],[30,30],[300,300]]:[[180,180],[180,120],[60,60],[30,30],[60,180],[180,60],[300,300]]))for(const item of openings){
     if(cancelled()||Date.now()>=openingDeadline)break;
     control.context=item.c;control.route=item.route;
     progress({phase:'route-search',stage:'Opening',phaseLabel:'Comparing research, habs, and vehicles',explored:control.explored,elapsedMs:Date.now()-started});await control.yield();
@@ -791,6 +881,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
     const stageDeadline=Date.now()+Math.max(1,(routeDeadline-Date.now())*visitWeight(c,stage)/remainingWeight),expanded=[];
     for(let i=0;i<beam.length;i++){
      const n=beam[i];if(complete(n,c)){control.consider(n);continue;}
+     if(!control.canImprove(n,c,route))continue;
      control.consider(L.finishHere(n,c));const tail=finish(n,c);if(tail)control.consider(tail);
      const stateDeadline=Date.now()+Math.max(1,(stageDeadline-Date.now())/(beam.length-i));
      const departures=!S.reached(n,c)&&Date.now()<stageDeadline?await visit(n,c,stateDeadline,control):[n];
@@ -799,7 +890,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
       if(stage+1<c.sequence.length&&!complete(departure,c))try{const next=S.buy(departure,c,{type:'shift',egg:c.sequence[stage+1]});expanded.push(tag(next,departure.path,phase(next,c)));}catch(e){lastError=e.message;}
      }
     }
-    beam=prune(expanded,c,width);
+    beam=prune(expanded,c,width,control.reserve?states=>control.reserve.add(states,c,route,count):null);
    }
   }
   if(best){retained={state:best,route:bestRoute,context:bestContext};const plan=finalize(raw,best,bestContext,bestRoute,count,control,cancelled()?'cancelled with best plan':Date.now()>=deadline?'computation budget reached':'route comparison complete');entries.push({researchSales:count,status:'complete',plan});if(better(best,overall)){overall=best;recommended=count;}}
@@ -890,7 +981,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
   const top=[...byShift.values()].sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0).slice(0,3);
   if(!cancelled()){
    // Keep the main search budget intact; cap final comfort comparisons at 5 s.
-   const comfortDeadline=Date.now()+Math.min(5000,maxMs*.05);
+   const comfortDeadline=Math.min(options.absoluteDeadline??Infinity,Date.now()+Math.min(5000,maxMs*.05));
    progress({phase:'route-search',stage:'Silos',phaseLabel:'Checking extra silo coverage without delaying completion',elapsedMs:Date.now()-started,explored:control.explored});
    for(const item of top){
     if(cancelled()||Date.now()>=comfortDeadline)break;
@@ -906,4 +997,4 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  const chosen=Plans.select({researchSalePlans:entries,recommendedResearchSales:recommended},recommended);
  return chosen;
 }
-module.exports={VERSION,recipe,seedRoute,openingDepartures,researchPrefixes,physicalPrefixes,compareResearchBreakpoints,comparePhysicalInvestments,compareDeliveryResearch,compareResearchOrders,compareResearchValue,comparePurchaseEconomics,comparePurchasePackages,compareAdditionalTimings,refineRemainingBudget,deliveryPotential,compareDepartures,comparePurchaseChains,completionAlternatives,unlockDepartures,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,solve};
+module.exports={VERSION,recipe,seedRoute,openingDepartures,researchPrefixes,physicalPrefixes,compareResearchBreakpoints,comparePhysicalInvestments,compareDeliveryResearch,compareResearchOrders,compareResearchValue,comparePurchaseEconomics,comparePurchasePackages,compareAdditionalTimings,compareRouteNeighborhoods,refineRemainingBudget,deliveryPotential,compareDepartures,comparePurchaseChains,completionAlternatives,unlockDepartures,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,solve};

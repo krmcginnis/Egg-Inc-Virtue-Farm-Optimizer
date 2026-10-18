@@ -1,3 +1,4 @@
+const {SearchPool}=require('./search-pool.cjs');
 "use strict";
 const Ships = require("./ships.cjs");
 const titleCase = require("./ui-text.cjs"), DEFAULT_ROUTE = require("./default-route.cjs");
@@ -1627,7 +1628,7 @@ function optimize(request) {
   $("run-summary").textContent = "Searching\u2026";
   startSearchClock();
   const blob = new Blob([globalThis.VIRTUE_WORKER_SOURCE], { type: "text/javascript" }), url = URL.createObjectURL(blob);
-  try { worker = new Worker(url); }
+  try { worker = new SearchPool(()=>new Worker(url)); }
   catch (error) {
     busy(false);
     markInputsChanged();

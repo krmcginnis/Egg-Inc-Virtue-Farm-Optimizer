@@ -117,6 +117,18 @@ successful kinds receive more attention, and an exhausted queue stops early.
 Identical schedule prefixes reuse isolated paid states, while candidates that
 can improve the result receive independent full replay before acceptance.
 
+The search also revisits a bounded reserve of discarded purchase branches,
+compares purchase families and nearby route edits, and refines departure times
+inside long funding waits. Conservative mathematical bounds skip branches that
+cannot improve retained plans. Research multipliers and exact TE allocation are
+computed with less repeated work. See [search research and limits](SEARCH-RESEARCH.md).
+
+The app uses two independent background search workers when the browser reports
+at least four logical cores, otherwise one. Workers share independently replayed
+complete plans under the same time budget. Stop & Keep Best retains verified
+candidates, including when another worker fails. Higher core counts do not imply
+a guaranteed speedup or a globally optimal result.
+
 Reoptimizing a checked farm also retimes compatible saved shift-count alternatives
 as starting candidates. The current farm, original shift allowance and remaining
 launches stay authoritative. An alternative with a different visited prefix or

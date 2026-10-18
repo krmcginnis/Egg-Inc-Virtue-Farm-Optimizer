@@ -24,4 +24,15 @@ function beforePurchase(s,c,ready){
  for(const a of waits.reverse()){output.push(...duringWait(n,c,a));n=S.advance(n,c,a.end,a.reason,true,a.earningsMode||'auto');}
  return output;
 }
-module.exports={duringWait,beforePurchase};
+function fractions(s,c,a,parts=[.5]){
+ if(a.type!=='wait'||a.end-a.t<Math.max(600,c.offlineMinSeconds||60)||/interaction time|Switch overhead/.test(a.reason||'')||Math.abs(s.t-a.t)>.01)return [];
+ const times=parts.map(part=>a.t+(a.end-a.t)*part);
+ for(const event of c.calendar)if(event.t>a.t&&event.t<a.end)times.push(event.t);
+ const output=[];for(let t of [...new Set(times)].sort((a,b)=>a-b)){
+  t=Sleep.nextActive(c.sleep,t,c.shiftSeconds);if(t<=s.t+1e-6||t>=a.end-1e-6)continue;
+  const mode=a.earningsMode==='offline'&&t-s.t<S.offlineMinimum(c)?'online':a.earningsMode||'auto';
+  output.push(S.advance(s,c,t,'Compare a refined paid departure',true,mode));
+ }
+ return output;
+}
+module.exports={duringWait,beforePurchase,fractions};
