@@ -21,6 +21,7 @@ const Bounds=require('./search-bounds.cjs');
 const {Reserve}=require('./search-reserve.cjs');
 const Neighborhoods=require('./purchase-neighborhoods.cjs');
 const RouteNeighborhoods=require('./route-neighborhoods.cjs');
+const Quality=require('./search-quality.cjs');
 function better(a,b){if(!a)return false;if(!b)return true;if(a.t<b.t-1e-6)return true;if(a.t>b.t+1e-6)return false;if(a.stage!==b.stage)return a.stage<b.stage;if(Comfort.preferred(a,b))return true;if(Comfort.preferred(b,a))return false;return W.offlineBreaks(a)<W.offlineBreaks(b);}
 const VERSION=2,letters=['C','I','H','R','K'];
 
@@ -626,16 +627,18 @@ async function compareAdditionalTimings(raw,item,deadline,control,timing){
  const checkpoint=()=>{if(control.cancelled()||Date.now()>=deadline)throw Error('Additional timing comparison interrupted');};
  let data;try{data=refinementPrefixData(raw,item,control,checkpoint);}catch{return;}
  const {c}=data,states=data.states.filter(n=>[0,1,4].includes(n.egg)&&n.stage<c.finalCStage);
- const anchors=Breakpoints.select(states,c,4),fine=new Set(),level=timing.refineLevel??0;
+ const anchors=Breakpoints.select(states,c,4),fine=new Set(),calculated=new Set(),level=timing.refineLevel??0;
  if(control.fineTiming!==false){
   if(!data.fine.has(level)){
    const visits=new Map();for(const wait of data.waits)if([0,1,4].includes(wait.state.egg)&&wait.state.stage<c.finalCStage){const list=visits.get(wait.state.stage)||[];list.push(wait);visits.set(wait.state.stage,list);}
-   const samples=[];for(const list of visits.values())for(const wait of list.sort((a,b)=>(b.action.end-b.action.t)-(a.action.end-a.action.t)).slice(0,2)){
+   const samples=[],critical=[];for(const list of visits.values())for(const wait of list.sort((a,b)=>(b.action.end-b.action.t)-(a.action.end-a.action.t)).slice(0,2)){
     checkpoint();samples.push(...CalendarDepartures.fractions(wait.state,c,wait.action,[[.5],[.25,.75],[.125,.375,.625,.875]][level]||[.5]));
+    if(level===0&&control.calculatedTiming!==false)critical.push(...CalendarDepartures.critical(wait.state,c,wait.action,{limit:8}));
    }
-   data.fine.set(level,samples);
+   data.fine.set(level,samples);if(level===0)data.calculated=critical;
   }
   const samples=data.fine.get(level),chosen=Breakpoints.select(samples,c,4);for(const state of chosen){anchors.push(state);fine.add(state);}
+  if(level===0)for(const state of Breakpoints.select(data.calculated||[],c,2)){anchors.push(state);fine.add(state);calculated.add(state);}
  }
  for(const state of anchors){
   if(control.cancelled()||Date.now()>=deadline)break;
@@ -643,9 +646,11 @@ async function compareAdditionalTimings(raw,item,deadline,control,timing){
    // A refined point inside a funding wait is an alternative departure,
    // not permission to restart the current opening's purchase recipe.
    const start=fine.has(state)&&state.stage+1<c.sequence.length?S.buy(state,c,{type:'shift',egg:c.sequence[state.stage+1]}):state;
-   const end=seedRoute(start,c,timing,checkpoint,control.checkpoints);if(!end)continue;
+   const until=calculated.has(state)?Math.min(deadline,Date.now()+750):deadline,check=()=>{checkpoint();if(Date.now()>=until)throw Error('Calculated departure slice interrupted');};
+   const end=seedRoute(start,c,timing,check,control.checkpoints);if(!end)continue;
    control.additionalTimingComparisons++;
    if(fine.has(state))control.fineTimingComparisons=(control.fineTimingComparisons||0)+1;
+   if(calculated.has(state))control.calculatedTimingComparisons=(control.calculatedTimingComparisons||0)+1;
    if(control.worthwhile&&!control.worthwhile(end,item.route)){await control.yield();continue;}
    const marked=S.history(end).map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:VERSION,sequence:item.route,researchSales:item.count}}),verified=replay(raw,marked,true);
    if(verified.s.t!==end.t)throw Error('Additional timing replay differs from its paid continuation.');
@@ -678,7 +683,7 @@ async function compareRouteNeighborhoods(raw,item,deadline,control,level){
  }
 }
 async function refineRemainingBudget(raw,byShift,byRoute,deadline,control,progress){
- const ids=new WeakMap();let next=0;
+ const ids=new WeakMap(),identities=new WeakMap();let next=0;
  const jobs=()=>{
   const roots=[...new Set([...byShift.values(),...[...byRoute.values()].sort((a,b)=>a.state.t-b.state.t)])].slice(0,4),output=[];
   for(const item of roots){
@@ -703,9 +708,13 @@ async function refineRemainingBudget(raw,byShift,byRoute,deadline,control,progre
    }
   }});
   const order=control.portfolioVariant%4===3?['recovery','routes','neighborhood','packages','timing','economics']:control.portfolioVariant%4===1?['timing','routes','recovery','neighborhood','economics','packages']:control.portfolioVariant%4===2?['neighborhood','packages','recovery','routes','timing','economics']:[];
-  return output.map(job=>({...job,priority:order.length?order.length-order.indexOf(job.kind):0}));
+  for(const item of roots)if(!identities.has(item.state))identities.set(item.state,JSON.stringify([item.route,item.count,S.history(item.state).map(a=>{const {before,after,...semantic}=a;return semantic;})]));
+  return output.map(job=>{
+   const root=roots.find(item=>String(ids.get(item.state))===job.id.split(':')[0]);
+   return {...job,taskKey:root?identities.get(root.state)+':'+job.kind+':'+job.level:null,priority:order.length?order.length-order.indexOf(job.kind):0};
+  });
  };
- control.adaptive=await Adaptive.run({jobs,deadline,cancelled:control.cancelled,quality:()=>({revision:control.improvements,best:Math.min(...[...byShift.values()].map(x=>x.state.t))}),yield:control.yield,progress:job=>progress({phase:'route-search',stage:'Refinement',phaseLabel:'Comparing '+({packages:'larger paid purchase packages',economics:'additional purchase orders',timing:'additional departure timings',neighborhood:'larger purchase neighborhoods',recovery:'reserved purchase branches',routes:'nearby farm orders'}[job.kind]),elapsedMs:Date.now()-control.started,explored:control.explored})});
+ control.adaptive=await Adaptive.run({jobs,deadline,cancelled:control.cancelled,claim:control.claimTask?job=>job.taskKey?control.claimTask(job.taskKey):true:undefined,release:control.releaseTask?job=>job.taskKey&&control.releaseTask(job.taskKey):undefined,quality:()=>({revision:control.improvements,best:Math.min(...[...byShift.values()].map(x=>x.state.t))}),yield:control.yield,progress:job=>progress({phase:'route-search',stage:'Refinement',phaseLabel:'Comparing '+({packages:'larger paid purchase packages',economics:'additional purchase orders',timing:'additional departure timings',neighborhood:'larger purchase neighborhoods',recovery:'reserved purchase branches',routes:'nearby farm orders'}[job.kind]),elapsedMs:Date.now()-control.started,explored:control.explored})});
 }
 function finalize(raw,best,c,route,count,control,termination){
  let actions=S.history(best);
@@ -719,8 +728,9 @@ function finalize(raw,best,c,route,count,control,termination){
   finalTE:S.teByEgg(s,c),pendingTE:S.totalTE(s,c)-c.claimedTotal,finalCash:s.cash,finalStats:S.stats(s,c),actions,
   frontier:[{switches:s.stage,seconds:s.t-c.start,soulCost:s.lost}],sourceCommit:S.D.commit,validatedReplay:true,
   artifactRecommendations:best.artifactRecommendations||null,...(best.siloComfort?{siloComfort:best.siloComfort}:{}),artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions),search:{automaticVisitTiming:true,routesCompared:control.routesCompared,statesExamined:control.explored,continuationsCompared:control.continuationsCompared,
-   portfolioVariant:control.portfolioVariant,sharedImports:control.sharedImports||0,checkpoints:control.checkpoints?.summary(),lookaheadNodes:control.lookaheadNodes,lookaheadChains:control.lookaheadChains,lookaheadComparisons:control.lookaheadComparisons,
+   portfolioVariant:control.portfolioVariant,calculatedTimingComparisons:control.calculatedTimingComparisons||0,sharedImports:control.sharedImports||0,checkpoints:control.checkpoints?.summary(),lookaheadNodes:control.lookaheadNodes,lookaheadChains:control.lookaheadChains,lookaheadComparisons:control.lookaheadComparisons,
    openingComparisons:control.openingComparisons,conservativeComparisons:control.conservativeComparisons,physicalComparisons:control.physicalComparisons,deliveryResearchComparisons:control.deliveryResearchComparisons,researchOrderComparisons:control.researchOrderComparisons,researchValueComparisons:control.researchValueComparisons,purchaseEconomicsComparisons:control.purchaseEconomicsComparisons,economicsReplays:control.economicsReplays,economicsPrefixHits:control.economicsPrefixHits,economicsPrefixMisses:control.economicsPrefixMisses,refinementPrefixHits:control.refinementPrefixHits,refinementPrefixMisses:control.refinementPrefixMisses,packageNodes:control.packageNodes,packageComparisons:control.packageComparisons,packageReplays:control.packageReplays,additionalTimingComparisons:control.additionalTimingComparisons,fineTimingComparisons:control.fineTimingComparisons,routeNeighborhoodComparisons:control.routeNeighborhoodComparisons,adaptive:control.adaptive,boundChecks:control.boundChecks,boundPruned:control.boundPruned,reserve:control.reserve?.summary(),reservedComparisons:control.reservedComparisons,recoveryComparisons:control.recoveryComparisons,breakpointAnchors:control.breakpointAnchors,breakpointComparisons:control.breakpointComparisons,retainedPlans:control.retainedPlans,earningsAdaptations:control.earningsAdaptations}};
+ if(termination!=='Shared search candidate')result.optimality=Quality.measure(raw,result);
  return control.compactResults?result:{...result,summary:Summary.summarize(raw,result)};
 }
 async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
@@ -731,10 +741,10 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  if(Number.isFinite(options.absoluteDeadline))maxMs=Math.max(100,Math.min(maxMs,options.absoluteDeadline-started));
  const variant=Number(options.portfolioVariant)||0;if(variant%4===2)routeOptions=routeOptions.slice().reverse();else if(variant%4===3)routeOptions=[...routeOptions.filter((_,i)=>i%2),...routeOptions.filter((_,i)=>i%2===0)];
  const width=Math.min(16,S.number(options.width??12,'Search width',4,512,true));
- const entries=[],byShift=new Map(),byRoute=new Map(),searchContexts=[],control={started,width,explored:0,routesCompared:0,continuationsCompared:0,
+ const entries=[],byShift=new Map(),byRoute=new Map(),searchContexts=[],control={started,width,explored:0,routesCompared:0,continuationsCompared:0,claimTask:options.claimTask,releaseTask:options.releaseTask,
   checkpoints:options.disableCheckpoints?null:new Checkpoints(),lookahead:!options.disableLookahead,lookaheadNodes:0,lookaheadChains:0,lookaheadComparisons:0,
   openingComparisons:0,conservativeComparisons:0,physicalComparisons:0,deliveryResearchComparisons:0,researchOrderComparisons:0,researchValueComparisons:0,purchaseEconomicsComparisons:0,economicsReplays:0,economicsPrefixHits:0,economicsPrefixMisses:0,schedulePrefixes:!options.disableSchedulePrefixes,verifyAllEconomics:!!options.verifyAllEconomics,refinementPrefixCache:!options.disableRefinementPrefixCache,refinementPrefixHits:0,refinementPrefixMisses:0,packageSearch:!options.disablePurchasePackages,extraTimings:!options.disableAdditionalTimings,economicsEnabled:!options.disableResearchValue,packageNodes:0,packageComparisons:0,packageReplays:0,additionalTimingComparisons:0,improvements:0,adaptive:null,recoveryComparisons:0,breakpointAnchors:0,breakpointComparisons:0,retainedPlans:0,earningsAdaptations:0,
-  compactResults:!!options.compactResults,portfolioVariant:variant,reserve:options.disableRecovery?null:new Reserve(),neighborhoods:!options.disableNeighborhoods,routeNeighborhoods:!options.disableRouteNeighborhoods,fineTiming:!options.disableFineTiming,fineTimingComparisons:0,routeNeighborhoodComparisons:0,boundChecks:0,boundPruned:0,reservedComparisons:0,cancelled,yield:()=>new Promise(r=>setTimeout(r,0))};let recommended=null,overall=null,retained=null;
+  compactResults:!!options.compactResults,portfolioVariant:variant,reserve:options.disableRecovery?null:new Reserve(),neighborhoods:!options.disableNeighborhoods,routeNeighborhoods:!options.disableRouteNeighborhoods,calculatedTiming:!options.disableCalculatedTiming,fineTiming:!options.disableFineTiming,fineTimingComparisons:0,routeNeighborhoodComparisons:0,boundChecks:0,boundPruned:0,reservedComparisons:0,cancelled,yield:()=>new Promise(r=>setTimeout(r,0))};let recommended=null,overall=null,retained=null;
  let pendingCandidate=null,lastCandidate=0;
  control.yield=async()=>{
   if(pendingCandidate&&options.onCandidate&&(Date.now()-lastCandidate>1500||lastCandidate===0)){
@@ -770,8 +780,8 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
     for(let shifts=first;shifts<=last;shifts++)if(!byShift.has(shifts))return true;
     const routeBest=byRoute.get(JSON.stringify([count,route]));if(!routeBest)return true;
     const earliest=Bounds.earliest(state,c);
-    if(earliest<=routeBest.state.t+.01)return true;
-    for(let shifts=first;shifts<=last;shifts++)if(earliest<=byShift.get(shifts).state.t+.01)return true;
+    const latest=Math.max(routeBest.state.t,...Array.from({length:last-first+1},(_,i)=>byShift.get(first+i).state.t));
+    if(earliest<=latest+.01&&(options.disableFundingBounds||!Bounds.deadline(state,c,latest+.01).impossible))return true;
     control.boundPruned=(control.boundPruned||0)+1;return false;
    }catch{return true;}
   };

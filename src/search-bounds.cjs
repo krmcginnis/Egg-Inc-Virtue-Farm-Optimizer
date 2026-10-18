@@ -1,14 +1,25 @@
 'use strict';
 const S=require('./simulator.cjs'),Artifacts=require('./artifact-optimizer.cjs');
 const owned=new WeakMap();
-function remaining(s,c){return c.autoSequence?[0,1,2,3,4]:c.sequence.slice(s.stage);}
-function ceiling(s,c){
+const {Patterns}=require('./milestone-bound.cjs'),patterns=new WeakMap();
+const Funding=require('./funding-bound.cjs');
+function remaining(s,c){return c.autoSequence?(s.stage<c.maxSwitches?[0,1,2,3,4]:[s.egg]):c.sequence.slice(s.stage);}
+function ceiling(s,c,tight=false){
  const visits=remaining(s,c),n=S.clone(s);
  if(s.t<(c.researchDeadline??Infinity)&&visits.some((egg,i)=>egg===0&&s.stage+i<(c.finalCStage??Infinity)))n.r=S.D.research.map(r=>r.levels);
  if(visits.includes(1))n.h=[18,18,18,18];
  if(visits.includes(4)){const r=S.stats(n,c);n.v=n.v.map((_,i)=>({id:i<r.slots?11:null,cars:r.trainLength}));}
  let context=c;
  if(visits.includes(2)){
+  if(tight){
+   // Enumerate compatible owned sets instead of combining mutually exclusive
+   // artifacts and spending the same stone sockets on both production rates.
+   // Configured sets remain eligible even if their inventory is incomplete.
+   let rate=S.stats(n,c).delivery;
+   if(c.artifactModel)rate=Math.max(rate,Artifacts.bestDelivery(c.artifactModel,S.stats(n,c)).delivery);
+   for(const set of Object.keys(c.mods))rate=Math.max(rate,S.stats({...n,set},c).delivery);
+   return rate;
+  }
   const effects=Object.values(c.mods);
   if(c.artifactModel){if(!owned.has(c.artifactModel))owned.set(c.artifactModel,Artifacts.optimisticModifiers(c.artifactModel));effects.push(owned.get(c.artifactModel));}
   const mods=Object.fromEntries(Object.keys(c.mods[s.set]).map(key=>[key,Math.max(...effects.map(m=>m[key]))]));
@@ -19,10 +30,11 @@ function ceiling(s,c){
  return S.stats(n,context).delivery;
 }
 function requiredEggs(s,c){
+ const available=new Set(remaining(s,c));
  const te=S.teByEgg(s,c),floors=te.map((n,i)=>Math.max(n,c.floors[i]));let cost=0;
- for(let egg=0;egg<5;egg++)if(floors[egg]>te[egg])cost+=Math.max(0,S.D.te[floors[egg]-1]-s.eggs[egg]);
+ for(let egg=0;egg<5;egg++)if(floors[egg]>te[egg]){if(!available.has(egg))return Infinity;cost+=Math.max(0,S.D.te[floors[egg]-1]-s.eggs[egg]);}
  const needed=Math.max(0,c.target-floors.reduce((a,b)=>a+b,0)),marginals=[];
- for(let egg=0;egg<5;egg++)for(let next=floors[egg]+1;next<=98;next++){
+ for(let egg=0;egg<5;egg++)if(available.has(egg))for(let next=floors[egg]+1;next<=98;next++){
   const previous=next===te[egg]+1?s.eggs[egg]:S.D.te[next-2];marginals.push(Math.max(0,S.D.te[next-1]-previous));
  }
  // Ignoring prefix dependencies between milestones is a relaxation, including
@@ -34,7 +46,18 @@ function earliest(s,c){
  const amount=requiredEggs(s,c);if(amount===0)return s.t;
  const rate=ceiling(s,c);if(!Number.isFinite(rate))return s.t;
  if(!(rate>0))return Infinity;
- return s.t+amount*(1-1e-10)/(rate*(1+1e-10));
+ return Math.max(s.t+amount*(1-1e-10)/(rate*(1+1e-10)),s.t+Math.max(0,minimumStage(s,c)-s.stage)*c.shiftSeconds);
+}
+function analyze(s,c,upper=Infinity){
+ if(!patterns.has(c))patterns.set(c,new Patterns());const table=patterns.get(c),amount=table.required(s,c,new Set(remaining(s,c))),rate=ceiling(s,c,true);
+ const production=amount===0?s.t:!(rate>0)?Infinity:!Number.isFinite(rate)?s.t:s.t+amount*(1-1e-10)/(rate*(1+1e-10));
+ const lower=Funding.lower(s,c,upper,amount,remaining(s,c),Math.max(earliest(s,c),production)),gap=Number.isFinite(upper)&&Number.isFinite(lower)?Math.max(0,upper-lower):null;
+ return {lower,upper,gap,amount,rate,patternHits:table.hits,patternMisses:table.misses};
+}
+function deadline(s,c,end){
+ if(!patterns.has(c))patterns.set(c,new Patterns());const amount=patterns.get(c).required(s,c,new Set(remaining(s,c)));
+ const bound=Funding.possible(s,c,end,amount,remaining(s,c));
+ return {...bound,impossible:earliest(s,c)>end+.01||!bound.possible};
 }
 function minimumStage(s,c){
  if(c.autoSequence)return s.stage;
@@ -45,4 +68,4 @@ function minimumStage(s,c){
  }
  return Infinity;
 }
-module.exports={ceiling,requiredEggs,earliest,minimumStage};
+module.exports={ceiling,requiredEggs,earliest,minimumStage,analyze,deadline,remaining};

@@ -13,11 +13,16 @@ async function run(){
  assert.equal(pool.workers.length,2);
  const test=require('./purchase-economics.cjs').capacityPlan();let reply;pool.onmessage=({data})=>reply=data;pool.postMessage({config:test.raw,options:{maxMs:3000}});
  assert.equal(fake[0].messages[0].options.absoluteDeadline,fake[1].messages[0].options.absoluteDeadline);assert.equal(fake[1].messages[0].options.portfolioVariant,1);
+ pool.receive(0,{type:'task-claim',id:1,key:'same-work'});pool.receive(1,{type:'task-claim',id:2,key:'same-work'});
+ assert.equal(fake[0].messages.at(-1).taskReply.granted,true);assert.equal(fake[1].messages.at(-1).taskReply.granted,false);
+ pool.receive(0,{type:'task-release',key:'same-work'});pool.receive(1,{type:'task-claim',id:3,key:'same-work'});assert.equal(fake[1].messages.at(-1).taskReply.granted,false);
+ pool.receive(1,{type:'task-claim',id:4,key:'failed-work'});
  pool.receive(0,{type:'candidate',candidate:{config:test.raw,result:{...test.plan,end:test.plan.end+1}}});assert.equal(pool.best.size,0);
  pool.receive(0,{type:'candidate',candidate:{config:test.raw,result:test.plan}});assert.equal(pool.best.size,1);assert.ok(fake[1].messages.some(m=>m.seed));
  const foreign=structuredClone(test.raw);foreign.farm.cash+=1;pool.receive(1,{type:'candidate',candidate:{config:foreign,result:test.plan}});assert.equal(pool.best.size,1);
  pool.postMessage({cancel:true});assert.ok(fake.every(w=>w.messages.at(-1).cancel));
  pool.receive(1,{type:'error',error:'Simulated sibling failure'});assert.equal(reply,undefined);pool.receive(0,{type:'result',result:test.plan});assert.ok(reply.result.validatedReplay);assert.equal(reply.result.end,test.plan.end);assert.ok(reply.result.search.parallel.rejected>=2);pool.terminate();assert.ok(fake.every(w=>w.stopped));
+ assert.equal(pool.taskStats.releasedOnFailure,1);assert.equal(pool.tasks.has('failed-work'),false);assert.equal(pool.taskStats.duplicatesAvoided,1);
  async function execute(request,stop=false){
   const search=new SearchPool(factory,{workers:stop?4:2});
   try{return await new Promise((resolve,reject)=>{

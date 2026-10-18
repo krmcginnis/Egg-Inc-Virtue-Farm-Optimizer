@@ -1,4 +1,62 @@
-# Egg Inc. Virtue Farm Optimizer v1.1.0 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.1.1 — Release Audit
+
+## v1.1.1 release review — October 18, 2026 (UTC)
+
+This release combines the search/verification work and the subsequent UI pass.
+Detailed algorithms, finite-check scope, benchmark methods, and limitations are
+recorded in SEARCH-VERIFICATION.md and SEARCH-RESEARCH.md. Local check results
+are recorded in VALIDATION.json. Publication requires the Windows workflow's
+complete regression, native updater/launcher, and anonymous public-feed gates.
+
+The v1.1.1 build and all 27 locally runnable release/UI suites passed before
+publication, including release-state, publish staging, both optimality suites,
+real worker coordination, compiled-worker continuations, and sleep-controls DOM
+integration. Native updater/launcher results remain gated on the Windows run.
+
+The normal search keeps its 90-second budget and one/two-worker selection.
+Calculated production/affordability departures supplement sampled candidates.
+Optimistic milestone and funding bounds avoid impossible branches without
+using a heuristic score as proof. Workers coordinate exact refinement identities
+and release unfinished jobs after a sibling failure. All winners independently
+replay actual costs, prerequisites, owned gear, sleep, fuel, missions, and TE.
+
+Selected groups of up to five existing purchases receive exhaustive legal-order
+and subset checks under the declared earliest-affordable completion policies.
+The automatic check uses at most five seconds of the remaining normal budget,
+on worker zero. Purchase Order Check can continue for up to five minutes, pause,
+and save/load its exact frontier. These finite checks do not exhaust additional
+upgrades, joint changes across groups, routes, intentional waits, or continuous
+departure time. The global optimum remains unproven. The displayed optimistic
+minimum is a floating-point bound under the entered model, not expected savings
+or statistical confidence; its remaining gap can be wide.
+
+Paired two-worker trials against v1.1.0 used identical private inputs, width 16,
+a 90-second allowance, and advancing historical clocks. Original case: 20.821 s
+baseline / 26.957 s updated, with the best six-shift finish preserved. Follow-up:
+29.744 s / 26.407 s, finishing 25,041.98 s (6h 57m 22s) earlier with six shifts;
+its five-shift alternative improves by 302,955.55 s (3.506 days). Every alternative
+replays and retains sleep, TE/floors, and all 351 launches. These observations
+do not imply universal runtime or plan-quality gains. Exact-state reduction in
+a controlled five-purchase oracle uses 32 states versus 326 enumeration nodes,
+with the same optimum. Four plans provide 234 prefixes and 13,104 funding-level
+comparisons without rejecting their known feasible completions.
+
+The UI exposes account loading, makes Save Plan and Export Walkthrough prominent,
+adds next-step navigation, prioritizes progress, and separates purchase checks
+and next-ascension actions. Availability reasons are visible. Existing best time
+is retained during optional checks; startup and worker failures retain a valid,
+retryable plan. DOM integration uses the generated app and real worker threads
+for loading, saved alternative selection, scroll restoration, next-step focus,
+changed-input/progress states, failure recovery, pause/save/load/resume, scope,
+and next ascension. This is behavior validation, not visual layout verification.
+
+Local Chromium is blocked by socket restrictions, and the remote browser cannot
+reach the local app. Real desktop visual checks remain unverified. Native
+PowerShell checks run in the required Windows release workflow. No updater or
+launcher production code changed. Existing game-model assumptions and numeric
+rounding limits remain those recorded in the prior accepted audit below.
+
+## Prior accepted release evidence
 
 ## Accepted v1.1.0 publication — October 18, 2026 (UTC)
 

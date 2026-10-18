@@ -62,3 +62,22 @@ The Windows release workflow runs both suites and the standalone bundled worker.
 
 These changes improve a bounded search. They do not certify a globally optimal
 purchase order, route or completion time.
+
+## Unreleased verification work
+
+See [SEARCH-VERIFICATION.md](SEARCH-VERIFICATION.md) for the exact scope,
+mathematical relaxations, measurements, and remaining proof limitations.
+
+- [Additive Pattern Database Heuristics, Felner, Korf, and Hanan, JAIR 2004](https://arxiv.org/abs/1107.0050)
+  motivates reusable exact solutions to relaxed subproblems. This implementation
+  uses on-demand milestone-allocation tables; it does not claim to implement
+  disjoint additive pattern databases or add overlapping time bounds.
+- [Theory and Algorithms for Partial Order Based Reduction in Planning,
+  Xu et al., JAIR 2011](https://arxiv.org/abs/1106.5427) motivates avoiding
+  equivalent orderings. The finite verifier merges only exactly equal paid
+  states with the same remaining purchase multiset. It does not implement
+  stubborn sets, and does not remove a beam branch based on an alternative
+  ordering that may already have been discarded.
+- Deadline funding bounds are derived from the app's simulator, not imported
+  as a published game-specific theorem. Independent exhaustive synthetic cases
+  and all prefixes of saved paid plans validate their use before pruning.

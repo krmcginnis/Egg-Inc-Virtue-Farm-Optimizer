@@ -1,4 +1,6 @@
 const {SearchPool}=require('./search-pool.cjs');
+const SearchQuality=require('./search-quality.cjs');
+const PlanVerification=require('./plan-verification.cjs');
 "use strict";
 const Ships = require("./ships.cjs");
 const titleCase = require("./ui-text.cjs"), DEFAULT_ROUTE = require("./default-route.cjs");
@@ -34,6 +36,7 @@ let savedEid = "", savedEidName = "", eidDraft = "";
 let config = Defaults.freshFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
 let planProgress = null;
 let remainingProposal = null, continuationContext = null;
+let checkingPurchases = false;
 const searchOptions = { width: 32, branches: 12, maxDepth: 1200, maxMs: 90e3 };
 let activeLoadoutTab = "current";
 const labels = { account: "Account", farm: "Virtue Farm", planning: "Planning", results: "Purchase timeline", help: "How it works" };
@@ -295,11 +298,35 @@ function markInputsChanged() {
   updateArtifactNotes();
   const stale = $("plan-stale");
   if (stale) { stale.textContent = stalePlanText(); stale.hidden = !dirty; }
-  const next = $("next-ascension");
-  if (next) next.disabled = dirty || !!worker || !result || result.target >= 490;
+  updatePlanActions();
   if (dirty && !worker && result) {
     $("run-summary").textContent = planProgress ? "Progress Check · " + (continuationContext ? "Remaining Plan" : "Original Plan") : "Inputs Changed · Re-run Planner";
     $("run-detail").textContent = "The purchase timeline still uses the previous plan's inputs.";
+  }
+}
+function updatePlanActions(searching = !!worker) {
+  const verification = resultConfig && PlanVerification.checkpoint(resultConfig, result?.verification);
+  const verify = $("verify-purchases"), reason = $("purchase-check-availability");
+  if (verify) {
+    const unavailable = searching ? "Finish the current search or use Stop & Keep Best before starting another check."
+      : importingBackup ? "Wait for the account backup to finish loading."
+      : planProgress ? "To update the schedule after playing, use Reoptimize Remaining Plan in Plan Progress."
+      : dirty ? "Your inputs changed. Find a new plan before checking its purchase order."
+      : result?.solverVersion !== 2 ? "Find a new plan to use the purchase check."
+      : verification?.complete ? "The selected purchase groups have been fully checked. Other routes and departure times may still improve this plan." : "";
+    verify.disabled = !!unavailable;
+    verify.title = unavailable || "Run for up to five minutes. Stop & Keep Best pauses the check; Save Plan keeps its progress.";
+    reason.textContent = unavailable || "Up to 5 minutes per run. Stop & Keep Best pauses the check; Save Plan keeps its progress.";
+  }
+  const next = $("next-ascension"), nextReason = $("next-ascension-availability");
+  if (next) {
+    const unavailable = searching ? "Finish or stop the current search first."
+      : importingBackup ? "Wait for the account backup to finish loading."
+      : dirty ? "Update the plan before preparing its next ascension."
+      : !result || result.target >= 490 ? "The maximum Truth Egg target has been reached." : "";
+    next.disabled = !!unavailable;
+    nextReason.textContent = unavailable;
+    nextReason.hidden = !unavailable;
   }
 }
 function stalePlanText() {
@@ -1164,7 +1191,7 @@ function renderRemainingComparison(host) {
 }
 function renderPlanProgress(host, summary) {
   const card=el("section",undefined,"card plan-progress"),heading=el("h2","Plan Progress"),controls=el("div",undefined,"inline");
-  card.id="plan-progress"; card.setAttribute("aria-labelledby","plan-progress-heading");heading.id="plan-progress-heading";
+  card.id="plan-progress"; card.setAttribute("aria-labelledby","plan-progress-heading");heading.id="plan-progress-heading";heading.tabIndex=-1;
   const file=el("input");file.type="file";file.accept=".json";file.hidden=true;file.id="progress-file-input";
   const load=el("button","Check With Farm File","secondary");load.id="check-plan-file";load.disabled=!!worker||!!importingBackup;
   load.onclick=()=>file.click();file.onchange=e=>{if(e.target.files[0])loadFile(e.target.files[0],{trackOnly:true});e.target.value="";};
@@ -1186,7 +1213,7 @@ function renderPlanProgress(host, summary) {
   if(report.targetReached)card.append(el("p","The TE target is available. Verify any remaining required steps before ascending.","hint"));
   for(const warning of report.warnings)card.append(el("p",warning,"hint"));
   const label=row=>row.action.type==='wait'?row.action.reason||"Wait":actionLabel(row.remainingFrom!==undefined?{...row.action,from:row.remainingFrom}:row.remainingLaunches!==undefined?{...row.action,count:row.remainingLaunches}:row.action);
-  const next=el("div",undefined,"progress-next");next.id="plan-progress-next";
+  const next=el("div",undefined,"progress-next");next.id="plan-progress-next";next.tabIndex=-1;
   next.append(el("h3","Next Planned Step"));
   if(report.status!=='matched')next.append(el("p","Review the snapshot and the saved plan before continuing."));
   else if(report.next){
@@ -1235,6 +1262,7 @@ function renderPlanProgress(host, summary) {
 }
 function renderResult() {
   const r = result, zone = resultConfig.plan.eventTimezone, host = $("result-content"), summary = U.summarize(resultConfig, r);
+  const checkWasOpen = host.querySelector(".purchase-check")?.open;
   if (!worker) {
     $("run-summary").textContent = planProgress ? "Progress Check · " + (continuationContext ? "Remaining Plan" : "Original Plan") : duration(r.seconds) + " to target \xB7 " + r.switches + " switches";
     $("run-detail").textContent = planProgress ? "The saved timeline remains visible below." : "Validated plan \xB7 " + r.pendingTE + " pending TE";
@@ -1244,6 +1272,7 @@ function renderResult() {
   $("empty-results").hidden = true;
   host.hidden = false;
   renderRemainingComparison(host);
+  let alternatives;
   if(r.shiftPlans){
     const choices=el("section",undefined,"card research-sale-comparison"),heading=el("h2",continuationContext?"Plans by Remaining Shift Count":"Plans by Shift Count"),row=el("div",undefined,"research-sale-options");
     const fastest=r.shiftPlans.find(entry=>entry.switches===r.recommendedSwitches)||r.shiftPlans[0];
@@ -1260,7 +1289,7 @@ function renderResult() {
       }
       button.onclick=()=>{result=ShiftPlans.select(result,entry.switches);if(!worker&&!dirty)refresh();else updateArtifactNotes();renderResult();host.querySelector(`[data-shifts="${entry.switches}"]`).focus({preventScroll:true});};row.append(button);
     }
-    choices.append(row);host.append(choices);
+    choices.append(row);alternatives=choices;
   }
   const card = el("div", void 0, "card result-summary"), head = el("div", void 0, "result-header");
   head.append(el("h2", (continuationContext ? "Remaining Plan · " : planProgress ? "Original Plan · " : "") + "Target " + r.target + " TE in " + duration(r.seconds)));
@@ -1287,9 +1316,24 @@ function renderResult() {
     }
   };
   txt.title = "Open a PDF with shift summaries and the quick guide in a new tab";
-  const json = el("button", "Save plan", "secondary");
+  const json = el("button", "Save plan");
+  json.id = "save-plan";
   json.onclick = () => saveBlob(N.plan(resultConfig, r.seconds, r.selectedResearchSales, r.selectedSwitches), JSON.stringify({ version: 1, config: resultConfig, result: r, ...(planProgress ? {progress:planProgress} : {}),...(continuationContext ? {continuation:continuationContext} : {}),...(remainingProposal ? {remainingProposal} : {}) }, null, 2));
+  const verification=PlanVerification.checkpoint(resultConfig,r.verification);
+  const verify=el("button",verification?.complete?"Purchase check complete":verification?"Continue purchase check":"Check purchase order","secondary");
+  verify.id="verify-purchases";
+  verify.setAttribute("aria-describedby","purchase-check-scope purchase-check-availability");
+  verify.onclick=()=>optimize({kind:"verification"});
+  const check=el("details",undefined,"purchase-check");
+  check.open=checkWasOpen ?? (!!verification && !verification.complete);
+  check.append(el("summary",verification?.complete?"Purchase Order Check · Complete":"Purchase Order Check"));
+  const scope=el("p","Look for a faster purchase order within selected groups of up to five purchases. The check compares subsets and legal orders. It does not check every possible route or departure time.","hint");scope.id="purchase-check-scope";
+  const availability=el("p",undefined,"hint");availability.id="purchase-check-availability";
+  check.append(scope);
+  if(verification)check.append(el("p",verification.completedBlocks+" / "+verification.totalBlocks+" declared purchase blocks checked · "+verification.examined.toLocaleString()+" exact purchase states examined. "+(verification.complete?"The declared blocks are exhausted for this plan. ":"Save the plan to retain progress, then continue the check. ")+"Routes and departure times remain outside this exhaustive check.","hint purchase-verification"));
+  check.append(availability,verify);
   const expand = el("button", "Expand all", "secondary");
+  expand.id = "expand-timeline";
   expand.onclick = () => {
     const items = [...host.querySelectorAll(".timeline-group, .full-breakdown, .purchase-decisions")], open = items.some(d => !d.open);
     for (const d of items) { if (open) d.fill?.(); d.open = open; }
@@ -1321,12 +1365,16 @@ function renderResult() {
     tab("farm");
     show("Next ascension starts at the previous finish time. Claimed TE, lifetime eggs, Epic Research, artifacts, Soul Eggs, and shift history are preserved; farm upgrades and gems are reset.");
     };
-  tools.append(txt, json, expand, next);
+  const progressLink=el("a",planProgress?"Next Planned Step":"Check Farm Progress","plan-jump");
+  progressLink.href=planProgress?"#plan-progress-next":"#plan-progress-heading";
+  progressLink.onclick=event=>{event.preventDefault();const target=$(planProgress?"plan-progress-next":"plan-progress-heading")||$("plan-progress-heading");target.scrollIntoView({block:"start"});target.focus({preventScroll:true});};
+  tools.append(json, txt, progressLink);
   head.append(tools);
   card.append(head, el("p", "Starts " + timestamp(r.start, zone), "plan-start"), el("p", "Ends " + timestamp(r.end, zone), "plan-end"), el("p", r.switches + " new switches \xB7 " + num(r.soulCost) + " Soul Eggs spent"), el("p", waitTotals(summary.totals), "waiting-totals"), el("p", "Minimum offline break: " + (resultConfig.plan.minOfflineMinutes ?? 1) + " min. Finish time comes first; ties favor fewer switches, more silo coverage, and fewer earning breaks.", "hint"), el("p", "Validated by replay: purchases affordable, Virtue permissions enforced, target reached. Claim pending TE at ascension.", "hint"));
   if(resultConfig.plan.sleep?.enabled){const sleep=resultConfig.plan.sleep;card.append(el("p","Sleep: "+sleep.start+"–"+sleep.end+" · "+zone+". Interactions occur while awake. Production pauses when silo coverage runs out; the target can be reached during sleep while silos are covered.","hint sleep-plan-note"));}
   const diagnostics = el("details", void 0, "search-details");
   diagnostics.append(el("summary", "Search Details"), el("p", r.method + " \xB7 " + r.explored.toLocaleString() + " states examined \xB7 " + r.termination + ".", "hint"));
+  if(r.solverVersion===2)diagnostics.append(el("p",SearchQuality.describe(SearchQuality.measure(resultConfig,r),exactDuration),"hint optimality-bound"));
   if (r.solverVersion === 2) diagnostics.append(el("p", "Research allowed through " + timestamp(r.researchDeadline, zone) + "; " + r.actualResearchSales + " sales actually used. Visit durations are automatic.", "hint"));
   if (r.openingSearch) diagnostics.append(el("p", "Compared " + r.openingSearch.combinationsCompared + " of " + r.openingSearch.totalCombinations + " C1/K1 opening combinations at " + (r.openingSearch.stepMinutes || 30) + "-minute intervals" + (r.openingSearch.complete ? " (complete)." : " (stopped early)."), "hint"));
   if (r.waitingRoutesCompared > 1) diagnostics.append(el("p", "Compared individual purchase waits and offline batches across " + r.waitingRoutesCompared + " staged routes.", "hint"));
@@ -1334,7 +1382,7 @@ function renderResult() {
   if (c1 && k1 && r.openingTimeLimits) diagnostics.append(el("p", "Opening duration: C1 " + exactDuration(c1.seconds) + " (limit " + (resultConfig.plan.c1MaxMinutes ?? 60) + " min) \xB7 K1 " + exactDuration(k1.seconds) + " (limit " + (resultConfig.plan.k1MaxMinutes ?? 60) + " min).", "hint"));
   if (r.baselineSeconds) diagnostics.append(el("p", "No-upgrade comparison: " + duration(r.baselineSeconds) + " \u2192 " + duration(r.seconds) + ".", "hint"));
   diagnostics.append(el("p", "Purchase paths and departure times are compared along the selected route. Identical-input saved plans can seed a search; progress checks retain the original timeline.", "hint"), el("p", "Online waits under 10 seconds are hidden; their time remains included.", "hint"));
-  card.append(diagnostics);
+  card.append(check,diagnostics);
   const stale = el("div", stalePlanText(), "notice stale-plan");
   stale.id = "plan-stale";
   stale.hidden = !dirty;
@@ -1342,12 +1390,14 @@ function renderResult() {
   card.append(stale);
   host.append(card);
   renderPlanProgress(host, summary);
+  if(alternatives)host.append(alternatives);
   const initial = S.prepare(resultConfig, { oneStartingSilo: r.initialSiloRule === "one" || r.actions.some((a) => a.initialSiloRule === "one") }), guidance = el("div", void 0, "model-notices");
   guidance.append(el("p", Model.maintenance(initial.s, initial.c, r.finalStats)));
   for (const message of Model.notices(initial.s, initial.c)) guidance.append(el("p", message));
   host.append(guidance);
   const heading = el("div", void 0, "shift-overview-heading");
-  heading.append(el("h2", "Shift activities"), el("p", "Open a shift for purchase targets in game order, then follow each break and resume time. Full Breakdown shows individual actions. Online waits under 10 seconds stay in purchase groups and totals.", "hint"));
+  const timelineHeading=el("div",undefined,"timeline-heading");timelineHeading.append(el("h2", "Shift activities"),expand);
+  heading.append(timelineHeading, el("p", "Open a shift for purchase targets in game order, then follow each break and resume time. Full Breakdown shows individual actions. Online waits under 10 seconds stay in purchase groups and totals.", "hint"));
   host.append(heading);
   const events = initial.c.calendar.filter((e) => e.t > r.start && e.t <= r.end);
   let ei = 0;
@@ -1537,7 +1587,14 @@ function renderResult() {
   delivery.append(Units.amount(S.EGGS[summary.shifts.at(-1)?.egg ?? initial.s.egg],num(r.finalStats.delivery * 3600),"/hour"));
   const limit = r.finalStats.bottleneck === "Balanced" ? "Laying and shipping capacity are balanced." : "Limited by " + r.finalStats.bottleneck.toLowerCase() + ".";
   end.append(el("h2", "Target available to claim"), el("p", timestamp(r.end, zone)), totals, delivery, el("p", limit + " Delivered eggs use the lower of egg laying and shipping capacity.", "hint"));
+  const nextSection=el("details",undefined,"next-ascension-section");
+  const nextReason=el("p",undefined,"hint");nextReason.id="next-ascension-availability";
+  next.setAttribute("aria-describedby","next-ascension-help next-ascension-availability");
+  const nextHelp=el("p","Save this plan before continuing. This prepares a fresh farm at the predicted finish time, carries forward the plan's earned Truth Eggs, and resets farm upgrades and gems. Review the start time if you ascend later.","hint");nextHelp.id="next-ascension-help";
+  nextSection.append(el("summary","Plan the Next Ascension"),nextHelp,nextReason,next);
+  end.append(nextSection);
   host.append(end);
+  updatePlanActions();
 }
 function renderSuggestion(suggestion, runConfig = resultConfig, inputsChanged = dirty) {
   const host = $("result-content");
@@ -1572,16 +1629,19 @@ function renderSuggestion(suggestion, runConfig = resultConfig, inputsChanged = 
 }
 function renderSearchClock() {
   const total = Math.max(0, Math.floor((performance.now() - searchStartedAt) / 1e3)), elapsed = exactDuration(total) + (total >= 60 && total % 60 === 0 ? " 0s" : "");
-  $("run-detail").textContent = [searchContext, searchBestSeconds !== null ? "Best so far: " + duration(searchBestSeconds) : "", "Searching for " + elapsed].filter(Boolean).join(" \xB7 ");
+  $("run-detail").textContent = [searchContext, searchBestSeconds !== null ? "Best so far: " + duration(searchBestSeconds) : "", (checkingPurchases ? "Checking for " : "Searching for ") + elapsed].filter(Boolean).join(" \xB7 ");
   $("search-elapsed").textContent = elapsed;
   $("search-best").textContent = searchBestSeconds !== null ? duration(searchBestSeconds) : "None Yet";
 }
-function startSearchClock() {
+function startSearchClock({verifying = false, resuming = false} = {}) {
   clearInterval(searchTimer);
   searchStartedAt = performance.now();
-  searchBestSeconds = null;
-  searchContext = "Evaluating affordable purchases, event waits, and switches";
-  $("search-stage").textContent = "Preparing Farm and Checking Limits";
+  checkingPurchases = verifying;
+  searchBestSeconds = verifying ? result.seconds : null;
+  searchContext = verifying ? "Comparing purchase orders; the current best plan is retained" : "Evaluating affordable purchases, event waits, and switches";
+  $("search-status-heading").textContent = verifying ? "Checking Purchase Order" : resuming ? "Reoptimizing Remaining Plan" : "Finding Fastest Plan";
+  $("search-description").textContent = verifying ? "Checks selected purchase groups from this plan's starting farm. Stop & Keep Best pauses the check. Save Plan keeps progress for another session. Other routes and departure times remain outside this check." : resuming ? "Searches from the checked farm using the remaining shift allowance. Compare the new schedule with the original route before choosing a plan." : "Compares routes, purchases, weekly sale timing, and departures using your settings. Stop & Keep Best retains the fastest complete plans found so far.";
+  $("search-stage").textContent = verifying ? "Preparing Purchase Groups" : "Preparing Farm and Checking Limits";
   $("search-openings").textContent = "Not Started";
   delete $("search-openings").dataset.total;
   renderSearchClock();
@@ -1604,33 +1664,43 @@ function busy(active) {
   $("optimize").setAttribute("aria-busy", String(active));
   updatePrimaryAction();
   if (active) $("optimize").disabled = true;
-  if ($("next-ascension")) $("next-ascension").disabled = active || !!importingBackup || dirty || !result || result.target >= 490;
-  for (const id of ["load-file", "load-plan", "eid"]) $(id).disabled = active || !!importingBackup;
+  for (const id of ["load-file", "load-plan", "eid", "load-account"]) $(id).disabled = active || !!importingBackup;
+  $("load-account").textContent = importingBackup ? "Loading\u2026" : "Load Account";
   for (const node of document.querySelectorAll("#check-plan-file,#check-plan-account,.progress-checklist button")) node.disabled = active || !!importingBackup;
   for (const node of document.querySelectorAll(".progress-launches input,.progress-launches button,#keep-original-plan,#return-previous-plan")) node.disabled = active || !!importingBackup;
   if($("reoptimize-remaining")){let unavailable=false;try{Continuation.prepare(continuationRequest());}catch{unavailable=true;}$("reoptimize-remaining").disabled=active||!!importingBackup||unavailable;}
   if($("use-remaining-plan"))$("use-remaining-plan").disabled=active||!!importingBackup||!remainingProposal||remainingProposal.sourceKey!==Continuation.sourceKey(continuationRequest(remainingProposal.request.start));
+  updatePlanActions(active);
   $("eid").setAttribute("aria-busy", String(!!importingBackup));
+}
+function purchaseCheckFailed(message) {
+  if ($("plan-stale")) { $("plan-stale").textContent = stalePlanText(); $("plan-stale").hidden = !dirty; }
+  show("Purchase check could not finish: " + message + " Your current plan and earlier check progress are retained.", true);
+  $("run-summary").textContent = "Purchase Check Could Not Finish";
+  $("run-detail").textContent = "You can retry the check or continue following your current plan.";
+  updatePlanActions();
 }
 function optimize(request) {
   if (worker || importingBackup) return;
-  const resuming=request?.kind==="continuation";
+  const resuming=request?.kind==="continuation",verifying=request?.kind==="verification";
   let runConfig;
-  if(resuming){try{runConfig=Continuation.prepare(request).config;}catch(e){show(e.message,true);return;}}
+  if(verifying){if(!result||!resultConfig||dirty||planProgress)return;runConfig=structuredClone(resultConfig);}
+  else if(resuming){try{runConfig=Continuation.prepare(request).config;}catch(e){show(e.message,true);return;}}
   else{if(!refresh())return;runConfig=structuredClone(config);delete runConfig.plan.continuation;}
   if(remainingProposal){remainingProposal=null;renderResult();}
-  $("search-limits").textContent = "Automatic purchase and departure timing · " + (runConfig.plan.autoSequence?"up to "+runConfig.plan.maxShifts+" new shifts":"entered route")+" · search budget " + exactDuration(searchOptions.maxMs / 1000) + ".";
+  $("search-limits").textContent = verifying?"Exhaustive purchase block check · up to five purchases per block · five-minute budget · Stop & Keep Best retains progress.":"Automatic purchase and departure timing · " + (runConfig.plan.autoSequence?"up to "+runConfig.plan.maxShifts+" new shifts":"entered route")+" · search budget " + exactDuration(searchOptions.maxMs / 1000) + ".";
   dirty = false;
-  if ($("plan-stale")) { $("plan-stale").textContent = resuming ? "Searching the remaining plan from the checked snapshot. The original timeline stays available for comparison." : "A new search is running. This timeline is the previous plan; the completed search will replace it."; $("plan-stale").hidden = false; }
-  show(resuming?"Reoptimizing the remaining plan. Completed upgrades, current fuel and flights, and the remaining shift budget are retained.":"Searching research orders and switch timing. You can keep using the interface.");
+  if ($("plan-stale")) { $("plan-stale").textContent = verifying ? "Checking this plan's purchase order. The current best plan is retained, and you can pause with Stop & Keep Best." : resuming ? "Searching the remaining plan from the checked snapshot. The original timeline stays available for comparison." : "A new search is running. This timeline is the previous plan; the completed search will replace it."; $("plan-stale").hidden = false; }
+  show(verifying?"Checking purchase groups from this plan's starting farm. Stop & Keep Best retains the best plan and remaining work.":resuming?"Reoptimizing the remaining plan. Completed upgrades, current fuel and flights, and the remaining shift budget are retained.":"Searching research orders and switch timing. You can keep using the interface.");
   tab("results");
   busy(true);
-  $("run-summary").textContent = "Searching\u2026";
-  startSearchClock();
+  $("run-summary").textContent = verifying ? "Checking Purchase Order\u2026" : resuming ? "Reoptimizing Remaining Plan\u2026" : "Searching\u2026";
+  startSearchClock({verifying,resuming});
   const blob = new Blob([globalThis.VIRTUE_WORKER_SOURCE], { type: "text/javascript" }), url = URL.createObjectURL(blob);
-  try { worker = new SearchPool(()=>new Worker(url)); }
+  try { worker = verifying?new Worker(url):new SearchPool(()=>new Worker(url)); }
   catch (error) {
     busy(false);
+    if (verifying) { purchaseCheckFailed(error.message); return; }
     markInputsChanged();
     show("Could not start the planner: " + error.message, true);
     showPlanningGuidance("Could not start the planner: " + error.message, true);
@@ -1654,7 +1724,12 @@ function optimize(request) {
         $("search-announcement").textContent = searchContext;
         return;
       }
-      if (p.phase === "route-search") {
+      if(p.phase==="verification"){
+        $("run-summary").textContent="Checking purchases · "+p.stage;
+        searchContext=Number(p.explored||0).toLocaleString()+" exact purchase states examined";
+        $("search-stage").textContent=p.stage;
+        $("search-openings").textContent=searchContext;
+      } else if (p.phase === "route-search") {
         $("run-summary").textContent = "Finding Fastest Plan · " + p.stage;
         searchContext = Number(p.explored || 0).toLocaleString() + " purchase states examined";
         $("search-stage").textContent = p.stage + " · Purchases and Departure Timing";
@@ -1692,6 +1767,7 @@ function optimize(request) {
       worker = null;
       busy(false);
       if (data.type === "error") {
+        if (verifying) { purchaseCheckFailed(data.error); return; }
         const inputsChanged = dirty;
         dirty = dirty || !!result;
         if ($("plan-stale")) { $("plan-stale").textContent = "The new search did not finish. This timeline still uses the previous plan's inputs."; $("plan-stale").hidden = !dirty; }
@@ -1706,12 +1782,11 @@ function optimize(request) {
         dirty=!!result;renderResult();show("Remaining search finished. Compare the new finish with the original route from the same farm before choosing a timeline.");
       } else {
         result = data.result;
-        planProgress = null;
-        remainingProposal = null; continuationContext = null;
+        if(!verifying){planProgress = null;remainingProposal = null; continuationContext = null;}
         resultConfig = runConfig;
         if (!dirty) refresh();
         renderResult();
-        show(dirty ? "Plan completed and replay validation passed. Inputs changed during the run; this timeline uses the starting inputs." : "Plan completed and replay validation passed.");
+        show(verifying?(result.verification?.complete?"Declared purchase blocks checked. The best plan passed replay validation; global optimality remains unverified.":"Purchase check paused. The best plan and remaining work are retained; Save plan keeps progress between sessions."):dirty ? "Plan completed and replay validation passed. Inputs changed during the run; this timeline uses the starting inputs." : "Plan completed and replay validation passed.");
         $("run-summary").textContent = duration(result.seconds) + " to target \xB7 " + result.switches + " switches";
         $("run-detail").textContent = "Fastest plan found \xB7 " + result.actions.filter((a) => !["wait", "shift"].includes(a.type)).length + " purchases";
         if (dirty) markInputsChanged();
@@ -1723,6 +1798,7 @@ function optimize(request) {
     worker?.terminate();
     worker = null;
     busy(false);
+    if (verifying) { purchaseCheckFailed(e.message); return; }
     dirty = !!result;
     if ($("plan-stale")) { $("plan-stale").textContent = "The search failed. This timeline still uses the previous plan's inputs."; $("plan-stale").hidden = !dirty; }
     show("Planner worker failed: " + e.message, true);
@@ -1730,7 +1806,7 @@ function optimize(request) {
     $("run-summary").textContent = "Worker error";
     $("run-detail").textContent = "Review inputs and try the search again";
     };
-  worker.postMessage(resuming?{continuation:request,options:{...searchOptions}}:{ config: runConfig, options: { ...searchOptions, ...(result && resultConfig ? { incumbent: { config: resultConfig, result } } : {}) } });
+  worker.postMessage(verifying?{verification:{config:runConfig,result},options:{maxMs:300000}}:resuming?{continuation:request,options:{...searchOptions}}:{ config: runConfig, options: { ...searchOptions, ...(result && resultConfig ? { incumbent: { config: resultConfig, result } } : {}) } });
 }
 async function loadFile(file, {planOnly = false, trackOnly = false} = {}) {
   const epoch = loadEpoch;
@@ -1929,6 +2005,7 @@ function persistEid() {
 $("eid").addEventListener("focus", () => { $("eid").value = eidDraft || savedEid || $("eid").value; $("eid").select(); });
 $("eid").addEventListener("blur", () => { persistEid(); showEidIdentity(); });
 $("eid").addEventListener("input", persistEid);
+$("load-account").onclick = loadEidData;
 $("eid").addEventListener("keydown", (event) => {
   if (event.key === "Enter") { event.preventDefault(); persistEid(); loadEidData(); }
 });
@@ -2029,7 +2106,7 @@ $("review-farm").onclick = () => tab("farm", true);
 $("stop").onclick = () => {
   worker?.postMessage({ cancel: true });
   $("stop").disabled = true;
-  $("stop").textContent = "Finishing Best Plan\u2026";
+  $("stop").textContent = checkingPurchases ? "Pausing Purchase Check\u2026" : "Finishing Best Plan\u2026";
 };
 document.querySelectorAll("[data-tab]").forEach((b) => b.onclick = (event) => tab(b.dataset.tab, event.detail === 0, true));
 $("review-inputs").onclick = reviewInputs;

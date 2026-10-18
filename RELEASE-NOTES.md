@@ -1,3 +1,13 @@
+# v1.1.1
+
+- Improve departure timing with calculated production and affordability milestones, tighten optimistic funding bounds, and coordinate refinement work across workers to avoid duplicate comparisons.
+- Add resumable Purchase Order Check for selected groups of up to five purchases. Compare legal orders and subsets with actual costs, dependencies, sleep, and mission requirements. Each run uses up to five minutes; Stop & Keep Best pauses it, and Save Plan retains progress.
+- Show the optimistic model minimum in Search Details. Completing the selected purchase groups does not prove a globally fastest plan; other purchases, routes, and departure times remain outside that check.
+- Prioritize Save Plan, Export Walkthrough, and a shortcut to Next Planned Step. Keep progress above alternative plans, move Expand All beside Shift Activities, and place next-ascension controls at the timeline's end.
+- Add a visible Load Account button, clearer target/shift guidance, purchase-check availability explanations, and accurate search status with the existing best time retained. A failed optional purchase check keeps the current plan usable and retryable.
+- In paired two-worker tests against v1.1.0, preserve the original best six-shift finish and improve the follow-up six-shift plan by 6h 57m 22s and its five-shift alternative by about 3.5 days. Runtime improves in the follow-up case and increases in the original case; results vary by farm and hardware.
+- Install through Update App → Update & Restart. Existing saved plans remain usable. Reoptimize from a checked farm to update the remaining schedule, or use Purchase Order Check to compare the selected plan's original purchases.
+
 # v1.1.0
 
 - Reduce repeated research math, calendar polling, checkpoint key work and TE allocation overhead while preserving the model's calculations.

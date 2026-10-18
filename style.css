@@ -533,3 +533,21 @@ aside .update-app{margin-top:auto}
 .remaining-comparison td,.remaining-comparison th{white-space:normal;overflow-wrap:anywhere;padding:10px}
 .remaining-comparison .inline{margin-top:14px}
 @media print{.remaining-comparison{display:none}}
+
+/* Keep following a plan separate from searching and preparing another farm. */
+.sidebar-account .import-controls{flex-direction:column;align-items:stretch}
+.sidebar-account #load-account{width:100%;min-height:38px;padding:8px 10px}
+.sidebar-account #import-help{font-size:11px;line-height:1.5;margin:8px 0 0}
+.result-header{align-items:flex-start}
+.result-header h2{flex:1 1 310px;margin:0}
+.result-header .inline{align-items:center}
+.plan-jump{font-size:12px;line-height:1.5;padding:8px 0;text-underline-offset:3px}
+.purchase-check,.next-ascension-section{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.purchase-check>summary,.next-ascension-section>summary{font-size:13px;font-weight:600}
+.purchase-check .hint,.next-ascension-section .hint{max-width:95ch;line-height:1.6}
+.timeline-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.timeline-heading h2{margin:0}
+#plan-progress-heading,#plan-progress-next{scroll-margin-top:24px;scroll-margin-bottom:calc(var(--run-bar-height) + 24px)}
+#plan-progress-heading:focus-visible,#plan-progress-next:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+@media(max-width:700px){.research-sale-options{grid-template-columns:minmax(0,1fr)}}
+@media print{.result-header .inline,.purchase-check,.next-ascension-section,#expand-timeline{display:none}}
