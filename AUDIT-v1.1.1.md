@@ -1,5 +1,38 @@
 # Egg Inc. Virtue Farm Optimizer v1.1.1 — Release Audit
 
+## Accepted v1.1.1 publication — October 18, 2026 (UTC)
+
+v1.1.1 is published and accepted. Windows run
+[39096125107](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/39096125107)
+passed all 28 required workflow suites for source commit
+`d1786148188785303309773d2f395041d9e2cc06` (job `117582836132`). This includes
+finite-search oracles, real worker coordination, generated-app DOM workflows,
+compiled-worker continuations, and the complete existing model regression gates.
+
+Native updater/launcher checks passed installation and version/digest guards,
+invalid archives, rollback, exact backup restoration, user JSON/config retention,
+stage tampering, hidden CMD launch/reuse from paths with spaces, successful
+restart, startup-failure recovery, and legacy-worker recovery. The anonymous
+public feed, complete ZIP download, and app file checksums passed on Windows
+PowerShell 5.1.26100.33438.
+
+Independent anonymous downloads verified the latest tag and source commit,
+both asset sizes and GitHub SHA-256 digests, update-manifest hash, ZIP CRC,
+all 169 archive entries and 167 manifest file checksums, version/repository
+metadata, the sole current audit and link, and compiled UI/verification code.
+Real desktop visual layout remains unverified; DOM behavior is covered above.
+
+Published assets:
+
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8660678 bytes; asset `652442091`; SHA-256
+  `afa18764cfbe87891879a22a662c4c2762a5a99b1dde5f51846453472f908dea`.
+- update-manifest.json: 239 bytes; asset `652442092`; SHA-256
+  `ab6ba6275cd70b07c7a2078320293663d87f3bd4059e69250eac4140771de133`.
+
+The immutable published ZIP contains the reviewed prepublication audit. This
+acceptance evidence was added afterward in source; published assets remain
+unchanged. Install through Update App → Update & Restart.
+
 ## v1.1.1 release review — October 18, 2026 (UTC)
 
 This release combines the search/verification work and the subsequent UI pass.
@@ -11,7 +44,7 @@ complete regression, native updater/launcher, and anonymous public-feed gates.
 The v1.1.1 build and all 27 locally runnable release/UI suites passed before
 publication, including release-state, publish staging, both optimality suites,
 real worker coordination, compiled-worker continuations, and sleep-controls DOM
-integration. Native updater/launcher results remain gated on the Windows run.
+integration. These local checks preceded the Windows results recorded above.
 
 The normal search keeps its 90-second budget and one/two-worker selection.
 Calculated production/affordability departures supplement sampled candidates.
