@@ -1,5 +1,32 @@
 # Egg Inc. Virtue Farm Optimizer v1.1.2 — Release Audit
 
+## Accepted v1.1.2 publication — October 23, 2026 (Pacific Time)
+
+v1.1.2 is published and accepted. Windows run
+[40001318577](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/40001318577) passed all 30 required workflow suites
+for source commit `0e2f6dc9d1f54ca4f1f2bf40ada2d64e44eb538d` (job `120577832996`).
+This includes the new run shift model and generated-app/worker checks, the
+complete existing regression suite, and native Windows updater/launcher checks.
+The anonymous public update feed, complete ZIP download, and every app file
+checksum passed on Windows. Independent anonymous downloads also verified the
+latest tag and source commit, both asset sizes and GitHub SHA-256 digests,
+ZIP CRC, all 169 archive entries, all 167 runtime file hashes,
+repository/version metadata, the sole current audit, and compiled run tracking.
+
+Published assets:
+
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8665468 bytes;
+  asset `669975059`; SHA-256
+  `af19f46cb92af64a6432b2bb4f2d9c8b9634de6b391cee94315ab337aebef98f`.
+- update-manifest.json: 239 bytes;
+  asset `669975057`; SHA-256
+  `8a7d1349ea3c2559e3c00df3ff199997527bd92344eb89aa4e1d1c4454fca43e`.
+
+The immutable public ZIP contains the review recorded before publication.
+This acceptance evidence was added afterward in source; assets are unchanged.
+Use Update App → Update & Restart. Real desktop visual layout remains
+unverified; generated-app DOM behavior is covered above.
+
 ## v1.1.2 release review — October 23, 2026 (Pacific Time)
 
 This release adds persistent run shift tracking and removes the sidebar hint.
