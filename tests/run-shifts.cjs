@@ -1,0 +1,30 @@
+'use strict';
+const assert=require('node:assert/strict'),Run=require('../src/run-shifts.cjs'),blank=require('../src/blank-farm.cjs');
+const raw=blank();Object.assign(raw.farm,{shiftCount:62,claimed:Array(5).fill(32)});raw.importInfo={timestamp:100,virtueResetIndex:2};
+const record=Run.create(raw,6,12),pristine=JSON.stringify(raw);
+assert.equal(record.startShiftCount,56);assert.equal(Run.status(raw,record).remaining,6);
+const later=structuredClone(raw);later.farm.shiftCount=65;later.importInfo.timestamp=200;
+const observed=Run.observe(later,record);assert.equal(Run.status(later,observed).used,9);assert.equal(Run.apply(later,observed).plan.maxShifts,3);
+assert.equal(JSON.stringify(raw),pristine);assert.equal(record.observedShiftCount,62);
+const full=structuredClone(later);full.farm.shiftCount=70;assert.equal(Run.status(full,record).remaining,0);assert.equal(Run.status(full,record).overBudget,true);
+for(const mutate of [r=>r.farm.claimed[0]++,r=>r.importInfo.virtueResetIndex++,r=>r.farm.shiftCount=55,r=>r.farm.shiftCount=61]){
+ const other=structuredClone(later);mutate(other);assert.equal(Run.observe(other,record),null);
+}
+const old=structuredClone(raw);old.importInfo.timestamp=99;old.farm.claimed[0]--;assert.throws(()=>Run.observe(old,record),/older than/);
+for(const used of [-1,63,.5,NaN])assert.throws(()=>Run.create(raw,used,12));
+for(const total of [-1,NaN,.5])assert.throws(()=>Run.create(raw,6,total));
+assert.equal(Run.status(raw,{...record,startShiftCount:-1}),null);assert.equal(Run.status(raw,{...record,claimed:[]}),null);
+const saved=structuredClone(raw);saved.plan.continuation={consumedShifts:6,totalShiftBudget:12};assert.equal(Run.fromPlan(saved).startShiftCount,56);
+const legacy=structuredClone(raw);legacy.plan.maxShifts=12;assert.equal(Run.fromPlan(legacy),null,'a mid-run plan without metadata cannot establish zero shifts used');
+legacy.farm.shiftCount=0;assert.equal(Run.fromPlan(legacy).startShiftCount,0);
+assert.equal(Run.fromPlan({farm:{},plan:{}}),null);
+assert.equal(Run.fromPlan({...raw,plan:{continuation:{}}}),null);
+const storage=new Map(),store={getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,v)},a='EI0000000000000000',b='EI'+'1'.repeat(16);
+assert.equal(Run.load(store,a),null);Run.save(store,a,record);Run.save(store,b,observed);
+assert.deepEqual(Run.load(store,a),record);assert.deepEqual(Run.load(store,b),observed);Run.save(store,a,null);assert.equal(Run.load(store,a),null);assert.deepEqual(Run.load(store,b),observed);
+Run.save(store,a,observed);Run.save(store,a,record);assert.equal(Run.load(store,a).observedShiftCount,65);assert.equal(Run.load(store,a).observedAt,200,'restoring older UI state retains the last checked backup watermark');
+store.setItem(Run.KEY,'broken');assert.equal(Run.load(store,b),null);assert.equal(Run.save(store,a,record),true);
+store.setItem(Run.KEY,JSON.stringify({version:1,accounts:{[b]:{observedAt:1e99}}}));assert.equal(Run.load(store,b),null);
+const blocked={getItem(){throw Error('blocked');},setItem(){throw Error('blocked');}};assert.equal(Run.load(blocked,a),null);assert.equal(Run.save(blocked,a,record),false);
+assert.equal(JSON.stringify(Run.apply(raw,record)).includes(a),false);
+console.log('PASS run shift tracking: baseline math, continuation recovery, unknown legacy farms, exhausted budgets, new-run invalidation, stale snapshots, account isolation, malformed/blocked storage, and input immutability.');

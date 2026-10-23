@@ -2,6 +2,7 @@
 const DEFAULT_ROUTE=require('./default-route.cjs');
 const E=require('./opening-search.cjs'),S=require('./simulator.cjs'),O=require('./optimizer.cjs');
 const Strategy=require('./planning-strategy.cjs');
+const RunShifts=require('./run-shifts.cjs');
 module.exports=function nextAscension(config,result){
  const verified=O.replay(config,result.actions,false,{enforceOpeningCaps:result.openingTimeLimits===true,oneStartingSilo:result.initialSiloRule==='one'?true:undefined}),s=verified.s,claimed=S.teByEgg(s,verified.c),total=claimed.reduce((a,b)=>a+b,0);
  if(total>=490)throw Error('All 490 Truth Eggs are already available.');
@@ -13,6 +14,11 @@ module.exports=function nextAscension(config,result){
  next.plan={...next.plan,strategy,strategyVersion:2,...(result.solverVersion>=2?{solverVersion:2}:{c1MaxMinutes:E.maximum(verified.c.c1MaxMinutes),k1MaxMinutes:E.maximum(verified.c.k1MaxMinutes)}),start:s.t,target:Math.min(490,total+10),floors:Array(5).fill(0),maxSwitches:verified.c.maxSwitches,autoSequence:strategy!=='user',initialPhysicalPurchases:false,sequence:strategy==='user'?structuredClone(config.plan.sequence):[...DEFAULT_ROUTE]};
  if(result.solverVersion>=2){delete next.plan.c1MaxMinutes;delete next.plan.k1MaxMinutes;}
  delete next.plan.openingStepMinutes;
+ // Preview the next run without overwriting the live account's stored anchor.
+ const limit=Math.min(30,RunShifts.status(config)?.record.totalShiftBudget??config.plan.continuation?.totalShiftBudget??config.plan.maxShifts??12);
+ delete next.plan.continuation;
+ next.runShifts=RunShifts.create(next,0,limit);
+ next.plan.maxShifts=limit;
  if(next.plan.manualFloors)next.plan.manualFloors=Array(5).fill(0);
  S.prepare(next);return next;
 };

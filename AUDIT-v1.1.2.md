@@ -1,4 +1,37 @@
-# Egg Inc. Virtue Farm Optimizer v1.1.1 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.1.2 — Release Audit
+
+## v1.1.2 release review — October 23, 2026 (Pacific Time)
+
+This release adds persistent run shift tracking and removes the sidebar hint.
+Each loaded account retains only a starting lifetime shift count, claimed TE
+identity, optional backup reset index, total allowance, and latest observation.
+Account refreshes derive shifts used and remaining, including after a restart
+or Start from Scratch. Saved run/continuation metadata can recover the anchor;
+an older plan generated midway through a run cannot establish zero shifts used.
+Unknown runs require a one-time entry. Changed run identifiers invalidate the
+anchor instead of guessing, and stale backups are rejected. UI reset/undo cannot
+roll back the stored observation watermark. Future ascension previews do not
+overwrite the live account record. Saved files carry no EID in their run record.
+
+Planning exposes the used count and total run limit, while Maximum New Shifts
+continues to show the remaining ceiling. Ordinary and remaining-plan searches
+receive that ceiling. The sidebar's account instruction hint is removed; backup
+age remains visible. New model and generated-app checks are registered in the
+Windows release workflow. Publication requires its complete Windows regression,
+native updater/launcher, and anonymous public-feed gates.
+
+The v1.1.2 build and all 29 locally runnable release/UI suites passed.
+The complete release workflow has 30 suites, including two native Windows
+updater/launcher suites; the additional local UI check covers sleep controls.
+Per-suite results are recorded in VALIDATION.json. Checks include account
+isolation, blocked/malformed storage,
+new/stale snapshots, reset/restart, file tracking, continuation accounting,
+worker requests, actual generated-worker search/replay, and the removed hint.
+The supplied saved remaining plan independently loaded/replayed with its prior
+timeline context intact and recovered anchor 56, six used, and six remaining.
+The supplied mid-run eight-shift plan correctly provides no zero-used anchor.
+DOM checks do not constitute a real desktop visual review. Native Windows
+publication checks remain pending until the release workflow passes.
 
 ## Accepted v1.1.1 publication — October 18, 2026 (UTC)
 

@@ -48,6 +48,7 @@ function importBackup(input,existing,now=Date.now()/1000,{scope='farm'}={}){
   plan:{...structuredClone(existing?.plan||{}),start:now,target:!fresh&&existing?.plan?.target!==undefined?existing.plan.target:Math.min(490,claimed.reduce((a,b)=>a+b,0)+10),eventTimezone:existing?.plan?.eventTimezone||'America/Los_Angeles',maxDays:existing?.plan?.maxDays??90,maxSwitches:existing?.plan?.maxSwitches??12,sequence:structuredClone(existing?.plan?.sequence??DEFAULT_ROUTE),initialPhysicalPurchases:false,ships:{mode:'custom-two-visits',slots:existing?.plan?.ships?.slots??3,visits:Ships.plannedVisits(existing?.plan?.ships)}},
   importInfo:{timestamp:backupTime,warnings,inventory,ultraProActive,flightSource:b.artifactsDb?'backup':'unavailable',colleggtibleSource:colleggtibles.source,colleggtibleMatches:colleggtibles.matched,colleggtibleMappedContracts:colleggtibles.mapped,colleggtibleUnresolved:colleggtibles.unresolved,scope:accountOnly?'account':'farm',currentVirtueFarmFound:!!activeFarm,source:'Egg Inc. player backup'}
  };
+ if(Number.isSafeInteger(b.virtue.resets)&&b.virtue.resets>=0)cfg.importInfo.virtueResetIndex=b.virtue.resets;
  if(accountOnly){
   const base=structuredClone(existing||blankFarm(now));
   cfg.farm={...base.farm,...Object.fromEntries(ACCOUNT_KEYS.map(key=>[key,cfg.farm[key]]))};

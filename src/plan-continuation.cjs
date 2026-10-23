@@ -2,6 +2,7 @@
 const S=require('./simulator.cjs'),P=require('./plan-progress.cjs'),R=require('./route-solver.cjs'),O=require('./optimizer.cjs');
 const Ships=require('./ships.cjs'),L=require('./optimizer-legacy.cjs'),Strategy=require('./planning-strategy.cjs'),ShiftPlans=require('./shift-plans.cjs');
 const Artifacts=require('./artifact-optimizer.cjs');
+const RunShifts=require('./run-shifts.cjs');
 const paid=new Set(['research','hab','vehicle','car','silo','set']);
 function restoreArtifactSet(action,c){
  if(c.loadouts[action.set])return;
@@ -45,8 +46,9 @@ function prepare(request,{now=Date.now()/1000,budget=null}={}){
  if(start<now-300)throw Error('The remaining search must start at the current PC time. Check the farm again before reoptimizing.');
  if(report.time&&report.time>start+1)throw Error('The backup time is ahead of the PC clock. Sync the game and check the time before reoptimizing.');
  const prior=original.plan.continuation;
- const totalShiftBudget=S.number(budget?.total??prior?.totalShiftBudget??result.switches??result.actions.filter(a=>a.type==='shift').length,'Original shift budget',0,30,true);
- const alreadyUsed=S.number(budget?.usedBefore??prior?.consumedShifts??0,'Already used shifts',0,totalShiftBudget,true);
+ const run=RunShifts.status(original);
+ const totalShiftBudget=S.number(budget?.total??prior?.totalShiftBudget??run?.record.totalShiftBudget??result.switches??result.actions.filter(a=>a.type==='shift').length,'Original shift budget',0,Number.MAX_SAFE_INTEGER,true);
+ const alreadyUsed=S.number(budget?.usedBefore??prior?.consumedShifts??run?.used??0,'Already used shifts',0,totalShiftBudget,true);
  const consumedShifts=alreadyUsed+report.stage,remainingShiftBudget=totalShiftBudget-consumedShifts;
  if(remainingShiftBudget<0)throw Error('The farm has already used the original plan’s shift budget.');
  const route=[S.EGGS[report.egg],...report.rows.filter(row=>row.stage>report.stage&&row.action.type==='shift').map(row=>S.EGGS[row.action.egg])];
@@ -81,6 +83,7 @@ function prepare(request,{now=Date.now()/1000,budget=null}={}){
   if(next.targets.some((amount,i)=>amount>next.stored[i]+Math.max(1,amount)*1e-12))launchVisits=[{missions:[]},launchVisits[0]];
  }
  const config={...current,plan:{...structuredClone(original.plan),start,target:result.target,solverVersion:2,strategyVersion:2,maxShifts:remainingShiftBudget,maxSwitches:remainingShiftBudget,sequence:route,autoSequence:automatic,ships:remaining.length?{mode:'custom-two-visits',slots,visits:[0,1].map(i=>({missions:launchVisits[i]?.missions||[]}))}:{mode:'none'},continuation:{version:1,totalShiftBudget,consumedShifts,remainingShiftBudget,snapshotTime:report.time}}};
+ if(current.runShifts||run)config.runShifts=RunShifts.create(config,consumedShifts,totalShiftBudget);
  delete config.draftInputs;
  // Keep the exact target, floors, sleep/display zone and account/farm values.
  // No completed purchase, past income, fuel transfer or launch is simulated again.

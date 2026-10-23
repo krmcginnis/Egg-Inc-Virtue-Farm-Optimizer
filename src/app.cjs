@@ -10,6 +10,7 @@ const Strategy = require("./planning-strategy.cjs"), SalePlans = require("./rese
 const ShiftPlans = require("./shift-plans.cjs");
 const Progress = require("./plan-progress.cjs");
 const Continuation = require("./plan-continuation.cjs");
+const RunShifts = require("./run-shifts.cjs");
 const gemsText = require("./gems-text.cjs");
 const nextAscension = require("./next-ascension.cjs"), U = require("./shift-summary.cjs"), Q = require("./walkthrough-pdf.cjs"), N = require("./export-names.cjs"), V = require("./pdf-preview.cjs"), G = require("./guide-layout.cjs");
 const S = require("./simulator.cjs"), O = require("./optimizer.cjs"), I = require("./importer.cjs"), A = require("./api.cjs"), C = require("./colleggtibles.cjs");
@@ -36,6 +37,7 @@ let savedEid = "", savedEidName = "", eidDraft = "";
 let config = Defaults.freshFarm(), result = null, resultConfig = null, worker = null, dirty = false, refreshTimer, loadEpoch = 0, importingBackup = null, searchTimer = null, searchStartedAt = 0, searchBestSeconds = null, searchContext = "", resetSnapshot = null, invalidField = null;
 let planProgress = null;
 let remainingProposal = null, continuationContext = null;
+let runAccount = "", unboundRunShifts = null;
 let checkingPurchases = false;
 const searchOptions = { width: 32, branches: 12, maxDepth: 1200, maxMs: 90e3 };
 let activeLoadoutTab = "current";
@@ -68,6 +70,32 @@ function updateSequenceVisibility() {
   $("automatic-shift-limit").hidden = !automatic;
   $("maxShifts").disabled = !automatic;
   updateSequenceCount();
+}
+function rememberRunShifts() {
+  const known = RunShifts.status(config);
+  if (known) unboundRunShifts = structuredClone(known.record);
+  if (runAccount && known) try { RunShifts.save(localStorage, runAccount, known.record); } catch { }
+}
+function renderRunShiftSummary() {
+  const used = $("run-shifts-used").value.trim(), total = Number($("run-shift-limit").value);
+  $("run-shift-summary").textContent = used === "" ? "Enter shifts already used once, or load a plan with saved run or continuation tracking. Future account refreshes will track the remaining allowance." : Number.isSafeInteger(Number(used)) && Number.isSafeInteger(total) ? used + " used · " + Math.max(0, total - Number(used)) + " remaining of " + total + " allowed this run." : "Check the run shift values.";
+  $("run-shift-tracking").querySelector("summary").textContent = "Current Run Shift Tracking" + (used === "" ? " · Not Set" : " · " + used + " Used");
+}
+function accountRunShifts(next, eid) {
+  let stored;
+  try { stored = RunShifts.load(localStorage, eid); } catch { }
+  // An explicitly loaded plan can establish the anchor. A different account
+  // never inherits the previous account's in-memory run.
+  if (stored?.observedAt > 0 && Number(next.importInfo?.timestamp) > 0 && Number(next.importInfo.timestamp) < stored.observedAt) throw Error("This backup is older than the last run shift check. Sync the game and load a newer backup.");
+  const unbound = config.runShifts || unboundRunShifts;
+  const loaded = !runAccount && RunShifts.status(next, unbound) ? unbound : null;
+  const candidate = loaded || stored || ((!runAccount || runAccount === eid) ? config.runShifts || unboundRunShifts : null);
+  let record = candidate ? RunShifts.observe(next, candidate) : null;
+  if (!record && next.farm.shiftCount === 0) record = RunShifts.create(next, 0, 12);
+  const tracked = RunShifts.apply(next, record);
+  if (!record && (candidate || runAccount && runAccount !== eid)) tracked.plan.maxShifts = 12;
+  if (tracked.draftInputs) for (const id of ["run-shifts-used", "run-shift-limit", ...(record || candidate || runAccount && runAccount !== eid ? ["maxShifts"] : [])]) delete tracked.draftInputs.fields[id];
+  return tracked;
 }
 function updateSequenceCount() {
   const count = $("sequence-count");
@@ -442,6 +470,10 @@ function renderForm() {
   $("minOfflineMinutes").value = p.minOfflineMinutes ?? 1;
   $("strategy").value = p.strategy || "wasmegg";
   $("maxShifts").value = p.maxShifts ?? 12;
+  const run = RunShifts.status(config);
+  $("run-shifts-used").value = run ? run.used : "";
+  $("run-shift-limit").value = run ? run.record.totalShiftBudget : p.maxShifts ?? 12;
+  renderRunShiftSummary();
   $("autoTeAllocation").checked = p.autoTeAllocation ?? !(p.floors || []).some(n => Number(n) > 0);
   updateSequenceVisibility();
   for (const k of ["earningsScale", "researchCostScale"]) NumericInput.write($(k), f[k] ?? 1);
@@ -928,6 +960,14 @@ function gather() {
   p.sequenceVersion = 2;
   if (!Number.isFinite(p.start) || p.start <= 0) throw Object.assign(Error("Choose a valid start date/time."), {fieldId:"start"});
   const next = { ...config, version: 1, farm: f, plan: p };
+  if ($("run-shifts-used").value.trim() !== "") {
+    const used = readNumber("run-shifts-used", "Shifts used this run", 0, f.shiftCount, true);
+    const total = readNumber("run-shift-limit", "Total run shift limit", 0, Number.MAX_SAFE_INTEGER, true);
+    next.runShifts = RunShifts.create(next, used, total);
+    p.maxShifts = Math.max(0, total - used);
+    if (p.maxShifts > 30) throw Object.assign(Error("The remaining allowance must be at most 30 new shifts. Adjust the total run shift limit."), {fieldId:"run-shift-limit"});
+    if (!p.autoSequence && Route.normalize(p.sequence, f.virtue, {required:true}).length - 1 > p.maxShifts) throw Object.assign(Error("The entered sequence exceeds this run's remaining shift allowance."), {fieldId:"sequence"});
+  } else delete next.runShifts;
   delete next.draftInputs;
   return next;
 }
@@ -951,6 +991,8 @@ function refresh() {
   try {
     updateResearchSummaries();
     config = gather();
+    rememberRunShifts();
+    renderRunShiftSummary();
     const { s, c } = S.prepare(config), r = S.stats(s, c), pending = S.totalTE(s, c) - c.claimedTotal;
     populateAutomaticSets(s, c);
 
@@ -1352,6 +1394,8 @@ function renderResult() {
       return;
     }
     config = nextAscension(resultConfig, result);
+    runAccount = ""; // A future preview must not replace the live account anchor.
+    unboundRunShifts = null;
     config.plan.targetMode = Defaults.targetMode; config.plan.target = Defaults.target(config.farm.claimed);
     config.uiProvenance = {...config.uiProvenance, ...Object.fromEntries(["farm", "account", "progress", "fuel", "flights"].map(group => [group, "plan"]))};
     result = null;
@@ -1821,8 +1865,12 @@ async function loadFile(file, {planOnly = false, trackOnly = false} = {}) {
       if (trackOnly) throw Error("Select a current farm file or game backup. Use Load Plan to replace the saved timeline.");
       const recovered = replaySavedResult(raw.config, raw.result);
       const tracking = restoredProgress(raw.progress, raw.config, recovered);
+      const loadedConfig = tracking?.snapshot || raw.config;
+      const trackedConfig = RunShifts.apply(loadedConfig, RunShifts.observe(loadedConfig, RunShifts.fromPlan(raw.config)));
       clearTimeout(refreshTimer);
-      config = structuredClone(tracking?.snapshot || raw.config);
+      config = trackedConfig;
+      runAccount = "";
+      unboundRunShifts = config.runShifts || null;
       result = recovered;
       resultConfig = structuredClone(raw.config);
       planProgress = tracking;
@@ -1844,11 +1892,14 @@ async function loadFile(file, {planOnly = false, trackOnly = false} = {}) {
     const next = savedFarm ? raw : currentFarmImport(raw);
     for (const [key, length] of [["claimed", 5], ["delivered", 5], ["habs", 4], ["vehicles", 17]]) if (!Array.isArray(next.farm[key]) || next.farm[key].length !== length) throw Error("Farm file needs " + length + " " + key + " entries.");
     if (trackOnly || !savedFarm && result) {
-      const checked = applyFarmImport(next, {trackOnly});
+      const tracked = config.runShifts ? RunShifts.apply(next, RunShifts.observe(next, config.runShifts)) : next;
+      const checked = applyFarmImport(tracked, {trackOnly});
       show(checked.tracked ? "Farm progress checked. Your original plan and schedule are retained." : "Account information loaded. No current Virtue farm was found; the previous plan comparison is retained.");
       return;
     }
     config = next;
+    runAccount = "";
+    unboundRunShifts = RunShifts.status(config)?.record || null;
     result = null;
     resultConfig = null;
     planProgress = null;
@@ -1903,7 +1954,8 @@ $("plan-file-input").onchange = (e) => {
 $("clear-data").onclick = () => {
   let saved;
   try { saved = gather(); } catch { saved = {...structuredClone(config), draftInputs:captureDraftInputs()}; }
-  resetSnapshot = {config:saved,result,resultConfig,planProgress,remainingProposal,continuationContext,dirty:dirty || !!worker && !!result,tab:document.querySelector("[data-tab].active").dataset.tab,loadoutTab:activeLoadoutTab};
+  config = saved; rememberRunShifts();
+  resetSnapshot = {config:saved,result,resultConfig,planProgress,remainingProposal,continuationContext,runAccount,dirty:dirty || !!worker && !!result,tab:document.querySelector("[data-tab].active").dataset.tab,loadoutTab:activeLoadoutTab};
   $("reset-undo").hidden = false;
   loadEpoch++;
   importingBackup = null;
@@ -1934,7 +1986,7 @@ $("undo-reset").onclick = () => {
   const restoreTab = resetSnapshot.tab, restoreLoadout = resetSnapshot.loadoutTab;
   worker?.terminate(); worker = null; importingBackup = null; busy(false);
   loadEpoch++; clearTimeout(refreshTimer);
-  ({config,result,resultConfig,planProgress,remainingProposal,continuationContext,dirty} = resetSnapshot);
+  ({config,result,resultConfig,planProgress,remainingProposal,continuationContext,runAccount,dirty} = resetSnapshot);
   resetSnapshot = null;
   $("reset-undo").hidden = true;
   renderForm();
@@ -1974,8 +2026,16 @@ async function loadEidData() {
       else localStorage.removeItem(EID_NAME_KEY);
     } catch { }
     showEidIdentity();
-    const next = currentFarmImport(b);
-    const applied = applyFarmImport(next), valid = applied.valid;
+    const next = accountRunShifts(currentFarmImport(b), savedEid);
+    const previousAccount = runAccount;
+    let applied;
+    runAccount = "";
+    try { applied = applyFarmImport(next); } catch (error) { runAccount = previousAccount; throw error; }
+    const valid = applied.valid;
+    runAccount = savedEid;
+    unboundRunShifts = config.runShifts || null;
+    try { RunShifts.save(localStorage, runAccount, unboundRunShifts); } catch { }
+    rememberRunShifts();
     const message = next.importInfo.scope === "account" ? "Account information has been loaded, but no current Virtue farm was found. Your starting farm, start time, and planning goals are retained." : "Account information and the current Virtue farm have been loaded. Your planning goals are retained.";
     show(message + (applied.retained ? applied.tracked ? " Farm progress checked; your original plan and schedule are retained." : " Your original plan and previous progress comparison are retained." : "") + (valid ? " Review backup age and assumptions before planning." : " Your draft is retained; review the marked inputs before planning."), !valid);
   } catch (e) {
@@ -2189,6 +2249,16 @@ document.addEventListener("input", (e) => {
     : e.target.closest("#farm-basic-fields,#hab-fields,#vehicle-fields,#research-fields,#current-loadout-fields,#starting-set-fields") ? "farm" : null;
   if (group) (config.uiProvenance ||= {})[group] = "manual";
   if (e.target.id === "target") delete config.plan.targetMode;
+  const runId = e.target.id;
+  if (runId === "maxShifts" && $("run-shifts-used").value !== "" && e.target.value !== "") $("run-shift-limit").value = Number($("run-shifts-used").value) + Number(e.target.value);
+  if (["run-shifts-used", "run-shift-limit"].includes(runId) && $("run-shifts-used").value !== "") $("maxShifts").value = Math.max(0, Number($("run-shift-limit").value) - Number($("run-shifts-used").value));
+  if (runId === "shiftCount" && config.runShifts) $("run-shifts-used").value = Number(e.target.value) >= config.runShifts.startShiftCount ? Number(e.target.value) - config.runShifts.startShiftCount : "";
+  if (runId.startsWith("claimed-")) $("run-shifts-used").value = "";
+  if (runId === "run-shifts-used" && e.target.value === "") {
+    unboundRunShifts = null;
+    if (runAccount) try { RunShifts.save(localStorage, runAccount, null); } catch { }
+  }
+  renderRunShiftSummary();
   NumericInput.edited(e.target);
   markInputsChanged();
   clearTimeout(refreshTimer);

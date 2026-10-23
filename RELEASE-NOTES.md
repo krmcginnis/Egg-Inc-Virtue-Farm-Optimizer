@@ -1,3 +1,10 @@
+# v1.1.2
+
+- Remember each account's starting lifetime shift count and total run allowance. Account refreshes update Maximum New Shifts, including after restarting or Start from Scratch. Plans with run or continuation metadata recover their anchor; otherwise enter shifts already used once for a run first imported midway through.
+- Carry the small tracking record in saved farms and plans, preserve it during reoptimization, and require a new anchor when the observed run changes. Keep account records separate and reject older backups.
+- Remove the instructional text beneath the sidebar's Load Account button.
+- Install through Update App → Update & Restart. For an existing run, load a saved remaining plan with continuation tracking, or enter the shifts already used and total allowance once under Planning → Current Run Shift Tracking.
+
 # v1.1.1
 
 - Improve departure timing with calculated production and affordability milestones, tighten optimistic funding bounds, and coordinate refinement work across workers to avoid duplicate comparisons.

@@ -93,6 +93,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/plan-progress.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/run-shifts.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/plan-continuation.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/purchase-decisions.cjs
@@ -100,6 +102,8 @@ jobs:
           node tests/quick-guide-order.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/run-shifts-dom.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/search-pool.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
