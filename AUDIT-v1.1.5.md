@@ -1,5 +1,34 @@
 # Egg Inc. Virtue Farm Optimizer v1.1.5 — Release Audit
 
+## Accepted v1.1.5 publication — October 28, 2026 (Pacific Time)
+
+v1.1.5 is published and accepted. Windows run
+[40810562276](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/40810562276) passed all 34 required suites
+for source commit `6a12931b83f202a3fd4d54cc75d1c947fcebd154` (job `123239608362`).
+This includes the established purchase-order regression, new productive research
+comparisons, generated-app/worker checks, and native Windows updater/launcher.
+The public update feed, complete ZIP download, and all runtime file hashes passed
+on Windows PowerShell 5.1.26100.33648.
+
+Independent anonymous downloads verified the latest tag/source commit, both
+asset sizes and GitHub SHA-256 digests, ZIP CRC, all 169 archive
+entries, all 167 runtime file hashes, repository/version
+metadata, the sole current audit, and compiled productive research comparison,
+24-hour clock, and unused-research cleanup code.
+
+Published assets:
+
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8672780 bytes; asset `687195492`; SHA-256
+  `8bc1cf128c3cdd9b4d04398c917e7c7c349843f0153c4bba69d4f00cbb3c034a`.
+- update-manifest.json: 239 bytes; asset `687195494`; SHA-256
+  `8561734737971e6da412218ccd562dd9b10e668f44f40bafabd9ab947cef59cd`.
+
+The immutable public ZIP contains the review recorded before publication.
+This acceptance evidence was added afterward in source; assets are unchanged.
+Use Update App → Update & Restart, then reoptimize the remaining plan to compare
+new research investments. Search remains bounded; full replay verifies model
+feasibility and does not prove global optimality.
+
 ## v1.1.5 release review — October 28, 2026 (Pacific Time)
 
 A dedicated full-plan pass enumerates every legal next research level with a

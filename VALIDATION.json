@@ -1,10 +1,10 @@
 {
-  "date": "2026-10-29T03:08:10.199620+00:00",
+  "date": "2026-10-29T03:15:00.517327+00:00",
   "version": "1.1.5",
   "currentAudit": "AUDIT-v1.1.5.md",
-  "status": "release-candidate",
-  "published": false,
-  "nativeWindowsTested": false,
+  "status": "accepted-public-release",
+  "published": true,
+  "nativeWindowsTested": true,
   "visualBrowserTested": false,
   "buildPassed": true,
   "scope": "Full paid-plan next-level productive research comparisons at every eligible Curiosity visit, purchase insertion/sale timing, dedicated search slices, replay validation, and worker aggregation.",
@@ -232,8 +232,7 @@
   "limitations": [
     "Search remains bounded; this finite single-level insertion neighborhood does not prove global optimality or exhaustive purchase orders.",
     "New tier-filler chains and complementary multi-level packages use separate bounded searches.",
-    "Real desktop browser visual layout was not rechecked; no clock/guide layout changes in this release.",
-    "Native Windows updater/launcher and anonymous public-feed checks await the release workflow."
+    "Real desktop browser visual layout was not rechecked; no clock/guide layout changes in this release."
   ],
   "previousReleaseValidation": {
     "date": "2026-10-29T02:29:23.342840+00:00",
@@ -1095,5 +1094,41 @@
       "workers": 2,
       "verified": 12
     }
-  ]
+  ],
+  "windowsWorkflow": {
+    "runId": 40810562276,
+    "jobId": 123239608362,
+    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/40810562276",
+    "sourceCommit": "6a12931b83f202a3fd4d54cc75d1c947fcebd154",
+    "conclusion": "success",
+    "requiredSuitesPassed": 34,
+    "publicFeedPassed": true,
+    "powerShellVersion": "5.1.26100.33648"
+  },
+  "publicAssetVerification": {
+    "productiveResearchBundleVerified": true,
+    "version": "1.1.5",
+    "commit": "6a12931b83f202a3fd4d54cc75d1c947fcebd154",
+    "releaseId": 427425223,
+    "releaseUrl": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.1.5",
+    "anonymousDownloads": true,
+    "zipCrcPassed": true,
+    "archiveEntries": 169,
+    "runtimeFileHashesVerified": 167,
+    "clockAndCleanupBundlesVerified": true,
+    "assets": {
+      "Egg-Inc-Virtue-Farm-Optimizer.zip": {
+        "id": 687195492,
+        "size": 8672780,
+        "sha256": "8bc1cf128c3cdd9b4d04398c917e7c7c349843f0153c4bba69d4f00cbb3c034a",
+        "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/download/v1.1.5/Egg-Inc-Virtue-Farm-Optimizer.zip"
+      },
+      "update-manifest.json": {
+        "id": 687195494,
+        "size": 239,
+        "sha256": "8561734737971e6da412218ccd562dd9b10e668f44f40bafabd9ab947cef59cd",
+        "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/download/v1.1.5/update-manifest.json"
+      }
+    }
+  }
 }
