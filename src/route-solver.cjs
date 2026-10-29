@@ -22,7 +22,8 @@ const {Reserve}=require('./search-reserve.cjs');
 const Neighborhoods=require('./purchase-neighborhoods.cjs');
 const RouteNeighborhoods=require('./route-neighborhoods.cjs');
 const Quality=require('./search-quality.cjs');
-function better(a,b){if(!a)return false;if(!b)return true;if(a.t<b.t-1e-6)return true;if(a.t>b.t+1e-6)return false;if(a.stage!==b.stage)return a.stage<b.stage;if(Comfort.preferred(a,b))return true;if(Comfort.preferred(b,a))return false;return W.offlineBreaks(a)<W.offlineBreaks(b);}
+const ResearchCleanup=require('./research-cleanup.cjs');
+function better(a,b){if(!a)return false;if(!b)return true;if(a.t<b.t-1e-6)return true;if(a.t>b.t+1e-6)return false;if(a.stage!==b.stage)return a.stage<b.stage;if(Comfort.preferred(a,b))return true;if(Comfort.preferred(b,a))return false;const breaks=W.offlineBreaks(a)-W.offlineBreaks(b);return breaks?breaks<0:W.purchaseCount(a)<W.purchaseCount(b);}
 const VERSION=2,letters=['C','I','H','R','K'];
 
 function routes(raw){
@@ -79,7 +80,7 @@ function scored(s,c,policy='balanced'){
   const capacity=Math.max(0,Math.log(later.delivery/Math.max(1e-300,potential.delivery)));
   const buyingPower=a.type==='set'?Math.max(0,Math.log((after.earning/after.researchMult)/(now.earning/now.researchMult))):income;
   const r=a.type==='research'?S.D.research[a.i]:null;
-  const unlock=r&&S.D.research.some((x,i)=>x.tier>r.tier&&!S.isUnlocked(s,i))?.025:0;
+  const unlock=r&&moreResearch&&S.D.research.some((x,i)=>x.tier>r.tier&&s.r[i]<x.levels&&ResearchCleanup.affectsFarm(i)&&!S.isUnlocked(s,i,c))?.025:0;
   const fleet=r&&r.categories.includes('fleet_size')&&future(s,c,4)?.05:0;
   let value=(moreResearch?buyingPower*3:delivery*5)+capacity*(moreResearch?1:3)+unlock+fleet;
   if(policy==='income')value+=buyingPower*5;
@@ -97,7 +98,7 @@ function scored(s,c,policy='balanced'){
    const span=c.end-s.t,availableBefore=Sleep.productiveSeconds(c.sleep,s.t,c.end,now.siloHours*3600),availableAfter=Sleep.productiveSeconds(c.sleep,s.t,c.end,after.siloHours*3600);
    if(span>0)value+=5*Math.log(availableAfter/Math.max(1e-300,availableBefore));
   }
-  const score=value/(1+wait/60+cost/Math.max(1,now.eventEarning*3600));
+  const score=r&&!ResearchCleanup.affectsFarm(a.i)&&!unlock?0:value/(1+wait/60+cost/Math.max(1,now.eventEarning*3600));
   return {a,score,cost,wait};
  }).filter(x=>Number.isFinite(x.score)&&x.score>0).sort((a,b)=>b.score-a.score||a.cost-b.cost);
 }
@@ -716,13 +717,29 @@ async function refineRemainingBudget(raw,byShift,byRoute,deadline,control,progre
  };
  control.adaptive=await Adaptive.run({jobs,deadline,cancelled:control.cancelled,claim:control.claimTask?job=>job.taskKey?control.claimTask(job.taskKey):true:undefined,release:control.releaseTask?job=>job.taskKey&&control.releaseTask(job.taskKey):undefined,quality:()=>({revision:control.improvements,best:Math.min(...[...byShift.values()].map(x=>x.state.t))}),yield:control.yield,progress:job=>progress({phase:'route-search',stage:'Refinement',phaseLabel:'Comparing '+({packages:'larger paid purchase packages',economics:'additional purchase orders',timing:'additional departure timings',neighborhood:'larger purchase neighborhoods',recovery:'reserved purchase branches',routes:'nearby farm orders'}[job.kind]),elapsedMs:Date.now()-control.started,explored:control.explored})});
 }
+function cleanResearch(raw,item,{checkpoint=()=>{}}={}){
+ const source=S.history(item.state),marked=actions=>actions.map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:VERSION,sequence:item.route,researchSales:item.count}});
+ const {s,c}=prepare(raw,item.route,item.count,{artifactReplay:true,artifactSets:S.recordedArtifactSets(source)});
+ let proposal;try{proposal=ResearchCleanup.proposal(s,c,source,{checkpoint});}catch{return item;}
+ if(!proposal)return item;
+ let best=item;
+ // Prefer paid retiming without obsolete interactions. Exact clock replay is
+ // a conservative fallback that preserves the existing calendar/sleep waits.
+ for(const retime of [true,false])try{
+  checkpoint();const actions=retime?S.history(Schedules.execute(s,c,proposal.actions,{retime:true,recomputeFunding:true,preserveCalendar:true,checkpoint})):proposal.actions;
+  const paid=replay(raw,marked(actions),true);
+  if(better(paid.s,best.state))best={...item,state:{...paid.s,artifactRecommendations:item.state.artifactRecommendations,...(item.state.siloComfort?{siloComfort:item.state.siloComfort}:{})},context:paid.c,researchCleanup:{removedLevels:proposal.levels,gemsSaved:proposal.cost}};
+  if(best!==item)break;
+ }catch{}
+ return best;
+}
 function finalize(raw,best,c,route,count,control,termination){
  let actions=S.history(best);
  if(!actions.length)actions=[{type:'wait',t:c.start,end:c.start,egg:best.egg,reason:'Target already reached',earningsMode:'online'}];
  actions=actions.map((a,i)=>i===0?{...a,initialSiloRule:'one',routeSearch:{version:VERSION,sequence:route,researchSales:count}}:a);
  const checked=replay(raw,actions,false),s=checked.s;
  const result={version:1,solverVersion:VERSION,initialSiloRule:'one',openingTimeLimits:false,
-  objective:'Minimum completion time to the TE target; equal times favor fewer shifts, then silo coverage up to eight silos',method:'Bounded farm-order, purchase, and departure search; fastest plans found, not a proof of global optimality',
+  objective:'Minimum completion time to the TE target; equal times favor fewer shifts, silo coverage up to eight silos, fewer earning breaks, then fewer purchases',method:'Bounded farm-order, purchase, and departure search; fastest plans found, not a proof of global optimality',
   researchSales:count,actualResearchSales:usedSales(actions,c),researchDeadline:c.researchDeadline,route:route.slice(),
   termination,explored:control.explored,elapsedMs:Date.now()-control.started,start:c.start,end:s.t,seconds:s.t-c.start,switches:s.stage,soulCost:s.lost,target:c.target,
   finalTE:S.teByEgg(s,c),pendingTE:S.totalTE(s,c)-c.claimedTotal,finalCash:s.cash,finalStats:S.stats(s,c),actions,
@@ -988,7 +1005,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  }
  if(options.returnComparisons!==true){
   if(!cancelled()&&!options.disableAdaptiveRefinement&&maxMs>=5000&&Date.now()<started+maxMs*.95)await refineRemainingBudget(raw,byShift,byRoute,started+maxMs*.95,control,progress);
-  const top=[...byShift.values()].sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0).slice(0,3);
+  const top=[...byShift.values()].sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0).slice(0,3).map(item=>cleanResearch(raw,item));
   if(!cancelled()){
    // Keep the main search budget intact; cap final comfort comparisons at 5 s.
    const comfortDeadline=Math.min(options.absoluteDeadline??Infinity,Date.now()+Math.min(5000,maxMs*.05));
@@ -1007,4 +1024,4 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  const chosen=Plans.select({researchSalePlans:entries,recommendedResearchSales:recommended},recommended);
  return chosen;
 }
-module.exports={VERSION,recipe,seedRoute,openingDepartures,researchPrefixes,physicalPrefixes,compareResearchBreakpoints,comparePhysicalInvestments,compareDeliveryResearch,compareResearchOrders,compareResearchValue,comparePurchaseEconomics,comparePurchasePackages,compareAdditionalTimings,compareRouteNeighborhoods,refineRemainingBudget,deliveryPotential,compareDepartures,comparePurchaseChains,completionAlternatives,unlockDepartures,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,solve};
+module.exports={VERSION,recipe,seedRoute,openingDepartures,researchPrefixes,physicalPrefixes,compareResearchBreakpoints,comparePhysicalInvestments,compareDeliveryResearch,compareResearchOrders,compareResearchValue,comparePurchaseEconomics,comparePurchasePackages,compareAdditionalTimings,compareRouteNeighborhoods,refineRemainingBudget,deliveryPotential,compareDepartures,comparePurchaseChains,completionAlternatives,unlockDepartures,better,routes,presetRoutes,prepare,saleDeadline,scored,projected,dominates,prune,replay,cleanResearch,solve};

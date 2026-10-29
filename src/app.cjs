@@ -26,6 +26,7 @@ const FarmIcons = require("./farm-icons.cjs");
 const ShipIcons = require("./ship-icons.cjs");
 const PhysicalPreview = require("./physical-preview.cjs");
 const DatePicker = require("./date-picker.cjs");
+const DateTime = require("./date-time.cjs");
 const displayEggOrder = [0,4,1,3,2];
 const SelectionReadout = require("./selection-readout.cjs");
 const AppUpdates = require("./app-updates.cjs");
@@ -132,17 +133,12 @@ function waitTotals(t) {
   return "Online waiting " + exactDuration(t.onlineSeconds) + " \xB7 Offline " + exactDuration(t.offlineSeconds) + " (" + t.offlineBreaks + " breaks)" + (t.interactionSeconds ? " \xB7 Interactions " + exactDuration(t.interactionSeconds) : "") + (t.fuelSeconds ? " \xB7 Fueling " + exactDuration(t.fuelSeconds) : "") + (t.sleepSeconds ? " \xB7 Sleep included " + exactDuration(t.sleepSeconds) : "") + (t.siloEmptySeconds ? " \xB7 Silos empty during sleep " + exactDuration(t.siloEmptySeconds) : "");
 }
 function dateLocal(t) {
-  const d = new Date(t * 1e3);
-  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-  return d.toISOString().slice(0, 16);
+  return DateTime.localInput(t);
 }
 // Formatting options are fixed. Reuse formatters instead of creating one for
 // every purchase, while preserving each exact date and selected timezone.
-const timestampFormats = new Map();
 function timestamp(t, zone, includeYear = true, compact = false) {
-  const key = zone + ":" + includeYear + ":" + compact;
-  if (!timestampFormats.has(key)) timestampFormats.set(key, new Intl.DateTimeFormat("en-US", { timeZone: zone, year: includeYear ? "numeric" : void 0, month: "short", day: "numeric", weekday: compact ? undefined : "short", hour: "2-digit", minute: "2-digit", second: compact ? undefined : "2-digit", timeZoneName: "short" }));
-  return timestampFormats.get(key).format(new Date(t * 1e3));
+  return DateTime.timestamp(t, zone, {year:includeYear,compact});
 }
 const pageScroll = new Map();
 function tab(name, focusHeading = false, resumeScroll = false) {
@@ -943,7 +939,7 @@ function gather() {
   f.loadouts = formLoadouts();
   const autoTeAllocation = $("autoTeAllocation").checked;
   const manualFloors = Array.from({length:5}, (_, i) => autoTeAllocation ? retainedNumber("floor-" + i) : readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true));
-  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : new Date($("start").value).getTime() / 1e3, eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), solverVersion: 2, saleComparisonVersion: 1, autoTeAllocation, manualFloors, maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), initialPhysicalPurchases: false, floors: autoTeAllocation ? Array(5).fill(0) : manualFloors.slice() };
+  const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : DateTime.parseLocal($("start").value), eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), solverVersion: 2, saleComparisonVersion: 1, autoTeAllocation, manualFloors, maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), initialPhysicalPurchases: false, floors: autoTeAllocation ? Array(5).fill(0) : manualFloors.slice() };
   p.maxShifts=p.autoSequence?readNumber("maxShifts","Maximum new shifts",0,30,true):retainedNumber("maxShifts");
   p.sleep = {enabled:$("sleepEnabled").checked,start:$("sleepStart").value,end:$("sleepEnd").value};
   if(p.sleep.enabled){
@@ -1162,7 +1158,7 @@ function breakCard(pause, zone, sleep) {
   const resume=el("time",(Sleep.sleeping(sleep,pause.end)?"Wait Ends ":"Resume ")+timestamp(pause.end,zone,true),"guide-resume");
   resume.dateTime=new Date(pause.end*1000).toISOString();
   heading.append(el("b",pause.mode==="fuel"?"Fuel Collection":pause.sleepSeconds>=pause.seconds-0.01?"Sleep":pause.sleepSeconds>0?"Wait Including Sleep":pause.mode==="offline"?"Offline Break":"Online Wait"),el("strong",exactDuration(pause.seconds),"guide-break-duration"));
-  box.append(heading,resume,el("span","Starts "+timestamp(pause.start,zone)));
+  box.append(heading,el("span","Starts "+timestamp(pause.start,zone)),resume);
   if(pause.reason)box.append(el("small",pause.reason));
   if(pause.siloEmptySeconds>0)box.append(el("small","Production paused after silos emptied: "+exactDuration(pause.siloEmptySeconds)+"."));
   if(pause.sleepSeconds>0)box.append(el("small","Sleep included: "+exactDuration(pause.sleepSeconds)+". Refill silos before bed."));
@@ -1414,7 +1410,7 @@ function renderResult() {
   progressLink.onclick=event=>{event.preventDefault();const target=$(planProgress?"plan-progress-next":"plan-progress-heading")||$("plan-progress-heading");target.scrollIntoView({block:"start"});target.focus({preventScroll:true});};
   tools.append(json, txt, progressLink);
   head.append(tools);
-  card.append(head, el("p", "Starts " + timestamp(r.start, zone), "plan-start"), el("p", "Ends " + timestamp(r.end, zone), "plan-end"), el("p", r.switches + " new switches \xB7 " + num(r.soulCost) + " Soul Eggs spent"), el("p", waitTotals(summary.totals), "waiting-totals"), el("p", "Minimum offline break: " + (resultConfig.plan.minOfflineMinutes ?? 1) + " min. Finish time comes first; ties favor fewer switches, more silo coverage, and fewer earning breaks.", "hint"), el("p", "Validated by replay: purchases affordable, Virtue permissions enforced, target reached. Claim pending TE at ascension.", "hint"));
+  card.append(head, el("p", "Starts " + timestamp(r.start, zone), "plan-start"), el("p", "Ends " + timestamp(r.end, zone), "plan-end"), el("p", r.switches + " new switches \xB7 " + num(r.soulCost) + " Soul Eggs spent"), el("p", waitTotals(summary.totals), "waiting-totals"), el("p", "Minimum offline break: " + (resultConfig.plan.minOfflineMinutes ?? 1) + " min. Finish time comes first; ties favor fewer switches, more silo coverage, fewer earning breaks, and fewer purchases.", "hint"), el("p", "Validated by replay: purchases affordable, Virtue permissions enforced, target reached. Claim pending TE at ascension.", "hint"));
   if(resultConfig.plan.sleep?.enabled){const sleep=resultConfig.plan.sleep;card.append(el("p","Sleep: "+sleep.start+"–"+sleep.end+" · "+zone+". Interactions occur while awake. Production pauses when silo coverage runs out; the target can be reached during sleep while silos are covered.","hint sleep-plan-note"));}
   const diagnostics = el("details", void 0, "search-details");
   diagnostics.append(el("summary", "Search Details"), el("p", r.method + " \xB7 " + r.explored.toLocaleString() + " states examined \xB7 " + r.termination + ".", "hint"));

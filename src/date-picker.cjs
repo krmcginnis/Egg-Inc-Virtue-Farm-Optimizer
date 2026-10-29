@@ -3,12 +3,12 @@
 function bind(control) {
   const dialog = document.createElement("dialog"); dialog.id = "date-picker"; dialog.className = "gear-picker date-picker";
   dialog.setAttribute("aria-labelledby","date-picker-title");
-  dialog.innerHTML = '<h2 id="date-picker-title">Start Date &amp; Time</h2><p class="hint">PC local time</p><div class="fields"><label>Date<input type="date" aria-label="Start date" required></label><label>Time<input type="time" aria-label="Start time" step="60" required></label></div><div class="date-picker-actions"><button type="button" class="secondary" data-cancel>Cancel</button><button type="button" data-ok>Ok</button></div>';
+  dialog.innerHTML = '<h2 id="date-picker-title">Start Date &amp; Time</h2><p class="hint">PC local time · 24-hour time</p><div class="fields"><label>Date<input type="date" aria-label="Start date" required></label><label>Time (24-hour)<input type="text" data-time aria-label="Start time" inputmode="numeric" placeholder="HH:MM" pattern="([01][0-9]|2[0-3]):[0-5][0-9]" required></label></div><div class="date-picker-actions"><button type="button" class="secondary" data-cancel>Cancel</button><button type="button" data-ok>Ok</button></div>';
   document.body.append(dialog);
-  const date = dialog.querySelector('[type="date"]'), time = dialog.querySelector('[type="time"]');
+  const date = dialog.querySelector('[type="date"]'), time = dialog.querySelector('[data-time]');
   const open = () => {
     if (control.matches(":disabled") || dialog.open) return;
-    const parts = control.value.split("T"); date.value = parts[0] || ""; time.value = parts[1]?.slice(0,5) || "";
+    const parts = control.value.replace(' ','T').split("T"); date.value = parts[0] || ""; time.value = parts[1]?.slice(0,5) || "";
     dialog.showModal(); date.focus();
   };
   control.setAttribute("aria-haspopup","dialog"); control.setAttribute("aria-controls",dialog.id);
@@ -19,8 +19,8 @@ function bind(control) {
   dialog.querySelector("[data-cancel]").onclick = () => dialog.close();
   dialog.querySelector("[data-ok]").onclick = () => {
     if (!date.reportValidity() || !time.reportValidity()) return;
-    const value = date.value+"T"+time.value;
-    if (!Number.isFinite(new Date(value).getTime())) return;
+    const value = date.value+" "+time.value;
+    if (!Number.isFinite(require('./date-time.cjs').parseLocal(value))) return;
     if (control.value !== value) {
       control.value = value;
       control.dispatchEvent(new Event("input",{bubbles:true})); control.dispatchEvent(new Event("change",{bubbles:true}));

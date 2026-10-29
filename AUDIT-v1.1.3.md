@@ -1,4 +1,41 @@
-# Egg Inc. Virtue Farm Optimizer v1.1.2 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.1.3 — Release Audit
+
+## v1.1.3 release review — October 28, 2026 (Pacific Time)
+
+The solver checks for an unmaxed, productive locked research target before
+assigning speculative unlock value. Unlock-only research with no such target
+is excluded even under the cheap-purchase policy. A deterministic final pass
+checks the actual remaining purchase dependencies, removes unused modeled-inert
+research, and independently replays actual costs, gear, sleep, fuel, missions,
+and TE. Required current/later unlock levels and dormant productive capacity
+remain. Equal completion time, shifts, silo comfort, and offline breaks now
+prefer fewer purchases; workers and purchase checks use the same ordering.
+This is model-specific cleanup, not a proof of globally optimal purchases.
+
+All clock displays and PDF dates use the selected timezone with h23 formatting
+(midnight 00:00). Local plan, sleep, and picker inputs use explicit 24-hour text
+to avoid browser/OS AM/PM rendering. Quick Guide breaks display Starts before
+Resume, with Resume bold and break durations unchanged. PDF text/font inspection
+and a rendered two-page synthetic walkthrough confirm chronological order,
+bold Resume, 24-hour timestamps, and no clipping on the inspected guide page.
+Real desktop browser visual layout remains unverified; generated-app DOM
+workflows cover the controls, order, formatting, and preserved resume weight.
+
+The supplied eight-shift plan removes all 19 unused Neural Linking/Enlightened
+Chickens levels, saving 1.8723126421124997e40 gems, with exactly the same finish,
+200 TE, eight shifts, and six offline breaks. Its first research becomes Neural
+Net Refinement. The cleanup took about 11 ms in this one local observation;
+this does not establish performance for all farms or hardware. Synthetic tests
+retain the minimum current/later tier prerequisites, reject removal of dormant
+productive capacity, preserve faster-plan priority, and cover cancellation and
+immutable inputs. The existing game model and weekly Pacific events are unchanged.
+
+The v1.1.3 build and all 32 locally runnable release/UI suites passed, including
+the three new research-cleanup, date-time, and time-display DOM suites. The
+required Windows release workflow has 33 suites, including two native updater/
+launcher checks; the additional local suite covers sleep controls. Results are
+recorded in VALIDATION.json. Published assets are not accepted until the complete
+Windows regression, native updater/launcher, and public update-feed gates pass.
 
 ## Accepted v1.1.2 publication — October 23, 2026 (Pacific Time)
 

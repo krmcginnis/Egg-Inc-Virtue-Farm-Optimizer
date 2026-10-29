@@ -1,3 +1,11 @@
+# v1.1.3
+
+- Avoid unlock-only research when no useful locked research remains. Before returning a plan, remove unused unlock research only when later paid purchases remain legal and a full replay preserves or improves the finish, shift count, silo coverage, and earning breaks. Keep required current/later prerequisites and future habitat/vehicle capacity.
+- Prefer fewer purchases after completion time, shifts, silo coverage, and earning breaks tie. Apply the same comparison across search workers and purchase checks.
+- Display every clock time in 24-hour notation, including the plan/sleep inputs, date picker, timeline, backup/progress dates, and exported walkthrough.
+- Show Starts before the bold Resume line in Quick Guide breaks and exported walkthroughs; keep the prominent break duration.
+- Install through Update App → Update & Restart, then reoptimize the remaining plan to regenerate purchase steps. Existing saved timelines remain unchanged until a new search is applied.
+
 # v1.1.2
 
 - Remember each account's starting lifetime shift count and total run allowance. Account refreshes update Maximum New Shifts, including after restarting or Start from Scratch. Plans with run or continuation metadata recover their anchor; otherwise enter shifts already used once for a run first imported midway through.

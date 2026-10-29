@@ -95,6 +95,10 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/run-shifts.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/research-cleanup.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/date-time.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/plan-continuation.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/purchase-decisions.cjs
@@ -104,6 +108,8 @@ jobs:
           npm run build
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/run-shifts-dom.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/time-display-dom.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/search-pool.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

@@ -35,6 +35,8 @@ async function search(raw,result,{maxMs=300000,absoluteDeadline=Infinity}={},pro
   bestState=paid.s;best={...best,actions,end:paid.s.t,seconds:paid.s.t-paid.c.start,switches:paid.s.stage,soulCost:paid.s.lost,finalTE:S.teByEgg(paid.s,paid.c),pendingTE:S.totalTE(paid.s,paid.c)-paid.c.claimedTotal,finalCash:paid.s.cash,finalStats:S.stats(paid.s,paid.c),shipPlan:Ships.summary(actions),actualResearchSales:sales.size,frontier:[{switches:paid.s.stage,seconds:paid.s.t-paid.c.start,soulCost:paid.s.lost}],validatedReplay:true};
   delete best.summary;delete best.shiftPlans;delete best.selectedSwitches;delete best.recommendedSwitches;delete best.shiftComparisonVersion;
  };
+ const marker=result.actions[0]?.routeSearch;
+ if(marker){const cleaned=R.cleanResearch(raw,{state:bestState,context:null,route:marker.sequence,count:marker.researchSales});if(cleaned.state!==bestState)accept(cleaned.state,cleaned.context);}
  while(session.index<definitionsNow.length&&Date.now()<deadline&&!cancelled()){
   const definition=definitionsNow[session.index],{s,c}=prefix(raw,session.source,definition.first),suffix=session.source.slice(definition.last+1);
   let local=session.blocks[session.index];if(!local)local=session.blocks[session.index]=Finite.fresh(definition.actions);
