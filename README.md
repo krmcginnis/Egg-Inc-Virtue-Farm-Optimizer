@@ -26,8 +26,8 @@ choose **Use Remaining Plan** or **Keep Original Plan**. Visit labels restart
 from the current farm; the comparison shows total shifts used and remaining.
 **Return to Previous Plan** restores the original after applying a replacement.
 **Save Plan** retains progress, launch counts, the comparison, and any proposed
-replacement. These are fastest-found plans within the search budget, not a proof
-of the globally fastest sequence.
+replacement. Recommendations favor the fewest shifts within 5% of the fastest
+remaining duration found. The bounded search does not prove a globally optimal sequence.
 
 **Use Remaining Plan** immediately shows the next planned step from the checked
 farm. Refreshing may return the same backup; it remains usable when it is at
@@ -75,8 +75,12 @@ The game model uses pinned Wasmegg data and reference code. Third-party notices 
 
 Automatic Planning compares farm orders, numbers of upgrade visits, purchases,
 and departure timing within Maximum New Shifts (default 12). The maximum is a
-ceiling. Purchase Timeline shows up to three fastest complete plans found with
-distinct shift counts, sorted by finish time, with fewer shifts preferred when times tie.
+ceiling. Purchase Timeline recommends the fewest shifts among complete plans
+within 5% of the fastest completion time found. The allowance uses elapsed plan
+duration (remaining duration for reoptimization) and always references the fastest
+plan, so it cannot compound. Up to three distinct shift counts are retained,
+including both the recommendation and the fastest option. For one shift count,
+the fastest paid plan is still preferred.
 Each choice has its own summary, Quick Guide, and JSON/PDF exports. Saved plans
 retain every choice; older single plans and sale comparisons can also be loaded
 and replayed.
@@ -123,11 +127,14 @@ inside long funding waits. Conservative mathematical bounds skip branches that
 cannot improve retained plans. Research multipliers and exact TE allocation are
 computed with less repeated work. See [search research and limits](SEARCH-RESEARCH.md).
 
-The app uses two independent background search workers when the browser reports
-at least four logical cores, otherwise one. Workers share independently replayed
-complete plans under the same time budget. Stop & Keep Best retains verified
-candidates, including when another worker fails. Higher core counts do not imply
-a guaranteed speedup or a globally optimal result.
+The app uses Deep search with four independent background workers and a shared
+three-minute budget. If a worker cannot start, the remaining workers continue.
+Workers share independently replayed complete plans and resume unfinished
+refinement comparisons without repeating completed trials. Deep search retains
+up to 32 paths, compares purchase packages at depths 2, 4, and 6, and reserves
+time for refinement across eight candidate roots, with up to 120 slices per
+worker. Stop & Keep Best retains verified candidates. More workers and deeper
+search do not guarantee a faster plan or a globally optimal result.
 
 Reoptimizing a checked farm also retimes compatible saved shift-count alternatives
 as starting candidates. The current farm, original shift allowance and remaining
@@ -178,7 +185,7 @@ With sleep enabled, the route search reserves early Resilience alternatives when
 owned silos cannot cover the remaining nights. Paid funding waits also expose
 awake departures before bedtime, at wake time, and at a change in research-sale
 pricing. These proposals are compared through complete plans within the existing
-90-second budget; they are not mandatory visits or extra shifts.
+three-minute budget; they are not mandatory visits or extra shifts.
 
 An existing replay-verified result can be retained when rerunning identical
 inputs. When only the starting earnings gear improves, that result may propose

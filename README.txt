@@ -203,3 +203,9 @@ Developers use npm ci and npm run build to generate app.js and worker-source.js.
 Run checks appropriate to the change. npm run package builds a verified ZIP;
 Node and Python are development tools, not requirements for normal app use.
 See README.md, AGENTS.md, and GitHub-Setup.md for development and release steps.
+
+DEEP SEARCH (v1.2)
+The planner uses four background workers and a shared three-minute search budget.
+Stop & Keep Best retains completed plans. The recommended plan uses the fewest
+shifts within 5% of the fastest completion time found; the fastest option remains
+available. Results are bounded search results, not proof of a global optimum.

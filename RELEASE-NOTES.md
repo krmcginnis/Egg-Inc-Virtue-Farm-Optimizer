@@ -1,3 +1,11 @@
+# v1.2.0
+
+- Use the benchmarked Deep search profile with four background workers and a shared three-minute budget. Compare wider route choices, purchase packages up to six actions deep, and more refinement roots and slices.
+- Resume paid refinement comparisons between slices instead of repeating completed trials. Coordinate partial work across workers and keep independently replayed complete plans when stopping or when a sibling worker fails.
+- Recommend the fewest shifts among plans within 5% of the fastest completion time found. Always measure against the fastest duration, retain that option, and distinguish Recommended from Fastest Found. Manual selections survive save/load.
+- In the hypothetical fresh 160-to-200 TE benchmark with 12 shifts available, Deep with four workers found an 11-shift plan only 39 seconds behind the fastest 12-shift result. This was one measured case; search remains bounded and does not prove global optimality.
+- Install through Update App → Update & Restart, then reoptimize the remaining plan or start a new search to use Deep search and the new recommendation rule.
+
 # v1.1.5
 
 - Compare every legal next productive research level at each eligible Curiosity visit through the complete paid plan before short-term purchase rankings can discard it. Compare positions before, between, and after selected research, immediate versus Friday-sale purchases, and retained versus retimed calendar waits.

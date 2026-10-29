@@ -7,7 +7,7 @@ self.onmessage=async({data})=>{
  if(data.cancel){cancelled=true;return;}
  if(data.seed){seeds.push(data.seed);if(seeds.length>4)seeds.shift();return;}
  cancelled=false;seeds=[];
- const options={...data.options,...(data.options?.shareCandidates?{onCandidate:candidate=>self.postMessage({type:'candidate',candidate}),takeIncumbents:()=>seeds.splice(0)}:{}),...(data.options?.coordinateTasks?{claimTask:key=>new Promise(resolve=>{const id=++nextClaim;claims.set(id,resolve);self.postMessage({type:'task-claim',id,key});}),releaseTask:key=>self.postMessage({type:'task-release',key})}:{})};
+ const options={...data.options,...(data.options?.shareCandidates?{onCandidate:candidate=>self.postMessage({type:'candidate',candidate}),takeIncumbents:()=>seeds.splice(0)}:{}),...(data.options?.coordinateTasks?{claimTask:key=>new Promise(resolve=>{const id=++nextClaim;claims.set(id,resolve);self.postMessage({type:'task-claim',id,key});}),releaseTask:(key,complete=true)=>self.postMessage({type:'task-release',key,complete})}:{})};
  const requestDeadline=options.absoluteDeadline??Date.now()+Number(options.maxMs??90000);
  const verify=async(config,result)=>{
   if(options.disableExactRefinement||options.portfolioVariant||result?.solverVersion!==2||cancelled||Number(options.maxMs??90000)<5000)return result;

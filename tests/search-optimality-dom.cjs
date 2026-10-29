@@ -59,6 +59,22 @@ async function exportPlan(){
   }
   assert.equal(backupPosts,3);
 
+  // Recommendation and fastest finish are separate. A manual fastest choice
+  // survives save/load while the slower, fewer-shift plan stays recommended.
+  const preference=require('./shift-plans.cjs').preferenceCase(),ShiftPlans=require('../src/shift-plans.cjs');
+  const preferred=ShiftPlans.create(preference.entries);
+  await load({version:1,config:preference.raw,result:preferred});
+  assert.equal(w.VirtueApp.getResult().switches,2);
+  assert.match(query('[data-shifts="2"]').textContent,/Recommended/);
+  assert.doesNotMatch(query('[data-shifts="2"]').textContent,/Fastest Found/);
+  assert.match(query('[data-shifts="2"]').textContent,/5\.00%/);
+  assert.match(query('[data-shifts="5"]').textContent,/Fastest Found/);
+  assert.doesNotMatch(query('[data-shifts="5"]').textContent,/Recommended/);
+  assert.match(query('.research-sale-comparison .hint').textContent,/fewest shifts.*5%/);
+  query('[data-shifts="5"]').click();
+  const preferredSaved=await exportPlan();await load(preferredSaved);
+  assert.equal(w.VirtueApp.getResult().switches,5);assert.equal(w.VirtueApp.getResult().recommendedSwitches,2);
+
   const replay=R.replay(fixture.config,fixture.result.actions,true),later=S.buy(replay.s,replay.c,{type:'shift',egg:S.EGGS.indexOf('integrity')});
   const alternate={...fixture.result,end:later.t,seconds:later.t-fixture.result.start,switches:later.stage,actions:S.history(later).map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:fixture.result.actions[0].routeSearch})};
   const comparison={...fixture,result:{...fixture.result,shiftPlans:[{switches:fixture.result.switches,plan:fixture.result},{switches:alternate.switches,plan:alternate}],selectedSwitches:fixture.result.switches,recommendedSwitches:fixture.result.switches,shiftComparisonVersion:1}};

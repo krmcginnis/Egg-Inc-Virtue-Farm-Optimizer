@@ -2,6 +2,7 @@
 const S=require('./simulator.cjs'),R=require('./route-solver.cjs'),Schedules=require('./schedule-proposals.cjs'),Finite=require('./finite-purchases.cjs'),Incumbents=require('./plan-incumbents.cjs'),Quality=require('./search-quality.cjs');
 const Bounds=require('./search-bounds.cjs');
 const Ships=require('./ships.cjs');
+const ShiftPlans=require('./shift-plans.cjs');
 function definitions(actions,size=5){
  const blocks=[];let run=[];
  const flush=()=>{for(let offset=0;offset<run.length;offset+=size){const part=run.slice(offset,offset+size);if(part.length>1){let first=part[0];while(first>0&&actions[first-1].type==='wait'&&!/interaction time|Switch overhead/.test(actions[first-1].reason||'')&&!Schedules.deliveryWait(actions[first-1]))first--;blocks.push({first,last:part.at(-1),actions:part.map(i=>actions[i])});}}run=[];};
@@ -53,7 +54,7 @@ async function search(raw,result,{maxMs=300000,absoluteDeadline=Infinity}={},pro
  session.complete=session.index===definitionsNow.length;session.scope='All subsets and legal orders in each declared block of up to five purchases; earliest-affordable execution; fixed source route and suffix; preserve/retime calendar policies';
  session.totalBlocks=definitionsNow.length;session.completedBlocks=session.index;
  // Keep all alternate shift-count plans, replacing only an improved winner.
- if(result.shiftPlans){const entries=result.shiftPlans.map(entry=>entry.switches===best.switches?{...entry,plan:{...best,shiftPlans:undefined}}:entry);best={...best,shiftPlans:entries,selectedSwitches:best.switches,recommendedSwitches:result.recommendedSwitches,shiftComparisonVersion:1};}
+ if(result.shiftPlans){const entries=result.shiftPlans.map(entry=>entry.switches===best.switches?{...entry,plan:{...best,shiftPlans:undefined}}:entry);best=ShiftPlans.select({shiftPlans:entries},best.switches);}
  const verification={...session,globalOptimalityProven:false};
  best={...best,optimality:Quality.measure(raw,best),verification,termination:cancelled()?'verification paused with best plan':session.complete?'declared purchase blocks exhausted':'verification budget reached'};
  if(best.shiftPlans)best.shiftPlans=best.shiftPlans.map(entry=>entry.switches===best.switches?{...entry,plan:{...entry.plan,optimality:best.optimality,verification,termination:best.termination}}:entry);

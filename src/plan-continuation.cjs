@@ -187,7 +187,8 @@ async function search(request,options={},progress=()=>{},cancelled=()=>false){
  if(!options.disableSavedAlternatives)try{retained=alternatives(request,prepared,{checkpoint:()=>{if(cancelled()||Date.now()>deadline)throw Error('Saved alternative comparison interrupted.');}});}catch{}
  const result=await O.solve(prepared.config,{...options,incumbent:originalRoute?{config:prepared.config,result:originalRoute}:undefined,incumbents:retained.map(x=>({config:prepared.config,result:x.plan}))},progress,cancelled);
  const checked=verified(prepared.config,result);
- if(originalRoute&&checked.end>originalRoute.end+.01)throw Error('The remaining search discarded its validated original-route candidate.');
+ const fastest=checked.shiftPlans?ShiftPlans.fastest(checked.shiftPlans).plan:checked;
+ if(originalRoute&&fastest.end>originalRoute.end+.01)throw Error('The remaining search discarded its validated original-route candidate.');
  return {...prepared,report:undefined,result:checked,baseline:originalRoute,baselineError,retainedAlternatives:retained.map(({plan,...summary})=>summary)};
 }
 module.exports={prepare,baseline,verified,search,alternatives,sourceKey};

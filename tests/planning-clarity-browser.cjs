@@ -93,7 +93,7 @@ const root = path.resolve(__dirname, "..");
     assert.deepEqual(await page.evaluate(()=>testWorker.lastMessage.options),{width:32,branches:12,maxDepth:1200,maxMs:90000});
     assert.equal(await page.evaluate(()=>testWorker.lastMessage.config.plan.searchEffort),'balanced');
     await page.evaluate(() => testWorker.onmessage({ data: { type: "progress", progress: { phase: "route-search", researchSales: 2, stage: "C2", explored: 2500, bestSeconds: 86400 } } }));
-    assert.equal(await page.locator("#run-summary").innerText(), "Finding Fastest Plan · C2");
+    assert.equal(await page.locator("#run-summary").innerText(), "Finding Best Plan · C2");
     assert.equal(await page.locator("#run-progress").getAttribute("value"), null);
     assert.equal(await page.locator("#search-best").innerText(), "1d");
     assert.equal(await page.locator("#search-stage").innerText(), "C2 · Purchases and Departure Timing");

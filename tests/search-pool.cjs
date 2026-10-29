@@ -24,19 +24,19 @@ async function run(){
  pool.receive(1,{type:'error',error:'Simulated sibling failure'});assert.equal(reply,undefined);pool.receive(0,{type:'result',result:test.plan});assert.ok(reply.result.validatedReplay);assert.equal(reply.result.end,test.plan.end);assert.ok(reply.result.search.parallel.rejected>=2);pool.terminate();assert.ok(fake.every(w=>w.stopped));
  assert.equal(pool.taskStats.releasedOnFailure,1);assert.equal(pool.tasks.has('failed-work'),false);assert.equal(pool.taskStats.duplicatesAvoided,1);
  async function execute(request,stop=false){
-  const search=new SearchPool(factory,{workers:stop?4:2});
+  const search=new SearchPool(factory,{workers:4});
   try{return await new Promise((resolve,reject)=>{
    const timeout=setTimeout(()=>{search.terminate();reject(Error('Parallel worker test timed out'));},30000);
    search.onmessage=({data})=>{if(data.type==='progress')return;clearTimeout(timeout);resolve(data);};search.postMessage(request);
    if(stop)setTimeout(()=>search.postMessage({cancel:true}),400);
   });}finally{search.terminate();}
  }
- const request={config:test.raw,options:{maxMs:5000,width:4,incumbent:{config:test.raw,result:test.plan}}};
+ const request={config:test.raw,options:{maxMs:5000,width:32,deepSearch:true,incumbent:{config:test.raw,result:test.plan}}};
  for(const stop of [false,true]){
-  const data=await execute(request,stop);assert.equal(data.type,'result',data.error);assert.ok(data.result.end<=test.plan.end+.01);assert.equal(data.result.search.parallel.workers,stop?4:2);if(!stop)assert.ok(data.result.explored>0);
+  const data=await execute(request,stop);assert.equal(data.type,'result',data.error);assert.ok(data.result.end<=test.plan.end+.01);assert.equal(data.result.search.parallel.workers,4);assert.equal(data.result.search.deepSearch,true);assert.equal(data.result.search.effectiveWidth,32);if(!stop)assert.ok(data.result.explored>0);
   for(const {plan} of data.result.shiftPlans){const paid=R.replay(test.raw,plan.actions,true);assert.ok(S.reached(paid.s,paid.c));assert.equal(paid.s.t,plan.end);}
  }
- const remaining=require('./search-refinements.cjs').savedAlternatives(),continued=await execute({continuation:remaining,options:{maxMs:5000,width:4}});
+ const remaining=require('./search-refinements.cjs').savedAlternatives(),continued=await execute({continuation:remaining,options:{maxMs:5000,width:32,deepSearch:true}});
  assert.equal(continued.type,'continuation',continued.error);assert.equal(continued.continuation.sourceKey,require('../src/plan-continuation.cjs').sourceKey(remaining));
  require('../src/plan-continuation.cjs').verified(continued.continuation.config,continued.continuation.result);
  assert.ok(continued.continuation.result.search.parallel.verified>0);

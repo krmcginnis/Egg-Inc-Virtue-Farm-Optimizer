@@ -6,7 +6,7 @@ function count(cores){return Number(cores)>=4?2:1;}
 class SearchPool{
  constructor(factory,{workers=count(globalThis.navigator?.hardwareConcurrency)}={}){
   this.workers=[];this.best=new Map();this.done=new Set();this.responses=[];this.verified=0;this.rejected=0;this.contributors=new Set();this.closed=false;
-  this.tasks=new Map();this.taskStats={claimed:0,duplicatesAvoided:0,completed:0,releasedOnFailure:0};
+  this.tasks=new Map();this.taskStats={claimed:0,duplicatesAvoided:0,completed:0,resumed:0,releasedOnFailure:0};
   for(let i=0;i<Math.max(1,Math.min(4,Math.floor(Number(workers))||1));i++)try{const worker=factory();this.workers.push(worker);worker.onmessage=({data})=>this.receive(i,data);worker.onerror=error=>this.receive(i,{type:'error',error:error.message||'Search worker failed.'});}catch(error){if(!this.workers.length)throw error;break;}
  }
  postMessage(data){
@@ -33,12 +33,13 @@ class SearchPool{
  receive(index,data){
   if(this.closed||this.done.has(index))return;
   if(data.type==='task-claim'){
-   const task=this.tasks.get(data.key),granted=typeof data.key==='string'&&!task;
-   if(granted){this.tasks.set(data.key,{owner:index,complete:false,declined:new Set()});this.taskStats.claimed++;}
+   const task=this.tasks.get(data.key),resuming=task?.owner===index&&!task.complete&&task.paused,granted=typeof data.key==='string'&&(!task||resuming);
+   if(resuming){task.paused=false;this.taskStats.resumed++;}
+   else if(granted){this.tasks.set(data.key,{owner:index,complete:false,paused:false,declined:new Set()});this.taskStats.claimed++;}
    else if(task&&!task.declined.has(index)){task.declined.add(index);this.taskStats.duplicatesAvoided++;}
    this.workers[index].postMessage({taskReply:{id:data.id,granted,complete:!!task?.complete}});return;
   }
-  if(data.type==='task-release'){const task=this.tasks.get(data.key);if(task?.owner===index&&!task.complete){task.complete=true;this.taskStats.completed++;}return;}
+  if(data.type==='task-release'){const task=this.tasks.get(data.key);if(task?.owner===index&&!task.complete){if(data.complete===false)task.paused=true;else{task.complete=true;this.taskStats.completed++;}}return;}
   if(data.type==='progress'){if(index===0)this.onmessage?.({data:{...data,progress:{...data.progress,workers:this.workers.length}}});return;}
   if(data.type==='candidate'){this.accept(data.candidate,index);return;}
   this.responses.push(data);
@@ -48,12 +49,12 @@ class SearchPool{
   for(const [key,task] of this.tasks)if(task.owner===index&&!task.complete){this.tasks.delete(key);this.taskStats.releasedOnFailure++;}
   if(this.done.size!==this.workers.length)return;
   if(!this.best.size){this.onmessage?.({data:this.responses.find(x=>x.suggestion)||this.responses[0]||{type:'error',error:'No complete plan found.'}});return;}
-  const entries=[...this.best.values()].sort((a,b)=>R.better(a.state,b.state)?-1:R.better(b.state,a.state)?1:0).slice(0,3);
+  const entries=ShiftPlans.shortlist([...this.best.values()]);
   const islands=this.responses.map(x=>x.result?.search||x.continuation?.result?.search).filter(Boolean).map(s=>({variant:s.portfolioVariant||0,states:s.statesExamined||0,economics:s.purchaseEconomicsComparisons||0,packages:s.packageComparisons||0,researchInvestments:s.researchInvestmentComparisons||0,researchInvestmentReplays:s.researchInvestmentReplays||0,researchInvestmentPasses:s.researchInvestmentPasses||0,timings:s.additionalTimingComparisons||0,fineTimings:s.fineTimingComparisons||0,calculatedTimings:s.calculatedTimingComparisons||0,routes:s.routeNeighborhoodComparisons||0,recovered:s.reservedComparisons||0,imports:s.sharedImports||0,boundChecks:s.boundChecks||0,boundPruned:s.boundPruned||0}));
   const parallel={workers:this.workers.length,contributors:this.contributors.size,verified:this.verified,rejected:this.rejected,tasks:{...this.taskStats},islands};
   const total=key=>islands.reduce((sum,island)=>sum+island[key],0),totals={statesExamined:total('states'),purchaseEconomicsComparisons:total('economics'),packageComparisons:total('packages'),researchInvestmentComparisons:total('researchInvestments'),researchInvestmentReplays:total('researchInvestmentReplays'),researchInvestmentPasses:total('researchInvestmentPasses'),additionalTimingComparisons:total('timings'),fineTimingComparisons:total('fineTimings'),calculatedTimingComparisons:total('calculatedTimings'),routeNeighborhoodComparisons:total('routes'),reservedComparisons:total('recovered'),sharedImports:total('imports'),boundChecks:total('boundChecks'),boundPruned:total('boundPruned')};
   const shiftPlans=entries.map(({plan})=>({switches:plan.switches,plan:{...plan,explored:totals.statesExamined,elapsedMs:Date.now()-this.started,search:{...plan.search,...totals,parallel}}}));
-  const result=ShiftPlans.select({shiftPlans,recommendedSwitches:shiftPlans[0].switches},shiftPlans[0].switches);
+  const result=ShiftPlans.create(shiftPlans);
   const continuation=this.responses.find(x=>x.type==='continuation')?.continuation;
   if(this.request.continuation&&!continuation){this.onmessage?.({data:this.responses.find(x=>x.type==='error')||{type:'error',error:'The remaining plan could not be verified.'}});return;}
   this.onmessage?.({data:continuation?{type:'continuation',continuation:{...continuation,result}}:{type:'result',result}});

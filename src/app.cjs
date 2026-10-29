@@ -40,7 +40,7 @@ let planProgress = null;
 let remainingProposal = null, continuationContext = null;
 let runAccount = "", unboundRunShifts = null;
 let checkingPurchases = false;
-const searchOptions = { width: 32, branches: 12, maxDepth: 1200, maxMs: 90e3 };
+const searchOptions = { width: 32, branches: 12, maxDepth: 1200, maxMs: 180e3, deepSearch: true };
 let activeLoadoutTab = "current";
 const labels = { account: "Account", farm: "Virtue Farm", planning: "Planning", results: "Purchase timeline", help: "How it works" };
 const colNames = { earnings: "Earnings", awayEarnings: "Away earnings", ihr: "Internal hatchery", elr: "Egg laying", shippingCap: "Shipping capacity", habCap: "Hab capacity", vehicleCost: "Vehicle cost", habCost: "Hab cost", researchCost: "Research cost" };
@@ -165,7 +165,7 @@ function tab(name, focusHeading = false, resumeScroll = false) {
 function updatePrimaryAction() {
   const next = {account:"farm", farm:"planning"}[document.querySelector('[data-tab].active')?.dataset.tab];
   const reviewing = !!next;
-  $("optimize").textContent = next ? "Continue to " + labels[next] : "Find Fastest Plan";
+  $("optimize").textContent = next ? "Continue to " + labels[next] : "Find Best Plan";
   $("optimize").disabled = !!worker || !!importingBackup || (!reviewing && !!invalidField);
 }
 function readNumber(id, name, min = 0, max = Infinity, integer = false) {
@@ -1039,7 +1039,7 @@ function refresh() {
     updatePrimaryAction();
     if (!worker && !dirty) {
       $("run-summary").textContent = result ? duration(result.seconds) + " to target · " + result.switches + " switches" : "Ready to Plan";
-      $("run-detail").textContent = result ? "Validated plan · " + result.pendingTE + " pending TE" : "Search for the fastest plan to your Truth Egg target";
+      $("run-detail").textContent = result ? "Validated plan · " + result.pendingTE + " pending TE" : "Search for a plan to your Truth Egg target";
     }
     return true;
   } catch (e) {
@@ -1313,15 +1313,17 @@ function renderResult() {
   let alternatives;
   if(r.shiftPlans){
     const choices=el("section",undefined,"card research-sale-comparison"),heading=el("h2",continuationContext?"Plans by Remaining Shift Count":"Plans by Shift Count"),row=el("div",undefined,"research-sale-options");
-    const fastest=r.shiftPlans.find(entry=>entry.switches===r.recommendedSwitches)||r.shiftPlans[0];
-    choices.append(heading,el("p","Up to three fastest complete plans with distinct shift counts. Finish time comes first; equal times favor fewer shifts.","hint"));
+    const fastest=ShiftPlans.fastest(r.shiftPlans);
+    choices.append(heading,el("p","The recommended plan uses the fewest shifts among plans within 5% of the fastest completion time found. Up to three complete plans are shown, including the fastest option.","hint"));
     for(const entry of r.shiftPlans){
       const button=el("button",undefined,"research-sale-option");button.type="button";button.dataset.shifts=entry.switches;button.setAttribute("aria-pressed",String(entry.switches===r.selectedSwitches));
       button.append(el("strong",entry.switches+" New Shift"+(entry.switches===1?"":"s")),el("span",duration(entry.plan.seconds)),el("span","Ends "+timestamp(entry.plan.end,zone),"research-sale-end"));
-      if(entry.switches===r.recommendedSwitches)button.append(el("span","Fastest Found","research-sale-best"));
+      if(entry.switches===r.recommendedSwitches)button.append(el("span","Recommended","research-sale-best"));
+      if(entry===fastest)button.append(el("span","Fastest Found","research-sale-best"));
       else {
         const extraSeconds=entry.plan.seconds-fastest.plan.seconds,shiftDifference=entry.switches-fastest.switches;
-        const time=extraSeconds>1e-6?duration(extraSeconds)+" slower":"Same finish time";
+        const percent=fastest.plan.seconds>0?" ("+(extraSeconds/fastest.plan.seconds*100).toFixed(2)+"%)":"";
+        const time=extraSeconds>1e-6?duration(extraSeconds)+" slower"+percent:"Same finish time";
         const shifts=shiftDifference?Math.abs(shiftDifference)+" "+(shiftDifference<0?"fewer":"more")+" shift"+(Math.abs(shiftDifference)===1?"":"s"):"";
         button.append(el("span",[time,shifts].filter(Boolean).join(" \xB7 "),"research-sale-delta"));
       }
@@ -1679,8 +1681,8 @@ function startSearchClock({verifying = false, resuming = false} = {}) {
   checkingPurchases = verifying;
   searchBestSeconds = verifying ? result.seconds : null;
   searchContext = verifying ? "Comparing purchase orders; the current best plan is retained" : "Evaluating affordable purchases, event waits, and switches";
-  $("search-status-heading").textContent = verifying ? "Checking Purchase Order" : resuming ? "Reoptimizing Remaining Plan" : "Finding Fastest Plan";
-  $("search-description").textContent = verifying ? "Checks selected purchase groups from this plan's starting farm. Stop & Keep Best pauses the check. Save Plan keeps progress for another session. Other routes and departure times remain outside this check." : resuming ? "Searches from the checked farm using the remaining shift allowance. Compare the new schedule with the original route before choosing a plan." : "Compares routes, purchases, weekly sale timing, and departures using your settings. Stop & Keep Best retains the fastest complete plans found so far.";
+  $("search-status-heading").textContent = verifying ? "Checking Purchase Order" : resuming ? "Reoptimizing Remaining Plan" : "Finding Best Plan";
+  $("search-description").textContent = verifying ? "Checks selected purchase groups from this plan's starting farm. Stop & Keep Best pauses the check. Save Plan keeps progress for another session. Other routes and departure times remain outside this check." : resuming ? "Searches from the checked farm using the remaining shift allowance. Compare the new schedule with the original route before choosing a plan." : "Deep search compares routes, purchases, weekly sale timing, and departures using four workers with a three-minute budget. Stop & Keep Best retains complete alternatives and recommends the fewest shifts within 5% of the fastest finish found.";
   $("search-stage").textContent = verifying ? "Preparing Purchase Groups" : "Preparing Farm and Checking Limits";
   $("search-openings").textContent = "Not Started";
   delete $("search-openings").dataset.total;
@@ -1737,7 +1739,7 @@ function optimize(request) {
   $("run-summary").textContent = verifying ? "Checking Purchase Order\u2026" : resuming ? "Reoptimizing Remaining Plan\u2026" : "Searching\u2026";
   startSearchClock({verifying,resuming});
   const blob = new Blob([globalThis.VIRTUE_WORKER_SOURCE], { type: "text/javascript" }), url = URL.createObjectURL(blob);
-  try { worker = verifying?new Worker(url):new SearchPool(()=>new Worker(url)); }
+  try { worker = verifying?new Worker(url):new SearchPool(()=>new Worker(url),{workers:4}); }
   catch (error) {
     busy(false);
     if (verifying) { purchaseCheckFailed(error.message); return; }
@@ -1770,7 +1772,7 @@ function optimize(request) {
         $("search-stage").textContent=p.stage;
         $("search-openings").textContent=searchContext;
       } else if (p.phase === "route-search") {
-        $("run-summary").textContent = "Finding Fastest Plan · " + p.stage;
+        $("run-summary").textContent = "Finding Best Plan · " + p.stage;
         searchContext = Number(p.explored || 0).toLocaleString() + " purchase states examined";
         $("search-stage").textContent = p.stage + " · Purchases and Departure Timing";
         $("search-openings").textContent = searchContext;
@@ -1828,7 +1830,7 @@ function optimize(request) {
         renderResult();
         show(verifying?(result.verification?.complete?"Declared purchase blocks checked. The best plan passed replay validation; global optimality remains unverified.":"Purchase check paused. The best plan and remaining work are retained; Save plan keeps progress between sessions."):dirty ? "Plan completed and replay validation passed. Inputs changed during the run; this timeline uses the starting inputs." : "Plan completed and replay validation passed.");
         $("run-summary").textContent = duration(result.seconds) + " to target \xB7 " + result.switches + " switches";
-        $("run-detail").textContent = "Fastest plan found \xB7 " + result.actions.filter((a) => !["wait", "shift"].includes(a.type)).length + " purchases";
+        $("run-detail").textContent = "Validated plan found \xB7 " + result.actions.filter((a) => !["wait", "shift"].includes(a.type)).length + " purchases";
         if (dirty) markInputsChanged();
             }
     }

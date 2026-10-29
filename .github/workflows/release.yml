@@ -65,6 +65,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/route-solver.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/shift-plans.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/search-efficiency.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/search-quality.cjs
@@ -108,6 +110,10 @@ jobs:
           node tests/quick-guide-order.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/cooperative-refinement.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/deep-search-dom.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/run-shifts-dom.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

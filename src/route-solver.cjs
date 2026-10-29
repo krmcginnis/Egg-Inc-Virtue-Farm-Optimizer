@@ -16,7 +16,7 @@ const EarningsIncumbents=require('./earnings-incumbents.cjs');
 const Economics=require('./purchase-economics.cjs');
 const {Prefixes}=require('./schedule-prefixes.cjs');
 const Packages=require('./purchase-packages.cjs');
-const Adaptive=require('./adaptive-refinement.cjs');
+const Adaptive=require('./adaptive-refinement.cjs'),Cooperative=require('./cooperative-refinement.cjs');
 const Bounds=require('./search-bounds.cjs');
 const {Reserve}=require('./search-reserve.cjs');
 const Neighborhoods=require('./purchase-neighborhoods.cjs');
@@ -639,7 +639,8 @@ async function comparePurchasePackages(raw,item,deadline,control,{depth=3,limit=
   if(control.cancelled()||Date.now()>=deadline)break;
   const until=Date.now()+Math.max(1,(deadline-Date.now())/(anchors.length-i)),check=()=>{checkpoint();if(Date.now()>=until)throw Error('Purchase-package slice interrupted');};
   try{
-   const growthEnd=Date.now()+Math.max(1,(until-Date.now())*.25),grown=Packages.grow(anchors[i],c,{maxDepth:depth,keepCompletedOnStop:true,checkpoint:()=>{check();if(Date.now()>=growthEnd)throw Error('Purchase-package growth slice interrupted');}});
+   const growthEnd=Date.now()+Math.max(1,(until-Date.now())*.25),grown=Packages.grow(anchors[i],c,{maxDepth:depth,maxNodes:control.deepSearch?1024:128,keepCompletedOnStop:true,checkpoint:()=>{check();if(Date.now()>=growthEnd)throw Error('Purchase-package growth slice interrupted');}});
+   if(control.deepSearch){control.packageDepths={...control.packageDepths,[depth]:(control.packageDepths?.[depth]||0)+1};control.packageNodePeak=Math.max(control.packageNodePeak||0,grown.nodes);control.maxPackageLength=Math.max(control.maxPackageLength||0,...grown.candidates.map(x=>x.actions.length));}
    control.packageNodes=(control.packageNodes||0)+grown.nodes;
    const index=timeline.findIndex(a=>a.t>=anchors[i].t-.00001),suffix=index<0?[]:timeline.slice(index),shift=suffix.findIndex(a=>a.type==='shift');
    const leave=shift<0?suffix.filter(a=>['fuel','fuel-dump'].includes(a.type)):[...suffix.slice(0,shift).filter(a=>['fuel','fuel-dump'].includes(a.type)),...suffix.slice(shift)];
@@ -719,27 +720,27 @@ async function compareRouteNeighborhoods(raw,item,deadline,control,level){
 async function refineRemainingBudget(raw,byShift,byRoute,deadline,control,progress){
  const ids=new WeakMap(),identities=new WeakMap();let next=0;
  const jobs=()=>{
-  const roots=[...new Set([...byShift.values(),...[...byRoute.values()].sort((a,b)=>a.state.t-b.state.t)])].slice(0,4),output=[];
+  const roots=[...new Set([...byShift.values(),...[...byRoute.values()].sort((a,b)=>a.state.t-b.state.t)])].slice(0,control.deepSearch?8:4),output=[];
   for(const item of roots){
    if(!ids.has(item.state))ids.set(item.state,++next);const id=ids.get(item.state);
    for(let level=0;level<3;level++){
-    if(level===0&&control.researchInvestments!==false)output.push({id:id+':investments',kind:'investments',level,run:end=>compareResearchInvestments(raw,item,end,control)});
-    if(control.packageSearch!==false)output.push({id:id+':packages:'+level,kind:'packages',level,run:end=>comparePurchasePackages(raw,item,end,control,{depth:level+2,limit:3+level,timing:[90,180,300][level]})});
-    if(control.economicsEnabled!==false)output.push({id:id+':economics:'+level,kind:'economics',level,run:end=>comparePurchaseEconomics(raw,item,end,control,{offset:[0,16,32][level],limit:[16,32,56][level],maxProposals:96,passes:1})});
-    if(control.extraTimings!==false)output.push({id:id+':timing:'+level,kind:'timing',level,run:end=>compareAdditionalTimings(raw,item,end,control,[{research:90,vehicles:90,refineLevel:0},{research:300,vehicles:120,refineLevel:1},{research:120,vehicles:300,refineLevel:2}][level])});
-    if(control.neighborhoods!==false)output.push({id:id+':neighborhood:'+level,kind:'neighborhood',level,run:end=>comparePurchaseEconomics(raw,item,end,control,{neighborhoods:true,limit:8+level*4,maxProposals:48,passes:1})});
-    if(control.routeNeighborhoods&&Strategy.automatic(raw.plan||{}))output.push({id:id+':routes:'+level,kind:'routes',level,run:end=>compareRouteNeighborhoods(raw,item,end,control,level)});
+    if(level===0&&control.researchInvestments!==false)output.push({id:id+':investments',kind:'investments',level,run:(end,active=control)=>compareResearchInvestments(raw,item,end,active)});
+    if(control.packageSearch!==false)output.push({id:id+':packages:'+level,kind:'packages',level,run:(end,active=control)=>comparePurchasePackages(raw,item,end,active,{depth:control.deepSearch?[2,4,6][level]:level+2,limit:3+level,timing:[90,180,300][level]})});
+    if(control.economicsEnabled!==false)output.push({id:id+':economics:'+level,kind:'economics',level,run:(end,active=control)=>comparePurchaseEconomics(raw,item,end,active,{offset:[0,16,32][level],limit:[16,32,56][level],maxProposals:96,passes:1})});
+    if(control.extraTimings!==false)output.push({id:id+':timing:'+level,kind:'timing',level,run:(end,active=control)=>compareAdditionalTimings(raw,item,end,active,[{research:90,vehicles:90,refineLevel:0},{research:300,vehicles:120,refineLevel:1},{research:120,vehicles:300,refineLevel:2}][level])});
+    if(control.neighborhoods!==false)output.push({id:id+':neighborhood:'+level,kind:'neighborhood',level,run:(end,active=control)=>comparePurchaseEconomics(raw,item,end,active,{neighborhoods:true,limit:8+level*4,maxProposals:48,passes:1})});
+    if(control.routeNeighborhoods&&Strategy.automatic(raw.plan||{}))output.push({id:id+':routes:'+level,kind:'routes',level,run:(end,active=control)=>compareRouteNeighborhoods(raw,item,end,active,level)});
    }
   }
-  for(const item of control.reserve?.peek(4)||[])output.push({id:'reserve:'+item.id,kind:'recovery',level:0,run:async end=>{
-   const paid=control.reserve.take(item.id);if(!paid||!control.canImprove(paid.state,paid.context,paid.route))return;
-   const checkpoint=()=>{if(control.cancelled()||Date.now()>=end)throw Error('Reserved branch comparison interrupted');};
+  for(const item of control.reserve?.peek(4)||[])output.push({id:'reserve:'+item.id,kind:'recovery',level:0,run:async (end,active=control)=>{
+   const paid=active.reserve.take(item.id);if(!paid||!active.canImprove(paid.state,paid.context,paid.route))return;
+   const checkpoint=()=>{if(active.cancelled()||Date.now()>=end)throw Error('Reserved branch comparison interrupted');};
    for(const timing of [{research:90,vehicles:120},{research:180,vehicles:180}]){
-    try{checkpoint();const state=seedRoute(paid.state,paid.context,timing,checkpoint,control.checkpoints);if(!state)continue;
-     control.reservedComparisons=(control.reservedComparisons||0)+1;if(control.worthwhile&&!control.worthwhile(state,paid.route))continue;
+    try{checkpoint();const state=seedRoute(paid.state,paid.context,timing,checkpoint,active.checkpoints);if(!state)continue;
+     active.reservedComparisons=(active.reservedComparisons||0)+1;if(active.worthwhile&&!active.worthwhile(state,paid.route))continue;
      const actions=S.history(state).map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:VERSION,sequence:paid.route,researchSales:paid.count}}),verified=replay(raw,actions,true);
-     if(verified.s.t!==state.t)throw Error('Reserved branch differs from independent replay');control.context=verified.c;control.route=paid.route;control.consider(verified.s);
-    }catch{}await control.yield();
+     if(verified.s.t!==state.t)throw Error('Reserved branch differs from independent replay');active.context=verified.c;active.route=paid.route;active.consider(verified.s);
+    }catch{}await active.yield();
    }
   }});
   const order=control.portfolioVariant%4===3?['investments','recovery','routes','neighborhood','packages','timing','economics']:control.portfolioVariant%4===1?['investments','timing','routes','recovery','neighborhood','economics','packages']:control.portfolioVariant%4===2?['investments','neighborhood','packages','recovery','routes','timing','economics']:[];
@@ -749,7 +750,7 @@ async function refineRemainingBudget(raw,byShift,byRoute,deadline,control,progre
    return {...job,taskKey:root?identities.get(root.state)+':'+job.kind+':'+job.level:null,priority:order.length?order.length-order.indexOf(job.kind):0};
   });
  };
- control.adaptive=await Adaptive.run({jobs,deadline,cancelled:control.cancelled,claim:control.claimTask?job=>job.taskKey?control.claimTask(job.taskKey):true:undefined,release:control.releaseTask?job=>job.taskKey&&control.releaseTask(job.taskKey):undefined,quality:()=>({revision:control.improvements,best:Math.min(...[...byShift.values()].map(x=>x.state.t))}),yield:control.yield,progress:job=>progress({phase:'route-search',stage:'Refinement',phaseLabel:'Comparing '+({investments:'productive research through the full plan',packages:'larger paid purchase packages',economics:'additional purchase orders',timing:'additional departure timings',neighborhood:'larger purchase neighborhoods',recovery:'reserved purchase branches',routes:'nearby farm orders'}[job.kind]),elapsedMs:Date.now()-control.started,explored:control.explored})});
+ control.adaptive=await (control.deepSearch?Cooperative:Adaptive).run({jobs,control,maxJobs:control.deepSearch?120:36,deadline,cancelled:control.cancelled,claim:control.claimTask?job=>job.taskKey?control.claimTask(job.taskKey):true:undefined,release:control.releaseTask?(job,complete=true)=>job.taskKey&&control.releaseTask(job.taskKey,complete):undefined,quality:()=>({revision:control.improvements,best:Math.min(...[...byShift.values()].map(x=>x.state.t))}),yield:control.yield,progress:job=>progress({phase:'route-search',stage:'Refinement',phaseLabel:'Comparing '+({investments:'productive research through the full plan',packages:'larger paid purchase packages',economics:'additional purchase orders',timing:'additional departure timings',neighborhood:'larger purchase neighborhoods',recovery:'reserved purchase branches',routes:'nearby farm orders'}[job.kind]),elapsedMs:Date.now()-control.started,explored:control.explored})});
 }
 function cleanResearch(raw,item,{checkpoint=()=>{}}={}){
  const source=S.history(item.state),marked=actions=>actions.map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:VERSION,sequence:item.route,researchSales:item.count}});
@@ -773,14 +774,14 @@ function finalize(raw,best,c,route,count,control,termination){
  actions=actions.map((a,i)=>i===0?{...a,initialSiloRule:'one',routeSearch:{version:VERSION,sequence:route,researchSales:count}}:a);
  const checked=replay(raw,actions,false),s=checked.s;
  const result={version:1,solverVersion:VERSION,initialSiloRule:'one',openingTimeLimits:false,
-  objective:'Minimum completion time to the TE target; equal times favor fewer shifts, silo coverage up to eight silos, fewer earning breaks, then fewer purchases',method:'Bounded farm-order, purchase, and departure search; fastest plans found, not a proof of global optimality',
+  objective:ShiftPlans.OBJECTIVE,method:'Bounded farm-order, purchase, and departure search; fastest plans per shift count found, not a proof of global optimality',
   researchSales:count,actualResearchSales:usedSales(actions,c),researchDeadline:c.researchDeadline,route:route.slice(),
   termination,explored:control.explored,elapsedMs:Date.now()-control.started,start:c.start,end:s.t,seconds:s.t-c.start,switches:s.stage,soulCost:s.lost,target:c.target,
   finalTE:S.teByEgg(s,c),pendingTE:S.totalTE(s,c)-c.claimedTotal,finalCash:s.cash,finalStats:S.stats(s,c),actions,
   frontier:[{switches:s.stage,seconds:s.t-c.start,soulCost:s.lost}],sourceCommit:S.D.commit,validatedReplay:true,
-  artifactRecommendations:best.artifactRecommendations||null,...(best.siloComfort?{siloComfort:best.siloComfort}:{}),artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions),search:{automaticVisitTiming:true,routesCompared:control.routesCompared,statesExamined:control.explored,continuationsCompared:control.continuationsCompared,
+  artifactRecommendations:best.artifactRecommendations||null,...(best.siloComfort?{siloComfort:best.siloComfort}:{}),artifactSets:S.recordedArtifactSets(actions),shipPlan:Ships.summary(actions),search:{effectiveWidth:control.width,deepSearch:!!control.deepSearch,automaticVisitTiming:true,routesCompared:control.routesCompared,statesExamined:control.explored,continuationsCompared:control.continuationsCompared,
    portfolioVariant:control.portfolioVariant,calculatedTimingComparisons:control.calculatedTimingComparisons||0,sharedImports:control.sharedImports||0,checkpoints:control.checkpoints?.summary(),lookaheadNodes:control.lookaheadNodes,lookaheadChains:control.lookaheadChains,lookaheadComparisons:control.lookaheadComparisons,
-   openingComparisons:control.openingComparisons,conservativeComparisons:control.conservativeComparisons,physicalComparisons:control.physicalComparisons,deliveryResearchComparisons:control.deliveryResearchComparisons,researchOrderComparisons:control.researchOrderComparisons,researchValueComparisons:control.researchValueComparisons,researchInvestmentComparisons:control.researchInvestmentComparisons||0,researchInvestmentReplays:control.researchInvestmentReplays||0,researchInvestmentPasses:control.researchInvestmentPasses||0,purchaseEconomicsComparisons:control.purchaseEconomicsComparisons,economicsReplays:control.economicsReplays,economicsPrefixHits:control.economicsPrefixHits,economicsPrefixMisses:control.economicsPrefixMisses,refinementPrefixHits:control.refinementPrefixHits,refinementPrefixMisses:control.refinementPrefixMisses,packageNodes:control.packageNodes,packageComparisons:control.packageComparisons,packageReplays:control.packageReplays,additionalTimingComparisons:control.additionalTimingComparisons,fineTimingComparisons:control.fineTimingComparisons,routeNeighborhoodComparisons:control.routeNeighborhoodComparisons,adaptive:control.adaptive,boundChecks:control.boundChecks,boundPruned:control.boundPruned,reserve:control.reserve?.summary(),reservedComparisons:control.reservedComparisons,recoveryComparisons:control.recoveryComparisons,breakpointAnchors:control.breakpointAnchors,breakpointComparisons:control.breakpointComparisons,retainedPlans:control.retainedPlans,earningsAdaptations:control.earningsAdaptations}};
+   openingComparisons:control.openingComparisons,conservativeComparisons:control.conservativeComparisons,physicalComparisons:control.physicalComparisons,deliveryResearchComparisons:control.deliveryResearchComparisons,researchOrderComparisons:control.researchOrderComparisons,researchValueComparisons:control.researchValueComparisons,researchInvestmentComparisons:control.researchInvestmentComparisons||0,researchInvestmentReplays:control.researchInvestmentReplays||0,researchInvestmentPasses:control.researchInvestmentPasses||0,purchaseEconomicsComparisons:control.purchaseEconomicsComparisons,economicsReplays:control.economicsReplays,economicsPrefixHits:control.economicsPrefixHits,economicsPrefixMisses:control.economicsPrefixMisses,refinementPrefixHits:control.refinementPrefixHits,refinementPrefixMisses:control.refinementPrefixMisses,packageDepths:control.packageDepths,maxPackageLength:control.maxPackageLength,packageNodePeak:control.packageNodePeak,packageNodes:control.packageNodes,packageComparisons:control.packageComparisons,packageReplays:control.packageReplays,additionalTimingComparisons:control.additionalTimingComparisons,fineTimingComparisons:control.fineTimingComparisons,routeNeighborhoodComparisons:control.routeNeighborhoodComparisons,adaptive:control.adaptive,boundChecks:control.boundChecks,boundPruned:control.boundPruned,reserve:control.reserve?.summary(),reservedComparisons:control.reservedComparisons,recoveryComparisons:control.recoveryComparisons,breakpointAnchors:control.breakpointAnchors,breakpointComparisons:control.breakpointComparisons,retainedPlans:control.retainedPlans,earningsAdaptations:control.earningsAdaptations}};
  if(termination!=='Shared search candidate')result.optimality=Quality.measure(raw,result);
  return control.compactResults?result:{...result,summary:Summary.summarize(raw,result)};
 }
@@ -791,11 +792,11 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  let routeOptions=options.returnComparisons===true&&Strategy.automatic(raw.plan||{})?presetRoutes(raw):routes(raw),started=Date.now();let maxMs=S.number(options.maxMs??90000,'Search time',100,600000);
  if(Number.isFinite(options.absoluteDeadline))maxMs=Math.max(100,Math.min(maxMs,options.absoluteDeadline-started));
  const variant=Number(options.portfolioVariant)||0;if(variant%4===2)routeOptions=routeOptions.slice().reverse();else if(variant%4===3)routeOptions=[...routeOptions.filter((_,i)=>i%2),...routeOptions.filter((_,i)=>i%2===0)];
- const width=Math.min(16,S.number(options.width??12,'Search width',4,512,true));
+ const width=Math.min(options.deepSearch?32:16,S.number(options.width??12,'Search width',4,512,true));
  const entries=[],byShift=new Map(),byRoute=new Map(),searchContexts=[],control={started,width,explored:0,routesCompared:0,continuationsCompared:0,claimTask:options.claimTask,releaseTask:options.releaseTask,
   checkpoints:options.disableCheckpoints?null:new Checkpoints(),lookahead:!options.disableLookahead,lookaheadNodes:0,lookaheadChains:0,lookaheadComparisons:0,
   openingComparisons:0,conservativeComparisons:0,physicalComparisons:0,deliveryResearchComparisons:0,researchOrderComparisons:0,researchValueComparisons:0,researchInvestments:!options.disableResearchInvestments,researchInvestmentComparisons:0,researchInvestmentReplays:0,researchInvestmentPasses:0,purchaseEconomicsComparisons:0,economicsReplays:0,economicsPrefixHits:0,economicsPrefixMisses:0,schedulePrefixes:!options.disableSchedulePrefixes,verifyAllEconomics:!!options.verifyAllEconomics,refinementPrefixCache:!options.disableRefinementPrefixCache,refinementPrefixHits:0,refinementPrefixMisses:0,packageSearch:!options.disablePurchasePackages,extraTimings:!options.disableAdditionalTimings,economicsEnabled:!options.disableResearchValue,packageNodes:0,packageComparisons:0,packageReplays:0,additionalTimingComparisons:0,improvements:0,adaptive:null,recoveryComparisons:0,breakpointAnchors:0,breakpointComparisons:0,retainedPlans:0,earningsAdaptations:0,
-  compactResults:!!options.compactResults,portfolioVariant:variant,reserve:options.disableRecovery?null:new Reserve(),neighborhoods:!options.disableNeighborhoods,routeNeighborhoods:!options.disableRouteNeighborhoods,calculatedTiming:!options.disableCalculatedTiming,fineTiming:!options.disableFineTiming,fineTimingComparisons:0,routeNeighborhoodComparisons:0,boundChecks:0,boundPruned:0,reservedComparisons:0,cancelled,yield:()=>new Promise(r=>setTimeout(r,0))};let recommended=null,overall=null,retained=null;
+  deepSearch:!!options.deepSearch,compactResults:!!options.compactResults,portfolioVariant:variant,reserve:options.disableRecovery?null:new Reserve(),neighborhoods:!options.disableNeighborhoods,routeNeighborhoods:!options.disableRouteNeighborhoods,calculatedTiming:!options.disableCalculatedTiming,fineTiming:!options.disableFineTiming,fineTimingComparisons:0,routeNeighborhoodComparisons:0,boundChecks:0,boundPruned:0,reservedComparisons:0,cancelled,yield:()=>new Promise(r=>setTimeout(r,0))};let recommended=null,overall=null,retained=null;
  let pendingCandidate=null,lastCandidate=0;
  control.yield=async()=>{
   if(pendingCandidate&&options.onCandidate&&(Date.now()-lastCandidate>1500||lastCandidate===0)){
@@ -811,7 +812,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  };
  for(const count of options.returnComparisons===true?Plans.COUNTS:[3]){
   if(cancelled()&&!incumbents.some(item=>item.count===count)){entries.push({researchSales:count,status:'not-completed',error:'Search stopped before this sale option completed.'});continue;}
-  const deadline=started+maxMs*count/3*(options.returnComparisons===true?1:.72);let best=null,bestContext=null,bestRoute=null,lastError='';
+  const deadline=started+maxMs*count/3*(options.returnComparisons===true?1:options.deepSearch?.45:.72);let best=null,bestContext=null,bestRoute=null,lastError='';
   control.consider=state=>{
    if(!state||!complete(state,control.context))return;
    const item={state,context:control.context,route:control.route,count},previous=byShift.get(state.stage);
@@ -870,7 +871,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    // expensive first candidate must not hide every other C1/K1 combination.
    // Both physical orders get the same trials, interleaved for fairness.
    const openings=(Strategy.automatic(raw.plan||{})?contexts.filter(x=>Staged.supportsFixed(x.initial,x.c)&&x.route.at(-1)==='integrity').slice(0,2):contexts.slice(0,1));
-   const openingDeadline=Math.min(deadline,started+maxMs*.4);
+   const openingDeadline=Math.min(deadline,started+maxMs*(options.deepSearch?.2:.4));
    const reference=Schedules.earningReference(raw),item=openings[0];
    if(reference&&item&&!options.disableScheduleProposals&&Date.now()<openingDeadline){
     const proposed=prepare(reference,item.route,count),opening={};
@@ -969,12 +970,13 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  // Refine completed alternatives with a reserved budget. Thin per-route
  // beams must not consume all CPU before a costly opening can be compared
  // with shifting earlier and doing its remaining research after K/I.
+ const refinementEnd=started+maxMs*(options.deepSearch?.55:.95);
  if(options.returnComparisons!==true&&!cancelled()){
   const alternatives=[...byShift.values()].sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0).slice(0,3);
   for(let i=0;i<alternatives.length;i++){
-   let item=alternatives[i];if(Date.now()>=started+maxMs*.95||cancelled())break;
+   let item=alternatives[i];if(Date.now()>=refinementEnd||cancelled())break;
    if(control.researchInvestments!==false){
-    const end=Date.now()+Math.max(1,(started+maxMs*.95-Date.now())*.25);
+    const end=Date.now()+Math.max(1,(refinementEnd-Date.now())*.25);
     progress({phase:'route-search',stage:'Research investments',phaseLabel:'Comparing productive research at every Curiosity visit',elapsedMs:Date.now()-started,explored:control.explored});
     await compareResearchInvestments(raw,item,end,control);item=byShift.get(item.state.stage)||item;
    }
@@ -982,7 +984,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    control.context=c;control.route=item.route;
    const actions=S.history(item.state),prefixes=openingDepartures(initial,c,actions);
    const share=i===0&&alternatives.length>1?.6:1/(alternatives.length-i);
-   const refineDeadline=Date.now()+Math.max(1,(started+maxMs*.95-Date.now())*share);
+   const refineDeadline=Date.now()+Math.max(1,(refinementEnd-Date.now())*share);
    if(!options.disableResearchOrder||!options.disableResearchValue){
     progress({phase:'route-search',stage:'Research order',phaseLabel:'Comparing purchase costs, order and dependencies',explored:control.explored,elapsedMs:Date.now()-started});
     const orderDeadline=Math.min(refineDeadline,Date.now()+Math.max(1,(refineDeadline-Date.now())*.25));
@@ -1025,23 +1027,23 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    const sources=[...new Set([...byShift.values(),...byRoute.values()])].sort((a,b)=>a.state.stage-b.state.stage||(better(a.state,b.state)?-1:1));
    for(const item of sources){
     const pending=missing.filter(n=>!byShift.has(n));if(cancelled()||!pending.length)break;control.context=item.context;control.route=item.route;
-    try{for(const end of completionAlternatives(raw,item,pending,()=>{if(cancelled()||Date.now()>=started+maxMs)throw Error('Completion comparison interrupted');})){control.consider(end);}}
+    try{for(const end of completionAlternatives(raw,item,pending,()=>{if(cancelled()||Date.now()>=(options.deepSearch?refinementEnd:started+maxMs))throw Error('Completion comparison interrupted');})){control.consider(end);}}
     catch{}
    }
    // A completed long route may require its last H for ships, so it cannot
    // supply every shorter comparison. Give missing counts a fresh paid build
    // on their own proposed route instead of treating a beam miss as impossible.
    for(const shifts of missing){
-    if(byShift.has(shifts)||cancelled()||Date.now()>=started+maxMs)continue;
+    if(byShift.has(shifts)||cancelled()||Date.now()>=(options.deepSearch?refinementEnd:started+maxMs))continue;
     const candidates=searchContexts.filter(x=>x.route.length-1===shifts||x.route.length-2===shifts)
      .sort((a,b)=>Math.abs(a.route.length-1-shifts)-Math.abs(b.route.length-1-shifts));
     for(const item of candidates){
-     if(byShift.has(shifts)||cancelled()||Date.now()>=started+maxMs)break;
+     if(byShift.has(shifts)||cancelled()||Date.now()>=(options.deepSearch?refinementEnd:started+maxMs))break;
      control.context=item.c;control.route=item.route;
      try{
-      const end=seedRoute(item.initial,item.c,180,()=>{if(cancelled()||Date.now()>=started+maxMs)throw Error('Missing-count build interrupted');},control.checkpoints);
+      const end=seedRoute(item.initial,item.c,180,()=>{if(cancelled()||Date.now()>=(options.deepSearch?refinementEnd:started+maxMs))throw Error('Missing-count build interrupted');},control.checkpoints);
       control.recoveryComparisons++;if(end)control.consider(end);
-      if(end&&!byShift.has(shifts))for(const shorter of completionAlternatives(raw,{state:end,context:item.c,route:item.route,count:item.count},[shifts],()=>{if(cancelled()||Date.now()>=started+maxMs)throw Error('Missing-count tail interrupted');}))control.consider(shorter);
+      if(end&&!byShift.has(shifts))for(const shorter of completionAlternatives(raw,{state:end,context:item.c,route:item.route,count:item.count},[shifts],()=>{if(cancelled()||Date.now()>=(options.deepSearch?refinementEnd:started+maxMs))throw Error('Missing-count tail interrupted');}))control.consider(shorter);
      }catch{}
     }
    }
@@ -1053,7 +1055,8 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  }
  if(options.returnComparisons!==true){
   if(!cancelled()&&!options.disableAdaptiveRefinement&&maxMs>=5000&&Date.now()<started+maxMs*.95)await refineRemainingBudget(raw,byShift,byRoute,started+maxMs*.95,control,progress);
-  const top=[...byShift.values()].sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0).slice(0,3).map(item=>cleanResearch(raw,item));
+  const metrics=item=>({seconds:item.state.t-item.context.start,switches:item.state.stage});
+  const top=ShiftPlans.shortlist([...byShift.values()].map(item=>cleanResearch(raw,item)),metrics);
   if(!cancelled()){
    // Keep the main search budget intact; cap final comfort comparisons at 5 s.
    const comfortDeadline=Math.min(options.absoluteDeadline??Infinity,Date.now()+Math.min(5000,maxMs*.05));
@@ -1064,10 +1067,9 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
     item.state=Comfort.improve(fresh.s,item.context,item.state,{checkpoint:()=>{if(cancelled()||Date.now()>=comfortDeadline)throw Error('Silo comfort comparison interrupted');}});
     await control.yield();
    }
-   top.sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0);
   }
   const shiftPlans=top.map(item=>({switches:item.state.stage,plan:finalize(raw,item.state,item.context,item.route,item.count,control,cancelled()?'cancelled with best plans':'route comparison complete')}));
-  return ShiftPlans.select({shiftPlans,recommendedSwitches:shiftPlans[0].switches},shiftPlans[0].switches);
+  return ShiftPlans.create(shiftPlans);
  }
  const chosen=Plans.select({researchSalePlans:entries,recommendedResearchSales:recommended},recommended);
  return chosen;
