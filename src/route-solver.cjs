@@ -837,21 +837,21 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    }catch{return true;}
   };
   for(const item of incumbents)if(item.count===count){control.context=item.context;control.route=item.route;control.consider(item.state);control.retainedPlans++;}
-  if(!options.disableResearchInvestments&&!cancelled()&&incumbents.length){
-   // Keep the other half of the incumbent slice for existing cost/order
-   // checks; a large insertion pass must not starve those comparisons.
-   const investmentDeadline=Math.min(deadline,started+Math.min(2500,maxMs*.04));
-   for(const item of [...byShift.values()].sort((a,b)=>a.state.t-b.state.t)){
-    if(cancelled()||Date.now()>=investmentDeadline)break;
-    await compareResearchInvestments(raw,item,investmentDeadline,control);
-   }
-  }
   if((!options.disableResearchOrder||!options.disableResearchValue)&&!cancelled()&&incumbents.length){
    const orderDeadline=Math.min(deadline,started+Math.min(5000,maxMs*.08));
    const prior=incumbents.filter(item=>item.count===count).sort((a,b)=>a.state.t-b.state.t).slice(0,1);
    for(const item of prior){
     if(!options.disableResearchValue)await compareResearchValue(raw,item,options.disableResearchOrder?orderDeadline:Math.min(orderDeadline,Date.now()+Math.max(1,(orderDeadline-Date.now())*.5)),control);
     if(!options.disableResearchOrder)await compareResearchOrders(raw,byShift.get(item.state.stage)||item,orderDeadline,control);
+   }
+  }
+  if(!options.disableResearchInvestments&&!cancelled()&&incumbents.length){
+   // Run after the established order checks, with its own remaining slice.
+   // Slow timer scheduling must not consume those checks' allocation.
+   const investmentDeadline=Math.min(deadline,Date.now()+Math.min(2500,maxMs*.04));
+   for(const item of [...byShift.values()].sort((a,b)=>a.state.t-b.state.t)){
+    if(cancelled()||Date.now()>=investmentDeadline)break;
+    await compareResearchInvestments(raw,item,investmentDeadline,control);
    }
   }
   if(!incumbents.length&&!cancelled()&&options.returnComparisons!==true&&!options.disableEarningsAdaptation){

@@ -1,6 +1,6 @@
-# Egg Inc. Virtue Farm Optimizer v1.1.4 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.1.5 — Release Audit
 
-## v1.1.4 release review — October 28, 2026 (Pacific Time)
+## v1.1.5 release review — October 28, 2026 (Pacific Time)
 
 A dedicated full-plan pass enumerates every legal next research level with a
 modeled productive effect at each eligible Curiosity visit in the source plan.
@@ -12,8 +12,8 @@ levels, physical purchases, fuel, missions, and the TE goal are paid again.
 Only independently replayed improvements enter the winners. Moving a selected
 level earlier skips its already-satisfied later target without charging twice.
 
-Saved-plan searches reserve an early slice for these insertions while retaining
-a separate slice for existing cost/order checks. Fresh-search completed plans
+Saved-plan searches run existing cost/order checks first, then reserve a
+separate early slice for these insertions. Fresh-search completed plans
 receive a dedicated comparison before the other refinement passes. Adaptive
 refinement revisits new winners; completed source trials are cached within that
 search, and interrupted passes retain their completed trials for later slices.
@@ -32,11 +32,17 @@ performance on other farms or hardware. Private farm files are not committed.
 
 With identical saved-plan input, 5-second requested budget, and width 8, a local
 comparison with the dedicated pass disabled retained level 37 and the old finish
-(4.42 s observed wall time). Enabling it found the 8h 11m gain (9.29 s observed
+(4.42 s observed wall time). Enabling it found the 8h 11m gain (9.52 s observed
 wall time, including final processing). The compiled two-worker app path found
-the same gain in 4.68 s, with 560 paid comparisons and eight independently replayed
+the same gain in 4.66 s, with 564 paid comparisons and seven independently replayed
 improvements. These are one-case observations; they show increased search
 coverage, not a universal runtime speedup or a strict wall-clock deadline.
+
+The v1.1.4 candidate stopped before publication in Windows run 40809729783:
+the new insertion pass consumed the short incumbent window before an existing
+500 ms purchase-order regression could run. The corrected scheduling runs the
+established cost/order checks first and allocates a separate subsequent insertion
+slice. v1.1.4 has no public assets; v1.1.5 carries the validated correction.
 
 The new synthetic suite covers measurable gains from laying, shipping, and hab
 research, longer paid waits, earlier/later Curiosity visits, purchase position,

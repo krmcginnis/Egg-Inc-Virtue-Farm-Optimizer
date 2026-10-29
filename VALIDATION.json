@@ -1,7 +1,7 @@
 {
-  "date": "2026-10-29T02:59:20.643028+00:00",
-  "version": "1.1.4",
-  "currentAudit": "AUDIT-v1.1.4.md",
+  "date": "2026-10-29T03:08:10.199620+00:00",
+  "version": "1.1.5",
+  "currentAudit": "AUDIT-v1.1.5.md",
   "status": "release-candidate",
   "published": false,
   "nativeWindowsTested": false,
@@ -59,162 +59,162 @@
     },
     {
       "suite": "tests/prepare-publish.cjs",
-      "seconds": 0.22,
+      "seconds": 0.233,
       "passed": true
     },
     {
       "suite": "tests/subscription-import.cjs",
-      "seconds": 0.2,
+      "seconds": 0.196,
       "passed": true
     },
     {
       "suite": "tests/research-sale-plans.cjs",
-      "seconds": 1.087,
+      "seconds": 0.977,
       "passed": true
     },
     {
       "suite": "tests/route-solver.cjs",
-      "seconds": 11.28,
+      "seconds": 10.895,
       "passed": true
     },
     {
       "suite": "tests/search-efficiency.cjs",
-      "seconds": 0.4,
+      "seconds": 0.35,
       "passed": true
     },
     {
       "suite": "tests/search-quality.cjs",
-      "seconds": 11.298,
+      "seconds": 10.795,
       "passed": true
     },
     {
       "suite": "tests/investment-search.cjs",
-      "seconds": 0.459,
+      "seconds": 0.46,
       "passed": true
     },
     {
       "suite": "tests/research-breakpoints.cjs",
-      "seconds": 1.399,
+      "seconds": 1.274,
       "passed": true
     },
     {
       "suite": "tests/timezones.cjs",
-      "seconds": 0.19,
+      "seconds": 0.152,
       "passed": true
     },
     {
       "suite": "tests/shift-rates.cjs",
-      "seconds": 0.198,
+      "seconds": 0.193,
       "passed": true
     },
     {
       "suite": "tests/sleep-schedule.cjs",
-      "seconds": 1.071,
+      "seconds": 0.989,
       "passed": true
     },
     {
       "suite": "tests/silo-comfort.cjs",
-      "seconds": 0.39,
+      "seconds": 0.375,
       "passed": true
     },
     {
       "suite": "tests/sleep-search-quality.cjs",
-      "seconds": 5.012,
+      "seconds": 4.642,
       "passed": true
     },
     {
       "suite": "tests/earnings-incumbents.cjs",
-      "seconds": 1.242,
+      "seconds": 1.18,
       "passed": true
     },
     {
       "suite": "tests/earnings-first-research.cjs",
-      "seconds": 1.234,
+      "seconds": 1.155,
       "passed": true
     },
     {
       "suite": "tests/purchase-economics.cjs",
-      "seconds": 0.321,
+      "seconds": 0.341,
       "passed": true
     },
     {
       "suite": "tests/search-refinements.cjs",
-      "seconds": 3.199,
+      "seconds": 3.196,
       "passed": true
     },
     {
       "suite": "tests/plan-progress.cjs",
-      "seconds": 0.15,
+      "seconds": 0.145,
       "passed": true
     },
     {
       "suite": "tests/run-shifts.cjs",
-      "seconds": 0.072,
+      "seconds": 0.063,
       "passed": true
     },
     {
       "suite": "tests/research-cleanup.cjs",
-      "seconds": 0.269,
+      "seconds": 0.271,
       "passed": true
     },
     {
       "suite": "tests/research-investments.cjs",
-      "seconds": 1.94,
+      "seconds": 1.747,
       "passed": true
     },
     {
       "suite": "tests/date-time.cjs",
-      "seconds": 0.081,
+      "seconds": 0.08,
       "passed": true
     },
     {
       "suite": "tests/plan-continuation.cjs",
-      "seconds": 1.275,
+      "seconds": 1.325,
       "passed": true
     },
     {
       "suite": "tests/purchase-decisions.cjs",
-      "seconds": 0.111,
+      "seconds": 0.15,
       "passed": true
     },
     {
       "suite": "tests/quick-guide-order.cjs",
-      "seconds": 0.081,
+      "seconds": 0.1,
       "passed": true
     },
     {
       "suite": "tests/run-shifts-dom.cjs",
-      "seconds": 6.902,
+      "seconds": 6.715,
       "passed": true
     },
     {
       "suite": "tests/time-display-dom.cjs",
-      "seconds": 1.742,
+      "seconds": 1.866,
       "passed": true
     },
     {
       "suite": "tests/search-pool.cjs",
-      "seconds": 2.871,
+      "seconds": 2.823,
       "passed": true
     },
     {
       "suite": "tests/search-optimality.cjs",
-      "seconds": 0.51,
+      "seconds": 0.536,
       "passed": true
     },
     {
       "suite": "tests/search-optimality-dom.cjs",
-      "seconds": 6.183,
+      "seconds": 6.405,
       "passed": true
     },
     {
       "suite": "tests/solver-worker.cjs",
-      "seconds": 23.463,
+      "seconds": 23.527,
       "passed": true
     },
     {
       "suite": "tests/sleep-controls.cjs",
-      "seconds": 3.678,
+      "seconds": 3.801,
       "passed": true
     }
   ],
@@ -1050,10 +1050,19 @@
       }
     }
   },
+  "failedPrepublicationCandidate": {
+    "version": "1.1.4",
+    "sourceCommit": "1cced60ef1195d74dc472712c279e6abbd36213c",
+    "runId": 40809729783,
+    "jobId": 123236930347,
+    "published": false,
+    "failure": "500 ms incumbent search starved existing purchase-order comparisons on Windows.",
+    "correction": "Run established cost/order checks first, then use a separate insertion comparison slice."
+  },
   "privateSavedPlanComparisons": [
     {
       "kind": "without-dedicated-pass",
-      "elapsedMs": 4423.402077,
+      "elapsedMs": 4419.126657000001,
       "end": 1803863191.4442563,
       "savingSeconds": 0,
       "TE": 200,
@@ -1064,7 +1073,7 @@
     },
     {
       "kind": "with-dedicated-pass",
-      "elapsedMs": 9294.716996,
+      "elapsedMs": 9522.384663,
       "end": 1803833734.610051,
       "savingSeconds": 29456.834205389023,
       "TE": 200,
@@ -1075,14 +1084,14 @@
     },
     {
       "kind": "compiled-two-workers",
-      "elapsedMs": 4680.028282000001,
+      "elapsedMs": 4655.480084000001,
       "end": 1803833734.610051,
       "savingSeconds": 29456.834205389023,
       "TE": 200,
       "shifts": 8,
       "timelineDiversion": 38,
-      "comparisons": 560,
-      "replays": 8,
+      "comparisons": 564,
+      "replays": 7,
       "workers": 2,
       "verified": 12
     }
