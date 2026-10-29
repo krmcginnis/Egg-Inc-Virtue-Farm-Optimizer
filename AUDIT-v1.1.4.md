@@ -1,4 +1,55 @@
-# Egg Inc. Virtue Farm Optimizer v1.1.3 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.1.4 — Release Audit
+
+## v1.1.4 release review — October 28, 2026 (Pacific Time)
+
+A dedicated full-plan pass enumerates every legal next research level with a
+modeled productive effect at each eligible Curiosity visit in the source plan.
+It compares insertion before, between, and after selected research, immediate
+and next-sale timing, and retained/retimed calendar waits. This pass does not
+rank away candidates by near-term earnings or package beam width. All costs,
+interaction time, sleep, research deadlines, tier prerequisites, later selected
+levels, physical purchases, fuel, missions, and the TE goal are paid again.
+Only independently replayed improvements enter the winners. Moving a selected
+level earlier skips its already-satisfied later target without charging twice.
+
+Saved-plan searches reserve an early slice for these insertions while retaining
+a separate slice for existing cost/order checks. Fresh-search completed plans
+receive a dedicated comparison before the other refinement passes. Adaptive
+refinement revisits new winners; completed source trials are cached within that
+search, and interrupted passes retain their completed trials for later slices.
+Worker results include aggregate comparison/replay/completed-pass counts. This
+is a bounded neighborhood search, not a proof of global optimality or exhaustive
+purchase orders. New tier-filler chains and complementary multi-level packages
+still use the existing separate dependency/package searches.
+
+In the supplied eight-shift regression, the pass compares 68 feasible paid
+schedules and finds Timeline Diversion 38 first at the Friday sale, then Neural
+Net Refinement 12 and Graviton Coupling 3. The result finishes 29456.834 seconds
+(8h 10m 57s) earlier with the same 200 TE and eight shifts. It waits approximately
+20h 35m longer on Curiosity, then saves approximately 28h 46m afterward. One
+cold local observation of the direct pass took about 102 ms; it does not establish
+performance on other farms or hardware. Private farm files are not committed.
+
+With identical saved-plan input, 5-second requested budget, and width 8, a local
+comparison with the dedicated pass disabled retained level 37 and the old finish
+(4.42 s observed wall time). Enabling it found the 8h 11m gain (9.29 s observed
+wall time, including final processing). The compiled two-worker app path found
+the same gain in 4.68 s, with 560 paid comparisons and eight independently replayed
+improvements. These are one-case observations; they show increased search
+coverage, not a universal runtime speedup or a strict wall-clock deadline.
+
+The new synthetic suite covers measurable gains from laying, shipping, and hab
+research, longer paid waits, earlier/later Curiosity visits, purchase position,
+Friday timing, prerequisites, cancellation/resume, repeated-trial suppression,
+ship/fuel anchor replay, sleep, immutable input, and normal solver integration.
+The compiled-worker suite separately exercises the new comparison. All 33 locally
+runnable release/UI suites passed; the Windows workflow requires 34 suites,
+including two native updater/launcher suites. The local package passed closed
+manifest and CRC checks with 169 runtime archive entries. Publication
+requires the complete Windows regression, native updater/launcher, and anonymous
+public update-feed gates. Local validation records and publication evidence are
+recorded in VALIDATION.json. This release changes search coverage, not the game
+model, saved-file format, 24-hour clocks, or Quick Guide labels.
 
 ## Accepted v1.1.3 publication — October 28, 2026 (Pacific Time)
 

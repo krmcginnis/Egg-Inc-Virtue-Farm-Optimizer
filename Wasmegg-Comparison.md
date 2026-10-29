@@ -4,7 +4,7 @@ The game model was compared with independent Wasmegg TypeScript source at
 commit `9c2c0e4e7e5ac8bbf179f423f9fdb9a960993e67`. The app's game dataset remains
 pinned to `a089580df4cc6cce8a2f5a9a7dcf86583a2c216d`. This checks the named source
 versions, rather than the latest live website. See the
-[current release audit](AUDIT-v1.1.3.md) for verification and model limits.
+[current release audit](AUDIT-v1.1.4.md) for verification and model limits.
 
 | Independent check | Historical coverage | Result |
 | --- | ---: | --- |
@@ -35,6 +35,11 @@ purchase model. The planner compares research, physical upgrades, departures,
 owned gear, sale timing, and complete delivery plans within a 90-second budget.
 It returns the fastest complete plans found, with strict replay validation.
 Replay verifies feasibility under the model and does not prove global optimality.
+
+At every eligible Curiosity research visit, the next legal productive level is
+compared through the full paid plan, including insertion before/between/after
+selected research and immediate/sale timing. This dedicated pass does not prune
+by short-term earnings rank; its completion remains limited by the search budget.
 
 On Curiosity research visits, earnings-first ordering is compared with existing
 orders. Inactive capacity can wait until departure; tier prerequisites and

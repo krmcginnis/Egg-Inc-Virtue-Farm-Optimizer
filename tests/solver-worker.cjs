@@ -28,6 +28,9 @@ async function run(){
  function CCheck(value){const checked=O.replay(value.config,value.result.actions);assert.equal(checked.s.t,value.result.end);assert.ok(S.reached(checked.s,checked.c));}
  const adaptive=require('./purchase-economics.cjs').capacityPlan();result=undefined;
  await context.onmessage({data:{config:adaptive.raw,options:{maxMs:5000,width:4,incumbent:{config:adaptive.raw,result:adaptive.plan}}}});assert.equal(error,undefined);assert.ok(result?.search.adaptive?.jobs>0);assert.ok(result.search.packageComparisons>0);assert.ok(result.search.economicsPrefixHits>0);assert.ok(result.end<=adaptive.plan.end+.01);assert.equal(O.replay(adaptive.raw,result.actions).s.t,result.end);
+ const investment=require('./research-investments.cjs').make();result=undefined;
+ await context.onmessage({data:{config:investment.raw,options:{maxMs:1800,width:4,incumbent:{config:investment.raw,result:investment.plan},disableAdaptiveRefinement:true}}});
+ assert.equal(error,undefined);assert.ok(result.end<investment.plan.end-3600);assert.ok(result.search.researchInvestmentComparisons>0);assert.ok(result.actions.some(a=>a.type==='research'&&a.i===S.RMAP.timeline_diversion&&a.to===38));O.replay(investment.raw,result.actions,true);
  const comfort=fixture();Object.assign(comfort.farm,{virtue:'kindness',cash:1e80,silos:1});Object.assign(comfort.plan,{strategy:'user',autoSequence:false,sequence:'K R C',solverVersion:2,target:102,floors:[20,20,20,21,21]});
  result=undefined;await context.onmessage({data:{config:comfort,options:{maxMs:2500}}});assert.equal(error,undefined);assert.ok(result?.validatedReplay);assert.ok(result.finalStats.siloHours>=24);
  const checked=O.replay(comfort,JSON.parse(JSON.stringify(result.actions)),true);assert.equal(checked.s.t,result.end);assert.equal(checked.s.silos,8);assert.ok(S.reached(checked.s,checked.c));

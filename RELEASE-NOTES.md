@@ -1,3 +1,10 @@
+# v1.1.4
+
+- Compare every legal next productive research level at each eligible Curiosity visit through the complete paid plan before short-term purchase rankings can discard it. Compare positions before, between, and after selected research, immediate versus Friday-sale purchases, and retained versus retimed calendar waits.
+- Give these comparisons dedicated time for saved/current-farm searches and completed fresh-search plans, and revisit new winners during refinement. Include laying, shipping, habitat capacity, fleet/train capacity, and earnings research; preserve tier requirements and already planned levels without charging twice.
+- In the supplied eight-shift plan, find Timeline Diversion 38 before Neural Net Refinement 12 and Graviton Coupling 3 during the Friday sale. The fully paid/replayed plan finishes 8h 11m earlier with the same 200 TE and eight shifts. Search remains bounded and does not prove global optimality.
+- Install through Update App → Update & Restart, then reoptimize the remaining plan to use the expanded purchase search.
+
 # v1.1.3
 
 - Avoid unlock-only research when no useful locked research remains. Before returning a plan, remove unused unlock research only when later paid purchases remain legal and a full replay preserves or improves the finish, shift count, silo coverage, and earning breaks. Keep required current/later prerequisites and future habitat/vehicle capacity.
