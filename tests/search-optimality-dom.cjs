@@ -66,11 +66,11 @@ async function exportPlan(){
   await load({version:1,config:preference.raw,result:preferred});
   assert.equal(w.VirtueApp.getResult().switches,2);
   assert.match(query('[data-shifts="2"]').textContent,/Recommended/);
-  assert.doesNotMatch(query('[data-shifts="2"]').textContent,/Fastest Found/);
+  assert.doesNotMatch(query('[data-shifts="2"]').textContent,/Earliest finish found/);
   assert.match(query('[data-shifts="2"]').textContent,/5\.00%/);
-  assert.match(query('[data-shifts="5"]').textContent,/Fastest Found/);
+  assert.match(query('[data-shifts="5"]').textContent,/Earliest finish found/);
   assert.doesNotMatch(query('[data-shifts="5"]').textContent,/Recommended/);
-  assert.match(query('.research-sale-comparison .hint').textContent,/fewest shifts.*5%/);
+  assert.match(query('.plan-choice-policy').textContent,/fewer shifts.*5%/);
   query('[data-shifts="5"]').click();
   const preferredSaved=await exportPlan();await load(preferredSaved);
   assert.equal(w.VirtueApp.getResult().switches,5);assert.equal(w.VirtueApp.getResult().recommendedSwitches,2);
@@ -79,8 +79,9 @@ async function exportPlan(){
   const alternate={...fixture.result,end:later.t,seconds:later.t-fixture.result.start,switches:later.stage,actions:S.history(later).map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:fixture.result.actions[0].routeSearch})};
   const comparison={...fixture,result:{...fixture.result,shiftPlans:[{switches:fixture.result.switches,plan:fixture.result},{switches:alternate.switches,plan:alternate}],selectedSwitches:fixture.result.switches,recommendedSwitches:fixture.result.switches,shiftComparisonVersion:1}};
   await load(comparison);
-  assert.equal(query('#result-content>.result-summary')?.nextElementSibling.id,'plan-progress','plan and current progress precede alternatives');
-  assert.equal($('plan-progress').nextElementSibling.className,'card research-sale-comparison');
+  assert.equal($('result-content').firstElementChild.id,'plan-choices','selected plan and alternatives precede the timeline');
+  assert.ok($('plan-choices').nextElementSibling.classList.contains('result-summary'));
+  assert.equal(query('#result-content>.result-summary')?.nextElementSibling.id,'plan-progress','current progress follows the selected plan summary');
   query('[data-shifts="'+alternate.switches+'"]').click();assert.equal(w.VirtueApp.getResult().switches,alternate.switches);
   const savedAlternative=await exportPlan();await load(savedAlternative);
   assert.equal(w.VirtueApp.getResult().selectedSwitches,alternate.switches,'selection survives saving with the new layout');

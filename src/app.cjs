@@ -1188,15 +1188,62 @@ function renderLaunchProgress(card, report, confirmed, reviewedCounts) {
   }
   card.append(details);
 }
+function renderPlanChoices(plan,zone,{remaining=false,preview=false,onSelect}={}) {
+  if(!plan.shiftPlans)return null;
+  const choices=el("section",undefined,"card plan-choices research-sale-comparison"),row=el("div",undefined,"research-sale-options");
+  choices.id=preview?"remaining-plan-choices":"plan-choices";
+  const fastest=ShiftPlans.fastest(plan.shiftPlans),recommended=ShiftPlans.rank(plan.shiftPlans)[0];
+  const shiftLabel=n=>n+" "+(remaining?"remaining":"new")+" shift"+(n===1?"":"s");
+  const delay=p=>Math.max(0,p.seconds-fastest.plan.seconds);
+  const percentage=p=>fastest.plan.seconds>0?(delay(p)/fastest.plan.seconds*100).toFixed(2)+"%":null;
+  const difference=p=>{
+    const count=p.switches-fastest.switches,time=delay(p)>1e-6?duration(delay(p))+" later"+(percentage(p)?" (+"+percentage(p)+")":""):"Same finish time";
+    return [time,count?Math.abs(count)+" "+(count<0?"fewer":"more")+" shift"+(Math.abs(count)===1?"":"s"):""].filter(Boolean).join(" · ");
+  };
+  choices.append(el("h2",preview?"Choose the new remaining plan":"Choose your plan"));
+  const selected=el("div",undefined,"plan-choice-selected");
+  selected.append(el("strong",(preview?"Selected to apply: ":"Selected timeline: ")+shiftLabel(plan.switches)),el("p","Finishes "+timestamp(plan.end,zone),"plan-choice-finish"));
+  if(delay(plan)>1e-6){
+    selected.append(el("p",difference(plan),"plan-choice-tradeoff"));
+    if(plan.switches===recommended.switches)selected.append(el("p","Recommended because saving shifts costs "+percentage(plan)+" more time, within your 5% allowance.","hint plan-choice-reason"));
+    else selected.append(el("p","You selected this plan. The recommendation is "+shiftLabel(recommended.switches)+".","hint plan-choice-reason"));
+    const earlier=el("button","Use earliest finish · "+shiftLabel(fastest.switches),"secondary plan-choice-earliest");
+    earlier.type="button";earlier.disabled=!!worker||!!importingBackup;earlier.onclick=()=>onSelect(fastest.switches);selected.append(earlier);
+  }else selected.append(el("p",plan.shiftPlans.length===1?"Only one complete plan found.":"Earliest finish found among the plans compared.","plan-choice-tradeoff"));
+  choices.append(selected);
+  for(const entry of plan.shiftPlans){
+    const button=el("button",undefined,"research-sale-option"),active=entry.switches===plan.selectedSwitches;
+    button.type="button";button.dataset.shifts=entry.switches;button.setAttribute("aria-pressed",String(active));button.disabled=!!worker||!!importingBackup;
+    button.append(el("strong",shiftLabel(entry.switches)));
+    const badges=el("span",undefined,"plan-choice-badges");
+    if(active)badges.append(el("span","Selected","plan-choice-active"));
+    if(entry.switches===recommended.switches)badges.append(el("span",entry.plan.seconds>fastest.plan.seconds+1e-6?"Recommended · fewer shifts":"Recommended","research-sale-best"));
+    if(delay(entry.plan)<=1e-6)badges.append(el("span","Earliest finish found","research-sale-best"));
+    button.append(badges,el("span","Finishes "+timestamp(entry.plan.end,zone),"research-sale-end"),el("span",(remaining?"Time remaining: ":"Duration: ")+duration(entry.plan.seconds)));
+    if(delay(entry.plan)>1e-6)button.append(el("span",difference(entry.plan),"research-sale-delta"));
+    button.onclick=()=>onSelect(entry.switches);row.append(button);
+  }
+  choices.append(row,el("p","Preference: use fewer shifts when the plan takes no more than 5% longer than the earliest finish found. "+(preview?"Select a card, then use the selected remaining plan to replace your timeline.":"Select a card to change the timeline and exports."),"hint plan-choice-policy"));
+  return choices;
+}
 function renderRemainingComparison(host) {
   if(!remainingProposal&&!continuationContext)return;
   const proposal=remainingProposal,context=proposal||continuationContext,plan=proposal?.result||result,zone=(proposal?.config||resultConfig).plan.eventTimezone;
   const card=el("section",undefined,"card remaining-comparison");card.id="remaining-plan-comparison";
   card.append(el("h2",proposal?"Remaining Plan Comparison":"Remaining Plan"));
+  if(proposal){
+    const choices=renderPlanChoices(plan,zone,{remaining:true,preview:true,onSelect:shifts=>{
+      remainingProposal={...remainingProposal,result:ShiftPlans.select(remainingProposal.result,shifts)};renderResult();
+      $("remaining-plan-choices").querySelector(`[data-shifts="${shifts}"]`).focus({preventScroll:true});
+    }});
+    if(choices)card.append(choices);
+  }
   card.append(el("p",context.consumedShifts+" shift"+(context.consumedShifts===1?"":"s")+" already used · "+plan.switches+" further shift"+(plan.switches===1?"":"s")+" in this plan · "+(context.consumedShifts+plan.switches)+" / "+context.totalShiftBudget+" total shifts.","hint"));
   card.append(el("p","This timeline starts from the checked farm values at "+timestamp(plan.start,zone)+". Visit labels restart from the current farm. Sleep, timezone, TE target, and per-Virtue goals are retained.","hint"));
   const table=el("table"),body=el("tbody");
-  for(const [label,end] of [["Original saved finish",context.originalEnd],["Original route from this farm",context.baseline?.end],["Reoptimized remaining plan",plan.end]]){
+  const finishes=[["Original saved finish",context.originalEnd],["Original route from this farm",context.baseline?.end],["Selected remaining plan",plan.end]];
+  if(plan.shiftPlans){const fastest=ShiftPlans.fastest(plan.shiftPlans);finishes.push(["Earliest finish found ("+fastest.switches+" remaining shifts)",fastest.plan.end]);}
+  for(const [label,end] of finishes){
     const tr=el("tr");tr.append(el("th",label),el("td",end===undefined?"Could not complete this route from the snapshot":timestamp(end,zone)));body.append(tr);
   }
   table.append(body);card.append(table);
@@ -1204,7 +1251,7 @@ function renderRemainingComparison(host) {
   else if(context.baselineError)card.append(el("p",context.baselineError,"hint"));
   const controls=el("div",undefined,"inline");
   if(proposal){
-    const use=el("button","Use Remaining Plan");use.id="use-remaining-plan";
+    const use=el("button","Use Selected Remaining Plan");use.id="use-remaining-plan";
     const matches=proposal.sourceKey===Continuation.sourceKey(continuationRequest(proposal.request.start));use.disabled=!!worker||!!importingBackup||!matches;
     if(!matches)card.append(el("p","The selected plan or checked progress changed. Run the remaining search again before using this result.","hint"));
     use.onclick=()=>{
@@ -1308,28 +1355,14 @@ function renderResult() {
   host.replaceChildren();
   $("empty-results").hidden = true;
   host.hidden = false;
-  renderRemainingComparison(host);
-  let alternatives;
-  if(r.shiftPlans){
-    const choices=el("section",undefined,"card research-sale-comparison"),heading=el("h2",continuationContext?"Plans by Remaining Shift Count":"Plans by Shift Count"),row=el("div",undefined,"research-sale-options");
-    const fastest=ShiftPlans.fastest(r.shiftPlans);
-    choices.append(heading,el("p","The recommended plan uses the fewest shifts among plans within 5% of the fastest completion time found. Up to three complete plans are shown, including the fastest option.","hint"));
-    for(const entry of r.shiftPlans){
-      const button=el("button",undefined,"research-sale-option");button.type="button";button.dataset.shifts=entry.switches;button.setAttribute("aria-pressed",String(entry.switches===r.selectedSwitches));
-      button.append(el("strong",entry.switches+" New Shift"+(entry.switches===1?"":"s")),el("span",duration(entry.plan.seconds)),el("span","Ends "+timestamp(entry.plan.end,zone),"research-sale-end"));
-      if(entry.switches===r.recommendedSwitches)button.append(el("span","Recommended","research-sale-best"));
-      if(entry===fastest)button.append(el("span","Fastest Found","research-sale-best"));
-      else {
-        const extraSeconds=entry.plan.seconds-fastest.plan.seconds,shiftDifference=entry.switches-fastest.switches;
-        const percent=fastest.plan.seconds>0?" ("+(extraSeconds/fastest.plan.seconds*100).toFixed(2)+"%)":"";
-        const time=extraSeconds>1e-6?duration(extraSeconds)+" slower"+percent:"Same finish time";
-        const shifts=shiftDifference?Math.abs(shiftDifference)+" "+(shiftDifference<0?"fewer":"more")+" shift"+(Math.abs(shiftDifference)===1?"":"s"):"";
-        button.append(el("span",[time,shifts].filter(Boolean).join(" \xB7 "),"research-sale-delta"));
-      }
-      button.onclick=()=>{result=ShiftPlans.select(result,entry.switches);if(!worker&&!dirty)refresh();else updateArtifactNotes();renderResult();host.querySelector(`[data-shifts="${entry.switches}"]`).focus({preventScroll:true});};row.append(button);
-    }
-    choices.append(row);alternatives=choices;
+  if(!remainingProposal){
+    const choices=renderPlanChoices(r,zone,{remaining:!!continuationContext,onSelect:shifts=>{
+      result=ShiftPlans.select(result,shifts);if(!worker&&!dirty)refresh();else updateArtifactNotes();renderResult();
+      $("plan-choices").querySelector(`[data-shifts="${shifts}"]`).focus({preventScroll:true});
+    }});
+    if(choices)host.append(choices);
   }
+  renderRemainingComparison(host);
   const card = el("div", void 0, "card result-summary"), head = el("div", void 0, "result-header");
   head.append(el("h2", (continuationContext ? "Remaining Plan · " : planProgress ? "Original Plan · " : "") + "Target " + r.target + " TE in " + duration(r.seconds)));
   const tools = el("div", void 0, "inline");
@@ -1411,7 +1444,7 @@ function renderResult() {
   progressLink.onclick=event=>{event.preventDefault();const target=$(planProgress?"plan-progress-next":"plan-progress-heading")||$("plan-progress-heading");target.scrollIntoView({block:"start"});target.focus({preventScroll:true});};
   tools.append(json, txt, progressLink);
   head.append(tools);
-  card.append(head, el("p", "Starts " + timestamp(r.start, zone), "plan-start"), el("p", "Ends " + timestamp(r.end, zone), "plan-end"), el("p", r.switches + " new switches \xB7 " + num(r.soulCost) + " Soul Eggs spent"), el("p", waitTotals(summary.totals), "waiting-totals"), el("p", "Minimum offline break: " + (resultConfig.plan.minOfflineMinutes ?? 1) + " min. Finish time comes first; ties favor fewer switches, more silo coverage, fewer earning breaks, and fewer purchases.", "hint"), el("p", "Validated by replay: purchases affordable, Virtue permissions enforced, target reached. Claim pending TE at ascension.", "hint"));
+  card.append(head, el("p", "Starts " + timestamp(r.start, zone), "plan-start"), el("p", "Ends " + timestamp(r.end, zone), "plan-end"), el("p", r.switches + " new switches \xB7 " + num(r.soulCost) + " Soul Eggs spent"), el("p", waitTotals(summary.totals), "waiting-totals"), el("p", "Minimum offline break: " + (resultConfig.plan.minOfflineMinutes ?? 1) + " min. Purchases and departure times are optimized within each plan.", "hint"), el("p", "Validated by replay: purchases affordable, Virtue permissions enforced, target reached. Claim pending TE at ascension.", "hint"));
   if(resultConfig.plan.sleep?.enabled){const sleep=resultConfig.plan.sleep;card.append(el("p","Sleep: "+sleep.start+"–"+sleep.end+" · "+zone+". Interactions occur while awake. Production pauses when silo coverage runs out; the target can be reached during sleep while silos are covered.","hint sleep-plan-note"));}
   const diagnostics = el("details", void 0, "search-details");
   diagnostics.append(el("summary", "Search Details"), el("p", r.method + " \xB7 " + r.explored.toLocaleString() + " states examined \xB7 " + r.termination + ".", "hint"));
@@ -1431,7 +1464,6 @@ function renderResult() {
   card.append(stale);
   host.append(card);
   renderPlanProgress(host, summary);
-  if(alternatives)host.append(alternatives);
   const initial = S.prepare(resultConfig, { oneStartingSilo: r.initialSiloRule === "one" || r.actions.some((a) => a.initialSiloRule === "one") }), guidance = el("div", void 0, "model-notices");
   guidance.append(el("p", Model.maintenance(initial.s, initial.c, r.finalStats)));
   for (const message of Model.notices(initial.s, initial.c)) guidance.append(el("p", message));
@@ -1709,6 +1741,7 @@ function busy(active) {
   $("load-account").textContent = importingBackup ? "Loading\u2026" : "Load Account";
   for (const node of document.querySelectorAll("#check-plan-file,#check-plan-account,.progress-checklist button")) node.disabled = active || !!importingBackup;
   for (const node of document.querySelectorAll(".progress-launches input,.progress-launches button,#keep-original-plan,#return-previous-plan")) node.disabled = active || !!importingBackup;
+  for (const node of document.querySelectorAll(".plan-choices button")) node.disabled = active || !!importingBackup;
   if($("reoptimize-remaining")){let unavailable=false;try{Continuation.prepare(continuationRequest());}catch{unavailable=true;}$("reoptimize-remaining").disabled=active||!!importingBackup||unavailable;}
   if($("use-remaining-plan"))$("use-remaining-plan").disabled=active||!!importingBackup||!remainingProposal||remainingProposal.sourceKey!==Continuation.sourceKey(continuationRequest(remainingProposal.request.start));
   updatePlanActions(active);

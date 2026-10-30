@@ -27,18 +27,30 @@
     "retainFastest": true,
     "compounds": false
   },
-  "gameModelChanged": false,
-  "globalOptimalityProven": false,
-  "date": "2026-10-30T17:05:37.742670+00:00",
-  "version": "1.2.1",
-  "currentAudit": "AUDIT-v1.2.1.md",
-  "status": "accepted-public-release",
-  "published": true,
-  "nativeWindowsTested": true,
-  "visualBrowserTested": false,
+  "date": "2026-10-30T18:20:59.999127+00:00",
+  "version": "1.2.2",
+  "currentAudit": "AUDIT-v1.2.2.md",
+  "status": "local-validation-complete-windows-public-pending",
+  "published": false,
+  "nativeWindowsTested": false,
+  "visualBrowserTested": true,
   "generatedDomTested": true,
   "buildPassed": true,
-  "scope": "Expand unseeded current-farm route coverage and growing neighborhoods, confirm old-plan current Deep requests, and remove Automatic Planning Details from the Planning pane.",
+  "scope": "Clarify selected, recommended fewer-shift and earliest-finish plans, and enable selecting a remaining-plan alternative before applying it.",
+  "gameModelChanged": false,
+  "searchEngineChanged": false,
+  "globalOptimalityProven": false,
+  "unchangedWorkerSha256": "944eb879c10e846025ee54735c88d760cc421dc1ea69171e4871894266140757",
+  "previousRelease": {
+    "version": "1.2.1",
+    "sourceCommit": "f88e8c099f10cf9445728613035cac35a8065a1f",
+    "runId": 41094750316,
+    "accepted": true
+  },
+  "limitations": [
+    "Search remains bounded and does not prove global optimality.",
+    "Native Windows and anonymous public release verification are pending publication."
+  ],
   "localSuitesPassed": [
     "release-state.cjs",
     "prepare-publish.cjs",
@@ -72,6 +84,7 @@
     "deep-search-dom.cjs",
     "run-shifts-dom.cjs",
     "time-display-dom.cjs",
+    "plan-choices-dom.cjs",
     "search-pool.cjs",
     "search-optimality.cjs",
     "search-optimality-dom.cjs",
@@ -81,296 +94,208 @@
   "localCheckRecords": [
     {
       "suite": "tests/release-state.cjs",
-      "seconds": 0.098,
+      "seconds": 0.118,
       "passed": true
     },
     {
       "suite": "tests/prepare-publish.cjs",
-      "seconds": 0.397,
+      "seconds": 0.508,
       "passed": true
     },
     {
       "suite": "tests/subscription-import.cjs",
-      "seconds": 0.388,
+      "seconds": 0.35,
       "passed": true
     },
     {
       "suite": "tests/research-sale-plans.cjs",
-      "seconds": 1.534,
+      "seconds": 1.86,
       "passed": true
     },
     {
       "suite": "tests/route-solver.cjs",
-      "seconds": 16.315,
+      "seconds": 15.399,
       "passed": true
     },
     {
       "suite": "tests/automatic-routes.cjs",
-      "seconds": 5.651,
+      "seconds": 3.014,
       "passed": true
     },
     {
       "suite": "tests/shift-plans.cjs",
-      "seconds": 0.496,
+      "seconds": 0.706,
       "passed": true
     },
     {
       "suite": "tests/search-efficiency.cjs",
-      "seconds": 0.679,
+      "seconds": 1.406,
       "passed": true
     },
     {
       "suite": "tests/search-quality.cjs",
-      "seconds": 50.53,
+      "seconds": 46.577,
       "passed": true
     },
     {
       "suite": "tests/investment-search.cjs",
-      "seconds": 0.99,
+      "seconds": 3.291,
       "passed": true
     },
     {
       "suite": "tests/research-breakpoints.cjs",
-      "seconds": 2.239,
+      "seconds": 5.535,
       "passed": true
     },
     {
       "suite": "tests/timezones.cjs",
-      "seconds": 0.246,
+      "seconds": 0.716,
       "passed": true
     },
     {
       "suite": "tests/shift-rates.cjs",
-      "seconds": 0.328,
+      "seconds": 0.386,
       "passed": true
     },
     {
       "suite": "tests/sleep-schedule.cjs",
-      "seconds": 1.333,
+      "seconds": 10.416,
       "passed": true
     },
     {
       "suite": "tests/silo-comfort.cjs",
-      "seconds": 0.847,
+      "seconds": 11.03,
       "passed": true
     },
     {
       "suite": "tests/sleep-search-quality.cjs",
-      "seconds": 6.805,
+      "seconds": 7.969,
       "passed": true
     },
     {
       "suite": "tests/earnings-incumbents.cjs",
-      "seconds": 1.5,
+      "seconds": 1.697,
       "passed": true
     },
     {
       "suite": "tests/earnings-first-research.cjs",
-      "seconds": 1.442,
+      "seconds": 1.638,
       "passed": true
     },
     {
       "suite": "tests/purchase-economics.cjs",
-      "seconds": 0.489,
+      "seconds": 0.574,
       "passed": true
     },
     {
       "suite": "tests/search-refinements.cjs",
-      "seconds": 4.002,
+      "seconds": 6.167,
       "passed": true
     },
     {
       "suite": "tests/plan-progress.cjs",
-      "seconds": 0.226,
+      "seconds": 0.265,
       "passed": true
     },
     {
       "suite": "tests/run-shifts.cjs",
-      "seconds": 0.096,
+      "seconds": 0.109,
       "passed": true
     },
     {
       "suite": "tests/research-cleanup.cjs",
-      "seconds": 0.405,
+      "seconds": 0.526,
       "passed": true
     },
     {
       "suite": "tests/research-investments.cjs",
-      "seconds": 2.862,
+      "seconds": 3.925,
       "passed": true
     },
     {
       "suite": "tests/date-time.cjs",
-      "seconds": 0.185,
+      "seconds": 0.14,
       "passed": true
     },
     {
       "suite": "tests/plan-continuation.cjs",
-      "seconds": 1.62,
+      "seconds": 2.144,
       "passed": true
     },
     {
       "suite": "tests/purchase-decisions.cjs",
-      "seconds": 0.186,
+      "seconds": 0.214,
       "passed": true
     },
     {
       "suite": "tests/quick-guide-order.cjs",
-      "seconds": 0.137,
+      "seconds": 0.148,
       "passed": true
     },
     {
       "suite": "tests/cooperative-refinement.cjs",
-      "seconds": 0.494,
+      "seconds": 0.576,
       "passed": true
     },
     {
       "suite": "tests/deep-search-dom.cjs",
-      "seconds": 4.727,
+      "seconds": 5.982,
       "passed": true
     },
     {
       "suite": "tests/run-shifts-dom.cjs",
-      "seconds": 10.089,
+      "seconds": 49.184,
       "passed": true
     },
     {
       "suite": "tests/time-display-dom.cjs",
-      "seconds": 3.658,
+      "seconds": 6.475,
+      "passed": true
+    },
+    {
+      "suite": "tests/plan-choices-dom.cjs",
+      "seconds": 8.65,
       "passed": true
     },
     {
       "suite": "tests/search-pool.cjs",
-      "seconds": 5.395,
+      "seconds": 6.481,
       "passed": true
     },
     {
       "suite": "tests/search-optimality.cjs",
-      "seconds": 0.92,
+      "seconds": 1.162,
       "passed": true
     },
     {
       "suite": "tests/search-optimality-dom.cjs",
-      "seconds": 10.506,
+      "seconds": 12.812,
       "passed": true
     },
     {
       "suite": "tests/solver-worker.cjs",
-      "seconds": 27.722,
+      "seconds": 44.739,
       "passed": true
     },
     {
       "suite": "tests/sleep-controls.cjs",
-      "seconds": 5.207,
+      "seconds": 10.366,
       "passed": true
     }
   ],
-  "controlledCurrentFarmComparison": {
-    "targetTE": 200,
-    "shiftCeiling": 6,
-    "sleepEnabled": false,
-    "shipsEnabled": false,
-    "savedPlanSeed": false,
-    "runsPerConfiguration": 1,
-    "runs": [
-      {
-        "name": "baseline",
-        "wallSeconds": 168.356839049,
-        "recommended": 5,
-        "fastestSeconds": 10932121.09483862,
-        "validatedReplay": true,
-        "plans": [
-          {
-            "shifts": 5,
-            "seconds": 10932121.09483862,
-            "TE": 200
-          },
-          {
-            "shifts": 4,
-            "seconds": 11784860.483010292,
-            "TE": 200
-          },
-          {
-            "shifts": 3,
-            "seconds": 12556208.610913277,
-            "TE": 200
-          }
-        ]
-      },
-      {
-        "name": "corrected",
-        "wallSeconds": 185.429739913,
-        "recommended": 5,
-        "fastestSeconds": 10603675.175681353,
-        "validatedReplay": true,
-        "plans": [
-          {
-            "shifts": 5,
-            "seconds": 10782419.973502874,
-            "TE": 200
-          },
-          {
-            "shifts": 6,
-            "seconds": 10603675.175681353,
-            "TE": 200
-          },
-          {
-            "shifts": 4,
-            "seconds": 11273705.757720232,
-            "TE": 200
-          }
-        ]
-      }
-    ]
-  },
-  "limitations": [
-    "Bounded search does not prove global optimality or guarantee identical fresh/seeded outcomes.",
-    "One controlled run per configuration; timing and quality vary by farm and hardware."
-  ],
-  "previousRelease": {
-    "version": "1.2.0",
-    "sourceCommit": "c1f0dd62439c81af95337df76c4446d613c16069",
-    "runId": 40834558090,
-    "accepted": true
-  },
-  "windowsRelease": {
-    "runId": 41094750316,
-    "jobId": 124197502164,
-    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/41094750316",
-    "sourceCommit": "f88e8c099f10cf9445728613035cac35a8065a1f",
-    "requiredSuitesPassed": 38,
-    "nativeUpdaterAndLauncherPassed": true,
-    "publicFeedAndRuntimeHashesPassed": true
-  },
-  "independentPublicVerification": {
-    "version": "1.2.1",
-    "sourceCommit": "f88e8c099f10cf9445728613035cac35a8065a1f",
-    "releaseId": 429286122,
-    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.2.1",
-    "anonymous": true,
-    "assets": [
-      {
-        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
-        "size": 8646206,
-        "id": 692795954,
-        "sha256": "9c82e108f5bae1bb1d4fb719c950b60728ab9ccf2287327344cdc778f9e21ff6"
-      },
-      {
-        "name": "update-manifest.json",
-        "size": 239,
-        "id": 692795952,
-        "sha256": "584001b412051b9fd2a0f9d87532823b359607d6a61f76313a880cd1014c6c75"
-      }
+  "visualBrowser": {
+    "engine": "Chromium 141.0.7390.37",
+    "widths": [
+      1440,
+      1000,
+      760,
+      500
     ],
-    "archiveEntries": 169,
-    "runtimeFileHashes": 167,
-    "crcPassed": true,
-    "closedManifest": true,
-    "soleCurrentAudit": true,
-    "versionAndRepositoryVerified": true,
-    "compiledDeepDefaultsVerified": true,
-    "planningDetailsRemoved": true,
-    "publicWorkerSha256": "944eb879c10e846025ee54735c88d760cc421dc1ea69171e4871894266140757",
-    "compiledWorkerMatchesBenchmarkedCorrection": true
+    "reportedPlanChecked": true,
+    "directEarliestFinish": true,
+    "keyboardSelection": true,
+    "savedJson": true,
+    "noJavaScriptErrors": true,
+    "noHorizontalOverflow": true
   }
 }

@@ -121,6 +121,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/time-display-dom.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/plan-choices-dom.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/search-pool.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/search-optimality.cjs

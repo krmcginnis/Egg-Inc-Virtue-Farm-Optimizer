@@ -1,3 +1,11 @@
+# v1.2.2
+
+- Put plan choices above the timeline and show the selected finish prominently. Distinguish Selected, Recommended · fewer shifts, and Earliest Finish Found.
+- Explain the recommendation in concrete terms: extra days/hours, percentage, and shifts saved. Keep the existing five-percent preference and fastest alternative.
+- Add Use Earliest Finish to switch directly to the faster plan. Offer the same choice in a remaining-plan preview before applying it; Use Selected Remaining Plan applies the reviewed choice.
+- Keep manual choices in the summary, walkthrough and saved plan. Show the earliest finish in the remaining-plan comparison, retain 24-hour times, and remove the conflicting finish-time-first summary text.
+- Install through Update App → Update & Restart. Load an existing saved plan to see the clearer choices; no new search is needed for this interface update. Search settings and game math are unchanged.
+
 # v1.2.1
 
 - Expand standalone current-farm search with compact gear/build routes, including six-shift options that previously appeared only when reoptimization inherited a saved route. Preserve the established route portfolio and compare additional paid visits within the shift allowance.

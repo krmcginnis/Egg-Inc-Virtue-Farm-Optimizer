@@ -22,14 +22,14 @@ It starts at the current PC time using the checked farm's upgrades, gems, fuel,
 and flights; no earnings or fuel are assumed since that backup.
 
 Compare the new finish with the original route retimed from the same farm, then
-choose **Use Remaining Plan** or **Keep Original Plan**. Visit labels restart
+choose **Use Selected Remaining Plan** or **Keep Original Plan**. Visit labels restart
 from the current farm; the comparison shows total shifts used and remaining.
 **Return to Previous Plan** restores the original after applying a replacement.
 **Save Plan** retains progress, launch counts, the comparison, and any proposed
 replacement. Recommendations favor the fewest shifts within 5% of the fastest
 remaining duration found. The bounded search does not prove a globally optimal sequence.
 
-**Use Remaining Plan** immediately shows the next planned step from the checked
+**Use Selected Remaining Plan** immediately shows the next planned step from the checked
 farm. Refreshing may return the same backup; it remains usable when it is at
 least as recent as the snapshot that started this remaining plan.
 
@@ -84,6 +84,11 @@ the fastest paid plan is still preferred.
 Each choice has its own summary, Quick Guide, and JSON/PDF exports. Saved plans
 retain every choice; older single plans and sale comparisons can also be loaded
 and replayed.
+Plan choices appear above the timeline. The selected finish, extra time, percentage,
+and shifts saved are shown together, with separate Selected, Recommended (fewer
+shifts), and Earliest Finish Found labels. Use Earliest Finish switches directly
+to the faster option. Remaining-plan previews offer the same choice before applying
+the replacement timeline.
 
 After finding the fastest plans, the solver compares extra paid silo purchases
 on existing Resilience visits. It prefers up to eight silos (two with a standard
