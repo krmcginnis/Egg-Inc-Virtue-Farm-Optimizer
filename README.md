@@ -250,7 +250,9 @@ tests, dependencies, Node/platform and browser configuration. Version labels and
 release prose still receive fresh build/package verification. A first run or any
 implementation/dependency change runs the affected validation again; failures
 invalidate reuse. Set `CHROME_EXECUTABLE` for a nonstandard browser installation.
-CI never reuses local test results.
+For publishing, `npm run release:preflight` refreshes dependencies when needed,
+rebuilds and verifies the current package without repeating the full development
+suite. CI still runs every required check on the exact source commit.
 
 Future version bumps build one candidate and run all 42 required checks in three
 parallel Windows groups: model/solver, UI/worker/browser, and native updater/launcher.
@@ -265,3 +267,11 @@ audit automatically if main is unchanged; if main advances, evidence stays in th
 artifact and no newer work is overwritten. Release-infrastructure changes trigger
 a verification-only run, so pipeline improvements can be measured without a new
 app version or any changes to live downloads.
+
+The [initial parallel verification run](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/41146431915)
+passed all 42 checks in 3m35s from candidate preparation through final verification.
+It was verification-only: publishing, the new-release public browser check and
+acceptance writeback were skipped. The previous v1.2.4 full release job took
+4m24s. An unchanged local preflight measured 1.93s after a 100.86s initial local
+validation; real publishing also includes asset upload and post-publication checks.
+Timings vary with runner and network availability.

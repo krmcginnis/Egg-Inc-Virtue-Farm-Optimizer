@@ -5,14 +5,16 @@ work and review existing local changes before editing. Keep private farms, plans
 EIDs and API backups outside tracked source. Stage intended paths explicitly;
 never use `git add .` or `git add -A` in a workspace containing account files.
 
-Use `npm run check:release` during development and before a release. It refreshes
+Use `npm run check:release` during development when broad validation is needed. It refreshes
 changed dependencies, rebuilds/packages the current version, verifies the archive,
 and reuses successful local groups only when implementation, tests, dependencies,
 Node/platform and browser configuration match. A failed check invalidates reuse.
 Version labels and release prose are checked by fresh build/package verification;
 they do not force another full local model run. Use `CHROME_EXECUTABLE` for a
-nonstandard Chrome installation. Windows also runs the native group. CI always
-runs all 42 required checks and never accepts local cached results.
+nonstandard Chrome installation. Windows also runs the native group. For publishing, run `npm run release:preflight` for fresh version/build/package
+verification and reuse completed development validation. Do not repeat the full
+local suite solely because publication was requested. CI always runs all 42
+required checks on the exact commit and never accepts local cached results.
 
 App and worker bundles are generated and ignored; never commit them. Release
 workflow changes require `node tests/release-state.cjs`,
