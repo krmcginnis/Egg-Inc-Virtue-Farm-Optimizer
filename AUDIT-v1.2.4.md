@@ -1,5 +1,35 @@
 # Egg Inc. Virtue Farm Optimizer v1.2.4 — Release Audit
 
+## Accepted publication — October 30, 2026 (Pacific Time)
+
+v1.2.4 is published and accepted. Windows run
+[41143788202](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/41143788202) passed all 40 required suites for source
+commit `ba808b6c14e2c0657ae7db13250abf001ff37ba4` (job `124364011865`).
+The native updater/launcher, complete-asset publication and public update-feed,
+full archive download and runtime-hash checks passed. Windows logs specifically
+confirm the adjacent-count and automatic final-plan evaluation suites.
+
+Independent anonymous downloads verified the latest tag/source, both asset sizes
+and GitHub SHA-256 digests, ZIP CRC, all 169 archive entries and
+167 runtime file hashes, the sole current audit and repository/version metadata.
+The public compiled app passed Deep-default/old-plan and three-column comparison tests,
+including automatic checks before presenting a remaining-plan proposal, saving,
+reloading and application. Real Chromium against the public ZIP verified the
+reported saved plan and three live Blob purchase-check workers after merged search,
+completed statuses on all three plan headers, no separate completed-check action, per-plan
+selection/checkpoints and responsive layouts. The public worker matches the
+validated source worker SHA-256 `9a45ea34b24319e80aa8f331b089458d61dcefbd7c7b4e798d77d64bbe7c4280`.
+
+Published assets:
+
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8652764 bytes; asset `693735165`; SHA-256 `3896d99c5f16bef10b159b3ec290fb46704b150a2abf9ea28d6419d7236105ad`.
+- update-manifest.json: 239 bytes; asset `693735166`; SHA-256 `85083bd395e68588d6604a9e2df7f120d8715afbc3a28f4fe897cfb5d7608883`.
+
+The immutable public ZIP contains the prepublication review below. This acceptance
+evidence was added afterward in source; assets are unchanged. Install through
+Update App → Update & Restart. Start a new search or reoptimize a checked farm
+to run the automatic purchase checks; loading a saved plan preserves its timeline.
+
 ## Release review — October 30, 2026 (Pacific Time)
 
 The comparison presents the fastest complete paid plans found at exactly N+1,
