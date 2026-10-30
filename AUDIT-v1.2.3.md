@@ -1,5 +1,35 @@
 # Egg Inc. Virtue Farm Optimizer v1.2.3 — Release Audit
 
+## Accepted publication — October 30, 2026 (Pacific Time)
+
+v1.2.3 is published and accepted. Windows run
+[41134450269](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/41134450269) passed all 40 required suites for source
+commit `bf3936eea373bc11801520172b0acc22a03ef4a7` (job `124333306811`).
+The native updater/launcher, complete-asset publication and public update-feed,
+full archive download and runtime-hash checks passed. Windows logs specifically
+confirm the two-choice and automatic final-plan evaluation suites.
+
+Independent anonymous downloads verified the latest tag/source, both asset sizes
+and GitHub SHA-256 digests, ZIP CRC, all 169 archive entries and
+167 runtime file hashes, the sole current audit and repository/version metadata.
+The public compiled app passed Deep-default/old-plan and two-plan chooser tests,
+including automatic checks before presenting a remaining-plan proposal, saving,
+reloading and application. Real Chromium against the public ZIP verified the
+reported saved plan and two live Blob purchase-check workers after merged search,
+completed statuses on both cards, no separate completed-check action, per-plan
+selection/checkpoints and responsive layouts. The public worker matches the
+validated source worker SHA-256 `a13266f07ee099ef834c9f47be945d9254f0cb1e092a7a0d40dcf4c8777f9538`.
+
+Published assets:
+
+- Egg-Inc-Virtue-Farm-Optimizer.zip: 8649533 bytes; asset `693541816`; SHA-256 `d1c2c0e893a0374e01a45781fdcfdd03dbc70694e2a9675614dd6a4b12648b39`.
+- update-manifest.json: 239 bytes; asset `693541817`; SHA-256 `ea6b2f4b13d20fd488ca756070cd1fb1fe9e95e329d6749b2083d1b1820dfdd3`.
+
+The immutable public ZIP contains the prepublication review below. This acceptance
+evidence was added afterward in source; assets are unchanged. Install through
+Update App → Update & Restart. Start a new search or reoptimize a checked farm
+to run the automatic purchase checks; loading a saved plan preserves its timeline.
+
 ## Release review — October 30, 2026 (Pacific Time)
 
 Final choices are the fastest paid completion found and the fastest paid plan

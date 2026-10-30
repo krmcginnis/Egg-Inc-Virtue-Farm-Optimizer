@@ -20,12 +20,12 @@
     "normalRefinementCutoffFraction": 0.55,
     "adaptiveDeadlineFraction": 0.95
   },
-  "date": "2026-10-30T19:09:50.193058+00:00",
+  "date": "2026-10-30T22:00:43.959205+00:00",
   "version": "1.2.3",
   "currentAudit": "AUDIT-v1.2.3.md",
-  "status": "local-validation-complete-windows-public-pending",
-  "published": false,
-  "nativeWindowsTested": false,
+  "status": "accepted-public-release",
+  "published": true,
+  "nativeWindowsTested": true,
   "visualBrowserTested": true,
   "generatedDomTested": true,
   "buildPassed": true,
@@ -58,8 +58,7 @@
   },
   "limitations": [
     "Bounded route search and declared purchase-block checks do not prove global optimality.",
-    "Check completion depends on the shared budget, cancellation and worker availability; partial status is retained.",
-    "Native Windows and anonymous public release verification are pending publication."
+    "Check completion depends on the shared budget, cancellation and worker availability; partial status is retained."
   ],
   "compiledWorkerSha256": "a13266f07ee099ef834c9f47be945d9254f0cb1e092a7a0d40dcf4c8777f9538",
   "localSuitesPassed": [
@@ -320,5 +319,57 @@
     "savedJson": true,
     "noJavaScriptErrors": true,
     "noHorizontalOverflow": true
+  },
+  "windowsRelease": {
+    "runId": 41134450269,
+    "jobId": 124333306811,
+    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/41134450269",
+    "sourceCommit": "bf3936eea373bc11801520172b0acc22a03ef4a7",
+    "requiredSuitesPassed": 40,
+    "nativeUpdaterAndLauncherPassed": true,
+    "publicFeedAndRuntimeHashesPassed": true
+  },
+  "independentPublicVerification": {
+    "version": "1.2.3",
+    "sourceCommit": "bf3936eea373bc11801520172b0acc22a03ef4a7",
+    "releaseId": 429528478,
+    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.2.3",
+    "anonymous": true,
+    "assets": [
+      {
+        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
+        "size": 8649533,
+        "id": 693541816,
+        "sha256": "d1c2c0e893a0374e01a45781fdcfdd03dbc70694e2a9675614dd6a4b12648b39"
+      },
+      {
+        "name": "update-manifest.json",
+        "size": 239,
+        "id": 693541817,
+        "sha256": "ea6b2f4b13d20fd488ca756070cd1fb1fe9e95e329d6749b2083d1b1820dfdd3"
+      }
+    ],
+    "archiveEntries": 169,
+    "runtimeFileHashes": 167,
+    "crcPassed": true,
+    "closedManifest": true,
+    "soleCurrentAudit": true,
+    "versionAndRepositoryVerified": true,
+    "publicWorkerSha256": "a13266f07ee099ef834c9f47be945d9254f0cb1e092a7a0d40dcf4c8777f9538",
+    "compiledDeepDefaultsVerified": true,
+    "compiledPlanChoicesVerified": true,
+    "automaticChecksBrowserVerified": true,
+    "visualBrowserVerified": true,
+    "reportedPlanVisualWidths": [
+      1440,
+      1000,
+      760,
+      500
+    ],
+    "automaticChecksVisualWidths": [
+      1440,
+      1000,
+      500
+    ]
   }
 }
