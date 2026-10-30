@@ -65,6 +65,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/route-solver.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          node tests/automatic-routes.cjs
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/shift-plans.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node tests/search-efficiency.cjs

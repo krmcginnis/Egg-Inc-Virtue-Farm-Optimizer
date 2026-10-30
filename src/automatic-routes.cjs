@@ -2,6 +2,24 @@
 const Route=require('./switch-sequence.cjs'),S=require('./simulator.cjs'),Sleep=require('./sleep-schedule.cjs'),Ships=require('./ships.cjs');
 function limit(raw){return S.number(raw.plan?.maxShifts??12,'Maximum new shifts',0,30,true);}
 function permutations(items){if(!items.length)return [[]];return items.flatMap((item,i)=>permutations(items.filter((_,j)=>j!==i)).map(rest=>[item,...rest]));}
+function compact(raw,ceiling){
+ // A developed farm can equip delivery gear, improve a physical bottleneck,
+ // return to research, then equip again for delivery. The long ascension
+ // presets cannot express this cycle under a small remaining allowance.
+ if(ceiling>=8&&!Object.values(raw.farm.research||{}).some(n=>n>0))return [];
+ const families=new Map();
+ for(const physical of ['K','I','R'])for(const tail of permutations(['K','I','R','H'].filter(egg=>egg!==physical))){
+  const opening=[raw.farm.virtue,'H',physical,'C'];
+  // If already on H, its gear visit is already available. Compare revisiting
+  // the physical farm after research rather than padding a duplicate H.
+  if(raw.farm.virtue==='humility')opening.push(physical);
+  const route=Route.normalize([...opening,...tail],raw.farm.virtue);
+  if(route.length-1>ceiling)continue;
+  const family=physical+':'+tail.at(-1);
+  if(!families.has(family))families.set(family,route);
+ }
+ return [...families.values()];
+}
 function generate(raw){
  const ceiling=limit(raw),pool=new Map(),start=raw.farm.virtue;
  function add(codes,priority=20){const route=Route.normalize(codes,start),shifts=route.length-1;if(shifts>ceiling)return;const key=route.join(' '),old=pool.get(key);if(!old||priority<old.priority)pool.set(key,{route,shifts,priority});}
@@ -55,6 +73,13 @@ function generate(raw){
  const counts=[...new Set(candidates.map(x=>x.shifts))].sort((a,b)=>Math.abs(a-Math.min(12,ceiling))-Math.abs(b-Math.min(12,ceiling))||b-a);
  for(const count of counts){if(chosen.length>=10)break;take(candidates.find(x=>x.shifts===count));}
  for(const item of candidates){if(chosen.length>=14)break;take(item);}
- return chosen;
+ // Keep the established portfolio intact. Interleave at most nine compact
+ // families so neither new upgrade cycles nor old delivery orders are hidden
+ // behind the route cap. Every proposal is still prepared and paid separately.
+ const extra=compact(raw,ceiling),expanded=[],keys=new Set();
+ for(let i=0;i<Math.max(chosen.length,extra.length);i++)for(const route of [chosen[i],extra[i]]){
+  if(!route)continue;const key=route.join(' ');if(!keys.has(key)){keys.add(key);expanded.push(route);}
+ }
+ return expanded;
 }
 module.exports={generate,limit};

@@ -15,8 +15,12 @@ async function run(){
  pool.receive(0,{type:'task-release',key:'partial',complete:true});assert.equal(pool.tasks.get('partial').complete,true);pool.terminate();
  const levels=new Set(),many=[];for(let level=0;level<3;level++)for(let root=0;root<12;root++)many.push({id:root+':'+level,kind:'packages',level,run:async()=>{levels.add(level);}});
  const covered=await Q.run({jobs:()=>many,control:parent,deadline:Date.now()+1000,maxJobs:3});assert.deepEqual([...levels].sort(),[0,1,2]);assert.equal(covered.jobs,3);
- const test=require('./research-investments.cjs').make(),result=await R.solve(test.raw,{maxMs:5000,width:32,deepSearch:true,incumbent:{config:test.raw,result:test.plan}});
- assert.ok(result.end<test.plan.end);assert.equal(R.replay(test.raw,result.actions,true).s.t,result.end);assert.equal(result.search.effectiveWidth,32);assert.ok(result.search.adaptive);
+ // Keep this wiring check separate from the expensive investment regression:
+ // that pass can legitimately consume a short budget before adaptive work.
+ const raw=require('./research-sale-plans.cjs').fixture();
+ Object.assign(raw.plan,{strategy:'user',autoSequence:false,sequence:'C I',target:101,floors:[20,21,20,20,20],ships:{mode:'none'},sleep:{enabled:false}});
+ const result=await R.solve(raw,{maxMs:5000,width:32,deepSearch:true}),paid=R.replay(raw,result.actions,true);
+ assert.ok(require('../src/simulator.cjs').reached(paid.s,paid.c));assert.equal(paid.s.t,result.end);assert.equal(result.switches,1);assert.equal(result.search.effectiveWidth,32);assert.ok(result.search.adaptive);
  console.log('PASS resumable refinement: cursor retention without repeated steps, scoped paid context, safe stop cleanup, exclusive partial-job ownership, and deep solver replay.');
 }
 module.exports={run};if(require.main===module)run().catch(e=>{console.error(e.stack);process.exitCode=1;});

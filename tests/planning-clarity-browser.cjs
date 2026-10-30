@@ -19,7 +19,7 @@ const root = path.resolve(__dirname, "..");
     const load = raw => page.evaluate(raw => VirtueApp.loadFile(new File([JSON.stringify(raw)], "Synthetic-Farm.json")), raw);
     assert.equal(await page.locator("#epic-details").getAttribute("open"), null);
     assert.equal(await page.locator("#planPriority,#priorityMaxDays,#priorityMaxShifts").count(),0);
-    assert.doesNotMatch(await page.locator("#wasmegg-sequence-description").innerText(), /optional/i);
+    assert.equal(await page.locator("#wasmegg-sequence-description").count(), 0);
     assert.equal(await page.locator("#col-details").getAttribute("open"), null);
     assert.match(await page.locator("#epic-summary").innerText(), /0 \/ 22/);
     assert.match(await page.locator("#col-summary").innerText(), /0 \/ 13 bonuses active/);

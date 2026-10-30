@@ -1,13 +1,4 @@
 {
-  "date": "2026-10-29T07:24:59.841205+00:00",
-  "version": "1.2.0",
-  "currentAudit": "AUDIT-v1.2.0.md",
-  "status": "accepted-public-release",
-  "published": true,
-  "nativeWindowsTested": true,
-  "visualBrowserTested": false,
-  "buildPassed": true,
-  "scope": "Four-worker Deep search, resumable paid refinement, 180-second common deadline, wider/deeper comparisons and fewest shifts within five percent of the fastest elapsed duration.",
   "defaultBudgetMs": 180000,
   "defaultWorkers": {
     "requested": 4,
@@ -38,12 +29,23 @@
   },
   "gameModelChanged": false,
   "globalOptimalityProven": false,
+  "date": "2026-10-30T16:57:33.243692+00:00",
+  "version": "1.2.1",
+  "currentAudit": "AUDIT-v1.2.1.md",
+  "status": "local-validated-awaiting-windows",
+  "published": false,
+  "nativeWindowsTested": false,
+  "visualBrowserTested": false,
+  "generatedDomTested": true,
+  "buildPassed": true,
+  "scope": "Expand unseeded current-farm route coverage and growing neighborhoods, confirm old-plan current Deep requests, and remove Automatic Planning Details from the Planning pane.",
   "localSuitesPassed": [
     "release-state.cjs",
     "prepare-publish.cjs",
     "subscription-import.cjs",
     "research-sale-plans.cjs",
     "route-solver.cjs",
+    "automatic-routes.cjs",
     "shift-plans.cjs",
     "search-efficiency.cjs",
     "search-quality.cjs",
@@ -79,237 +81,257 @@
   "localCheckRecords": [
     {
       "suite": "tests/release-state.cjs",
-      "seconds": 0.079,
+      "seconds": 0.098,
       "passed": true
     },
     {
       "suite": "tests/prepare-publish.cjs",
-      "seconds": 0.22,
+      "seconds": 0.397,
       "passed": true
     },
     {
       "suite": "tests/subscription-import.cjs",
-      "seconds": 0.188,
+      "seconds": 0.388,
       "passed": true
     },
     {
       "suite": "tests/research-sale-plans.cjs",
-      "seconds": 0.874,
+      "seconds": 1.534,
       "passed": true
     },
     {
       "suite": "tests/route-solver.cjs",
-      "seconds": 10.833,
+      "seconds": 16.315,
+      "passed": true
+    },
+    {
+      "suite": "tests/automatic-routes.cjs",
+      "seconds": 5.651,
       "passed": true
     },
     {
       "suite": "tests/shift-plans.cjs",
-      "seconds": 0.244,
+      "seconds": 0.496,
       "passed": true
     },
     {
       "suite": "tests/search-efficiency.cjs",
-      "seconds": 0.348,
+      "seconds": 0.679,
       "passed": true
     },
     {
       "suite": "tests/search-quality.cjs",
-      "seconds": 10.212,
+      "seconds": 50.53,
       "passed": true
     },
     {
       "suite": "tests/investment-search.cjs",
-      "seconds": 0.445,
+      "seconds": 0.99,
       "passed": true
     },
     {
       "suite": "tests/research-breakpoints.cjs",
-      "seconds": 1.3,
+      "seconds": 2.239,
       "passed": true
     },
     {
       "suite": "tests/timezones.cjs",
-      "seconds": 0.154,
+      "seconds": 0.246,
       "passed": true
     },
     {
       "suite": "tests/shift-rates.cjs",
-      "seconds": 0.181,
+      "seconds": 0.328,
       "passed": true
     },
     {
       "suite": "tests/sleep-schedule.cjs",
-      "seconds": 0.997,
+      "seconds": 1.333,
       "passed": true
     },
     {
       "suite": "tests/silo-comfort.cjs",
-      "seconds": 0.394,
+      "seconds": 0.847,
       "passed": true
     },
     {
       "suite": "tests/sleep-search-quality.cjs",
-      "seconds": 4.713,
+      "seconds": 6.805,
       "passed": true
     },
     {
       "suite": "tests/earnings-incumbents.cjs",
-      "seconds": 1.121,
+      "seconds": 1.5,
       "passed": true
     },
     {
       "suite": "tests/earnings-first-research.cjs",
-      "seconds": 1.089,
+      "seconds": 1.442,
       "passed": true
     },
     {
       "suite": "tests/purchase-economics.cjs",
-      "seconds": 0.281,
+      "seconds": 0.489,
       "passed": true
     },
     {
       "suite": "tests/search-refinements.cjs",
-      "seconds": 2.88,
+      "seconds": 4.002,
       "passed": true
     },
     {
       "suite": "tests/plan-progress.cjs",
-      "seconds": 0.129,
+      "seconds": 0.226,
       "passed": true
     },
     {
       "suite": "tests/run-shifts.cjs",
-      "seconds": 0.056,
+      "seconds": 0.096,
       "passed": true
     },
     {
       "suite": "tests/research-cleanup.cjs",
-      "seconds": 0.23,
+      "seconds": 0.405,
       "passed": true
     },
     {
       "suite": "tests/research-investments.cjs",
-      "seconds": 1.673,
+      "seconds": 2.862,
       "passed": true
     },
     {
       "suite": "tests/date-time.cjs",
-      "seconds": 0.077,
+      "seconds": 0.185,
       "passed": true
     },
     {
       "suite": "tests/plan-continuation.cjs",
-      "seconds": 1.273,
+      "seconds": 1.62,
       "passed": true
     },
     {
       "suite": "tests/purchase-decisions.cjs",
-      "seconds": 0.125,
+      "seconds": 0.186,
       "passed": true
     },
     {
       "suite": "tests/quick-guide-order.cjs",
-      "seconds": 0.09,
+      "seconds": 0.137,
       "passed": true
     },
     {
       "suite": "tests/cooperative-refinement.cjs",
-      "seconds": 5.297,
+      "seconds": 0.494,
       "passed": true
     },
     {
       "suite": "tests/deep-search-dom.cjs",
-      "seconds": 1.809,
+      "seconds": 4.727,
       "passed": true
     },
     {
       "suite": "tests/run-shifts-dom.cjs",
-      "seconds": 6.486,
+      "seconds": 10.089,
       "passed": true
     },
     {
       "suite": "tests/time-display-dom.cjs",
-      "seconds": 1.821,
+      "seconds": 3.658,
       "passed": true
     },
     {
       "suite": "tests/search-pool.cjs",
-      "seconds": 3.328,
+      "seconds": 5.395,
       "passed": true
     },
     {
       "suite": "tests/search-optimality.cjs",
-      "seconds": 0.536,
+      "seconds": 0.92,
       "passed": true
     },
     {
       "suite": "tests/search-optimality-dom.cjs",
-      "seconds": 7.191,
+      "seconds": 10.506,
       "passed": true
     },
     {
       "suite": "tests/solver-worker.cjs",
-      "seconds": 23.84,
+      "seconds": 27.722,
       "passed": true
     },
     {
       "suite": "tests/sleep-controls.cjs",
-      "seconds": 3.993,
+      "seconds": 5.207,
       "passed": true
     }
   ],
-  "fresh160Benchmark": {
-    "runsPerConfiguration": 1,
+  "controlledCurrentFarmComparison": {
     "targetTE": 200,
-    "shiftCeiling": 12,
-    "bestTwelveShiftSeconds": 11892579.52011633,
-    "deepFourElevenShiftSeconds": 11892618.884424925,
-    "extraSeconds": 39.36430859565735,
-    "peakDeepFourProcessGiB": 4.660205841064453,
-    "depthSixExercised": true,
-    "allPlansReplayed": true
-  },
-  "limitations": [
-    "Bounded search does not prove a global optimum.",
-    "Benchmark timing, plan quality and memory use vary by farm and hardware.",
-    "Real browser visual layout was not rechecked; generated DOM, workers and export paths were checked."
-  ],
-  "windowsRelease": {
-    "runId": 40834558090,
-    "jobId": 123316190192,
-    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/40834558090",
-    "sourceCommit": "c1f0dd62439c81af95337df76c4446d613c16069",
-    "requiredSuitesPassed": 37,
-    "nativeUpdaterAndLauncherPassed": true,
-    "publicFeedAndRuntimeHashesPassed": true,
-    "powershellVersion": "5.1.26100.33648"
-  },
-  "independentPublicVerification": {
-    "version": "1.2.0",
-    "sourceCommit": "c1f0dd62439c81af95337df76c4446d613c16069",
-    "releaseId": 427565727,
-    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.2.0",
-    "anonymous": true,
-    "assets": [
+    "shiftCeiling": 6,
+    "sleepEnabled": false,
+    "shipsEnabled": false,
+    "savedPlanSeed": false,
+    "runsPerConfiguration": 1,
+    "runs": [
       {
-        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
-        "size": 8645513,
-        "id": 687718384,
-        "sha256": "b89097fb2b40ecb014d2ed22a82ee14df33e4845aade517e0de910164c3182cd"
+        "name": "baseline",
+        "wallSeconds": 168.356839049,
+        "recommended": 5,
+        "fastestSeconds": 10932121.09483862,
+        "validatedReplay": true,
+        "plans": [
+          {
+            "shifts": 5,
+            "seconds": 10932121.09483862,
+            "TE": 200
+          },
+          {
+            "shifts": 4,
+            "seconds": 11784860.483010292,
+            "TE": 200
+          },
+          {
+            "shifts": 3,
+            "seconds": 12556208.610913277,
+            "TE": 200
+          }
+        ]
       },
       {
-        "name": "update-manifest.json",
-        "size": 239,
-        "id": 687718382,
-        "sha256": "8ce3e4fe204f3e2da134affb228ea0741a91fe58de91a80038e72c329ce825c8"
+        "name": "corrected",
+        "wallSeconds": 185.429739913,
+        "recommended": 5,
+        "fastestSeconds": 10603675.175681353,
+        "validatedReplay": true,
+        "plans": [
+          {
+            "shifts": 5,
+            "seconds": 10782419.973502874,
+            "TE": 200
+          },
+          {
+            "shifts": 6,
+            "seconds": 10603675.175681353,
+            "TE": 200
+          },
+          {
+            "shifts": 4,
+            "seconds": 11273705.757720232,
+            "TE": 200
+          }
+        ]
       }
-    ],
-    "archiveEntries": 169,
-    "runtimeFileHashes": 167,
-    "crcPassed": true,
-    "closedManifest": true,
-    "soleCurrentAudit": true,
-    "versionAndRepositoryVerified": true,
-    "compiledDeepDefaultsVerified": true
+    ]
+  },
+  "limitations": [
+    "Bounded search does not prove global optimality or guarantee identical fresh/seeded outcomes.",
+    "One controlled run per configuration; timing and quality vary by farm and hardware.",
+    "Native Windows and anonymous public-feed verification remain publication gates."
+  ],
+  "previousRelease": {
+    "version": "1.2.0",
+    "sourceCommit": "c1f0dd62439c81af95337df76c4446d613c16069",
+    "runId": 40834558090,
+    "accepted": true
   }
 }

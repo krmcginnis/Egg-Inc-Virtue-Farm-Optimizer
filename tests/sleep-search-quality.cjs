@@ -49,8 +49,8 @@ async function run(){
  const prefix=Calendar.duringWait(short.s,short.c,offline).find(n=>n.t-short.s.t===30);assert.ok(prefix);assert.equal(prefix.path.action.earningsMode,'online','a 30-second departure cannot claim the offline minimum');
  Object.assign(raw.plan,{strategy:'auto',strategyVersion:2,autoSequence:true,maxShifts:12});const routes=Automatic.generate(raw);
  assert.ok(routes.some(r=>r[1]==='resilience'),'reserves R before physical upgrades');assert.ok(routes.some(r=>r[3]==='resilience'),'also compares R after the first physical visits');
- assert.ok(routes.length<=14);assert.ok(routes.every(r=>r.length-1<=12));
- for(const maxShifts of [10,11]){const shorter=Automatic.generate({...raw,plan:{...raw.plan,maxShifts}});assert.ok(shorter.some(r=>r[1]==='resilience'),'early coverage proposals also fit smaller ceilings');assert.ok(shorter.length<=14&&shorter.every(r=>r.length-1<=maxShifts));}
+ assert.ok(routes.length<=23);assert.ok(routes.every(r=>r.length-1<=12));
+ for(const maxShifts of [10,11]){const shorter=Automatic.generate({...raw,plan:{...raw.plan,maxShifts}});assert.ok(shorter.some(r=>r[1]==='resilience'),'early coverage proposals also fit smaller ceilings');assert.ok(shorter.length<=23&&shorter.every(r=>r.length-1<=maxShifts));}
  assert.throws(()=>Automatic.generate({...raw,plan:{...raw.plan,maxDays:1e10}}),/Planning limit/);
  const absent=structuredClone(raw);delete absent.plan.sleep;const disabled=structuredClone(raw);disabled.plan.sleep.enabled=false;assert.deepEqual(Automatic.generate(absent),Automatic.generate(disabled));
  const covered=structuredClone(raw);covered.farm.silos=8;assert.deepEqual(Automatic.generate(covered),Automatic.generate({...covered,plan:{...covered.plan,sleep:{enabled:false}}}),'no extra coverage routes when owned silos cover the nights');

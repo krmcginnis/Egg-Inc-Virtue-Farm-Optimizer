@@ -127,6 +127,11 @@ inside long funding waits. Conservative mathematical bounds skip branches that
 cannot improve retained plans. Research multipliers and exact TE allocation are
 computed with less repeated work. See [search research and limits](SEARCH-RESEARCH.md).
 
+Current-farm searches supplement the established route portfolio with compact
+gear/build cycles, including repeated visits within the remaining shift allowance.
+Local route refinement can add a visit as well as remove or rearrange visits.
+Every candidate pays for its purchases, shifts, gear, fuel and required launches.
+
 The app uses Deep search with four independent background workers and a shared
 three-minute budget. If a worker cannot start, the remaining workers continue.
 Workers share independently replayed complete plans and resume unfinished
@@ -135,6 +140,11 @@ up to 32 paths, compares purchase packages at depths 2, 4, and 6, and reserves
 time for refinement across eight candidate roots, with up to 120 slices per
 worker. Stop & Keep Best retains verified candidates. More workers and deeper
 search do not guarantee a faster plan or a globally optimal result.
+
+Loading an older plan preserves its saved timeline and search diagnostics; it
+does not start a search. Find Best Plan and Reoptimize Remaining Plan use the
+installed application's current Deep profile. Check Purchase Order checks only
+its declared purchase groups and does not run a full route search.
 
 Reoptimizing a checked farm also retimes compatible saved shift-count alternatives
 as starting candidates. The current farm, original shift allowance and remaining

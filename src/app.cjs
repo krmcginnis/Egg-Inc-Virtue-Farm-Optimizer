@@ -67,7 +67,6 @@ function updateSequenceVisibility() {
   $("fixed-sequence").parentElement.hidden = automatic;
   $("sequence").disabled = automatic;
   $("sequence").required = !automatic;
-  $("wasmegg-sequence-description").hidden = strategy === "user";
   $("automatic-shift-limit").hidden = !automatic;
   $("maxShifts").disabled = !automatic;
   updateSequenceCount();
@@ -1682,7 +1681,7 @@ function startSearchClock({verifying = false, resuming = false} = {}) {
   searchBestSeconds = verifying ? result.seconds : null;
   searchContext = verifying ? "Comparing purchase orders; the current best plan is retained" : "Evaluating affordable purchases, event waits, and switches";
   $("search-status-heading").textContent = verifying ? "Checking Purchase Order" : resuming ? "Reoptimizing Remaining Plan" : "Finding Best Plan";
-  $("search-description").textContent = verifying ? "Checks selected purchase groups from this plan's starting farm. Stop & Keep Best pauses the check. Save Plan keeps progress for another session. Other routes and departure times remain outside this check." : resuming ? "Searches from the checked farm using the remaining shift allowance. Compare the new schedule with the original route before choosing a plan." : "Deep search compares routes, purchases, weekly sale timing, and departures using four workers with a three-minute budget. Stop & Keep Best retains complete alternatives and recommends the fewest shifts within 5% of the fastest finish found.";
+  $("search-description").textContent = verifying ? "Checks selected purchase groups from this plan's starting farm. Stop & Keep Best pauses the check. Save Plan keeps progress for another session. Other routes and departure times remain outside this check." : resuming ? "Deep search starts from the checked farm with four workers and a three-minute budget, using the remaining shift allowance. Compare the new schedule with the original route before choosing a plan." : "Deep search compares routes, purchases, weekly sale timing, and departures using four workers with a three-minute budget. Stop & Keep Best retains complete alternatives and recommends the fewest shifts within 5% of the fastest finish found.";
   $("search-stage").textContent = verifying ? "Preparing Purchase Groups" : "Preparing Farm and Checking Limits";
   $("search-openings").textContent = "Not Started";
   delete $("search-openings").dataset.total;

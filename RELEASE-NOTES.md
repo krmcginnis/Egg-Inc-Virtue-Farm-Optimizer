@@ -1,3 +1,12 @@
+# v1.2.1
+
+- Expand standalone current-farm search with compact gear/build routes, including six-shift options that previously appeared only when reoptimization inherited a saved route. Preserve the established route portfolio and compare additional paid visits within the shift allowance.
+- Let route refinement add a visit as well as remove or reorder visits. Preserve manual sequences, mission/sleep constraints, and the five-percent preference for fewer shifts.
+- In the controlled current-farm comparison, find a six-shift option in 122d 17h 28m instead of the previous fastest five-shift result at 126d 12h 42m. Improve the five-shift option itself to 124d 19h 07m; it remains recommended because it is 1.69% slower than the new fastest option.
+- Remove the Automatic Planning Details section from the Planning pane.
+- Clarify that loading an older plan preserves its saved timeline. Find Best Plan and Reoptimize Remaining Plan use the installed app's current four-worker, three-minute Deep search; Check Purchase Order remains a separate purchase-group check.
+- Install through Update App → Update & Restart, then run a new search or reoptimize to apply the expanded route coverage. Search remains bounded and does not prove a global optimum.
+
 # v1.2.0
 
 - Use the benchmarked Deep search profile with four background workers and a shared three-minute budget. Compare wider route choices, purchase packages up to six actions deep, and more refinement roots and slices.
