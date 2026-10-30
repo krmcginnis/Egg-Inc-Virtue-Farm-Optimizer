@@ -3,7 +3,7 @@ on:
   push:
     branches: [main]
     tags: ['v*']
-    paths: ['package.json']
+    paths: ['package.json', '.github/workflows/release.yml', 'scripts/release*', 'tests/release*']
   workflow_dispatch:
     inputs:
       verify_only:
@@ -11,15 +11,20 @@ on:
         type: boolean
         default: false
 concurrency:
-  # Isolate the recovered v0.8.19 run that GitHub still reports as queued.
-  # Keep subsequent releases serialized within the new queue.
   group: publish-app-release-v2
   cancel-in-progress: false
 permissions:
-  contents: write
+  contents: read
+env:
+  PYTHONUTF8: '1'
+  RELEASE_REPOSITORY: ${{ github.repository }}
 jobs:
-  release:
+  prepare:
     runs-on: windows-latest
+    outputs:
+      build: ${{ steps.intent.outputs.build }}
+      publish: ${{ steps.intent.outputs.publish }}
+      version: ${{ steps.intent.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,7 +34,6 @@ jobs:
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_REPOSITORY: ${{ github.repository }}
           RELEASE_EVENT: ${{ github.event_name }}
           RELEASE_REF_TYPE: ${{ github.ref_type }}
           RELEASE_REF_NAME: ${{ github.ref_name }}
@@ -45,158 +49,152 @@ jobs:
         if: steps.intent.outputs.build == 'true'
         with:
           python-version: '3.12'
-      - name: Build and verify release
+      - name: Build the single release candidate
         if: steps.intent.outputs.build == 'true'
         shell: pwsh
-        env:
-          RELEASE_REPOSITORY: ${{ github.repository }}
-          RELEASE_REF_TYPE: ${{ github.ref_type }}
-          RELEASE_REF_NAME: ${{ github.ref_name }}
         run: |
           npm ci
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/release-state.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/prepare-publish.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/subscription-import.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/research-sale-plans.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/route-solver.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/automatic-routes.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/shift-plans.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/search-efficiency.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/search-quality.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/investment-search.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/research-breakpoints.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/timezones.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/shift-rates.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/sleep-schedule.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/silo-comfort.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/sleep-search-quality.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/earnings-incumbents.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/earnings-first-research.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/purchase-economics.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/search-refinements.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/plan-progress.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/run-shifts.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/research-cleanup.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/research-investments.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/date-time.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/plan-continuation.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/purchase-decisions.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/quick-guide-order.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           npm run build
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/cooperative-refinement.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/deep-search-dom.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/run-shifts-dom.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/time-display-dom.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/plan-choices-dom.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/search-pool.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/evaluated-search.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/search-optimality.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/search-optimality-dom.cjs
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/solver-worker.cjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           python scripts/package.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/update-core.cjs
+          python scripts/release-verify.py --candidate
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node tests/update-launch.cjs
+      - uses: actions/upload-artifact@v4
+        if: steps.intent.outputs.build == 'true'
+        with:
+          name: release-candidate
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            app.js
+            worker-source.js
+            Update-Files.json
+            tmp/release/*
+            tmp/release-candidate.json
+  checks:
+    needs: prepare
+    if: needs.prepare.outputs.build == 'true'
+    runs-on: windows-latest
+    strategy:
+      fail-fast: true
+      max-parallel: 3
+      matrix:
+        group: [model, ui, native]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-candidate
+          path: .
+      - name: Run every required check in this group
+        shell: pwsh
+        run: |
+          npm ci
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          if ($env:RELEASE_REF_TYPE -eq 'tag' -and $env:RELEASE_REF_NAME -cne "v$version") { throw 'Release tag must match package.json version.' }
+          node scripts/release-checks.cjs --group ${{ matrix.group }} --ci
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-checks-${{ matrix.group }}
+          retention-days: 14
+          if-no-files-found: error
+          path: tmp/release-checks-${{ matrix.group }}.json
+  finalize:
+    needs: [prepare, checks]
+    if: needs.prepare.outputs.build == 'true' && needs.checks.result == 'success'
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-candidate
+          path: .
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: release-checks-*
+          merge-multiple: true
+          path: tmp
+      - name: Validate all groups against the tested candidate
+        shell: pwsh
+        run: |
+          npm ci
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python scripts/release-acceptance.py --gate
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Publish complete assets together
-        if: steps.intent.outputs.publish == 'true'
+        if: needs.prepare.outputs.publish == 'true'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RELEASE_COMMIT: ${{ github.sha }}
         run: |
-          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $version = '${{ needs.prepare.outputs.version }}'
           gh release view "v$version" *> $null
-          if ($LASTEXITCODE -eq 0) { throw 'This version is already published. Increment the version before releasing.' }
-          gh release create "v$version" tmp/release/Egg-Inc-Virtue-Farm-Optimizer.zip tmp/release/update-manifest.json --target $env:RELEASE_COMMIT --title "Egg Inc. Virtue Farm Optimizer v$version" --notes-file RELEASE-NOTES.md --draft
+          if ($LASTEXITCODE -eq 0) { throw 'This version already exists; assets are never replaced.' }
+          gh release create "v$version" tmp/release/Egg-Inc-Virtue-Farm-Optimizer.zip tmp/release/update-manifest.json --target $env:GITHUB_SHA --title "Egg Inc. Virtue Farm Optimizer v$version" --notes-file RELEASE-NOTES.md --draft
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           gh release edit "v$version" --draft=false --latest
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-      - name: Verify published update feed on Windows
-        if: steps.intent.outputs.publish == 'true'
+      - name: Verify public download and browser; record acceptance
+        if: needs.prepare.outputs.publish == 'true'
         shell: powershell
         env:
-          RELEASE_REPOSITORY: ${{ github.repository }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         run: |
           $ErrorActionPreference = 'Stop'
-          . (Join-Path (Get-Location) 'Update-Core.ps1')
-          $validation = Join-Path $env:RUNNER_TEMP 'virtue-public-feed'
-          [IO.Directory]::CreateDirectory($validation) | Out-Null
+          $version = '${{ needs.prepare.outputs.version }}'
           try {
-            $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-            $release = $null
-            $lastFailure = $null
-            for ($attempt = 1; $attempt -le 5; $attempt++) {
-              try {
-                $release = Get-UpdateRelease $env:RELEASE_REPOSITORY '0.0.0' $validation
-                if (-not $release.available -or $release.version -cne $version) { throw 'The published release was not found by the updater at the expected version.' }
-                $archive = Join-Path $validation 'published.zip'
-                Save-UpdateDownload $release.url $archive $release.size
-                Expand-VerifiedUpdate $archive (Join-Path $validation 'verified') $release | Out-Null
-                $lastFailure = $null
-                break
-              } catch {
-                $lastFailure = $_.Exception
-                if ($attempt -ge 5) { throw }
-                Write-Host "Public feed attempt $attempt failed: $($lastFailure.Message)"
-                $response = $_.Exception.Response
-                if ($response) {
-                  Write-Host "HTTP status: $([int]$response.StatusCode); rate-limit remaining: $($response.Headers['X-RateLimit-Remaining']); reset: $($response.Headers['X-RateLimit-Reset'])"
-                }
-                Start-Sleep -Seconds (15 * $attempt)
-              }
-            }
-            if ($lastFailure) { throw $lastFailure }
-            Write-Host "PASS: public update feed, complete release download and all app file checksums on Windows PowerShell $($PSVersionTable.PSVersion)."
+            & ./scripts/release-feed.ps1
+            if ($LASTEXITCODE) { throw 'Native public updater feed verification failed.' }
+            python scripts/release-verify.py --public --expected-version $version --expected-commit $env:GITHUB_SHA --extract tmp/public-app
+            if ($LASTEXITCODE) { throw 'Anonymous public release verification failed.' }
+            node tests/release-browser.cjs --app-root tmp/public-app/Egg-Inc-Virtue-Farm-Optimizer --report tmp/public-browser.json
+            if ($LASTEXITCODE) { throw 'Public release browser verification failed.' }
+            python scripts/release-acceptance.py --accept
+            if ($LASTEXITCODE) { throw 'Acceptance evidence validation failed.' }
           } catch {
-            $failure = $_.Exception.Message
-            $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
             gh release edit "v$version" --draft=true
-            throw "Published feed validation failed after retries; release hidden again. $failure"
+            throw "Public release checks failed; the new release was hidden. $($_.Exception.Message)"
           }
+      - name: Exercise public verification without publishing
+        if: needs.prepare.outputs.publish != 'true'
+        shell: pwsh
+        run: |
+          python scripts/release-verify.py --current-public
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python scripts/release-acceptance.py --verify-only
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Record accepted evidence in source if main is unchanged
+        if: needs.prepare.outputs.publish == 'true'
+        run: node scripts/release-record.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-validation
+          retention-days: 90
+          if-no-files-found: error
+          path: |
+            tmp/release-validation.json
+            tmp/public-verification.json
+            tmp/public-browser.json
+            tmp/release-checks-*.json

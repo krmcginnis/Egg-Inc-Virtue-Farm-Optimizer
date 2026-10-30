@@ -8,11 +8,14 @@
     "package": "npm run build && python3 scripts/package.py",
     "test": "node tests/update-core.cjs",
     "test:updates": "node tests/update-core.cjs",
-    "prepare:publish": "node scripts/prepare-publish.cjs"
+    "prepare:publish": "node scripts/prepare-publish.cjs",
+    "check:release": "node scripts/release-checks.cjs --local --reuse",
+    "release:preflight": "node scripts/release-checks.cjs --preflight"
   },
   "devDependencies": {
     "esbuild": "0.28.2",
     "jsdom": "26.1.0",
+    "playwright-core": "1.64.1",
     "protobufjs": "8.8.0"
   }
 }

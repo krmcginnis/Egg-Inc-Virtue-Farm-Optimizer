@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "groups": {
+    "model": [
+      "tests/release-state.cjs",
+      "tests/prepare-publish.cjs",
+      "tests/subscription-import.cjs",
+      "tests/research-sale-plans.cjs",
+      "tests/route-solver.cjs",
+      "tests/automatic-routes.cjs",
+      "tests/shift-plans.cjs",
+      "tests/search-efficiency.cjs",
+      "tests/search-quality.cjs",
+      "tests/investment-search.cjs",
+      "tests/research-breakpoints.cjs",
+      "tests/timezones.cjs",
+      "tests/shift-rates.cjs",
+      "tests/sleep-schedule.cjs",
+      "tests/silo-comfort.cjs",
+      "tests/sleep-search-quality.cjs",
+      "tests/earnings-incumbents.cjs",
+      "tests/earnings-first-research.cjs",
+      "tests/purchase-economics.cjs",
+      "tests/search-refinements.cjs",
+      "tests/plan-progress.cjs",
+      "tests/run-shifts.cjs",
+      "tests/research-cleanup.cjs",
+      "tests/research-investments.cjs",
+      "tests/date-time.cjs",
+      "tests/plan-continuation.cjs",
+      "tests/purchase-decisions.cjs",
+      "tests/quick-guide-order.cjs",
+      "tests/release-pipeline.cjs"
+    ],
+    "ui": [
+      "tests/cooperative-refinement.cjs",
+      "tests/deep-search-dom.cjs",
+      "tests/run-shifts-dom.cjs",
+      "tests/time-display-dom.cjs",
+      "tests/plan-choices-dom.cjs",
+      "tests/search-pool.cjs",
+      "tests/evaluated-search.cjs",
+      "tests/search-optimality.cjs",
+      "tests/search-optimality-dom.cjs",
+      "tests/solver-worker.cjs",
+      "tests/release-browser.cjs"
+    ],
+    "native": [
+      "tests/update-core.cjs",
+      "tests/update-launch.cjs"
+    ]
+  }
+}

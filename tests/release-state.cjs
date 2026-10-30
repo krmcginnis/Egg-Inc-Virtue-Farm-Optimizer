@@ -12,6 +12,8 @@ assert.throws(()=>releaseDecision({...input,refType:'tag',refName:'v0.7.3'}),/ta
 assert.equal(releaseDecision({...input,previousVersion:null,latestVersion:null}).publish,true);
 assert.equal(releaseDecision({...input,refType:'tag',refName:'v0.7.4'}).publish,true);
 assert.deepEqual(releaseDecision({...input,verifyOnly:true,existing:true}),{build:true,publish:false,reason:'Verification only; no release will be created.'});
+assert.deepEqual(releaseDecision({...input,version:'0.7.3',validationChanged:true}),{build:true,publish:false,reason:'Release infrastructure changed; verify without publishing.'});
+assert.equal(releaseDecision({...input,validationChanged:true}).publish,true,'a genuine version bump still publishes');
 for(const version of ['0.7.4-beta','01.7.4','0.7','0.7.4\n','9007199254740992.0.0'])assert.throws(()=>releaseDecision({...input,version}));
 assert.equal(compare('1.0.0','0.99.99'),1);assert.equal(compare('0.7.10','0.7.9'),1);
 assert.equal(releaseDecision({...input,version:'1.0.0',previousVersion:'0.9.14',latestVersion:'0.9.14'}).publish,true);

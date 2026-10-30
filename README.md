@@ -241,3 +241,27 @@ node scripts/benchmark-search.cjs --farm ../private-farm.json --baseline ../prio
 
 `--incumbent ../saved-plan.json` optionally supplies a previous result. Keep
 private inputs and diagnostic outputs outside the source checkout.
+
+## Release publishing
+
+`npm run check:release` builds/packages and verifies the current version, then
+runs local release groups or reuses successful groups with the same implementation,
+tests, dependencies, Node/platform and browser configuration. Version labels and
+release prose still receive fresh build/package verification. A first run or any
+implementation/dependency change runs the affected validation again; failures
+invalidate reuse. Set `CHROME_EXECUTABLE` for a nonstandard browser installation.
+CI never reuses local test results.
+
+Future version bumps build one candidate and run all 42 required checks in three
+parallel Windows groups: model/solver, UI/worker/browser, and native updater/launcher.
+Every group reports the same source and candidate digest. Publication waits for
+all groups. Public updater verification, anonymous ZIP/manifest/runtime checks,
+and a real browser check of the downloaded release run automatically afterward.
+Failure hides the just-created release. Existing releases are never replaced.
+
+The `release-validation` workflow artifact contains per-suite/group timings and
+acceptance evidence. Successful publishing records VALIDATION.json and the current
+audit automatically if main is unchanged; if main advances, evidence stays in the
+artifact and no newer work is overwritten. Release-infrastructure changes trigger
+a verification-only run, so pipeline improvements can be measured without a new
+app version or any changes to live downloads.

@@ -5,13 +5,13 @@ function parseVersion(version){
  const parts=version.split('.').map(Number);if(parts.some(n=>!Number.isSafeInteger(n)))throw Error('Version component is too large.');return parts;
 }
 function compare(a,b){const x=parseVersion(a),y=parseVersion(b);for(let i=0;i<3;i++)if(x[i]!==y[i])return x[i]>y[i]?1:-1;return 0;}
-function releaseDecision({version,previousVersion=null,latestVersion=null,existing=false,event,refType,refName,verifyOnly=false}){
+function releaseDecision({version,previousVersion=null,latestVersion=null,existing=false,event,refType,refName,verifyOnly=false,validationChanged=false}){
  parseVersion(version);
  if(refType==='tag'&&refName!=='v'+version)throw Error('Release tag must match package.json version.');
  if(verifyOnly)return {build:true,publish:false,reason:'Verification only; no release will be created.'};
  if(event==='push'&&refType==='branch'){
   if(refName!=='main')return {build:false,publish:false,reason:'Only main publishes automatic releases.'};
-  if(previousVersion&&compare(version,previousVersion)===0)return {build:false,publish:false,reason:'App version unchanged; no release needed.'};
+  if(previousVersion&&compare(version,previousVersion)===0)return validationChanged?{build:true,publish:false,reason:'Release infrastructure changed; verify without publishing.'}:{build:false,publish:false,reason:'App version unchanged; no release needed.'};
   if(previousVersion&&compare(version,previousVersion)<0)throw Error('Automatic release version must increase.');
  }
  if(event!=='push'&&event!=='workflow_dispatch')throw Error('Unsupported release event.');
@@ -35,21 +35,24 @@ async function main(){
  if(!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository||''))throw Error('A valid release repository is required.');
  const version=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8')).version;parseVersion(version);
  const event=process.env.RELEASE_EVENT,refType=process.env.RELEASE_REF_TYPE,refName=process.env.RELEASE_REF_NAME,verifyOnly=process.env.RELEASE_VERIFY_ONLY==='true';
- let previousVersion=null;
+ let previousVersion=null,validationChanged=false;
  if(event==='push'&&refType==='branch'){
   const before=process.env.RELEASE_BEFORE;
   if(!/^[a-f0-9]{40}$/i.test(before||''))throw Error('The previous commit is required for automatic release detection.');
-  if(!/^0+$/.test(before))previousVersion=JSON.parse(execFileSync('git',['show',before+':package.json'],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']})).version;
+  if(!/^0+$/.test(before)){
+   previousVersion=JSON.parse(execFileSync('git',['show',before+':package.json'],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']})).version;
+   validationChanged=execFileSync('git',['diff','--name-only',before,'HEAD'],{cwd:root,encoding:'utf8'}).split('\n').some(name=>name==='.github/workflows/release.yml'||/^(scripts|tests)\/release[^/]*\.(cjs|py|ps1|json)$/.test(name));
+  }
  }
- // Check intent before any network request; same-version source changes are a no-op.
- const initial=releaseDecision({version,previousVersion,event,refType,refName,verifyOnly});
+ // Check intent before any network request; ordinary same-version source changes are a no-op; infrastructure edits verify.
+ const initial=releaseDecision({version,previousVersion,event,refType,refName,verifyOnly,validationChanged});
  let decision=initial;
  if(initial.publish){
   const [existing,latest]=await Promise.all([readRelease(repository,'tags/v'+version),readRelease(repository,'latest')]);
   decision=releaseDecision({version,previousVersion,event,refType,refName,verifyOnly,existing:!!existing,latestVersion:latest?latest.tag_name.replace(/^v/,''):null});
  }
  console.log(decision.reason);
- if(process.env.GITHUB_OUTPUT)fs.appendFileSync(process.env.GITHUB_OUTPUT,'build='+decision.build+'\npublish='+decision.publish+'\n');
+ if(process.env.GITHUB_OUTPUT)fs.appendFileSync(process.env.GITHUB_OUTPUT,'build='+decision.build+'\npublish='+decision.publish+'\nversion='+version+'\n');
  if(process.env.GITHUB_STEP_SUMMARY)fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY,'### Release v'+version+'\n\n'+decision.reason+'\n');
 }
 module.exports={parseVersion,compare,releaseDecision};
