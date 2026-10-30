@@ -1,3 +1,12 @@
+# v1.2.3
+
+- Show two plan choices: the fastest complete plan found and the fastest complete plan using exactly one fewer shift. Select the fastest by default, remove recommendations and the five-percent preference, and show only one option when no exact one-fewer-shift plan was found.
+- After search or reoptimization merges its results, automatically run the purchase-order check on each final choice. Up to two check workers share five additional minutes after the three-minute search. If checking changes the fastest shift count, check the new one-fewer-shift alternative too.
+- Keep only paid, replayed improvements. Stop & Keep Best retains valid plans and completed check progress; a failed check preserves the original valid plan. Show each choice's check status and save its checkpoint with the plan.
+- Completed automatic checks need no separate button click. The summary keeps a manual fallback for older or unfinished checks. Purchase checks cover declared groups of up to five purchases; they do not prove a globally optimal route or departure schedule.
+- Preserve selected timelines and progress in older three-choice saves while showing the current pair. Manual choices still survive save/load and remaining-plan preview/application.
+- Install through Update App → Update & Restart. Start a new search or reoptimize a checked farm to run the automatic purchase checks. Loading an existing plan preserves its saved timeline.
+
 # v1.2.2
 
 - Put plan choices above the timeline and show the selected finish prominently. Distinguish Selected, Recommended · fewer shifts, and Earliest Finish Found.

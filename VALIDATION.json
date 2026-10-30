@@ -20,36 +20,48 @@
     "normalRefinementCutoffFraction": 0.55,
     "adaptiveDeadlineFraction": 0.95
   },
-  "shiftPreference": {
-    "maximumSlowdownFraction": 0.05,
-    "reference": "Fastest elapsed duration found; remaining duration for reoptimization",
-    "selection": "Fewest eligible shifts, then faster finish",
-    "retainFastest": true,
-    "compounds": false
-  },
-  "date": "2026-10-30T18:28:40.638553+00:00",
-  "version": "1.2.2",
-  "currentAudit": "AUDIT-v1.2.2.md",
-  "status": "accepted-public-release",
-  "published": true,
-  "nativeWindowsTested": true,
+  "date": "2026-10-30T19:09:50.193058+00:00",
+  "version": "1.2.3",
+  "currentAudit": "AUDIT-v1.2.3.md",
+  "status": "local-validation-complete-windows-public-pending",
+  "published": false,
+  "nativeWindowsTested": false,
   "visualBrowserTested": true,
   "generatedDomTested": true,
   "buildPassed": true,
-  "scope": "Clarify selected, recommended fewer-shift and earliest-finish plans, and enable selecting a remaining-plan alternative before applying it.",
+  "scope": "Fastest and exactly one-fewer-shift choices without recommendations, followed by automatic purchase-order checks on each final plan.",
+  "planChoices": {
+    "maximumDisplayed": 2,
+    "default": "Fastest complete elapsed duration found",
+    "alternative": "Fastest complete plan using exactly one fewer shift",
+    "recommendations": false,
+    "slowdownPreference": false,
+    "legacyTimelinePreserved": true
+  },
+  "automaticPurchaseChecks": {
+    "afterMergedSearch": true,
+    "budgetMs": 300000,
+    "maximumWorkers": 2,
+    "sharedBudget": true,
+    "recheckChangedPair": true,
+    "preserveValidPlanOnFailure": true,
+    "savePerPlanCheckpoint": true,
+    "scope": "Subsets and legal orders within declared purchase groups of up to five actions; fixed route/suffix with retained or retimed calendar policies"
+  },
   "gameModelChanged": false,
-  "searchEngineChanged": false,
   "globalOptimalityProven": false,
-  "unchangedWorkerSha256": "944eb879c10e846025ee54735c88d760cc421dc1ea69171e4871894266140757",
   "previousRelease": {
-    "version": "1.2.1",
-    "sourceCommit": "f88e8c099f10cf9445728613035cac35a8065a1f",
-    "runId": 41094750316,
+    "version": "1.2.2",
+    "sourceCommit": "9cfbf920c4db677f6fac1764155c632a1d71d1f8",
+    "runId": 41106289094,
     "accepted": true
   },
   "limitations": [
-    "Search remains bounded and does not prove global optimality."
+    "Bounded route search and declared purchase-block checks do not prove global optimality.",
+    "Check completion depends on the shared budget, cancellation and worker availability; partial status is retained.",
+    "Native Windows and anonymous public release verification are pending publication."
   ],
+  "compiledWorkerSha256": "a13266f07ee099ef834c9f47be945d9254f0cb1e092a7a0d40dcf4c8777f9538",
   "localSuitesPassed": [
     "release-state.cjs",
     "prepare-publish.cjs",
@@ -85,6 +97,7 @@
     "time-display-dom.cjs",
     "plan-choices-dom.cjs",
     "search-pool.cjs",
+    "evaluated-search.cjs",
     "search-optimality.cjs",
     "search-optimality-dom.cjs",
     "solver-worker.cjs",
@@ -93,122 +106,122 @@
   "localCheckRecords": [
     {
       "suite": "tests/release-state.cjs",
-      "seconds": 0.118,
+      "seconds": 0.093,
       "passed": true
     },
     {
       "suite": "tests/prepare-publish.cjs",
-      "seconds": 0.508,
+      "seconds": 0.506,
       "passed": true
     },
     {
       "suite": "tests/subscription-import.cjs",
-      "seconds": 0.35,
+      "seconds": 0.469,
       "passed": true
     },
     {
       "suite": "tests/research-sale-plans.cjs",
-      "seconds": 1.86,
+      "seconds": 1.472,
       "passed": true
     },
     {
       "suite": "tests/route-solver.cjs",
-      "seconds": 15.399,
+      "seconds": 14.023,
       "passed": true
     },
     {
       "suite": "tests/automatic-routes.cjs",
-      "seconds": 3.014,
+      "seconds": 2.579,
       "passed": true
     },
     {
       "suite": "tests/shift-plans.cjs",
-      "seconds": 0.706,
+      "seconds": 0.711,
       "passed": true
     },
     {
       "suite": "tests/search-efficiency.cjs",
-      "seconds": 1.406,
+      "seconds": 1.484,
       "passed": true
     },
     {
       "suite": "tests/search-quality.cjs",
-      "seconds": 46.577,
+      "seconds": 54.485,
       "passed": true
     },
     {
       "suite": "tests/investment-search.cjs",
-      "seconds": 3.291,
+      "seconds": 5.368,
       "passed": true
     },
     {
       "suite": "tests/research-breakpoints.cjs",
-      "seconds": 5.535,
+      "seconds": 2.661,
       "passed": true
     },
     {
       "suite": "tests/timezones.cjs",
-      "seconds": 0.716,
+      "seconds": 0.267,
       "passed": true
     },
     {
       "suite": "tests/shift-rates.cjs",
-      "seconds": 0.386,
+      "seconds": 0.318,
       "passed": true
     },
     {
       "suite": "tests/sleep-schedule.cjs",
-      "seconds": 10.416,
+      "seconds": 1.457,
       "passed": true
     },
     {
       "suite": "tests/silo-comfort.cjs",
-      "seconds": 11.03,
+      "seconds": 0.605,
       "passed": true
     },
     {
       "suite": "tests/sleep-search-quality.cjs",
-      "seconds": 7.969,
+      "seconds": 6.573,
       "passed": true
     },
     {
       "suite": "tests/earnings-incumbents.cjs",
-      "seconds": 1.697,
+      "seconds": 1.467,
       "passed": true
     },
     {
       "suite": "tests/earnings-first-research.cjs",
-      "seconds": 1.638,
+      "seconds": 1.367,
       "passed": true
     },
     {
       "suite": "tests/purchase-economics.cjs",
-      "seconds": 0.574,
+      "seconds": 0.452,
       "passed": true
     },
     {
       "suite": "tests/search-refinements.cjs",
-      "seconds": 6.167,
+      "seconds": 3.914,
       "passed": true
     },
     {
       "suite": "tests/plan-progress.cjs",
-      "seconds": 0.265,
+      "seconds": 0.221,
       "passed": true
     },
     {
       "suite": "tests/run-shifts.cjs",
-      "seconds": 0.109,
+      "seconds": 0.111,
       "passed": true
     },
     {
       "suite": "tests/research-cleanup.cjs",
-      "seconds": 0.526,
+      "seconds": 0.399,
       "passed": true
     },
     {
       "suite": "tests/research-investments.cjs",
-      "seconds": 3.925,
+      "seconds": 2.818,
       "passed": true
     },
     {
@@ -218,130 +231,94 @@
     },
     {
       "suite": "tests/plan-continuation.cjs",
-      "seconds": 2.144,
+      "seconds": 2.02,
       "passed": true
     },
     {
       "suite": "tests/purchase-decisions.cjs",
-      "seconds": 0.214,
+      "seconds": 0.184,
       "passed": true
     },
     {
       "suite": "tests/quick-guide-order.cjs",
-      "seconds": 0.148,
+      "seconds": 0.118,
       "passed": true
     },
     {
       "suite": "tests/cooperative-refinement.cjs",
-      "seconds": 0.576,
+      "seconds": 0.492,
       "passed": true
     },
     {
       "suite": "tests/deep-search-dom.cjs",
-      "seconds": 5.982,
+      "seconds": 4.903,
       "passed": true
     },
     {
       "suite": "tests/run-shifts-dom.cjs",
-      "seconds": 49.184,
+      "seconds": 10.831,
       "passed": true
     },
     {
       "suite": "tests/time-display-dom.cjs",
-      "seconds": 6.475,
+      "seconds": 2.933,
       "passed": true
     },
     {
       "suite": "tests/plan-choices-dom.cjs",
-      "seconds": 8.65,
+      "seconds": 8.39,
       "passed": true
     },
     {
       "suite": "tests/search-pool.cjs",
-      "seconds": 6.481,
+      "seconds": 5.811,
+      "passed": true
+    },
+    {
+      "suite": "tests/evaluated-search.cjs",
+      "seconds": 1.297,
       "passed": true
     },
     {
       "suite": "tests/search-optimality.cjs",
-      "seconds": 1.162,
+      "seconds": 0.866,
       "passed": true
     },
     {
       "suite": "tests/search-optimality-dom.cjs",
-      "seconds": 12.812,
+      "seconds": 10.322,
       "passed": true
     },
     {
       "suite": "tests/solver-worker.cjs",
-      "seconds": 44.739,
+      "seconds": 26.954,
       "passed": true
     },
     {
       "suite": "tests/sleep-controls.cjs",
-      "seconds": 10.366,
+      "seconds": 6.475,
       "passed": true
     }
   ],
   "visualBrowser": {
     "engine": "Chromium 141.0.7390.37",
-    "widths": [
+    "reportedPlanWidths": [
       1440,
       1000,
       760,
       500
     ],
-    "reportedPlanChecked": true,
-    "directEarliestFinish": true,
+    "automaticChecksWidths": [
+      1440,
+      1000,
+      500
+    ],
+    "twoChoicesWithoutRecommendations": true,
+    "liveBlobCheckWorkers": true,
+    "perPlanCheckpoints": true,
     "keyboardSelection": true,
     "savedJson": true,
     "noJavaScriptErrors": true,
     "noHorizontalOverflow": true
-  },
-  "windowsRelease": {
-    "runId": 41106289094,
-    "jobId": 124236871853,
-    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/41106289094",
-    "sourceCommit": "9cfbf920c4db677f6fac1764155c632a1d71d1f8",
-    "requiredSuitesPassed": 39,
-    "nativeUpdaterAndLauncherPassed": true,
-    "publicFeedAndRuntimeHashesPassed": true
-  },
-  "independentPublicVerification": {
-    "version": "1.2.2",
-    "sourceCommit": "9cfbf920c4db677f6fac1764155c632a1d71d1f8",
-    "releaseId": 429358846,
-    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.2.2",
-    "anonymous": true,
-    "assets": [
-      {
-        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
-        "size": 8646959,
-        "id": 693018191,
-        "sha256": "a94c952f615a2f4853af71216ad69db2d87c8c360dac14e461f4cc2bb8eb6cef"
-      },
-      {
-        "name": "update-manifest.json",
-        "size": 239,
-        "id": 693018195,
-        "sha256": "ca30a9c1f1fc293ebda541abd29c7123d8890f8141679813c650e2a9c5a767a8"
-      }
-    ],
-    "archiveEntries": 169,
-    "runtimeFileHashes": 167,
-    "crcPassed": true,
-    "closedManifest": true,
-    "soleCurrentAudit": true,
-    "versionAndRepositoryVerified": true,
-    "compiledDeepDefaultsVerified": true,
-    "compiledPlanChoicesVerified": true,
-    "visualBrowserVerified": true,
-    "visualWidths": [
-      1440,
-      1000,
-      760,
-      500
-    ],
-    "publicWorkerSha256": "944eb879c10e846025ee54735c88d760cc421dc1ea69171e4871894266140757",
-    "searchWorkerUnchangedFromPreviousRelease": true
   }
 }

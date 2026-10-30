@@ -1,4 +1,4 @@
-const {SearchPool}=require('./search-pool.cjs');
+const {EvaluatedSearch}=require('./evaluated-search.cjs');
 const SearchQuality=require('./search-quality.cjs');
 const PlanVerification=require('./plan-verification.cjs');
 "use strict";
@@ -1188,11 +1188,11 @@ function renderLaunchProgress(card, report, confirmed, reviewedCounts) {
   }
   card.append(details);
 }
-function renderPlanChoices(plan,zone,{remaining=false,preview=false,onSelect}={}) {
+function renderPlanChoices(plan,zone,{remaining=false,preview=false,onSelect,raw=resultConfig}={}) {
   if(!plan.shiftPlans)return null;
   const choices=el("section",undefined,"card plan-choices research-sale-comparison"),row=el("div",undefined,"research-sale-options");
   choices.id=preview?"remaining-plan-choices":"plan-choices";
-  const fastest=ShiftPlans.fastest(plan.shiftPlans),recommended=ShiftPlans.rank(plan.shiftPlans)[0];
+  const options=ShiftPlans.shortlist(plan.shiftPlans),fastest=options[0];
   const shiftLabel=n=>n+" "+(remaining?"remaining":"new")+" shift"+(n===1?"":"s");
   const delay=p=>Math.max(0,p.seconds-fastest.plan.seconds);
   const percentage=p=>fastest.plan.seconds>0?(delay(p)/fastest.plan.seconds*100).toFixed(2)+"%":null;
@@ -1205,25 +1205,27 @@ function renderPlanChoices(plan,zone,{remaining=false,preview=false,onSelect}={}
   selected.append(el("strong",(preview?"Selected to apply: ":"Selected timeline: ")+shiftLabel(plan.switches)),el("p","Finishes "+timestamp(plan.end,zone),"plan-choice-finish"));
   if(delay(plan)>1e-6){
     selected.append(el("p",difference(plan),"plan-choice-tradeoff"));
-    if(plan.switches===recommended.switches)selected.append(el("p","Recommended because saving shifts costs "+percentage(plan)+" more time, within your 5% allowance.","hint plan-choice-reason"));
-    else selected.append(el("p","You selected this plan. The recommendation is "+shiftLabel(recommended.switches)+".","hint plan-choice-reason"));
     const earlier=el("button","Use earliest finish · "+shiftLabel(fastest.switches),"secondary plan-choice-earliest");
     earlier.type="button";earlier.disabled=!!worker||!!importingBackup;earlier.onclick=()=>onSelect(fastest.switches);selected.append(earlier);
-  }else selected.append(el("p",plan.shiftPlans.length===1?"Only one complete plan found.":"Earliest finish found among the plans compared.","plan-choice-tradeoff"));
+  }else selected.append(el("p","Earliest finish found among the plans compared.","plan-choice-tradeoff"));
+  if(!options.some(entry=>entry.switches===plan.selectedSwitches))selected.append(el("p","This saved timeline uses an older shift-count option. Choose a current option below to switch.","hint plan-choice-legacy"));
   choices.append(selected);
-  for(const entry of plan.shiftPlans){
+  for(const entry of options){
     const button=el("button",undefined,"research-sale-option"),active=entry.switches===plan.selectedSwitches;
     button.type="button";button.dataset.shifts=entry.switches;button.setAttribute("aria-pressed",String(active));button.disabled=!!worker||!!importingBackup;
     button.append(el("strong",shiftLabel(entry.switches)));
     const badges=el("span",undefined,"plan-choice-badges");
     if(active)badges.append(el("span","Selected","plan-choice-active"));
-    if(entry.switches===recommended.switches)badges.append(el("span",entry.plan.seconds>fastest.plan.seconds+1e-6?"Recommended · fewer shifts":"Recommended","research-sale-best"));
-    if(delay(entry.plan)<=1e-6)badges.append(el("span","Earliest finish found","research-sale-best"));
+    badges.append(el("span",entry===fastest?"Earliest finish found":"One fewer shift","research-sale-best"));
     button.append(badges,el("span","Finishes "+timestamp(entry.plan.end,zone),"research-sale-end"),el("span",(remaining?"Time remaining: ":"Duration: ")+duration(entry.plan.seconds)));
     if(delay(entry.plan)>1e-6)button.append(el("span",difference(entry.plan),"research-sale-delta"));
+    const checked=PlanVerification.checkpoint(raw,entry.plan.verification),automatic=entry.plan.automaticPurchaseCheck;
+    if(checked?.complete)button.append(el("span","Purchase order checked","plan-choice-check"));
+    else if(automatic)button.append(el("span",automatic.status==='error'?"Purchase check unavailable":automatic.status==='not-started'?"Purchase check not run":"Purchase check paused","plan-choice-check"));
     button.onclick=()=>onSelect(entry.switches);row.append(button);
   }
-  choices.append(row,el("p","Preference: use fewer shifts when the plan takes no more than 5% longer than the earliest finish found. "+(preview?"Select a card, then use the selected remaining plan to replace your timeline.":"Select a card to change the timeline and exports."),"hint plan-choice-policy"));
+  if(options.length===1)choices.append(el("p",fastest.switches>0?"No complete plan using "+shiftLabel(fastest.switches-1)+" was found.":"This plan needs no further shifts.","hint plan-choice-availability"));
+  choices.append(row,el("p","Compare the earliest finish with the fastest plan using exactly one fewer shift. "+(preview?"Select a card, then use the selected remaining plan to replace your timeline.":"Select a card to change the timeline and exports."),"hint plan-choice-policy"));
   return choices;
 }
 function renderRemainingComparison(host) {
@@ -1232,7 +1234,7 @@ function renderRemainingComparison(host) {
   const card=el("section",undefined,"card remaining-comparison");card.id="remaining-plan-comparison";
   card.append(el("h2",proposal?"Remaining Plan Comparison":"Remaining Plan"));
   if(proposal){
-    const choices=renderPlanChoices(plan,zone,{remaining:true,preview:true,onSelect:shifts=>{
+    const choices=renderPlanChoices(plan,zone,{remaining:true,preview:true,raw:proposal.config,onSelect:shifts=>{
       remainingProposal={...remainingProposal,result:ShiftPlans.select(remainingProposal.result,shifts)};renderResult();
       $("remaining-plan-choices").querySelector(`[data-shifts="${shifts}"]`).focus({preventScroll:true});
     }});
@@ -1394,14 +1396,17 @@ function renderResult() {
   const verification=PlanVerification.checkpoint(resultConfig,r.verification);
   const verify=el("button",verification?.complete?"Purchase check complete":verification?"Continue purchase check":"Check purchase order","secondary");
   verify.id="verify-purchases";
+  verify.hidden=!!verification?.complete;
   verify.setAttribute("aria-describedby","purchase-check-scope purchase-check-availability");
   verify.onclick=()=>optimize({kind:"verification"});
   const check=el("details",undefined,"purchase-check");
   check.open=checkWasOpen ?? (!!verification && !verification.complete);
   check.append(el("summary",verification?.complete?"Purchase Order Check · Complete":"Purchase Order Check"));
-  const scope=el("p","Look for a faster purchase order within selected groups of up to five purchases. The check compares subsets and legal orders. It does not check every possible route or departure time.","hint");scope.id="purchase-check-scope";
+  const scope=el("p","After search, each final plan is checked automatically for a faster purchase order within groups of up to five purchases. The check compares subsets and legal orders. Other routes and departure times remain outside this check.","hint");scope.id="purchase-check-scope";
   const availability=el("p",undefined,"hint");availability.id="purchase-check-availability";
   check.append(scope);
+  if(r.purchaseEvaluation){const plans=r.shiftPlans?ShiftPlans.shortlist(r.shiftPlans).map(e=>e.plan):[r],done=plans.filter(p=>PlanVerification.checkpoint(resultConfig,p.verification)?.complete).length;check.append(el("p",done+" / "+plans.length+" final plans fully checked. Purchase checks run automatically after search. "+(done===plans.length?"":"The best valid plans and completed check progress are retained."),"hint automatic-purchase-checks"));}
+  if(r.automaticPurchaseCheck?.error&&!verification?.complete)check.append(el("p","Automatic check could not finish: "+r.automaticPurchaseCheck.error,"hint"));
   if(verification)check.append(el("p",verification.completedBlocks+" / "+verification.totalBlocks+" declared purchase blocks checked · "+verification.examined.toLocaleString()+" exact purchase states examined. "+(verification.complete?"The declared blocks are exhausted for this plan. ":"Save the plan to retain progress, then continue the check. ")+"Routes and departure times remain outside this exhaustive check.","hint purchase-verification"));
   check.append(availability,verify);
   const expand = el("button", "Expand all", "secondary");
@@ -1702,7 +1707,7 @@ function renderSuggestion(suggestion, runConfig = resultConfig, inputsChanged = 
 }
 function renderSearchClock() {
   const total = Math.max(0, Math.floor((performance.now() - searchStartedAt) / 1e3)), elapsed = exactDuration(total) + (total >= 60 && total % 60 === 0 ? " 0s" : "");
-  $("run-detail").textContent = [searchContext, searchBestSeconds !== null ? "Best so far: " + duration(searchBestSeconds) : "", (checkingPurchases ? "Checking for " : "Searching for ") + elapsed].filter(Boolean).join(" \xB7 ");
+  $("run-detail").textContent = [searchContext, searchBestSeconds !== null ? "Best so far: " + duration(searchBestSeconds) : "", "Elapsed " + elapsed].filter(Boolean).join(" \xB7 ");
   $("search-elapsed").textContent = elapsed;
   $("search-best").textContent = searchBestSeconds !== null ? duration(searchBestSeconds) : "None Yet";
 }
@@ -1713,7 +1718,7 @@ function startSearchClock({verifying = false, resuming = false} = {}) {
   searchBestSeconds = verifying ? result.seconds : null;
   searchContext = verifying ? "Comparing purchase orders; the current best plan is retained" : "Evaluating affordable purchases, event waits, and switches";
   $("search-status-heading").textContent = verifying ? "Checking Purchase Order" : resuming ? "Reoptimizing Remaining Plan" : "Finding Best Plan";
-  $("search-description").textContent = verifying ? "Checks selected purchase groups from this plan's starting farm. Stop & Keep Best pauses the check. Save Plan keeps progress for another session. Other routes and departure times remain outside this check." : resuming ? "Deep search starts from the checked farm with four workers and a three-minute budget, using the remaining shift allowance. Compare the new schedule with the original route before choosing a plan." : "Deep search compares routes, purchases, weekly sale timing, and departures using four workers with a three-minute budget. Stop & Keep Best retains complete alternatives and recommends the fewest shifts within 5% of the fastest finish found.";
+  $("search-description").textContent = verifying ? "Checks selected purchase groups from this plan's starting farm. Stop & Keep Best pauses the check. Save Plan keeps progress for another session. Other routes and departure times remain outside this check." : resuming ? "Deep search starts from the checked farm with four workers and a three-minute budget, using the remaining shift allowance. Compare the new schedule with the original route before choosing a plan." : "Deep search compares routes, purchases, weekly sale timing, and departures using four workers with a three-minute budget. The fastest plan found and its one-fewer-shift alternative are then checked automatically for purchase order.";
   $("search-stage").textContent = verifying ? "Preparing Purchase Groups" : "Preparing Farm and Checking Limits";
   $("search-openings").textContent = "Not Started";
   delete $("search-openings").dataset.total;
@@ -1762,7 +1767,7 @@ function optimize(request) {
   else if(resuming){try{runConfig=Continuation.prepare(request).config;}catch(e){show(e.message,true);return;}}
   else{if(!refresh())return;runConfig=structuredClone(config);delete runConfig.plan.continuation;}
   if(remainingProposal){remainingProposal=null;renderResult();}
-  $("search-limits").textContent = verifying?"Exhaustive purchase block check · up to five purchases per block · five-minute budget · Stop & Keep Best retains progress.":"Automatic purchase and departure timing · " + (runConfig.plan.autoSequence?"up to "+runConfig.plan.maxShifts+" new shifts":"entered route")+" · search budget " + exactDuration(searchOptions.maxMs / 1000) + ".";
+  $("search-limits").textContent = verifying?"Exhaustive purchase block check · up to five purchases per block · five-minute budget · Stop & Keep Best retains progress.":"Automatic purchase and departure timing · " + (runConfig.plan.autoSequence?"up to "+runConfig.plan.maxShifts+" new shifts":"entered route")+" · search budget " + exactDuration(searchOptions.maxMs / 1000) + "; then automatic purchase checks, up to 5 additional minutes.";
   dirty = false;
   if ($("plan-stale")) { $("plan-stale").textContent = verifying ? "Checking this plan's purchase order. The current best plan is retained, and you can pause with Stop & Keep Best." : resuming ? "Searching the remaining plan from the checked snapshot. The original timeline stays available for comparison." : "A new search is running. This timeline is the previous plan; the completed search will replace it."; $("plan-stale").hidden = false; }
   show(verifying?"Checking purchase groups from this plan's starting farm. Stop & Keep Best retains the best plan and remaining work.":resuming?"Reoptimizing the remaining plan. Completed upgrades, current fuel and flights, and the remaining shift budget are retained.":"Searching research orders and switch timing. You can keep using the interface.");
@@ -1771,8 +1776,9 @@ function optimize(request) {
   $("run-summary").textContent = verifying ? "Checking Purchase Order\u2026" : resuming ? "Reoptimizing Remaining Plan\u2026" : "Searching\u2026";
   startSearchClock({verifying,resuming});
   const blob = new Blob([globalThis.VIRTUE_WORKER_SOURCE], { type: "text/javascript" }), url = URL.createObjectURL(blob);
-  try { worker = verifying?new Worker(url):new SearchPool(()=>new Worker(url),{workers:4}); }
+  try { worker = verifying?new Worker(url):new EvaluatedSearch(()=>new Worker(url),{workers:4,dispose:()=>URL.revokeObjectURL(url)}); }
   catch (error) {
+    URL.revokeObjectURL(url);
     busy(false);
     if (verifying) { purchaseCheckFailed(error.message); return; }
     markInputsChanged();
@@ -1781,7 +1787,7 @@ function optimize(request) {
     $("run-summary").textContent = "Search Could Not Start";
     $("run-detail").textContent = "Try reopening the app or using the Windows launcher.";
     return;
-  } finally { URL.revokeObjectURL(url); }
+  } finally { if(verifying)URL.revokeObjectURL(url); }
   const activeWorker = worker;
   let lastAnnouncement = 0;
   worker.onmessage = ({ data }) => {
@@ -1798,7 +1804,15 @@ function optimize(request) {
         $("search-announcement").textContent = searchContext;
         return;
       }
-      if(p.phase==="verification"){
+      if(p.phase==="purchase-evaluation"){
+        checkingPurchases=true;
+        $("search-status-heading").textContent="Checking Final Plan Purchases";
+        $("run-summary").textContent="Checking purchases · "+p.checkedPlans+" / "+p.planCount+" plans";
+        searchContext=Number(p.explored||0).toLocaleString()+" exact purchase states examined";
+        $("search-stage").textContent=p.stage;
+        $("search-openings").textContent=p.checkedPlans+" / "+p.planCount+" plans checked · "+searchContext;
+        $("search-description").textContent="The final choices are checked automatically, with up to two purchase-order workers sharing five additional minutes. Stop & Keep Best retains valid plans and completed check progress.";
+      }else if(p.phase==="verification"){
         $("run-summary").textContent="Checking purchases · "+p.stage;
         searchContext=Number(p.explored||0).toLocaleString()+" exact purchase states examined";
         $("search-stage").textContent=p.stage;

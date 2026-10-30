@@ -502,7 +502,6 @@ aside .update-app{margin-top:auto}
 .plan-choice-selected>strong{font-size:14px;color:#b7d7ce}
 .plan-choice-finish{font-size:22px;font-weight:650;margin:8px 0;line-height:1.4}
 .plan-choice-tradeoff{font-size:15px;color:#dce5f1;margin:8px 0}
-.plan-choice-reason{margin:8px 0 12px}
 .plan-choice-badges{display:flex;flex-wrap:wrap;gap:5px 9px;min-height:19px}
 .plan-choice-active{color:#0f2620;background:var(--accent);border-radius:4px;padding:1px 6px;font-weight:700}
 .plan-choices .research-sale-end{font-size:14px;color:#dce5f1}

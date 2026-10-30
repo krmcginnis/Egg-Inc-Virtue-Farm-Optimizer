@@ -19,40 +19,59 @@ function preferenceCase(){
 function run(){
  const entries=[entry(12,100),entry(11,102),entry(10,105),entry(9,110.25),entry(8,115.7625)];
  for(const order of [entries,entries.slice().reverse(),[...entries.slice(2),...entries.slice(0,2)]]){
-  const result=Plans.create(order);assert.equal(result.switches,10);assert.equal(result.recommendedSwitches,10);
-  assert.equal(Plans.fastest(result.shiftPlans).switches,12);assert.equal(result.shiftPlans.length,3);Plans.validate(result);
+  const result=Plans.create(order);assert.equal(result.switches,12);assert.equal(result.recommendedSwitches,undefined);
+  assert.deepEqual(result.shiftPlans.map(e=>e.switches),[12,11]);Plans.validate(result);
  }
- assert.equal(Plans.create([entry(12,100),entry(11,105)]).switches,11,'exactly 5% is included');
- assert.equal(Plans.create([entry(12,100),entry(11,105.0001)]).switches,12,'more than 5% is excluded');
- assert.equal(Plans.create([entry(12,100),entry(11,104),entry(10,108)]).switches,11,'the allowance cannot compound');
- assert.equal(Plans.create([entry(12,100),entry(11,111)]).switches,12,'compare durations, not large absolute end timestamps');
- assert.equal(Plans.create([entry(3,0),entry(2,0),entry(1,1)]).switches,2,'zero-duration reference does not allow positive delay');
- assert.equal(Plans.create([entry(0,10)]).switches,0);
- const many=[12,11,10,9,8].map(n=>entry(n,100+(12-n)));
- const compact=Plans.create(many);assert.equal(compact.switches,8);assert.ok(compact.shiftPlans.some(e=>e.switches===12),'the fastest reference survives the card cap');
- const selected=Plans.select(compact,12);assert.equal(selected.switches,12);assert.equal(selected.recommendedSwitches,8,'manual choice does not change recommendation');
- const saved=JSON.parse(JSON.stringify({...selected,recommendedSwitches:12}));
- const replayed=Plans.replay({},saved,(_,p)=>p);assert.equal(replayed.switches,12);assert.equal(replayed.recommendedSwitches,8,'older recommendations are refreshed without changing saved selection');
+ for(const seconds of [102,105,105.0001,500]){
+  const result=Plans.create([entry(12,100),entry(11,seconds)]);assert.equal(result.switches,12,'always default to fastest, without a slowdown preference');
+  assert.equal(result.shiftPlans[1].plan.seconds,seconds,'keep the exact one-fewer option regardless of delay');
+ }
+ assert.deepEqual(Plans.create([entry(12,100),entry(10,101)]).shiftPlans.map(e=>e.switches),[12],'do not replace a missing one-fewer plan with a different count');
+ assert.deepEqual(Plans.create([entry(4,101),entry(3,100),entry(2,200)]).shiftPlans.map(e=>e.switches),[3,2],'the second choice is not merely the next-fastest overall');
+ assert.equal(Plans.create([entry(3,0),entry(2,0),entry(1,1)]).switches,2,'equal-time fastest plans favor fewer shifts');
+ assert.deepEqual(Plans.create([entry(0,10),entry(1,11)]).shiftPlans.map(e=>e.switches),[0]);
+ assert.deepEqual(Plans.shortlist([]),[]);assert.throws(()=>Plans.create([]),/No complete/);
+ const duplicates=Plans.create([entry(6,100),entry(5,200),entry(5,150),entry(4,120)]);
+ assert.deepEqual(duplicates.shiftPlans.map(e=>[e.switches,e.plan.seconds]),[[6,100],[5,150]],'retain the fastest candidate at the exact lower count');
+ const read=x=>({seconds:x.time,switches:x.count});
+ assert.deepEqual(Plans.shortlist([{count:3,time:1},{count:2,time:2},{count:1,time:3}],read).map(x=>x.count),[3,2]);
+ const selected=Plans.select(duplicates,5),saved=JSON.parse(JSON.stringify(selected));
+ assert.equal(selected.switches,5);assert.equal(selected.recommendedSwitches,undefined);
+ const replayed=Plans.replay({},saved,(_,p)=>p);assert.equal(replayed.switches,5,'manual choices survive save/load');
  const current=11892579.52011633,deep11=11892618.884424925,ten=13048127.404732943;
- assert.equal(Plans.create([entry(12,current),entry(11,deep11)]).switches,11);
- assert.equal(Plans.create([entry(12,current),entry(11,deep11),entry(10,ten)]).switches,11,'the benchmark ten-shift alternative is outside the allowance');
+ const benchmark=Plans.create([entry(12,current),entry(11,deep11),entry(10,ten)]);
+ assert.equal(benchmark.switches,12);assert.deepEqual(benchmark.shiftPlans.map(e=>e.switches),[12,11]);
 
- // Exercise the real paid-candidate merger, including arrival order and more
- // than three shift counts. A faster candidate of the SAME count still wins.
- const example=preferenceCase();
- for(const order of [example.entries,example.entries.slice().reverse()]){
-  const fake=[],pool=new SearchPool(()=>{const w={postMessage(){},terminate(){}};fake.push(w);return w;},{workers:2});let reply;
+ // Legacy saves retain their selected timeline and validate every stored plan,
+ // but expose only the current pair and discard obsolete recommendation data.
+ const example=preferenceCase(),legacyEntries=example.entries.slice(0,3),legacy={...legacyEntries[2].plan,shiftPlans:legacyEntries,selectedSwitches:3,recommendedSwitches:3,shiftComparisonVersion:1};
+ const checked=[];const restored=Plans.replay(example.raw,legacy,(raw,p)=>{const {s,c}=R.replay(raw,p.actions,true);assert.ok(S.reached(s,c));checked.push(p.switches);return p;});
+ assert.deepEqual(checked,[5,4,3]);assert.equal(restored.selectedSwitches,3);assert.equal(restored.recommendedSwitches,undefined);
+ assert.deepEqual(Plans.shortlist(restored.shiftPlans).map(e=>e.switches),[5,4]);
+ const corrupt=structuredClone(legacy);corrupt.shiftPlans[2].plan.actions[0]={type:'research',i:999};
+ assert.throws(()=>Plans.replay(example.raw,corrupt,(raw,p)=>{R.replay(raw,p.actions,true);return p;}));
+
+ // The merger keeps every paid per-count winner internally. A later fastest
+ // plan changes the pair, including a previously hidden lower-count winner.
+ for(const lateWinner of [false,true])for(const order of [example.entries,example.entries.slice().reverse()]){
+  const pool=new SearchPool(()=>({postMessage(){},terminate(){}}),{workers:2});let reply;
   pool.onmessage=({data})=>{reply=data;};pool.postMessage({config:example.raw,options:{maxMs:1000}});
   for(const [i,e] of order.entries())assert.ok(pool.accept({config:example.raw,result:e.plan},i%2));
+  assert.equal(pool.best.size,5);
   const two=example.entries.find(e=>e.switches===2),worse=structuredClone(two.plan),paid=R.replay(example.raw,worse.actions,true);
   const delayed=S.advance(paid.s,paid.c,paid.s.t+1,'Extra delay',true,'online');worse.actions=S.history(delayed);worse.seconds++;worse.end++;
   assert.equal(pool.accept({config:example.raw,result:worse},0),false);assert.equal(pool.best.get(2).plan.seconds,1050);
+  if(lateWinner){
+   const old=example.entries.find(e=>e.switches===4).plan,{s,c}=R.replay(example.raw,old.actions.slice(0,-1),true),n=S.advance(s,c,c.start+900,'Faster four-shift winner',true,'online');
+   const actions=S.history(n).map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:old.actions[0].routeSearch});
+   const improved={...old,actions,end:n.t,seconds:n.t-c.start};assert.ok(pool.accept({config:example.raw,result:improved},1));
+  }
   pool.receive(0,{type:'result',result:example.entries[0].plan});pool.receive(1,{type:'result',result:two.plan});
-  assert.equal(reply.type,'result');assert.equal(reply.result.switches,2);assert.equal(reply.result.recommendedSwitches,2);
-  assert.equal(Plans.fastest(reply.result.shiftPlans).switches,5);assert.equal(reply.result.shiftPlans.length,3);
+  assert.equal(reply.type,'result');assert.equal(reply.result.switches,lateWinner?4:5);assert.equal(reply.result.recommendedSwitches,undefined);
+  assert.deepEqual(reply.result.shiftPlans.map(e=>e.switches),lateWinner?[4,3]:[5,4]);
   for(const e of reply.result.shiftPlans){const {s,c}=R.replay(example.raw,e.plan.actions,true);assert.ok(S.reached(s,c));}
   pool.terminate();
  }
- console.log('PASS shift preference: inclusive 5% of elapsed duration, noncompounding threshold, fewest eligible shifts, zero duration, retained fastest reference before card cap, manual/save/load selection, benchmark tradeoff, and paid multi-worker candidate merging.');
+ console.log('PASS two plan choices: fastest default without recommendations, exact one-fewer count at any delay, gaps/zero/ties/custom metrics, fastest per-count winners, retained legacy selection and full replay, manual save/load, and multi-worker reanchoring without pruning hidden counts.');
 }
 module.exports={run,preferenceCase};if(require.main===module)run();

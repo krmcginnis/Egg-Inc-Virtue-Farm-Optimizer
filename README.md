@@ -26,8 +26,8 @@ choose **Use Selected Remaining Plan** or **Keep Original Plan**. Visit labels r
 from the current farm; the comparison shows total shifts used and remaining.
 **Return to Previous Plan** restores the original after applying a replacement.
 **Save Plan** retains progress, launch counts, the comparison, and any proposed
-replacement. Recommendations favor the fewest shifts within 5% of the fastest
-remaining duration found. The bounded search does not prove a globally optimal sequence.
+replacement. Compare the fastest remaining plan found with the fastest plan
+using exactly one fewer shift. The bounded search does not prove a globally optimal sequence.
 
 **Use Selected Remaining Plan** immediately shows the next planned step from the checked
 farm. Refreshing may return the same backup; it remains usable when it is at
@@ -75,20 +75,19 @@ The game model uses pinned Wasmegg data and reference code. Third-party notices 
 
 Automatic Planning compares farm orders, numbers of upgrade visits, purchases,
 and departure timing within Maximum New Shifts (default 12). The maximum is a
-ceiling. Purchase Timeline recommends the fewest shifts among complete plans
-within 5% of the fastest completion time found. The allowance uses elapsed plan
-duration (remaining duration for reoptimization) and always references the fastest
-plan, so it cannot compound. Up to three distinct shift counts are retained,
-including both the recommendation and the fastest option. For one shift count,
-the fastest paid plan is still preferred.
+ceiling. Purchase Timeline offers at most two choices: the fastest complete plan
+found and the fastest complete plan using exactly one fewer shift. The fastest
+is selected by default.
+If no valid plan was found at exactly one fewer shift, only the fastest is shown.
+Search and worker pooling continue comparing other shift counts internally.
 Each choice has its own summary, Quick Guide, and JSON/PDF exports. Saved plans
-retain every choice; older single plans and sale comparisons can also be loaded
-and replayed.
+retain the selected timeline; older three-choice saves still replay and preserve
+their selected timeline and progress, while the chooser shows the current pair.
 Plan choices appear above the timeline. The selected finish, extra time, percentage,
-and shifts saved are shown together, with separate Selected, Recommended (fewer
-shifts), and Earliest Finish Found labels. Use Earliest Finish switches directly
-to the faster option. Remaining-plan previews offer the same choice before applying
-the replacement timeline.
+and shifts saved are shown together, with separate Selected, Earliest Finish Found,
+and One Fewer Shift labels. Use Earliest Finish switches directly to the faster
+option. Remaining-plan previews offer the same choice before applying the
+replacement timeline.
 
 After finding the fastest plans, the solver compares extra paid silo purchases
 on existing Resilience visits. It prefers up to eight silos (two with a standard
@@ -150,6 +149,17 @@ Loading an older plan preserves its saved timeline and search diagnostics; it
 does not start a search. Find Best Plan and Reoptimize Remaining Plan use the
 installed application's current Deep profile. Check Purchase Order checks only
 its declared purchase groups and does not run a full route search.
+
+After the search merges its results, the final choices automatically run the
+purchase-order check. Up to two check workers share five additional minutes;
+a single-worker fallback shares that time between the plans. The checks compare
+subsets and legal orders within groups of up to five purchases, keep only paid,
+replayed improvements, and retain progress if stopped. If checking changes the
+fastest shift count, the new one-fewer-shift alternative is checked as well.
+Each choice shows whether its purchase check finished. Save Plan retains the
+status and checkpoint for each plan. The summary's manual check is a fallback
+for older plans or unfinished checks; completed checks need no separate action.
+This scoped check does not prove global optimality across routes and departures.
 
 Reoptimizing a checked farm also retimes compatible saved shift-count alternatives
 as starting candidates. The current farm, original shift allowance and remaining

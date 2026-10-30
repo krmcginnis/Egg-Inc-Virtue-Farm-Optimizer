@@ -59,21 +59,20 @@ async function exportPlan(){
   }
   assert.equal(backupPosts,3);
 
-  // Recommendation and fastest finish are separate. A manual fastest choice
-  // survives save/load while the slower, fewer-shift plan stays recommended.
+  // Exactly two choices, without recommendations; a manual slower choice
+  // survives save/load while new searches select the fastest by default.
   const preference=require('./shift-plans.cjs').preferenceCase(),ShiftPlans=require('../src/shift-plans.cjs');
-  const preferred=ShiftPlans.create(preference.entries);
-  await load({version:1,config:preference.raw,result:preferred});
-  assert.equal(w.VirtueApp.getResult().switches,2);
-  assert.match(query('[data-shifts="2"]').textContent,/Recommended/);
-  assert.doesNotMatch(query('[data-shifts="2"]').textContent,/Earliest finish found/);
-  assert.match(query('[data-shifts="2"]').textContent,/5\.00%/);
+  const fastestResult=ShiftPlans.create(preference.entries);
+  await load({version:1,config:preference.raw,result:fastestResult});
+  assert.equal(w.VirtueApp.getResult().switches,5);
+  assert.deepEqual([...w.document.querySelectorAll('[data-shifts]')].map(n=>n.dataset.shifts),['5','4']);
+  assert.match(query('[data-shifts="4"]').textContent,/One fewer shift/);
   assert.match(query('[data-shifts="5"]').textContent,/Earliest finish found/);
-  assert.doesNotMatch(query('[data-shifts="5"]').textContent,/Recommended/);
-  assert.match(query('.plan-choice-policy').textContent,/fewer shifts.*5%/);
-  query('[data-shifts="5"]').click();
-  const preferredSaved=await exportPlan();await load(preferredSaved);
-  assert.equal(w.VirtueApp.getResult().switches,5);assert.equal(w.VirtueApp.getResult().recommendedSwitches,2);
+  assert.doesNotMatch(query('#plan-choices').textContent,/recommend|allowance|preference/i);
+  assert.match(query('.plan-choice-policy').textContent,/exactly one fewer shift/);
+  query('[data-shifts="4"]').click();
+  const selectedSaved=await exportPlan();await load(selectedSaved);
+  assert.equal(w.VirtueApp.getResult().switches,4);assert.equal(w.VirtueApp.getResult().recommendedSwitches,undefined);
 
   const replay=R.replay(fixture.config,fixture.result.actions,true),later=S.buy(replay.s,replay.c,{type:'shift',egg:S.EGGS.indexOf('integrity')});
   const alternate={...fixture.result,end:later.t,seconds:later.t-fixture.result.start,switches:later.stage,actions:S.history(later).map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:fixture.result.actions[0].routeSearch})};
@@ -82,9 +81,9 @@ async function exportPlan(){
   assert.equal($('result-content').firstElementChild.id,'plan-choices','selected plan and alternatives precede the timeline');
   assert.ok($('plan-choices').nextElementSibling.classList.contains('result-summary'));
   assert.equal(query('#result-content>.result-summary')?.nextElementSibling.id,'plan-progress','current progress follows the selected plan summary');
-  query('[data-shifts="'+alternate.switches+'"]').click();assert.equal(w.VirtueApp.getResult().switches,alternate.switches);
+  assert.equal(query('[data-shifts="'+alternate.switches+'"]'),null);assert.equal(w.VirtueApp.getResult().switches,fixture.result.switches);
   const savedAlternative=await exportPlan();await load(savedAlternative);
-  assert.equal(w.VirtueApp.getResult().selectedSwitches,alternate.switches,'selection survives saving with the new layout');
+  assert.equal(w.VirtueApp.getResult().selectedSwitches,fixture.result.switches,'selection survives saving with the new layout');
   await load(fixture);
   query('.plan-jump').click();assert.equal(scrolledTo,'plan-progress-heading');assert.equal(w.document.activeElement.id,'plan-progress-heading');
   w.scrollTo({top:640});query('[data-tab="farm"]').click();w.scrollTo({top:180});query('[data-tab="results"]').click();assert.equal(w.scrollY,640,'returning to the timeline retains scroll');
