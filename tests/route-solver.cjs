@@ -88,6 +88,9 @@ async function run(){
  assert.ok(R.scored(onI,prepared.c).some(x=>x.a.type==='hab'&&x.a.id===18),'future K/research supports useful hab capacity');
  const early={...prepared.s,path:null,cash:10},late=S.advance(early,prepared.c,early.t+60,'test',false);assert.ok(R.dominates(early,late,prepared.c));
  const legacySaved=baseline.researchSalePlans[0].plan;assert.equal(O.replay(raw,legacySaved.actions,false,{enforceOpeningCaps:true}).s.t,legacySaved.end);
+ const adjacent=require('./shift-plans.cjs').preferenceCase();Object.assign(adjacent.raw.plan,{maxShifts:4,shiftComparisonVersion:2});
+ const compared=verify(adjacent.raw,await O.solve(adjacent.raw,{maxMs:500,width:4,disableAdaptiveRefinement:true,incumbents:adjacent.entries.map(e=>({config:adjacent.raw,result:e.plan}))}));
+ assert.deepEqual(compared.shiftPlans.map(e=>e.switches),[5,4,3]);assert.equal(compared.selectedSwitches,4);assert.equal(compared.specifiedSwitches,4);
  console.log('PASS route/shift solver: neighboring shift-count recovery with replay, required floors/missions and cancellation, whole-plan departure opportunity cost, later physical upgrades, arbitrary-route fueling, ceiling and distinct ranked shift plans, zero-shift completion, preserved legacy baseline/replay, internal sale windows, arbitrary three-C route, final-C rules, delivery-only single/no-C routes, manual floors, uncapped timing, calendar boundaries, physical lookahead, saved rule replay, cancellation, and route integrity.');
 }
 module.exports={verify};if(require.main===module)run().catch(e=>{console.error(e);process.exitCode=1;});

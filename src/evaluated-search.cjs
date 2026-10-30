@@ -3,7 +3,7 @@ const {SearchPool}=require('./search-pool.cjs'),Plans=require('./shift-plans.cjs
 const R=require('./route-solver.cjs'),S=require('./simulator.cjs'),Verify=require('./plan-verification.cjs');
 const PURCHASE_CHECK_MS=300000;
 // Merge search islands first, then check the final choices, outside the route
-// search deadline. Preserve per-count winners if a check changes the pair.
+// search deadline. Retain per-count winners and check every available final comparison.
 class EvaluatedSearch{
  constructor(factory,{purchaseCheckMs=PURCHASE_CHECK_MS,dispose=()=>{},...options}={}){
   this.factory=factory;this.purchaseCheckMs=purchaseCheckMs;this.dispose=dispose;
@@ -20,17 +20,17 @@ class EvaluatedSearch{
   if(data.type==='progress'){this.onmessage?.({data});return;}
   const result=data.type==='continuation'?data.continuation.result:data.result;
   if(!result||!['result','continuation'].includes(data.type)||result.solverVersion!==2){this.emit(data);return;}
-  this.envelope=data;this.config=data.continuation?.config||this.request.config;
+  this.envelope=data;this.config=data.continuation?.config||this.request.config;this.specified=result.specifiedSwitches;
   this.plans=new Map([...this.pool.best.values()].map(({plan})=>[plan.switches,{switches:plan.switches,plan:{...plan,search:result.search,explored:result.explored,elapsedMs:result.elapsedMs}}]));
   for(const entry of result.shiftPlans||[{switches:result.switches,plan:result}])this.plans.set(entry.switches,entry);
   this.phase='purchases';this.checkStarted=Date.now();this.checkDeadline=this.checkStarted+this.purchaseCheckMs;
   this.nextChecks();
  }
- pair(){return Plans.shortlist([...this.plans.values()]);}
+ pair(){return Plans.shortlist([...this.plans.values()],undefined,this.specified);}
  report(job,p={}){
   if(job)this.progress.set(job.switches,p.explored||0);
   const pair=this.pair(),done=pair.filter(e=>this.checks.get(e.switches)?.status==='complete').length;
-  this.onmessage?.({data:{type:'progress',progress:{phase:'purchase-evaluation',stage:job?job.switches+' shifts · '+(p.stage||'Preparing purchase groups'):'Checking final plan purchases',checkedPlans:done,planCount:pair.length,explored:[...this.progress.values()].reduce((a,b)=>a+b,0),bestSeconds:Math.min(pair[0].plan.seconds,p.bestSeconds??Infinity)}}});
+  this.onmessage?.({data:{type:'progress',progress:{phase:'purchase-evaluation',stage:job?job.switches+' shifts · '+(p.stage||'Preparing purchase groups'):'Checking final plan purchases',checkedPlans:done,planCount:pair.length,explored:[...this.progress.values()].reduce((a,b)=>a+b,0),bestSeconds:Math.min(...pair.map(e=>e.plan.seconds),p.bestSeconds??Infinity)}}});
  }
  nextChecks(){
   if(this.closed||this.checkers.size)return;
@@ -48,7 +48,7 @@ class EvaluatedSearch{
    this.finish();return;
   }
   this.peakCheckWorkers=Math.max(this.peakCheckWorkers,jobs.length);
-  // A one-worker fallback reserves time for the other plan. Later replacement
+  // A worker fallback reserves time for the remaining plans. Later replacement
   // choices get the remaining budget, with a minimum cancellable work slice.
   const maxMs=Math.max(100,(this.checkDeadline-Date.now())/Math.ceil(pending.length/jobs.length));
   for(const job of jobs){
@@ -80,7 +80,7 @@ class EvaluatedSearch{
  finish(){
   const entries=this.pair(),plans=entries.map(e=>({switches:e.switches,...(this.checks.get(e.switches)||{status:'not-started'})}));
   const evaluation={version:1,status:plans.every(p=>p.status==='complete')?'complete':this.stopped?'paused':'partial',budgetMs:this.purchaseCheckMs,elapsedMs:Date.now()-this.checkStarted,workers:this.peakCheckWorkers,attemptedPlans:this.checks.size,plans};
-  const result=Plans.create(entries.map(e=>({...e,plan:{...e.plan,automaticPurchaseCheck:this.checks.get(e.switches)||{status:'not-started'},purchaseEvaluation:evaluation}})));
+  const result=Plans.create(entries.map(e=>({...e,plan:{...e.plan,automaticPurchaseCheck:this.checks.get(e.switches)||{status:'not-started'},purchaseEvaluation:evaluation}})),this.specified);
   this.emit(this.envelope.type==='continuation'?{...this.envelope,continuation:{...this.envelope.continuation,result}}:{...this.envelope,result});
  }
  emit(data){if(this.closed)return;this.terminate();this.onmessage?.({data});}

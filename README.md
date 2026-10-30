@@ -26,8 +26,8 @@ choose **Use Selected Remaining Plan** or **Keep Original Plan**. Visit labels r
 from the current farm; the comparison shows total shifts used and remaining.
 **Return to Previous Plan** restores the original after applying a replacement.
 **Save Plan** retains progress, launch counts, the comparison, and any proposed
-replacement. Compare the fastest remaining plan found with the fastest plan
-using exactly one fewer shift. The bounded search does not prove a globally optimal sequence.
+replacement. Compare N+1, N, N−1 remaining shifts, with the specified N
+selected by default. The bounded search does not prove a globally optimal sequence.
 
 **Use Selected Remaining Plan** immediately shows the next planned step from the checked
 farm. Refreshing may return the same backup; it remains usable when it is at
@@ -45,7 +45,7 @@ farm's remaining research levels. Its planned break duration appears in large
 text. Funding breaks precede their purchases in Quick Guide and the exported
 walkthrough; final delivery waits appear separately. Dates and durations remain
 from the original plan until you reoptimize. Remaining mission routing preserves
-all outstanding launches, required fuel stops, and the unused shift allowance.
+all outstanding launches, required fuel stops, and the remaining specified shift count.
 
 ## Updates
 
@@ -74,20 +74,24 @@ The game model uses pinned Wasmegg data and reference code. Third-party notices 
 ## Route-aware solver
 
 Automatic Planning compares farm orders, numbers of upgrade visits, purchases,
-and departure timing within Maximum New Shifts (default 12). The maximum is a
-ceiling. Purchase Timeline offers at most two choices: the fastest complete plan
-found and the fastest complete plan using exactly one fewer shift. The fastest
-is selected by default.
-If no valid plan was found at exactly one fewer shift, only the fastest is shown.
-Search and worker pooling continue comparing other shift counts internally.
-Each choice has its own summary, Quick Guide, and JSON/PDF exports. Saved plans
-retain the selected timeline; older three-choice saves still replay and preserve
-their selected timeline and progress, while the chooser shows the current pair.
-Plan choices appear above the timeline. The selected finish, extra time, percentage,
-and shifts saved are shown together, with separate Selected, Earliest Finish Found,
-and One Fewer Shift labels. Use Earliest Finish switches directly to the faster
-option. Remaining-plan previews offer the same choice before applying the
-replacement timeline.
+and departure timing around Specified New Shifts (default 12), a comparison target. Purchase Timeline compares exactly **N+1, N, N−1**, in that order,
+where N is Specified New Shifts. N is selected by default when available; a manual
+selection survives saving and loading. Automatic search stops at N+1 (at most 30)
+and reserves route proposals for all three counts. A missing count is shown as
+not found within the search budget, and N=0 has no minus-one option. If N is
+unavailable, the fastest available comparison is selected. If none of the requested
+counts completes, the best other completion remains available as a fallback timeline.
+
+The three plan options are selectable column headers; comparison metrics are rows.
+The table shows shift count, total time, projected end date/time in
+24-hour notation, maximum modeled laying and shipping capacity in eggs/hour, and
+future Soul Egg cost. Capacities are reconstructed across the entire timeline and
+may peak at different times. They are before fuel diversion and empty-silo pauses.
+Soul Egg costs apply the sequential shift formula to the starting balance and
+lifetime shift count; research and physical upgrades spend gems instead.
+Choose a plan header to change the timeline and exports, or review a remaining-plan
+selection before applying it. Saved legacy timelines and checked progress are
+preserved. New searches/reoptimization produce the new three-count comparison.
 
 After finding the fastest plans, the solver compares extra paid silo purchases
 on existing Resilience visits. It prefers up to eight silos (two with a standard
@@ -132,7 +136,7 @@ cannot improve retained plans. Research multipliers and exact TE allocation are
 computed with less repeated work. See [search research and limits](SEARCH-RESEARCH.md).
 
 Current-farm searches supplement the established route portfolio with compact
-gear/build cycles, including repeated visits within the remaining shift allowance.
+gear/build cycles, including repeated visits up to one more than the specified count.
 Local route refinement can add a visit as well as remove or rearrange visits.
 Every candidate pays for its purchases, shifts, gear, fuel and required launches.
 
@@ -154,15 +158,15 @@ After the search merges its results, the final choices automatically run the
 purchase-order check. Up to two check workers share five additional minutes;
 a single-worker fallback shares that time between the plans. The checks compare
 subsets and legal orders within groups of up to five purchases, keep only paid,
-replayed improvements, and retain progress if stopped. If checking changes the
-fastest shift count, the new one-fewer-shift alternative is checked as well.
+replayed improvements, and retain progress if stopped. All three available final
+plans are checked, with up to two check workers at a time.
 Each choice shows whether its purchase check finished. Save Plan retains the
 status and checkpoint for each plan. The summary's manual check is a fallback
 for older plans or unfinished checks; completed checks need no separate action.
 This scoped check does not prove global optimality across routes and departures.
 
 Reoptimizing a checked farm also retimes compatible saved shift-count alternatives
-as starting candidates. The current farm, original shift allowance and remaining
+as starting candidates. The current farm, specified shift comparison and remaining
 launches stay authoritative. An alternative with a different visited prefix or
 incompatible launch review is skipped. Automatic artifact snapshots remain in
 new continuations so a saved alternative can replay independently.

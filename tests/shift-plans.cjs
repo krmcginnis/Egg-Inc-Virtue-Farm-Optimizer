@@ -72,6 +72,22 @@ function run(){
   for(const e of reply.result.shiftPlans){const {s,c}=R.replay(example.raw,e.plan.actions,true);assert.ok(S.reached(s,c));}
   pool.terminate();
  }
+ // New comparisons retain exactly N+1, N, N-1 and default to N even
+ // when another count is faster. Broader lower-count winners are not options.
+ const adjacent=Plans.create([entry(4,1),entry(5,150),entry(6,200),entry(7,100),entry(8,50)],6);
+ assert.deepEqual(adjacent.shiftPlans.map(e=>e.switches),[7,6,5]);assert.equal(adjacent.selectedSwitches,6);assert.equal(adjacent.specifiedSwitches,6);Plans.validate(adjacent);
+ assert.deepEqual(Plans.choices(adjacent.shiftPlans,6).map(x=>x.switches),[7,6,5]);
+ const manualNew=Plans.replay({},JSON.parse(JSON.stringify(Plans.select(adjacent,7))),(_,p)=>p);assert.equal(manualNew.selectedSwitches,7);assert.equal(manualNew.specifiedSwitches,6);
+ assert.equal(Plans.create([entry(5,150),entry(7,100)],6).selectedSwitches,7,'missing N falls back to the fastest available comparison');
+ const zeroNew=Plans.create([entry(0,0),entry(1,1)],0);assert.equal(zeroNew.selectedSwitches,0);assert.deepEqual(Plans.choices(zeroNew.shiftPlans,0).map(x=>x.switches),[1,0,null]);
+ const limits=require('../src/shift-limits.cjs'),Auto=require('../src/automatic-routes.cjs'),expanded=structuredClone(example.raw);Object.assign(expanded.plan,{maxShifts:4,shiftComparisonVersion:2});
+ assert.equal(limits.search(expanded.plan),5);assert.equal(limits.search({...expanded.plan,shiftComparisonVersion:undefined}),4);assert.equal(limits.search({...expanded.plan,maxShifts:30}),30);
+ const proposals=Auto.generate(expanded);assert.ok(proposals.every(route=>[3,4,5].includes(route.length-1)));for(const n of [5,4,3])assert.ok(proposals.some(route=>route.length-1===n),'reserve route for '+n);
+ const poolNew=new SearchPool(()=>({postMessage(){},terminate(){}}),{workers:1});let merged;poolNew.onmessage=({data})=>merged=data;poolNew.postMessage({config:expanded,options:{maxMs:1000}});
+ for(const e of example.entries)poolNew.accept({config:expanded,result:e.plan},0);poolNew.receive(0,{type:'result',result:example.entries[0].plan});
+ assert.deepEqual(merged.result.shiftPlans.map(e=>e.switches),[5,4,3]);assert.equal(merged.result.selectedSwitches,4);assert.equal(merged.result.specifiedSwitches,4);
+ const C=require('../src/plan-continuation.cjs');assert.equal(C.verified(expanded,merged.result).selectedSwitches,4);
+ const old=structuredClone(expanded);delete old.plan.shiftComparisonVersion;assert.throws(()=>C.verified(old,merged.result),/shift ceiling|shift-budget/);
  console.log('PASS two plan choices: fastest default without recommendations, exact one-fewer count at any delay, gaps/zero/ties/custom metrics, fastest per-count winners, retained legacy selection and full replay, manual save/load, and multi-worker reanchoring without pruning hidden counts.');
 }
 module.exports={run,preferenceCase};if(require.main===module)run();

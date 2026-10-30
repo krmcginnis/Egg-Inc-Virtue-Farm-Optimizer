@@ -6,6 +6,7 @@ const Staged=require('./staged-route.cjs');
 const Recipes=require('./wasmegg-stage-engine.cjs');
 const Strategy=require('./planning-strategy.cjs'),Summary=require('./shift-summary.cjs'),F=require('./feasibility.cjs');
 const Automatic=require('./automatic-routes.cjs'),ShiftPlans=require('./shift-plans.cjs');
+const ShiftLimits=require('./shift-limits.cjs');
 const {Checkpoints}=require('./search-checkpoints.cjs'),Lookahead=require('./purchase-lookahead.cjs');
 const Breakpoints=require('./research-breakpoints.cjs'),Incumbents=require('./plan-incumbents.cjs');
 const Sleep=require('./sleep-schedule.cjs');
@@ -719,8 +720,9 @@ async function compareRouteNeighborhoods(raw,item,deadline,control,level){
 }
 async function refineRemainingBudget(raw,byShift,byRoute,deadline,control,progress){
  const ids=new WeakMap(),identities=new WeakMap();let next=0;
+ const relevant=item=>raw.plan.shiftComparisonVersion!==2||Math.abs(item.state.stage-ShiftLimits.specified(raw))<=1;
  const jobs=()=>{
-  const roots=[...new Set([...byShift.values(),...[...byRoute.values()].sort((a,b)=>a.state.t-b.state.t)])].slice(0,control.deepSearch?8:4),output=[];
+  const roots=[...new Set([...byShift.values(),...[...byRoute.values()].sort((a,b)=>a.state.t-b.state.t)])].filter(relevant).slice(0,control.deepSearch?8:4),output=[];
   for(const item of roots){
    if(!ids.has(item.state))ids.set(item.state,++next);const id=ids.get(item.state);
    for(let level=0;level<3;level++){
@@ -972,7 +974,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  // with shifting earlier and doing its remaining research after K/I.
  const refinementEnd=started+maxMs*(options.deepSearch?.55:.95);
  if(options.returnComparisons!==true&&!cancelled()){
-  const alternatives=[...byShift.values()].sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0).slice(0,3);
+  const alternatives=[...byShift.values()].filter(item=>raw.plan.shiftComparisonVersion!==2||Math.abs(item.state.stage-ShiftLimits.specified(raw))<=1).sort((a,b)=>better(a.state,b.state)?-1:better(b.state,a.state)?1:0).slice(0,3);
   for(let i=0;i<alternatives.length;i++){
    let item=alternatives[i];if(Date.now()>=refinementEnd||cancelled())break;
    if(control.researchInvestments!==false){
@@ -1022,7 +1024,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
   }
   // Recover missing neighboring shift counts before returning comparisons.
   // A thin beam failing to find one is not evidence that it is impossible.
-  const highest=Math.max(...byShift.keys()),missing=[highest-1,highest-2].filter(n=>n>=0&&!byShift.has(n));
+  const highest=Math.max(...byShift.keys()),specified=ShiftLimits.specified(raw),missing=[...new Set([highest-1,highest-2,...(raw.plan.shiftComparisonVersion===2?[specified,specified-1]:[])])].filter(n=>n>=0&&!byShift.has(n));
   if(missing.length){
    const sources=[...new Set([...byShift.values(),...byRoute.values()])].sort((a,b)=>a.state.stage-b.state.stage||(better(a.state,b.state)?-1:1));
    for(const item of sources){
@@ -1056,7 +1058,8 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
  if(options.returnComparisons!==true){
   if(!cancelled()&&!options.disableAdaptiveRefinement&&maxMs>=5000&&Date.now()<started+maxMs*.95)await refineRemainingBudget(raw,byShift,byRoute,started+maxMs*.95,control,progress);
   const metrics=item=>({seconds:item.state.t-item.context.start,switches:item.state.stage});
-  const top=ShiftPlans.shortlist([...byShift.values()].map(item=>cleanResearch(raw,item)),metrics);
+  const specified=raw.plan.shiftComparisonVersion===2?ShiftLimits.specified(raw):undefined;
+  const top=ShiftPlans.shortlist([...byShift.values()].map(item=>cleanResearch(raw,item)),metrics,specified);
   if(!cancelled()){
    // Keep the main search budget intact; cap final comfort comparisons at 5 s.
    const comfortDeadline=Math.min(options.absoluteDeadline??Infinity,Date.now()+Math.min(5000,maxMs*.05));
@@ -1069,7 +1072,7 @@ async function solve(raw,options={},progress=()=>{},cancelled=()=>false){
    }
   }
   const shiftPlans=top.map(item=>({switches:item.state.stage,plan:finalize(raw,item.state,item.context,item.route,item.count,control,cancelled()?'cancelled with best plans':'route comparison complete')}));
-  return ShiftPlans.create(shiftPlans);
+  return ShiftPlans.create(shiftPlans,specified);
  }
  const chosen=Plans.select({researchSalePlans:entries,recommendedResearchSales:recommended},recommended);
  return chosen;

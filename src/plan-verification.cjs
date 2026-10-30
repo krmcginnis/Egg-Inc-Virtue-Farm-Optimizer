@@ -54,7 +54,7 @@ async function search(raw,result,{maxMs=300000,absoluteDeadline=Infinity}={},pro
  session.complete=session.index===definitionsNow.length;session.scope='All subsets and legal orders in each declared block of up to five purchases; earliest-affordable execution; fixed source route and suffix; preserve/retime calendar policies';
  session.totalBlocks=definitionsNow.length;session.completedBlocks=session.index;
  // Keep all alternate shift-count plans, replacing only an improved winner.
- if(result.shiftPlans){const entries=result.shiftPlans.map(entry=>entry.switches===best.switches?{...entry,plan:{...best,shiftPlans:undefined}}:entry);best=ShiftPlans.select({shiftPlans:entries},best.switches);}
+ if(result.shiftPlans){const entries=result.shiftPlans.map(entry=>entry.switches===best.switches?{...entry,plan:{...best,shiftPlans:undefined}}:entry);best=ShiftPlans.select({...result,shiftPlans:entries},best.switches);}
  const verification={...session,globalOptimalityProven:false};
  best={...best,optimality:Quality.measure(raw,best),verification,termination:cancelled()?'verification paused with best plan':session.complete?'declared purchase blocks exhausted':'verification budget reached'};
  if(best.shiftPlans)best.shiftPlans=best.shiftPlans.map(entry=>entry.switches===best.switches?{...entry,plan:{...entry.plan,optimality:best.optimality,verification,termination:best.termination}}:entry);

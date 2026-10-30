@@ -1,6 +1,7 @@
 'use strict';
 const R=require('./route-solver.cjs'),S=require('./simulator.cjs'),ShiftPlans=require('./shift-plans.cjs');
 const Incumbents=require('./plan-incumbents.cjs');
+const ShiftLimits=require('./shift-limits.cjs');
 function count(cores){return Number(cores)>=4?2:1;}
 // Independent search islands exchange only complete paid/replayed winners.
 class SearchPool{
@@ -49,12 +50,13 @@ class SearchPool{
   for(const [key,task] of this.tasks)if(task.owner===index&&!task.complete){this.tasks.delete(key);this.taskStats.releasedOnFailure++;}
   if(this.done.size!==this.workers.length)return;
   if(!this.best.size){this.onmessage?.({data:this.responses.find(x=>x.suggestion)||this.responses[0]||{type:'error',error:'No complete plan found.'}});return;}
-  const entries=ShiftPlans.shortlist([...this.best.values()]);
+  const specified=this.config.plan.shiftComparisonVersion===2?ShiftLimits.specified(this.config):undefined;
+  const entries=ShiftPlans.shortlist([...this.best.values()],undefined,specified);
   const islands=this.responses.map(x=>x.result?.search||x.continuation?.result?.search).filter(Boolean).map(s=>({variant:s.portfolioVariant||0,states:s.statesExamined||0,economics:s.purchaseEconomicsComparisons||0,packages:s.packageComparisons||0,researchInvestments:s.researchInvestmentComparisons||0,researchInvestmentReplays:s.researchInvestmentReplays||0,researchInvestmentPasses:s.researchInvestmentPasses||0,timings:s.additionalTimingComparisons||0,fineTimings:s.fineTimingComparisons||0,calculatedTimings:s.calculatedTimingComparisons||0,routes:s.routeNeighborhoodComparisons||0,recovered:s.reservedComparisons||0,imports:s.sharedImports||0,boundChecks:s.boundChecks||0,boundPruned:s.boundPruned||0}));
   const parallel={workers:this.workers.length,contributors:this.contributors.size,verified:this.verified,rejected:this.rejected,tasks:{...this.taskStats},islands};
   const total=key=>islands.reduce((sum,island)=>sum+island[key],0),totals={statesExamined:total('states'),purchaseEconomicsComparisons:total('economics'),packageComparisons:total('packages'),researchInvestmentComparisons:total('researchInvestments'),researchInvestmentReplays:total('researchInvestmentReplays'),researchInvestmentPasses:total('researchInvestmentPasses'),additionalTimingComparisons:total('timings'),fineTimingComparisons:total('fineTimings'),calculatedTimingComparisons:total('calculatedTimings'),routeNeighborhoodComparisons:total('routes'),reservedComparisons:total('recovered'),sharedImports:total('imports'),boundChecks:total('boundChecks'),boundPruned:total('boundPruned')};
   const shiftPlans=entries.map(({plan})=>({switches:plan.switches,plan:{...plan,explored:totals.statesExamined,elapsedMs:Date.now()-this.started,search:{...plan.search,...totals,parallel}}}));
-  const result=ShiftPlans.create(shiftPlans);
+  const result=ShiftPlans.create(shiftPlans,specified);
   const continuation=this.responses.find(x=>x.type==='continuation')?.continuation;
   if(this.request.continuation&&!continuation){this.onmessage?.({data:this.responses.find(x=>x.type==='error')||{type:'error',error:'The remaining plan could not be verified.'}});return;}
   this.onmessage?.({data:continuation?{type:'continuation',continuation:{...continuation,result}}:{type:'result',result}});

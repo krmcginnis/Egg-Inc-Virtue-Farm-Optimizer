@@ -1,6 +1,7 @@
 'use strict';
 const Route=require('./switch-sequence.cjs'),Ships=require('./ships.cjs'),Artifacts=require('./artifact-optimizer.cjs');
 const Strategy=require('./planning-strategy.cjs');
+const ShiftLimits=require('./shift-limits.cjs');
 const Sleep=require('./sleep-schedule.cjs');
 const ResearchTotals=require('./research-totals.cjs');
 const D=require('./game-data.json'),C=require('./colleggtibles.cjs');
@@ -61,7 +62,7 @@ function prepare(raw,opts={}){
  let sequence=Route.normalize(automatic&&p.strategyVersion>=2?undefined:p.sequence,f.virtue,{required:p.strategy==='user'});const fullSequence=sequence.slice();
  // New searches derive their full route allowance. Unflagged saved plans must
  // still replay with the exact switch and sale limits under which they ran.
- const maxSwitches=number(p.solverVersion>=2&&automatic?(p.maxShifts??12):p.saleComparisonVersion===1?(automatic?Route.defaultSwitches(f.virtue):fullSequence.length-1):(p.maxSwitches??12),'Maximum additional switches',0,30,true);sequence=sequence.slice(0,maxSwitches+1);
+ const maxSwitches=number(p.solverVersion>=2&&automatic?ShiftLimits.search(p):p.saleComparisonVersion===1?(automatic?Route.defaultSwitches(f.virtue):fullSequence.length-1):(p.maxSwitches??12),'Maximum additional switches',0,30,true);sequence=sequence.slice(0,maxSwitches+1);
  const research=f.research||{};for(const k of Object.keys(research))if(!(k in RMAP))throw Error('Unknown research: '+k);
  const r=D.research.map(r=>number(research[r.id]??0,r.name+' level',0,r.levels,true));
  // A persisted game farm must satisfy tier prerequisites for purchased levels.

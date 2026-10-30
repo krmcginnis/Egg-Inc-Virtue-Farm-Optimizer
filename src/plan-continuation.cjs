@@ -3,6 +3,7 @@ const S=require('./simulator.cjs'),P=require('./plan-progress.cjs'),R=require('.
 const Ships=require('./ships.cjs'),L=require('./optimizer-legacy.cjs'),Strategy=require('./planning-strategy.cjs'),ShiftPlans=require('./shift-plans.cjs');
 const Artifacts=require('./artifact-optimizer.cjs');
 const RunShifts=require('./run-shifts.cjs');
+const ShiftLimits=require('./shift-limits.cjs');
 const paid=new Set(['research','hab','vehicle','car','silo','set']);
 function restoreArtifactSet(action,c){
  if(c.loadouts[action.set])return;
@@ -45,12 +46,12 @@ function prepare(request,{now=Date.now()/1000,budget=null}={}){
  const start=S.number(request.start??now,'Remaining plan start',1);
  if(start<now-300)throw Error('The remaining search must start at the current PC time. Check the farm again before reoptimizing.');
  if(report.time&&report.time>start+1)throw Error('The backup time is ahead of the PC clock. Sync the game and check the time before reoptimizing.');
- const prior=original.plan.continuation;
+ const prior=original.plan.continuation,automatic=Strategy.automatic(original.plan);
  const run=RunShifts.status(original);
- const totalShiftBudget=S.number(budget?.total??prior?.totalShiftBudget??run?.record.totalShiftBudget??result.switches??result.actions.filter(a=>a.type==='shift').length,'Original shift budget',0,Number.MAX_SAFE_INTEGER,true);
- const alreadyUsed=S.number(budget?.usedBefore??prior?.consumedShifts??run?.used??0,'Already used shifts',0,totalShiftBudget,true);
- const consumedShifts=alreadyUsed+report.stage,remainingShiftBudget=totalShiftBudget-consumedShifts;
- if(remainingShiftBudget<0)throw Error('The farm has already used the original plan’s shift budget.');
+ const totalShiftBudget=S.number(budget?.total??prior?.totalShiftBudget??run?.record.totalShiftBudget??result.specifiedSwitches??result.switches??result.actions.filter(a=>a.type==='shift').length,'Original shift budget',0,Number.MAX_SAFE_INTEGER,true);
+ const alreadyUsed=S.number(budget?.usedBefore??prior?.consumedShifts??run?.used??0,'Already used shifts',0,automatic?Number.MAX_SAFE_INTEGER:totalShiftBudget,true);
+ const consumedShifts=alreadyUsed+report.stage,remainingShiftBudget=Math.max(0,totalShiftBudget-consumedShifts);
+ if(!automatic&&consumedShifts>totalShiftBudget)throw Error('The farm has already used the original plan’s shift budget.');
  const route=[S.EGGS[report.egg],...report.rows.filter(row=>row.stage>report.stage&&row.action.type==='shift').map(row=>S.EGGS[row.action.egg])];
  const runs=[];
  for(const row of report.rows.filter(row=>row.action.type==='ship-run')){
@@ -66,7 +67,7 @@ function prepare(request,{now=Date.now()/1000,budget=null}={}){
  }
  const remaining=runs.filter(run=>run.remaining>0);
  if(remaining.length>2)throw Error('Use at most two remaining Humility launch visits.');
- const current=structuredClone(progress.snapshot),automatic=Strategy.automatic(original.plan),slots=original.plan.ships?.slots??3;
+ const current=structuredClone(progress.snapshot),slots=original.plan.ships?.slots??3;
  let launchVisits=remaining.map(run=>({missions:run.missions})),consolidatedLaunchVisits=false;
  if(remaining.length===2&&route.filter(egg=>egg==='humility').length===1){
   const missions=[];for(const m of remaining.flatMap(run=>run.missions)){const last=missions.at(-1);if(last?.ship===m.ship&&last.duration===m.duration)last.count+=m.count;else missions.push({...m});}
@@ -75,14 +76,14 @@ function prepare(request,{now=Date.now()/1000,budget=null}={}){
    launchVisits=[{missions}];consolidatedLaunchVisits=true;
   }catch(e){if(!automatic)throw Error('Unlaunched ships remain from an earlier Humility visit and cannot all fit in the one remaining launch visit: '+e.message+' Add another H to the remaining route or use Automatic Planning within the remaining shift budget.');}
  }
- if(remaining.length&&remainingShiftBudget===0&&report.egg!==2)throw Error('Ships still need to launch, but no shifts remain to reach Humility. Review the launch counts and shift allowance.');
+ if(!automatic&&remaining.length&&remainingShiftBudget===0&&report.egg!==2)throw Error('Ships still need to launch, but no shifts remain to reach Humility. Review the launch counts and shift allowance.');
  // A completed current H is not a launch opportunity when the remaining fuel
  // must be collected on the way to the next H. Keep that empty visit explicit.
  if(report.egg===2&&launchVisits.length===1&&remaining[0]?.stage>report.stage&&route.slice(1).includes('humility')){
   const next=Ships.prepare(current.farm,{ships:{mode:'custom-two-visits',slots,visits:[launchVisits[0],{missions:[]}]}},S.number);
   if(next.targets.some((amount,i)=>amount>next.stored[i]+Math.max(1,amount)*1e-12))launchVisits=[{missions:[]},launchVisits[0]];
  }
- const config={...current,plan:{...structuredClone(original.plan),start,target:result.target,solverVersion:2,strategyVersion:2,maxShifts:remainingShiftBudget,maxSwitches:remainingShiftBudget,sequence:route,autoSequence:automatic,ships:remaining.length?{mode:'custom-two-visits',slots,visits:[0,1].map(i=>({missions:launchVisits[i]?.missions||[]}))}:{mode:'none'},continuation:{version:1,totalShiftBudget,consumedShifts,remainingShiftBudget,snapshotTime:report.time}}};
+ const config={...current,plan:{...structuredClone(original.plan),start,target:result.target,solverVersion:2,strategyVersion:2,...(automatic?{shiftComparisonVersion:2}:{}),maxShifts:remainingShiftBudget,maxSwitches:remainingShiftBudget,sequence:route,autoSequence:automatic,ships:remaining.length?{mode:'custom-two-visits',slots,visits:[0,1].map(i=>({missions:launchVisits[i]?.missions||[]}))}:{mode:'none'},continuation:{version:1,totalShiftBudget,consumedShifts,remainingShiftBudget,snapshotTime:report.time}}};
  if(current.runShifts||run)config.runShifts=RunShifts.create(config,consumedShifts,totalShiftBudget);
  delete config.draftInputs;
  // Keep the exact target, floors, sleep/display zone and account/farm values.
@@ -93,7 +94,7 @@ function prepare(request,{now=Date.now()/1000,budget=null}={}){
 function verified(config,result){
  return ShiftPlans.replay(config,result,(raw,plan)=>{
   const {s,c}=O.replay(raw,plan.actions,true,{enforceOpeningCaps:plan.openingTimeLimits===true,oneStartingSilo:plan.initialSiloRule==='one'});
-  if(s.stage>config.plan.maxShifts||Math.abs(s.t-plan.end)>.01||plan.target!==c.target)throw Error('Remaining plan failed its target, time or shift-budget replay.');
+  if(s.stage>ShiftLimits.search(config.plan)||Math.abs(s.t-plan.end)>.01||plan.target!==c.target)throw Error('Remaining plan failed its target, time or shift-budget replay.');
   return {...plan,actions:S.history(s),start:c.start,end:s.t,seconds:s.t-c.start,switches:s.stage,soulCost:s.lost,researchDeadline:c.researchDeadline??plan.researchDeadline,finalTE:S.teByEgg(s,c),pendingTE:S.totalTE(s,c)-c.claimedTotal,finalCash:s.cash,finalStats:S.stats(s,c),validatedReplay:true};
  });
 }
@@ -188,7 +189,7 @@ async function search(request,options={},progress=()=>{},cancelled=()=>false){
  const result=await O.solve(prepared.config,{...options,incumbent:originalRoute?{config:prepared.config,result:originalRoute}:undefined,incumbents:retained.map(x=>({config:prepared.config,result:x.plan}))},progress,cancelled);
  const checked=verified(prepared.config,result);
  const fastest=checked.shiftPlans?ShiftPlans.fastest(checked.shiftPlans).plan:checked;
- if(originalRoute&&fastest.end>originalRoute.end+.01)throw Error('The remaining search discarded its validated original-route candidate.');
+ if(originalRoute&&(checked.specifiedSwitches===undefined||Math.abs(originalRoute.switches-checked.specifiedSwitches)<=1)&&fastest.end>originalRoute.end+.01)throw Error('The remaining search discarded its validated original-route candidate.');
  return {...prepared,report:undefined,result:checked,baseline:originalRoute,baselineError,retainedAlternatives:retained.map(({plan,...summary})=>summary)};
 }
 module.exports={prepare,baseline,verified,search,alternatives,sourceKey};

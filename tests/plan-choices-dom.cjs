@@ -3,8 +3,8 @@ const fs=require('fs'),path=require('path'),assert=require('assert/strict'),{JSD
 const R=require('../src/route-solver.cjs'),S=require('../src/simulator.cjs'),C=require('../src/plan-continuation.cjs'),P=require('../src/plan-progress.cjs'),Plans=require('../src/shift-plans.cjs'),Run=require('../src/run-shifts.cjs'),U=require('../src/shift-summary.cjs');
 const root=path.resolve(__dirname,'..');
 // Synthetic paid timelines with a multi-day / 4.59% tradeoff, no account data.
-function resultFor(raw,counts=[[5,11015589],[6,10532210]]){
- const route=['curiosity','humility','kindness','curiosity','resilience','humility','integrity'];
+function resultFor(raw,counts=[[7,10531210],[6,10532210],[5,11015589]]){
+ const route=['curiosity','humility','kindness','curiosity','resilience','humility','integrity','curiosity'];
  return Plans.create(counts.map(([switches,seconds])=>{
   const sequence=route.slice(0,switches+1),{s,c}=R.prepare(raw,sequence,3);let state=s;
   for(const egg of sequence.slice(1))state=S.buy(state,c,{type:'shift',egg:S.EGGS.indexOf(egg)});
@@ -12,12 +12,12 @@ function resultFor(raw,counts=[[5,11015589],[6,10532210]]){
   const actions=S.history(state).map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:2,sequence,researchSales:3}});
   const plan=C.verified(raw,{version:1,solverVersion:2,initialSiloRule:'one',target:c.target,start:c.start,end:state.t,seconds:state.t-c.start,switches,actions,route:sequence,researchSales:3,researchDeadline:c.researchDeadline,actualResearchSales:0,frontier:[],explored:0,method:'Synthetic plan choice fixture',termination:'complete'});
   return {switches,plan};
- }));
+ }),raw.plan.shiftComparisonVersion===2?raw.plan.maxShifts:undefined);
 }
 function fixture(start=1793381041.952){
  const config=require('./research-sale-plans.cjs').fixture();
  Object.assign(config.farm,{shiftCount:62});
- Object.assign(config.plan,{start,solverVersion:2,maxDays:366,maxShifts:6,maxSwitches:6,strategy:'wasmegg',autoSequence:true,target:100,ships:{mode:'none'},sleep:{enabled:false},eventTimezone:'America/Los_Angeles'});
+ Object.assign(config.plan,{start,solverVersion:2,maxDays:366,maxShifts:6,maxSwitches:6,shiftComparisonVersion:2,strategy:'wasmegg',autoSequence:true,target:100,ships:{mode:'none'},sleep:{enabled:false},eventTimezone:'America/Los_Angeles'});
  config.runShifts=Run.create(config,6,12);
  return {version:1,config,result:resultFor(config)};
 }
@@ -35,80 +35,52 @@ async function run(){
  try{
   w.eval(fs.readFileSync(root+'/worker-source.js','utf8'));w.eval(fs.readFileSync(root+'/app.js','utf8'));const app=w.VirtueApp,doc=fixture();
   await load(doc);assert.ok(app.getResult(),$('#notice').textContent);
-  assert.equal($('#result-content').firstElementChild.id,'plan-choices','choices precede the summary and progress');
-  assert.match($('.plan-choice-selected').textContent,/Selected timeline: 6 new shifts/);
-  assert.deepEqual([...w.document.querySelectorAll('[data-shifts]')].map(n=>n.dataset.shifts),['6','5']);
-  assert.equal(app.getResult().recommendedSwitches,undefined);
-  assert.doesNotMatch($('#plan-choices').textContent,/recommend|allowance|preference/i);
-  $('[data-shifts="5"]').click();
-  assert.match($('.plan-choice-finish').textContent,/Mar 6, 2027.*21:17:10 PST/);
-  assert.match($('.plan-choice-tradeoff').textContent,/5d 14h 16m later \(\+4\.59%\).*1 fewer shift/);
-  assert.equal($('.plan-choice-reason'),null);
-  assert.match($('[data-shifts="5"]').textContent,/Selected.*One fewer shift/);
-  assert.match($('[data-shifts="6"]').textContent,/Earliest finish found/);
-  assert.doesNotMatch($('.result-summary').textContent,/Finish time comes first/);
-  assert.doesNotMatch($('#plan-choices').textContent,/\b(?:AM|PM)\b/);
-  const config=app.getConfig();$('.plan-choice-earliest').click();
-  assert.equal(app.getResult().selectedSwitches,6);assert.equal(app.getResult().recommendedSwitches,undefined);
-  assert.equal(app.getResult().end,doc.result.shiftPlans.find(e=>e.switches===6).plan.end);
-  assert.equal($('[data-shifts][aria-pressed="true"]').dataset.shifts,'6');assert.equal(w.document.activeElement.dataset.shifts,'6');
-  assert.match($('.plan-choice-selected').textContent,/Selected timeline: 6 new shifts.*Earliest finish found/);
-  assert.equal($('.plan-choice-earliest'),null);assert.equal($('.plan-choice-reason'),null);
-  assert.deepEqual(app.getConfig(),config);assert.deepEqual(JSON.parse(JSON.stringify(app.getResult().summary)),JSON.parse(JSON.stringify(U.summarize(doc.config,app.getResult()))));
-  const saved=await save();assert.equal(saved.result.selectedSwitches,6);assert.equal(saved.result.recommendedSwitches,undefined);
-  await load(saved);assert.equal(app.getResult().selectedSwitches,6);assert.match($('[data-shifts="6"]').textContent,/Selected/);
-  $('[data-shifts="5"]').click();assert.equal(app.getResult().selectedSwitches,5);assert.ok($('.plan-choice-earliest'));
-  // Proposals have their own choice. Changing it leaves the old timeline intact
-  // until applying, then exports and a save/load keep the selected faster plan.
-  const current=fixture(Date.now()/1000-30),snapshot=structuredClone(current.config);
-  snapshot.importInfo={scope:'farm',timestamp:Date.now()/1000-1};
-  current.progress={snapshot,confirmed:[],launched:{},planKey:P.key(current.result)};
-  await load(current);const original=JSON.stringify(app.getResult());
-  assert.ok(!$('#reoptimize-remaining').disabled);$('#reoptimize-remaining').click();
-  assert.equal(workers.length,4);assert.ok($('#plan-choices button').disabled,'choices are locked while the source is in use');
-  const request=workers[0].messages[0].continuation,prepared=C.prepare(request),remaining=resultFor(prepared.config);
-  const proposal={...prepared,report:undefined,result:remaining,baseline:Plans.fastest(remaining.shiftPlans).plan,baselineError:''};
+  assert.equal($('#result-content').firstElementChild.id,'plan-choices');
+  assert.deepEqual([...w.document.querySelectorAll('[data-shifts]')].map(n=>n.dataset.shifts),['7','6','5']);
+  assert.deepEqual([...w.document.querySelectorAll('[data-plan-role]')].map(n=>n.dataset.planRole),['extra','specified','fewer']);
+  assert.equal(app.getResult().selectedSwitches,6,'N defaults even though N+1 is faster');assert.equal($('[aria-pressed="true"][data-shifts]').dataset.shifts,'6');
+  assert.equal(w.document.querySelectorAll('.plan-comparison-table thead th').length,4);
+  assert.deepEqual([...w.document.querySelectorAll('.plan-comparison-table tbody tr')].map(n=>n.dataset.metricRow),['shifts','seconds','end','laying','shipping','soul']);
+  assert.ok([...w.document.querySelectorAll('.plan-comparison-table tbody tr')].every(n=>n.children[0].scope==='row'&&n.children.length===4));
+  assert.equal(w.document.querySelectorAll('.plan-comparison-table tbody [data-plan-shifts="6"].plan-comparison-selected').length,6,'the selected column is highlighted across all metrics');
+  assert.doesNotMatch($('#plan-choices').textContent,/recommend|allowance|preference|\b(?:AM|PM)\b/i);
+  for(const e of doc.result.shiftPlans){
+   const summary=U.summarize(doc.config,e.plan),values=Object.fromEntries([...w.document.querySelectorAll(`tbody [data-plan-shifts="${e.switches}"][data-metric]`)].map(n=>[n.dataset.metric,Number(n.dataset.value)]));
+   assert.deepEqual(values,{shifts:e.switches,seconds:e.plan.seconds,end:e.plan.end,laying:Math.max(...summary.shifts.map(s=>s.maxRates.laying))*3600,shipping:Math.max(...summary.shifts.map(s=>s.maxRates.shipping))*3600,soul:R.replay(doc.config,e.plan.actions,true).s.lost});
+  }
+  $('[data-shifts="7"]').click();assert.equal(app.getResult().selectedSwitches,7);assert.equal(w.document.activeElement.dataset.shifts,'7');
+  $('[data-shifts="5"]').click();assert.match($('.plan-choice-tradeoff').textContent,/later.*2 fewer shifts/);
+  const saved=await save();await load(saved);assert.equal(app.getResult().selectedSwitches,5);assert.equal(app.getResult().specifiedSwitches,6);assert.match($('[data-shifts="5"]').textContent,/Selected/);
+  $('.plan-choice-earliest').click();assert.equal(app.getResult().selectedSwitches,7);assert.equal($('.plan-choice-earliest'),null);
+  assert.deepEqual(JSON.parse(JSON.stringify(app.getResult().summary)),JSON.parse(JSON.stringify(U.summarize(doc.config,app.getResult()))));
+  // Check all three plans before showing the remaining-plan proposal. The
+  // selected N and an explicitly selected alternative survive save and apply.
+  const current=fixture(Date.now()/1000-30),snapshot=structuredClone(current.config);snapshot.importInfo={scope:'farm',timestamp:Date.now()/1000-1};
+  current.progress={snapshot,confirmed:[],launched:{},planKey:P.key(current.result)};await load(current);const original=JSON.stringify(app.getResult());
+  $('#reoptimize-remaining').click();assert.equal(workers.length,4);assert.ok($('#plan-choices button').disabled);
+  const request=workers[0].messages[0].continuation,prepared=C.prepare(request),remaining=resultFor(prepared.config),proposal={...prepared,report:undefined,result:remaining,baseline:Plans.fastest(remaining.shiftPlans).plan,baselineError:''};
+  assert.equal(S.prepare(prepared.config).c.maxSwitches,7,'only one extra shift is searched');
   for(const worker of workers.slice(0,4))worker.onmessage({data:{type:'continuation',continuation:structuredClone(proposal)}});
-  assert.equal(workers.length,6,'the final two plans are automatically checked after search');
-  assert.match($('#search-status-heading').textContent,/Checking Final Plan Purchases/);
-  for(const worker of workers.slice(4)){const posted=worker.messages[0].verification,checked=await require('../src/plan-verification.cjs').search(posted.config,posted.result,{maxMs:1000});worker.onmessage({data:{type:'verification',result:checked}});}
-  assert.equal(w.document.querySelectorAll('#remaining-plan-choices .plan-choice-check').length,2);
-  assert.ok($('#remaining-plan-choices'));assert.equal($('#plan-choices'),null,'avoid mixing original and preview choice cards');
-  assert.match($('#remaining-plan-choices .plan-choice-selected').textContent,/Selected to apply: 6 remaining shifts/);
-  assert.match($('#remaining-plan-comparison').textContent,/Earliest finish found \(6 remaining shifts\)/i);
-  assert.equal(JSON.stringify(app.getResult()),original,'the original timeline is retained for review');
-  $('#remaining-plan-choices [data-shifts="5"]').click();
-  assert.equal(app.getResult().selectedSwitches,6,'preview changes do not select the original timeline');
-  assert.match($('#remaining-plan-choices .plan-choice-selected').textContent,/Selected to apply: 5 remaining shifts/);
-  const preview=await save();assert.equal(preview.remainingProposal.result.selectedSwitches,5);
-  await load(preview);assert.match($('#remaining-plan-choices .plan-choice-selected').textContent,/5 remaining shifts/);
-  $('#remaining-plan-choices .plan-choice-earliest').click();
-  assert.ok(!$('#use-remaining-plan').disabled);$('#use-remaining-plan').click();
-  assert.equal(app.getResult().selectedSwitches,6,$('#notice').textContent);assert.equal($('#remaining-plan-choices'),null);
-  assert.match($('#plan-choices .plan-choice-selected').textContent,/Selected timeline: 6 remaining shifts/);
-  assert.ok($('#verify-purchases').hidden,'completed automatic checks require no separate button');
-  const applied=await save();assert.ok(applied.result.shiftPlans.every(e=>e.plan.verification.complete));C.verified(applied.config,applied.result);assert.equal(applied.result.end,Plans.fastest(remaining.shiftPlans).plan.end);
-  await load(applied);assert.equal(app.getResult().selectedSwitches,6);
-  // A single plan and tied finishes have no artificial penalty / fast CTA.
-  const single=fixture();single.result=Plans.create([single.result.shiftPlans[1]]);await load(single);
-  assert.match($('.plan-choice-selected').textContent,/Earliest finish found/);assert.equal($('.plan-choice-earliest'),null);
-  const tied=fixture();tied.result=resultFor(tied.config,[[5,1000],[6,1000]]);await load(tied);
-  assert.equal(app.getResult().selectedSwitches,5);assert.equal($('.plan-choice-earliest'),null);assert.doesNotMatch($('#plan-choices').textContent,/NaN|Infinity|null|later/);
-  const manual=fixture(),four=resultFor(manual.config,[[4,12000000]]).shiftPlans[0];
-  manual.result={...four.plan,shiftPlans:[...manual.result.shiftPlans,four],selectedSwitches:4,recommendedSwitches:4,shiftComparisonVersion:1};
+  assert.equal(workers.length,6);assert.match($('#search-status-heading').textContent,/Checking Final Plan Purchases/);
+  for(let i=4;i<workers.length;i++){const worker=workers[i],posted=worker.messages[0].verification,checked=await require('../src/plan-verification.cjs').search(posted.config,posted.result,{maxMs:1000});worker.onmessage({data:{type:'verification',result:checked}});}
+  assert.equal(workers.length,7,'three final plans use two check workers at a time');assert.equal(w.document.querySelectorAll('#remaining-plan-choices .plan-choice-check').length,3);
+  assert.equal($('#plan-choices'),null);assert.match($('#remaining-plan-choices .plan-choice-selected').textContent,/Selected to apply: 6 remaining shifts/);assert.equal(JSON.stringify(app.getResult()),original);
+  $('#remaining-plan-choices [data-shifts="7"]').click();assert.equal(app.getResult().selectedSwitches,6,'preview retains original timeline');
+  const preview=await save();await load(preview);assert.match($('#remaining-plan-choices .plan-choice-selected').textContent,/7 remaining shifts/);
+  $('#use-remaining-plan').click();assert.equal(app.getResult().selectedSwitches,7,$('#notice').textContent);assert.equal($('#remaining-plan-choices'),null);assert.ok($('#verify-purchases').hidden);
+  const applied=await save();assert.ok(applied.result.shiftPlans.every(e=>e.plan.verification.complete));assert.equal(C.verified(applied.config,applied.result).selectedSwitches,7);await load(applied);assert.equal(app.getResult().selectedSwitches,7);
+  // Missing exact counts are explicit, never replaced by a different count.
+  const missing=fixture();missing.result=Plans.create(missing.result.shiftPlans.filter(e=>e.switches!==6),6);await load(missing);assert.equal(app.getResult().selectedSwitches,7);assert.match($('[data-plan-role="specified"] .plan-choice-availability').textContent,/No complete plan found/);
+  const single=fixture();single.result=Plans.create([single.result.shiftPlans.find(e=>e.switches===6)],6);await load(single);assert.equal(app.getResult().selectedSwitches,6);assert.equal($('.plan-choice-earliest'),null);
+  const tied=fixture();tied.result=resultFor(tied.config,[[5,1000],[6,1000],[7,1000]]);await load(tied);assert.equal(app.getResult().selectedSwitches,6);assert.doesNotMatch($('#plan-choices').textContent,/NaN|Infinity|null/);
+  const zero=fixture();zero.config.plan.maxShifts=0;delete zero.config.runShifts;zero.result=resultFor(zero.config,[[0,1000],[1,1100]]);await load(zero);assert.equal(app.getResult().selectedSwitches,0);assert.match($('[data-plan-role="fewer"]').textContent,/Not applicable when zero shifts/);
+  // Older selected timelines and checked progress are retained on loading.
+  const manual=fixture(),four=resultFor(manual.config,[[4,12000000]]).shiftPlans[0];delete manual.config.plan.shiftComparisonVersion;
+  manual.result={...four.plan,shiftPlans:[manual.result.shiftPlans.find(e=>e.switches===6),manual.result.shiftPlans.find(e=>e.switches===5),four],selectedSwitches:4,recommendedSwitches:4,shiftComparisonVersion:1};
   manual.progress={snapshot:structuredClone(manual.config),confirmed:[],launched:{},planKey:P.key(manual.result)};await load(manual);
-  assert.equal(app.getResult().recommendedSwitches,undefined);assert.equal(app.getResult().selectedSwitches,4,'loading a legacy third selection preserves its timeline');
-  assert.equal(app.getResult().end,four.plan.end);assert.equal($('[data-shifts="4"]'),null);
-  assert.deepEqual([...w.document.querySelectorAll('[data-shifts]')].map(n=>n.dataset.shifts),['6','5']);
-  assert.match($('.plan-choice-legacy').textContent,/saved timeline uses an older shift-count option/);
-  const legacySaved=await save();assert.deepEqual(legacySaved.progress,manual.progress,'legacy progress remains tied to the original timeline');await load(legacySaved);assert.equal(app.getResult().selectedSwitches,4);
-  $('[data-shifts="5"]').click();assert.equal(app.getResult().selectedSwitches,5);assert.equal($('.plan-choice-legacy'),null);
-  const gap=fixture();gap.result={...gap.result,shiftPlans:[gap.result.shiftPlans[0],four]};await load(gap);
-  assert.deepEqual([...w.document.querySelectorAll('[data-shifts]')].map(n=>n.dataset.shifts),['6']);
-  assert.match($('.plan-choice-availability').textContent,/No complete plan using 5 new shifts was found/);
-  const zero=fixture();zero.result=resultFor(zero.config,[[0,1000]]);await load(zero);
-  assert.match($('.plan-choice-availability').textContent,/no further shifts/);assert.equal($('.plan-choice-earliest'),null);
-  assert.deepEqual(errors,[]);console.log('PASS compiled two-plan choices: fastest default, exact one-fewer option, no recommendations, visible tradeoff, direct earliest choice, preview/save/load/application, preserved legacy timelines, missing/zero/tied cases, busy locks and 24-hour dates.');
+  assert.equal(app.getResult().selectedSwitches,4,$('#notice').textContent);assert.equal($('[data-shifts="4"]'),null);assert.match($('.plan-choice-legacy').textContent,/older shift-count/);
+  const legacySaved=await save();assert.deepEqual(legacySaved.progress,manual.progress);await load(legacySaved);assert.equal(app.getResult().selectedSwitches,4);$('[data-shifts="6"]').click();assert.equal(app.getResult().selectedSwitches,6);
+  assert.deepEqual(errors,[]);console.log('PASS compiled adjacent plan comparison: N+1/N/N-1 order, N default, plan column headers and six metric rows verified by replay, manual/save/load/preview/application, three automatic checks, missing/zero/tied counts, legacy progress, busy locks and 24-hour dates.');
  }finally{w.close();}
 }
-module.exports={run,fixture};if(require.main===module)run().catch(e=>{console.error(String(e.stack).split('\n').filter(line=>line.length<500).join('\n'));process.exitCode=1;});
+module.exports={run,fixture,resultFor};if(require.main===module)run().catch(e=>{console.error(String(e.stack).split('\n').filter(line=>line.length<500).join('\n'));process.exitCode=1;});

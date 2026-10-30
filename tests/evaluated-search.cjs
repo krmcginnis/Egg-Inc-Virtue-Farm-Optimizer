@@ -60,6 +60,13 @@ async function run(){
  assert.equal(rerank.reply,undefined);assert.equal(rerank.workers.length,5);assert.equal(rerank.workers[4].messages[0].verification.result.switches,3);
  await respond(rerank.workers[4]);assert.deepEqual(rerank.reply.result.shiftPlans.map(e=>e.switches),[4,3]);assert.equal(rerank.reply.result.purchaseEvaluation.attemptedPlans,3);
 
+ // All three adjacent counts are checked, with a second cohort for N-1.
+ const adjacentRaw=structuredClone(example.raw);Object.assign(adjacentRaw.plan,{maxShifts:4,shiftComparisonVersion:2});
+ const three=fakeRun(adjacentRaw,Plans.create(example.entries,4));three.finishSearch();
+ assert.deepEqual(three.workers.slice(2).map(w=>w.messages[0].verification.result.switches),[5,4]);
+ await respond(three.workers[2]);await respond(three.workers[3]);assert.equal(three.reply,undefined);assert.equal(three.workers[4].messages[0].verification.result.switches,3);await respond(three.workers[4]);
+ assert.equal(three.reply.result.selectedSwitches,4);assert.equal(three.reply.result.specifiedSwitches,4);assert.equal(three.reply.result.purchaseEvaluation.plans.length,3);assert.ok(three.reply.result.shiftPlans.every(e=>e.plan.verification.complete));
+
  // Use the actual compiled worker for both final checks, with a deterministic
  // paid search result so this verifies checking rather than route heuristics.
  const nativeFactory=require('./search-pool.cjs').factory;let count=0,searchWorkers=[];

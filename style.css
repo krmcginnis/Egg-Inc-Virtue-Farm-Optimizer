@@ -509,6 +509,25 @@ aside .update-app{margin-top:auto}
 .plan-choices .research-sale-options{grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
 .remaining-comparison .plan-choices{background:#131e2c;margin-top:18px}
 .plan-choices button:focus-visible{outline:2px solid #b7f4df;outline-offset:3px}
+.plan-comparison-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+.plan-comparison-scroll:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.plan-comparison-table{width:100%;min-width:760px;margin:0;font-size:13px;table-layout:fixed}
+.plan-comparison-table caption{text-align:left;padding:12px;color:var(--muted);font-size:12px}
+.plan-comparison-table th,.plan-comparison-table td{padding:12px;vertical-align:middle}
+.plan-comparison-table thead th{font-size:12px;line-height:1.5;color:#c2d2e5;text-align:center}
+.plan-comparison-table thead th:first-child,.plan-comparison-table th[scope="row"]{width:25%;text-align:left}
+.plan-comparison-table th[scope="row"]{font-weight:600;color:#c2d2e5}
+.plan-comparison-table td[data-metric]{text-align:center;font-variant-numeric:tabular-nums}
+.plan-comparison-table td[data-metric="end"]{line-height:1.6}
+.plan-choice-option{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:5px;text-align:center;line-height:1.5;width:100%;min-height:112px;padding:16px 12px;font-size:12px}
+.plan-comparison-table .plan-column-title{display:block;font-size:19px;color:#e5eefb}
+.plan-choice-description,.plan-metric-unit{display:block;font-size:11px;color:var(--muted);font-weight:400}
+.plan-metric-unit{margin-top:3px}
+.plan-choice-availability{display:block;font-size:11px;color:var(--muted);margin-top:8px;font-weight:400}
+.plan-choice-check{display:block;margin-top:7px;font-size:11px;color:var(--muted)}
+.plan-comparison-selected{background:#203d33}
+.plan-comparison-selected .plan-choice-option{border-color:var(--accent);color:#d4f9e8}
+.plan-comparison-scope{margin-bottom:0}
 @media(max-width:700px){.plan-choice-finish{font-size:19px}.plan-choice-selected{padding-left:12px}}
 
 /* Target allocation and paired plan-start/event-zone controls. */

@@ -8,6 +8,7 @@ const upgradeStandardSequence = require("./sequence-upgrade.cjs"), Route = requi
 const Model = require("./assumption-notices.cjs");
 const Strategy = require("./planning-strategy.cjs"), SalePlans = require("./research-sale-plans.cjs");
 const ShiftPlans = require("./shift-plans.cjs");
+const ShiftLimits = require("./shift-limits.cjs"), PlanComparison = require("./plan-comparison.cjs");
 const Progress = require("./plan-progress.cjs");
 const Continuation = require("./plan-continuation.cjs");
 const RunShifts = require("./run-shifts.cjs");
@@ -78,7 +79,7 @@ function rememberRunShifts() {
 }
 function renderRunShiftSummary() {
   const used = $("run-shifts-used").value.trim(), total = Number($("run-shift-limit").value);
-  $("run-shift-summary").textContent = used === "" ? "Enter shifts already used once, or load a plan with saved run or continuation tracking. Future account refreshes will track the remaining allowance." : Number.isSafeInteger(Number(used)) && Number.isSafeInteger(total) ? used + " used · " + Math.max(0, total - Number(used)) + " remaining of " + total + " allowed this run." : "Check the run shift values.";
+  $("run-shift-summary").textContent = used === "" ? "Enter shifts already used once, or load a plan with saved run or continuation tracking. Future account refreshes will track the remaining comparison count." : Number.isSafeInteger(Number(used)) && Number.isSafeInteger(total) ? used + " used · " + Math.max(0, total - Number(used)) + " remaining of " + total + " specified for this run." : "Check the run shift values.";
   $("run-shift-tracking").querySelector("summary").textContent = "Current Run Shift Tracking" + (used === "" ? " · Not Set" : " · " + used + " Used");
 }
 function accountRunShifts(next, eid) {
@@ -939,7 +940,8 @@ function gather() {
   const autoTeAllocation = $("autoTeAllocation").checked;
   const manualFloors = Array.from({length:5}, (_, i) => autoTeAllocation ? retainedNumber("floor-" + i) : readNumber("floor-" + i, "Per-Virtue goal", 0, 98, true));
   const p = { ...config.plan, start: $("start").value === dateLocal(config.plan.start) ? config.plan.start : DateTime.parseLocal($("start").value), eventTimezone: Zones.resolve($("eventTimezone").value), eventTimezoneMode: $("eventTimezone").value === Zones.automatic ? Zones.automatic : "explicit", sequence: $("sequence").value, target: readNumber("target", "Target TE", 0, 490, true), solverVersion: 2, saleComparisonVersion: 1, autoTeAllocation, manualFloors, maxDays: 366, shiftSeconds: readNumber("shiftSeconds", "Switch seconds", 0, 3600), actionSeconds: readNumber("actionSeconds", "Purchase seconds", 0, 3600), autoSequence: $("strategy").value !== "user", strategy: $("strategy").value, strategyVersion: 2, searchEffort: "balanced", minOfflineMinutes: readNumber("minOfflineMinutes", "Minimum offline break minutes", 1, 1440, true), initialPhysicalPurchases: false, floors: autoTeAllocation ? Array(5).fill(0) : manualFloors.slice() };
-  p.maxShifts=p.autoSequence?readNumber("maxShifts","Maximum new shifts",0,30,true):retainedNumber("maxShifts");
+  p.maxShifts=p.autoSequence?readNumber("maxShifts","Specified new shifts",0,30,true):retainedNumber("maxShifts");
+  p.shiftComparisonVersion=2;
   p.sleep = {enabled:$("sleepEnabled").checked,start:$("sleepStart").value,end:$("sleepEnd").value};
   if(p.sleep.enabled){
     for(const [key,id,label] of [["start","sleepStart","Sleep start"],["end","sleepEnd","Wake time"]])try{Sleep.minutes(p.sleep[key],label);}catch(error){error.fieldId=id;throw error;}
@@ -957,10 +959,10 @@ function gather() {
   const next = { ...config, version: 1, farm: f, plan: p };
   if ($("run-shifts-used").value.trim() !== "") {
     const used = readNumber("run-shifts-used", "Shifts used this run", 0, f.shiftCount, true);
-    const total = readNumber("run-shift-limit", "Total run shift limit", 0, Number.MAX_SAFE_INTEGER, true);
+    const total = readNumber("run-shift-limit", "Specified total run shifts", 0, Number.MAX_SAFE_INTEGER, true);
     next.runShifts = RunShifts.create(next, used, total);
     p.maxShifts = Math.max(0, total - used);
-    if (p.maxShifts > 30) throw Object.assign(Error("The remaining allowance must be at most 30 new shifts. Adjust the total run shift limit."), {fieldId:"run-shift-limit"});
+    if (p.maxShifts > 30) throw Object.assign(Error("The remaining comparison count must be at most 30 new shifts. Adjust the specified total run shifts."), {fieldId:"run-shift-limit"});
     if (!p.autoSequence && Route.normalize(p.sequence, f.virtue, {required:true}).length - 1 > p.maxShifts) throw Object.assign(Error("The entered sequence exceeds this run's remaining shift allowance."), {fieldId:"sequence"});
   } else delete next.runShifts;
   delete next.draftInputs;
@@ -1190,17 +1192,15 @@ function renderLaunchProgress(card, report, confirmed, reviewedCounts) {
 }
 function renderPlanChoices(plan,zone,{remaining=false,preview=false,onSelect,raw=resultConfig}={}) {
   if(!plan.shiftPlans)return null;
-  const choices=el("section",undefined,"card plan-choices research-sale-comparison"),row=el("div",undefined,"research-sale-options");
-  choices.id=preview?"remaining-plan-choices":"plan-choices";
-  const options=ShiftPlans.shortlist(plan.shiftPlans),fastest=options[0];
+  const choices=el("section",undefined,"card plan-choices");choices.id=preview?"remaining-plan-choices":"plan-choices";
+  const specified=plan.specifiedSwitches??ShiftLimits.specified(raw),options=ShiftPlans.choices(plan.shiftPlans,specified),fastest=ShiftPlans.fastest(plan.shiftPlans);
   const shiftLabel=n=>n+" "+(remaining?"remaining":"new")+" shift"+(n===1?"":"s");
   const delay=p=>Math.max(0,p.seconds-fastest.plan.seconds);
-  const percentage=p=>fastest.plan.seconds>0?(delay(p)/fastest.plan.seconds*100).toFixed(2)+"%":null;
   const difference=p=>{
-    const count=p.switches-fastest.switches,time=delay(p)>1e-6?duration(delay(p))+" later"+(percentage(p)?" (+"+percentage(p)+")":""):"Same finish time";
-    return [time,count?Math.abs(count)+" "+(count<0?"fewer":"more")+" shift"+(Math.abs(count)===1?"":"s"):""].filter(Boolean).join(" · ");
+    const count=p.switches-fastest.switches,percent=fastest.plan.seconds>0?" (+"+(delay(p)/fastest.plan.seconds*100).toFixed(2)+"%)":"";
+    return [delay(p)>1e-6?duration(delay(p))+" later"+percent:"Same finish time",count?Math.abs(count)+" "+(count<0?"fewer":"more")+" shift"+(Math.abs(count)===1?"":"s"):""].filter(Boolean).join(" · ");
   };
-  choices.append(el("h2",preview?"Choose the new remaining plan":"Choose your plan"));
+  choices.append(el("h2",preview?"Compare remaining plans":"Compare plans"));
   const selected=el("div",undefined,"plan-choice-selected");
   selected.append(el("strong",(preview?"Selected to apply: ":"Selected timeline: ")+shiftLabel(plan.switches)),el("p","Finishes "+timestamp(plan.end,zone),"plan-choice-finish"));
   if(delay(plan)>1e-6){
@@ -1208,24 +1208,45 @@ function renderPlanChoices(plan,zone,{remaining=false,preview=false,onSelect,raw
     const earlier=el("button","Use earliest finish · "+shiftLabel(fastest.switches),"secondary plan-choice-earliest");
     earlier.type="button";earlier.disabled=!!worker||!!importingBackup;earlier.onclick=()=>onSelect(fastest.switches);selected.append(earlier);
   }else selected.append(el("p","Earliest finish found among the plans compared.","plan-choice-tradeoff"));
-  if(!options.some(entry=>entry.switches===plan.selectedSwitches))selected.append(el("p","This saved timeline uses an older shift-count option. Choose a current option below to switch.","hint plan-choice-legacy"));
+  if(!options.some(o=>o.entry?.switches===plan.selectedSwitches))selected.append(el("p",plan.shiftComparisonVersion===2?"This timeline uses another shift count because none of the requested counts completed. Change the specified shifts and search again for more comparisons.":"This saved timeline uses an older shift-count option. Choose a current option below to switch.","hint plan-choice-legacy"));
   choices.append(selected);
-  for(const entry of options){
-    const button=el("button",undefined,"research-sale-option"),active=entry.switches===plan.selectedSwitches;
-    button.type="button";button.dataset.shifts=entry.switches;button.setAttribute("aria-pressed",String(active));button.disabled=!!worker||!!importingBackup;
-    button.append(el("strong",shiftLabel(entry.switches)));
-    const badges=el("span",undefined,"plan-choice-badges");
-    if(active)badges.append(el("span","Selected","plan-choice-active"));
-    badges.append(el("span",entry===fastest?"Earliest finish found":"One fewer shift","research-sale-best"));
-    button.append(badges,el("span","Finishes "+timestamp(entry.plan.end,zone),"research-sale-end"),el("span",(remaining?"Time remaining: ":"Duration: ")+duration(entry.plan.seconds)));
-    if(delay(entry.plan)>1e-6)button.append(el("span",difference(entry.plan),"research-sale-delta"));
-    const checked=PlanVerification.checkpoint(raw,entry.plan.verification),automatic=entry.plan.automaticPurchaseCheck;
-    if(checked?.complete)button.append(el("span","Purchase order checked","plan-choice-check"));
-    else if(automatic)button.append(el("span",automatic.status==='error'?"Purchase check unavailable":automatic.status==='not-started'?"Purchase check not run":"Purchase check paused","plan-choice-check"));
-    button.onclick=()=>onSelect(entry.switches);row.append(button);
+  const wrapper=el("div",undefined,"plan-comparison-scroll");wrapper.tabIndex=0;wrapper.setAttribute("role","region");wrapper.setAttribute("aria-label","Plan comparison; scroll horizontally for all columns");
+  const table=el("table",undefined,"plan-comparison-table"),caption=el("caption",remaining?"Compare the remaining part of each plan":"Compare complete plans from the same starting farm"),head=el("thead"),header=el("tr"),body=el("tbody");
+  const corner=el("th","Comparison");corner.scope="col";header.append(corner);
+  const labels={specified:"Specified shifts",extra:"Specified + 1 shift",fewer:"Specified − 1 shift"};
+  const columns=options.map(option=>({...option,active:option.entry?.switches===plan.selectedSwitches,metrics:option.entry?PlanComparison.metrics(raw,option.entry.plan):null}));
+  for(const option of columns){
+    const name=el("th");name.scope="col";name.dataset.planRole=option.role;name.classList.toggle("plan-comparison-selected",option.active);
+    const entry=option.entry;
+    if(!entry){
+      name.append(el("strong",option.switches===null?"Not applicable":shiftLabel(option.switches),"plan-column-title"),el("span",labels[option.role],"plan-choice-description"));
+      name.append(el("span",option.switches===null?"Not applicable when zero shifts are specified.":option.switches>ShiftLimits.SEARCH_LIMIT?"Outside the supported 30-shift limit.":"No complete plan found within the search budget.","plan-choice-availability"));
+    }else{
+      const button=el("button",undefined,"secondary plan-choice-option");
+      button.type="button";button.dataset.shifts=entry.switches;button.setAttribute("aria-pressed",String(option.active));button.disabled=!!worker||!!importingBackup;
+      button.append(el("strong",shiftLabel(entry.switches),"plan-column-title"),el("span",labels[option.role],"plan-choice-description"));
+      if(option.active)button.append(el("span","Selected","plan-choice-active"));
+      button.setAttribute("aria-label",labels[option.role]+" · "+shiftLabel(entry.switches));button.onclick=()=>onSelect(entry.switches);name.append(button);
+      const checked=PlanVerification.checkpoint(raw,entry.plan.verification),automatic=entry.plan.automaticPurchaseCheck;
+      if(checked?.complete)name.append(el("span","Purchase order checked","plan-choice-check"));
+      else if(automatic)name.append(el("span",automatic.status==='error'?"Purchase check unavailable":automatic.status==='not-started'?"Purchase check not run":"Purchase check paused","plan-choice-check"));
+    }
+    header.append(name);
   }
-  if(options.length===1)choices.append(el("p",fastest.switches>0?"No complete plan using "+shiftLabel(fastest.switches-1)+" was found.":"This plan needs no further shifts.","hint plan-choice-availability"));
-  choices.append(row,el("p","Compare the earliest finish with the fastest plan using exactly one fewer shift. "+(preview?"Select a card, then use the selected remaining plan to replace your timeline.":"Select a card to change the timeline and exports."),"hint plan-choice-policy"));
+  for(const [key,label,unit] of [["shifts",remaining?"Remaining Shifts":"Number of Shifts"],["seconds","Total Time"],["end","Projected End Date & Time"],["laying","Maximum Laying Rate","eggs/hour"],["shipping","Maximum Shipping Rate","eggs/hour"],["soul","Soul Egg Cost"]]){
+    const row=el("tr"),labelCell=el("th",label);row.dataset.metricRow=key;labelCell.scope="row";
+    if(unit)labelCell.append(el("span",unit,"plan-metric-unit"));row.append(labelCell);
+    for(const option of columns){
+      const m=option.metrics,values={shifts:option.switches,seconds:m?.seconds,end:m?.end,laying:m?m.maxLaying*3600:undefined,shipping:m?m.maxShipping*3600:undefined,soul:m?.soulCost},value=values[key];
+      const text=value===null||value===undefined?"—":key==='shifts'?String(value):key==='seconds'?duration(value):key==='end'?timestamp(value,zone):num(value);
+      const cell=el("td",text);cell.dataset.metric=key;if(option.switches!==null)cell.dataset.planShifts=option.switches;if(value!==null&&value!==undefined)cell.dataset.value=value;
+      if(["laying","shipping","soul"].includes(key)&&value!==undefined)cell.title=NumberFormat.decimal(value);
+      cell.classList.toggle("plan-comparison-selected",option.active);row.append(cell);
+    }
+    body.append(row);
+  }
+  head.append(header);table.append(caption,head,body);
+  wrapper.append(table);choices.append(wrapper,el("p","Select a plan to "+(preview?"apply after review.":"view its timeline and exports.")+" Each available plan is checked automatically for purchase order.","hint plan-choice-policy"),el("p","Rates are each plan’s peak modeled capacity, before fuel diversion and silo downtime; peaks may occur at different times. Soul Egg cost covers future shifts from this starting farm. Search compares the specified count, one more and one fewer, with at most one extra shift (capped at 30). Results are the fastest found within the search budget.","hint plan-comparison-scope"));
   return choices;
 }
 function renderRemainingComparison(host) {
@@ -1240,7 +1261,7 @@ function renderRemainingComparison(host) {
     }});
     if(choices)card.append(choices);
   }
-  card.append(el("p",context.consumedShifts+" shift"+(context.consumedShifts===1?"":"s")+" already used · "+plan.switches+" further shift"+(plan.switches===1?"":"s")+" in this plan · "+(context.consumedShifts+plan.switches)+" / "+context.totalShiftBudget+" total shifts.","hint"));
+  card.append(el("p",context.consumedShifts+" shift"+(context.consumedShifts===1?"":"s")+" already used · "+plan.switches+" further shift"+(plan.switches===1?"":"s")+" in this plan · "+(context.consumedShifts+plan.switches)+" total shifts · "+context.totalShiftBudget+" specified for the run.","hint"));
   card.append(el("p","This timeline starts from the checked farm values at "+timestamp(plan.start,zone)+". Visit labels restart from the current farm. Sleep, timezone, TE target, and per-Virtue goals are retained.","hint"));
   const table=el("table"),body=el("tbody");
   const finishes=[["Original saved finish",context.originalEnd],["Original route from this farm",context.baseline?.end],["Selected remaining plan",plan.end]];
@@ -1265,7 +1286,7 @@ function renderRemainingComparison(host) {
         const parent={config:structuredClone(resultConfig),result:structuredClone(result),progress:structuredClone(planProgress),context:structuredClone(continuationContext)};
         continuationContext={version:1,parent,consumedShifts:proposal.consumedShifts,totalShiftBudget:proposal.totalShiftBudget,remainingShiftBudget:proposal.remainingShiftBudget,originalEnd:proposal.originalEnd,baseline:proposal.baseline,baselineError:proposal.baselineError};
         config=structuredClone(proposal.config);resultConfig=structuredClone(proposal.config);result=checked;planProgress=startingProgress;remainingProposal=null;dirty=false;
-        renderForm();renderResult();tab("results");show("Remaining plan applied. Its purchases, fuel, flights, sleep, target, and remaining shift budget passed replay validation.");
+        renderForm();renderResult();tab("results");show("Remaining plan applied. Its purchases, fuel, flights, sleep, target, and shift count passed replay validation.");
       }catch(e){show(e.message,true);}
     };
     const keep=el("button","Keep Original Plan","secondary");keep.id="keep-original-plan";keep.disabled=!!worker||!!importingBackup;keep.onclick=()=>{remainingProposal=null;renderResult();};controls.append(use,keep);
@@ -1340,7 +1361,7 @@ function renderPlanProgress(host, summary) {
     renderLaunchProgress(card,report,confirmed,launched);
     const reopt=el("button","Reoptimize Remaining Plan");reopt.id="reoptimize-remaining";reopt.disabled=!!worker||!!importingBackup;
     let prepared;try{prepared=Continuation.prepare(continuationRequest());}catch(e){reopt.disabled=true;card.append(el("p",e.message,"hint"));}
-    if(prepared)card.append(el("p","Search from the current PC time using the checked farm values · up to "+prepared.remainingShiftBudget+" further shift"+(prepared.remainingShiftBudget===1?"":"s")+" · "+prepared.remainingLaunches+" launch"+(prepared.remainingLaunches===1?"":"es")+" remaining. No earnings or fuel are assumed since the snapshot.","hint"));
+    if(prepared)card.append(el("p","Search from the current PC time using the checked farm values · compare "+prepared.remainingShiftBudget+" further shift"+(prepared.remainingShiftBudget===1?"":"s")+" · "+prepared.remainingLaunches+" launch"+(prepared.remainingLaunches===1?"":"es")+" remaining. Automatic Planning also compares one additional shift. No earnings or fuel are assumed since the snapshot.","hint"));
     if(prepared?.consolidatedLaunchVisits)card.append(el("p","Unlaunched ships from an earlier Humility visit are included in the remaining launch visit. All outstanding missions and their fuel costs are retained.","hint"));
     reopt.onclick=()=>optimize(continuationRequest());card.append(reopt);
   }
@@ -1405,7 +1426,7 @@ function renderResult() {
   const scope=el("p","After search, each final plan is checked automatically for a faster purchase order within groups of up to five purchases. The check compares subsets and legal orders. Other routes and departure times remain outside this check.","hint");scope.id="purchase-check-scope";
   const availability=el("p",undefined,"hint");availability.id="purchase-check-availability";
   check.append(scope);
-  if(r.purchaseEvaluation){const plans=r.shiftPlans?ShiftPlans.shortlist(r.shiftPlans).map(e=>e.plan):[r],done=plans.filter(p=>PlanVerification.checkpoint(resultConfig,p.verification)?.complete).length;check.append(el("p",done+" / "+plans.length+" final plans fully checked. Purchase checks run automatically after search. "+(done===plans.length?"":"The best valid plans and completed check progress are retained."),"hint automatic-purchase-checks"));}
+  if(r.purchaseEvaluation){const plans=r.shiftPlans?ShiftPlans.shortlist(r.shiftPlans,undefined,r.specifiedSwitches).map(e=>e.plan):[r],done=plans.filter(p=>PlanVerification.checkpoint(resultConfig,p.verification)?.complete).length;check.append(el("p",done+" / "+plans.length+" final plans fully checked. Purchase checks run automatically after search. "+(done===plans.length?"":"The best valid plans and completed check progress are retained."),"hint automatic-purchase-checks"));}
   if(r.automaticPurchaseCheck?.error&&!verification?.complete)check.append(el("p","Automatic check could not finish: "+r.automaticPurchaseCheck.error,"hint"));
   if(verification)check.append(el("p",verification.completedBlocks+" / "+verification.totalBlocks+" declared purchase blocks checked · "+verification.examined.toLocaleString()+" exact purchase states examined. "+(verification.complete?"The declared blocks are exhausted for this plan. ":"Save the plan to retain progress, then continue the check. ")+"Routes and departure times remain outside this exhaustive check.","hint purchase-verification"));
   check.append(availability,verify);
@@ -1718,7 +1739,7 @@ function startSearchClock({verifying = false, resuming = false} = {}) {
   searchBestSeconds = verifying ? result.seconds : null;
   searchContext = verifying ? "Comparing purchase orders; the current best plan is retained" : "Evaluating affordable purchases, event waits, and switches";
   $("search-status-heading").textContent = verifying ? "Checking Purchase Order" : resuming ? "Reoptimizing Remaining Plan" : "Finding Best Plan";
-  $("search-description").textContent = verifying ? "Checks selected purchase groups from this plan's starting farm. Stop & Keep Best pauses the check. Save Plan keeps progress for another session. Other routes and departure times remain outside this check." : resuming ? "Deep search starts from the checked farm with four workers and a three-minute budget, using the remaining shift allowance. Compare the new schedule with the original route before choosing a plan." : "Deep search compares routes, purchases, weekly sale timing, and departures using four workers with a three-minute budget. The fastest plan found and its one-fewer-shift alternative are then checked automatically for purchase order.";
+  $("search-description").textContent = verifying ? "Checks selected purchase groups from this plan's starting farm. Stop & Keep Best pauses the check. Save Plan keeps progress for another session. Other routes and departure times remain outside this check." : resuming ? "Deep search starts from the checked farm with four workers and a three-minute budget, comparing one more than the remaining specified shifts, that exact count, and one fewer. Compare the new schedule with the original route before choosing a plan." : "Deep search compares routes, purchases, weekly sale timing, and departures using four workers with a three-minute budget. The N+1, N and N−1 comparisons are then checked automatically for purchase order; N is selected by default.";
   $("search-stage").textContent = verifying ? "Preparing Purchase Groups" : "Preparing Farm and Checking Limits";
   $("search-openings").textContent = "Not Started";
   delete $("search-openings").dataset.total;
@@ -1767,10 +1788,10 @@ function optimize(request) {
   else if(resuming){try{runConfig=Continuation.prepare(request).config;}catch(e){show(e.message,true);return;}}
   else{if(!refresh())return;runConfig=structuredClone(config);delete runConfig.plan.continuation;}
   if(remainingProposal){remainingProposal=null;renderResult();}
-  $("search-limits").textContent = verifying?"Exhaustive purchase block check · up to five purchases per block · five-minute budget · Stop & Keep Best retains progress.":"Automatic purchase and departure timing · " + (runConfig.plan.autoSequence?"up to "+runConfig.plan.maxShifts+" new shifts":"entered route")+" · search budget " + exactDuration(searchOptions.maxMs / 1000) + "; then automatic purchase checks, up to 5 additional minutes.";
+  $("search-limits").textContent = verifying?"Exhaustive purchase block check · up to five purchases per block · five-minute budget · Stop & Keep Best retains progress.":"Automatic purchase and departure timing · " + (runConfig.plan.autoSequence?"compare "+runConfig.plan.maxShifts+" new shifts; overall search up to "+ShiftLimits.search(runConfig.plan):"entered route")+" · search budget " + exactDuration(searchOptions.maxMs / 1000) + "; then automatic purchase checks, up to 5 additional minutes.";
   dirty = false;
   if ($("plan-stale")) { $("plan-stale").textContent = verifying ? "Checking this plan's purchase order. The current best plan is retained, and you can pause with Stop & Keep Best." : resuming ? "Searching the remaining plan from the checked snapshot. The original timeline stays available for comparison." : "A new search is running. This timeline is the previous plan; the completed search will replace it."; $("plan-stale").hidden = false; }
-  show(verifying?"Checking purchase groups from this plan's starting farm. Stop & Keep Best retains the best plan and remaining work.":resuming?"Reoptimizing the remaining plan. Completed upgrades, current fuel and flights, and the remaining shift budget are retained.":"Searching research orders and switch timing. You can keep using the interface.");
+  show(verifying?"Checking purchase groups from this plan's starting farm. Stop & Keep Best retains the best plan and remaining work.":resuming?"Reoptimizing the remaining plan. Completed upgrades, current fuel and flights, and the specified shift comparison are retained.":"Searching research orders and switch timing. You can keep using the interface.");
   tab("results");
   busy(true);
   $("run-summary").textContent = verifying ? "Checking Purchase Order\u2026" : resuming ? "Reoptimizing Remaining Plan\u2026" : "Searching\u2026";

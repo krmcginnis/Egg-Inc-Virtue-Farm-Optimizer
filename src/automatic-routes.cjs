@@ -1,6 +1,7 @@
 'use strict';
 const Route=require('./switch-sequence.cjs'),S=require('./simulator.cjs'),Sleep=require('./sleep-schedule.cjs'),Ships=require('./ships.cjs');
-function limit(raw){return S.number(raw.plan?.maxShifts??12,'Maximum new shifts',0,30,true);}
+const ShiftLimits=require('./shift-limits.cjs');
+function limit(raw){return S.number(ShiftLimits.search(raw.plan),'Maximum new shifts',0,30,true);}
 function permutations(items){if(!items.length)return [[]];return items.flatMap((item,i)=>permutations(items.filter((_,j)=>j!==i)).map(rest=>[item,...rest]));}
 function compact(raw,ceiling){
  // A developed farm can equip delivery gear, improve a physical bottleneck,
@@ -65,9 +66,13 @@ function generate(raw){
    }
   }
  }
- const candidates=[...pool.values()].sort((a,b)=>a.priority-b.priority||b.shifts-a.shifts),chosen=[],seen=new Set();
+ const minimum=ShiftLimits.expanded(raw.plan)?Math.max(0,raw.plan.maxShifts-1):0;
+ const candidates=[...pool.values()].filter(x=>x.shifts>=minimum).sort((a,b)=>a.priority-b.priority||b.shifts-a.shifts),chosen=[],seen=new Set();
  function take(item){const key=item.route.join(' ');if(!seen.has(key)){seen.add(key);chosen.push(item.route);}}
  for(const item of candidates.filter(x=>x.priority<2))take(item);
+ // Reserve routes for all three requested exact counts before filling the
+ // bounded portfolio. No proposal extends above N+1.
+ if(ShiftLimits.expanded(raw.plan))for(const n of [raw.plan.maxShifts,raw.plan.maxShifts+1,raw.plan.maxShifts-1]){const item=candidates.find(x=>x.shifts===n);if(item)take(item);}
  // Reserve comparisons for different lengths before filling with alternative
  // orders. This is a bounded proposal search, not exhaustive enumeration.
  const counts=[...new Set(candidates.map(x=>x.shifts))].sort((a,b)=>Math.abs(a-Math.min(12,ceiling))-Math.abs(b-Math.min(12,ceiling))||b-a);
@@ -76,7 +81,7 @@ function generate(raw){
  // Keep the established portfolio intact. Interleave at most nine compact
  // families so neither new upgrade cycles nor old delivery orders are hidden
  // behind the route cap. Every proposal is still prepared and paid separately.
- const extra=compact(raw,ceiling),expanded=[],keys=new Set();
+ const extra=compact(raw,ceiling).filter(route=>route.length-1>=minimum),expanded=[],keys=new Set();
  for(let i=0;i<Math.max(chosen.length,extra.length);i++)for(const route of [chosen[i],extra[i]]){
   if(!route)continue;const key=route.join(' ');if(!keys.has(key)){keys.add(key);expanded.push(route);}
  }

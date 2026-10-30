@@ -1,3 +1,10 @@
+# v1.2.4
+
+- Compare exactly N+1, N, N−1 shifts in that order, with N selected by default. N is the entered comparison count; Automatic Planning searches no higher than N+1 (at most 30).
+- Show total time, projected finish in 24-hour notation, peak laying and shipping capacity in eggs/hour, and future Soul Egg cost as comparison rows under the three selectable plan headers. Reconstruct rates across the plan and calculate sequential shift costs from the starting farm.
+- Automatically check all three available final plans for purchase order. Preserve manual selections, saved legacy timelines, run shift tracking and remaining-plan preview/application. Missing exact counts and the N=0 boundary are explicit.
+- Install through Update App → Update & Restart. Start a new search or reoptimize to generate the N+1, N, N−1 comparison; loading an old saved plan preserves its timeline and only shows alternatives already saved.
+
 # v1.2.3
 
 - Show two plan choices: the fastest complete plan found and the fastest complete plan using exactly one fewer shift. Select the fastest by default, remove recommendations and the five-percent preference, and show only one option when no exact one-fewer-shift plan was found.

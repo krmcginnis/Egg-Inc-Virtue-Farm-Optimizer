@@ -13,6 +13,9 @@ const S=require('../src/simulator.cjs'),U=require('../src/shift-summary.cjs'),bl
   assert.equal(summary.shifts.length,2);const first=summary.shifts[0].maxRates;
   assert.equal(first.earning,Math.max(weak.earning*2,earned.earning,shipped.earning));assert.ok(first.earning<earned.earning*2);
   assert.equal(first.shipping,Math.max(weak.shipping,earned.shipping,shipped.shipping));assert.equal(first.laying,Math.max(weak.laying,earned.laying,shipped.laying));assert.equal(first.delivery,Math.max(...[weak,earned,shipped].map(r=>Math.min(r.laying,r.shipping))));assert.deepEqual(summary.shifts[1].maxRates,{earning:shipped.earning,shipping:shipped.shipping,laying:shipped.laying,delivery:Math.min(shipped.laying,shipped.shipping)});
+  const m=require('../src/plan-comparison.cjs').metrics(raw,result);
+  assert.equal(m.maxLaying,Math.max(...summary.shifts.map(x=>x.maxRates.laying)));assert.equal(m.maxShipping,Math.max(...summary.shifts.map(x=>x.maxRates.shipping)));assert.equal(m.soulCost,S.shiftCost(s));
+  const stale=structuredClone(result);stale.soulCost=0;stale.actions.filter(a=>a.type==='shift').forEach(a=>a.soulCost=0);assert.equal(require('../src/plan-comparison.cjs').metrics(raw,stale).soulCost,m.soulCost,'cost uses actual sequential shift math, not stale summary fields');
   assert.equal(JSON.stringify(actions),saved,'presentation never edits raw actions/reasons');
   // Historical before/after snapshots are optional: reconstruct rate states
   // from the configuration and purchases rather than trusting summary fields.
