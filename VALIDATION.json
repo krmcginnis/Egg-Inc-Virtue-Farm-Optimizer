@@ -29,12 +29,12 @@
   },
   "gameModelChanged": false,
   "globalOptimalityProven": false,
-  "date": "2026-10-30T16:57:33.243692+00:00",
+  "date": "2026-10-30T17:05:37.742670+00:00",
   "version": "1.2.1",
   "currentAudit": "AUDIT-v1.2.1.md",
-  "status": "local-validated-awaiting-windows",
-  "published": false,
-  "nativeWindowsTested": false,
+  "status": "accepted-public-release",
+  "published": true,
+  "nativeWindowsTested": true,
   "visualBrowserTested": false,
   "generatedDomTested": true,
   "buildPassed": true,
@@ -325,13 +325,52 @@
   },
   "limitations": [
     "Bounded search does not prove global optimality or guarantee identical fresh/seeded outcomes.",
-    "One controlled run per configuration; timing and quality vary by farm and hardware.",
-    "Native Windows and anonymous public-feed verification remain publication gates."
+    "One controlled run per configuration; timing and quality vary by farm and hardware."
   ],
   "previousRelease": {
     "version": "1.2.0",
     "sourceCommit": "c1f0dd62439c81af95337df76c4446d613c16069",
     "runId": 40834558090,
     "accepted": true
+  },
+  "windowsRelease": {
+    "runId": 41094750316,
+    "jobId": 124197502164,
+    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/41094750316",
+    "sourceCommit": "f88e8c099f10cf9445728613035cac35a8065a1f",
+    "requiredSuitesPassed": 38,
+    "nativeUpdaterAndLauncherPassed": true,
+    "publicFeedAndRuntimeHashesPassed": true
+  },
+  "independentPublicVerification": {
+    "version": "1.2.1",
+    "sourceCommit": "f88e8c099f10cf9445728613035cac35a8065a1f",
+    "releaseId": 429286122,
+    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.2.1",
+    "anonymous": true,
+    "assets": [
+      {
+        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
+        "size": 8646206,
+        "id": 692795954,
+        "sha256": "9c82e108f5bae1bb1d4fb719c950b60728ab9ccf2287327344cdc778f9e21ff6"
+      },
+      {
+        "name": "update-manifest.json",
+        "size": 239,
+        "id": 692795952,
+        "sha256": "584001b412051b9fd2a0f9d87532823b359607d6a61f76313a880cd1014c6c75"
+      }
+    ],
+    "archiveEntries": 169,
+    "runtimeFileHashes": 167,
+    "crcPassed": true,
+    "closedManifest": true,
+    "soleCurrentAudit": true,
+    "versionAndRepositoryVerified": true,
+    "compiledDeepDefaultsVerified": true,
+    "planningDetailsRemoved": true,
+    "publicWorkerSha256": "944eb879c10e846025ee54735c88d760cc421dc1ea69171e4871894266140757",
+    "compiledWorkerMatchesBenchmarkedCorrection": true
   }
 }
