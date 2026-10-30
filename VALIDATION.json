@@ -27,12 +27,12 @@
     "retainFastest": true,
     "compounds": false
   },
-  "date": "2026-10-30T18:20:59.999127+00:00",
+  "date": "2026-10-30T18:28:40.638553+00:00",
   "version": "1.2.2",
   "currentAudit": "AUDIT-v1.2.2.md",
-  "status": "local-validation-complete-windows-public-pending",
-  "published": false,
-  "nativeWindowsTested": false,
+  "status": "accepted-public-release",
+  "published": true,
+  "nativeWindowsTested": true,
   "visualBrowserTested": true,
   "generatedDomTested": true,
   "buildPassed": true,
@@ -48,8 +48,7 @@
     "accepted": true
   },
   "limitations": [
-    "Search remains bounded and does not prove global optimality.",
-    "Native Windows and anonymous public release verification are pending publication."
+    "Search remains bounded and does not prove global optimality."
   ],
   "localSuitesPassed": [
     "release-state.cjs",
@@ -297,5 +296,52 @@
     "savedJson": true,
     "noJavaScriptErrors": true,
     "noHorizontalOverflow": true
+  },
+  "windowsRelease": {
+    "runId": 41106289094,
+    "jobId": 124236871853,
+    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/41106289094",
+    "sourceCommit": "9cfbf920c4db677f6fac1764155c632a1d71d1f8",
+    "requiredSuitesPassed": 39,
+    "nativeUpdaterAndLauncherPassed": true,
+    "publicFeedAndRuntimeHashesPassed": true
+  },
+  "independentPublicVerification": {
+    "version": "1.2.2",
+    "sourceCommit": "9cfbf920c4db677f6fac1764155c632a1d71d1f8",
+    "releaseId": 429358846,
+    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.2.2",
+    "anonymous": true,
+    "assets": [
+      {
+        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
+        "size": 8646959,
+        "id": 693018191,
+        "sha256": "a94c952f615a2f4853af71216ad69db2d87c8c360dac14e461f4cc2bb8eb6cef"
+      },
+      {
+        "name": "update-manifest.json",
+        "size": 239,
+        "id": 693018195,
+        "sha256": "ca30a9c1f1fc293ebda541abd29c7123d8890f8141679813c650e2a9c5a767a8"
+      }
+    ],
+    "archiveEntries": 169,
+    "runtimeFileHashes": 167,
+    "crcPassed": true,
+    "closedManifest": true,
+    "soleCurrentAudit": true,
+    "versionAndRepositoryVerified": true,
+    "compiledDeepDefaultsVerified": true,
+    "compiledPlanChoicesVerified": true,
+    "visualBrowserVerified": true,
+    "visualWidths": [
+      1440,
+      1000,
+      760,
+      500
+    ],
+    "publicWorkerSha256": "944eb879c10e846025ee54735c88d760cc421dc1ea69171e4871894266140757",
+    "searchWorkerUnchangedFromPreviousRelease": true
   }
 }
