@@ -74,7 +74,15 @@ function previewPlans(raw){
   const fuelValues=await page.locator('.guide-item.fuel b').allTextContents();assert.ok(fuelValues.length>0);assert.ok(fuelValues.every(value=>/^\d+T$/.test(value)));
   await page.evaluate(doc=>VirtueApp.loadFile(new File([JSON.stringify({...doc.config,importInfo:{scope:'farm',timestamp:doc.result.start}})],'Synthetic-Current-Fuel.json'),{trackOnly:true}),fuelDoc);
   assert.match(await page.locator('#plan-progress-next').innerText(),/Switch to Humility/i);assert.equal(await page.locator('[data-progress-index="0"],[data-progress-index="1"]').count(),0);
-  assert.deepEqual(await page.evaluate(()=>JSON.parse(JSON.stringify(VirtueApp.getResult().actions))),JSON.parse(JSON.stringify(fuelDoc.result.actions)),'rounding does not edit the replayed fuel amounts');
+  // Replay recomputes earnings with each engine's Math functions. Compare the
+  // exact fuel fields under test, rather than unrelated last-bit earnings.
+  const fuelActions=actions=>{
+    const rows=actions.filter(a=>['fuel','fuel-dump'].includes(a.type)).map(({type,t,end,egg,amount,removed})=>({type,t,end,egg,amount,removed}));
+    return JSON.parse(JSON.stringify(rows));
+  };
+  const replayed=await page.evaluate(()=>JSON.parse(JSON.stringify(VirtueApp.getResult())));
+  assert.deepEqual(fuelActions(replayed.actions),fuelActions(fuelDoc.result.actions),'rounding does not edit recorded fuel amounts or collection times');
+  assert.equal(replayed.end,fuelDoc.result.end,'fuel display does not change the plan finish');
   assert.deepEqual(errors,[]);report.passed=true;report.widths=[1440,1000,500];report.liveCheckWorkers=3;report.planOrder=[13,12,11];report.defaultSelected=12;report.fuelRoundingPassed=true;console.log('PASS real Chromium: signed comparison, no N labels/footer/details, colors, moved Save/PDF/Progress actions, keyboard/save/load, real Blob checks, responsive layouts, rounded fuel with no tiny rows/breaks/checklist blockers and immutable recorded amounts.');
  }finally{fs.writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n');await browser?.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

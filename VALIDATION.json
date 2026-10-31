@@ -64,9 +64,9 @@
     "Export Walkthrough",
     "Check Farm Progress"
   ],
-  "date": "2026-10-31T03:24:02.431882+00:00",
-  "version": "1.2.6",
-  "currentAudit": "AUDIT-v1.2.6.md",
+  "date": "2026-10-31T03:29:40.515865+00:00",
+  "version": "1.2.7",
+  "currentAudit": "AUDIT-v1.2.7.md",
   "status": "prepublication-reviewed",
   "published": false,
   "nativeWindowsTested": false,
@@ -327,7 +327,6 @@
       "seconds": 6.543
     }
   ],
-  "localFingerprint": "c0492545a4d5297e756df1a0518225d9037ad8ff66e0b96c5fe68aa568070afa",
   "comparisonPercentages": {
     "baseline": "Specified shifts (N), independent of selection",
     "baselineLabels": false,
@@ -370,5 +369,12 @@
     "Native updater and public feed",
     "Anonymous public asset CRC and all runtime digests",
     "Real Chrome against public ZIP"
-  ]
+  ],
+  "localCheckNotes": "The app implementation passed all 40 local suites. The cross-engine browser assertion was subsequently narrowed to exact fuel and timing fields and retested; CI reruns all 42 checks on the corrected candidate.",
+  "unpublishedCandidate": {
+    "version": "1.2.6",
+    "sourceCommit": "b906bc8108d5f188dab0ba51ff9c60a99208da91",
+    "runId": 41164280578,
+    "reason": "Browser fixture compared unrelated last-bit earnings across Node and Chrome; publication gate withheld assets."
+  }
 }

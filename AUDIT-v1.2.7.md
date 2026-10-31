@@ -1,4 +1,4 @@
-# Egg Inc. Virtue Farm Optimizer v1.2.6 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.2.7 — Release Audit
 
 ## Release review — October 30, 2026 (Pacific Time)
 
@@ -34,7 +34,7 @@ exhaust only their declared blocks and do not prove global route optimality.
 
 All 40 local model and UI/worker suites passed on the completed implementation.
 The completed implementation checks are reused for publication; fresh preflight
-verifies the v1.2.6 build, version labels and archive. Tests cover signed deltas,
+verifies the v1.2.7 build, version labels and archive. Tests cover signed deltas,
 N baseline/omitted labels, missing/zero/tiny values, removed text/panels, preserved
 automatic checks, save/load, remaining-plan preview/application and action buttons.
 
@@ -50,3 +50,10 @@ exact candidate, native updater/feed verification, anonymous public asset CRC
 and runtime-hash checks, and real Chrome against the downloaded public ZIP.
 The workflow records acceptance afterward; this prepublication audit remains
 inside the immutable assets.
+
+The initial unpublished candidate was stopped by the Windows browser gate: a
+full-action equality assertion included harmless last-bit earning differences
+between Node and Chrome. The regression now compares exact fuel amounts, discard
+quantities, collection timestamps and finish time; the independent model/replay
+checks still validate funding and earnings. The corrected candidate reruns every
+Windows gate before publication. No v1.2.6 assets were published.

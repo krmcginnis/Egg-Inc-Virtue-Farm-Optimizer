@@ -1,4 +1,4 @@
-# v1.2.6
+# v1.2.7
 
 - Round fuel store/discard instructions to the nearest 1T for trillion-scale tanks. Omit adjustments that round to zero from summaries, Quick Guide, Full Breakdown, progress and exported walkthroughs, including their tiny collection breaks. Preserve exact recorded fuel and timing, and retain sub-trillion instructions for smaller tanks.
 - Simplify comparison differences to signed percentages only, such as +1.09% or -18.49%, with the existing favorable/adverse colors. Leave the specified N column without comparison labels; omit undefined percentages and keep tiny nonzero differences numeric.
