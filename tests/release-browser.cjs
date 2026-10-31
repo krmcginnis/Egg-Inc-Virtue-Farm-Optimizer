@@ -45,12 +45,24 @@ function previewPlans(raw){
   assert.ok(await page.locator('#verify-purchases').isHidden());
   assert.ok(await page.locator('#search-status').isHidden());
   assert.equal(await page.evaluate(()=>VirtueApp.getResult().selectedSwitches),12);
+  assert.equal(await page.locator('.result-summary,.plan-choice-earliest').count(),0);
+  assert.equal(await page.locator('.plan-comparison-header #save-plan,.plan-comparison-header .plan-jump').count(),2);
+  const delta=(metric,shifts)=>page.locator(`[data-metric="${metric}"][data-plan-shifts="${shifts}"] .plan-metric-delta`);
+  assert.match(await delta('seconds',13).innerText(),/faster vs N/);assert.match(await delta('seconds',11).innerText(),/slower vs N/);
+  assert.match(await delta('soul',13).getAttribute('class'),/worse/);assert.match(await delta('soul',11).getAttribute('class'),/better/);
+  assert.equal(await delta('seconds',13).evaluate(n=>getComputedStyle(n).color),'rgb(121, 217, 180)');assert.equal(await delta('soul',13).evaluate(n=>getComputedStyle(n).color),'rgb(255, 158, 158)');
+  const baselineDeltas=await page.locator('.plan-metric-delta').allTextContents();
+  await page.locator('[data-shifts="11"]').focus();await page.keyboard.press('Enter');assert.equal(await page.evaluate(()=>VirtueApp.getResult().selectedSwitches),11);assert.deepEqual(await page.locator('.plan-metric-delta').allTextContents(),baselineDeltas);
   for(const shifts of ['13','11','12']){await page.locator(`[data-shifts="${shifts}"]`).click();assert.ok(await page.evaluate(()=>VirtueApp.getResult().verification.complete));assert.ok(await page.locator('#verify-purchases').isHidden());}
   assert.equal(await page.locator('.plan-comparison-table thead th').count(),4);assert.equal(await page.locator('.plan-comparison-table tbody tr').count(),6);assert.doesNotMatch(await page.locator('#plan-choices').innerText(),/\b(?:AM|PM)\b/);
   const downloadPromise=page.waitForEvent('download');await page.locator('#save-plan').click();await (await downloadPromise).saveAs(project+'/tmp/release-browser-saved-plan.json');
   const saved=JSON.parse(fs.readFileSync(project+'/tmp/release-browser-saved-plan.json'));assert.ok(saved.result.shiftPlans.every(e=>e.plan.verification.complete));
+  const popupPromise=page.waitForEvent('popup');await page.getByRole('button',{name:'Export Walkthrough',exact:true}).click();const popup=await popupPromise;
+  await popup.waitForFunction(()=>document.documentElement.dataset.pdfReady==='true',{},{timeout:60000});
+  const pdfStart=await popup.evaluate(async()=>Array.from(new Uint8Array(await(await fetch(document.getElementById('save-pdf').href)).arrayBuffer()).slice(0,5)));assert.equal(Buffer.from(pdfStart).toString(),'%PDF-');await popup.close();
+  await page.locator('.plan-comparison-header .plan-jump').click();assert.equal(await page.evaluate(()=>document.activeElement.id),'plan-progress-heading');
   await page.evaluate(saved=>VirtueApp.loadFile(new File([JSON.stringify(saved)],'Synthetic-Checked.json'),{planOnly:true}),saved);
-  for(const width of [1440,1000,500]){await page.setViewportSize({width,height:1100});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.evaluate(()=>scrollTo(0,0));}
-  assert.deepEqual(errors,[]);report.passed=true;report.widths=[1440,1000,500];report.liveCheckWorkers=3;report.planOrder=[13,12,11];report.defaultSelected=12;console.log('PASS real Chromium: N+1/N/N-1 table, N default, three real Blob check workers after four search workers, every plan checked, keyboard/save/load selection, and responsive layouts.');
+  for(const width of [1440,1000,500]){await page.setViewportSize({width,height:1100});assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));await page.evaluate(()=>scrollTo(0,0));if(process.env.UI_SCREENSHOT_DIR){fs.mkdirSync(process.env.UI_SCREENSHOT_DIR,{recursive:true});await page.locator('#plan-choices').screenshot({path:path.join(process.env.UI_SCREENSHOT_DIR,'compare-plans-'+width+'.png')});}}
+  assert.deepEqual(errors,[]);report.passed=true;report.widths=[1440,1000,500];report.liveCheckWorkers=3;report.planOrder=[13,12,11];report.defaultSelected=12;console.log('PASS real Chromium: N+1/N/N-1 table, N-anchored percentages and favorable/adverse colors, relocated Save/Export PDF/Progress actions, keyboard/save/load selection, three real Blob check workers and responsive layouts.');
  }finally{fs.writeFileSync(reportPath,JSON.stringify(report,null,2)+'\n');await browser?.close();await new Promise(r=>server.close(r));}
 })().catch(e=>{console.error(e.stack);process.exitCode=1;});

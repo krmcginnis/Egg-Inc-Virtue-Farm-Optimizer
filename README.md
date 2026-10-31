@@ -89,6 +89,13 @@ future Soul Egg cost. Capacities are reconstructed across the entire timeline an
 may peak at different times. They are before fuel diversion and empty-silo pauses.
 Soul Egg costs apply the sequential shift formula to the starting balance and
 lifetime shift count; research and physical upgrades spend gems instead.
+Time, laying, shipping and Soul Egg cost show percentage differences against N,
+even after selecting another column. Faster time, higher capacity and lower cost
+are green; the opposite is red, with direction labels alongside the colors.
+Equal values and the N baseline are neutral. If N is missing, percentages are
+unavailable; a zero N value is labeled explicitly instead of dividing by zero.
+Save Plan, Export Walkthrough and Check Farm Progress are in the Compare Plans
+header. Purchase-check recovery and search diagnostics are under Plan details.
 Choose a plan header to change the timeline and exports, or review a remaining-plan
 selection before applying it. Saved legacy timelines and checked progress are
 preserved. New searches/reoptimization produce the new three-count comparison.

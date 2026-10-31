@@ -2,6 +2,12 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const S=require('../src/simulator.cjs'),U=require('../src/shift-summary.cjs'),blank=require('../src/blank-farm.cjs'),Strategy=require('../src/planning-strategy.cjs'),gems=require('../src/gems-text.cjs'),Q=require('../src/walkthrough-pdf.cjs');
 (async()=>{
+ const {difference}=require('../src/plan-comparison.cjs');
+ for(const lowerIsBetter of [false,true])for(const [value,percent,direction] of [[80,-20,-1],[100,0,0],[120,20,1]])assert.deepEqual(difference(value,100,lowerIsBetter),{percent,direction,better:direction===0?null:lowerIsBetter?direction<0:direction>0});
+ assert.deepEqual(difference(0,0,true),{percent:0,direction:0,better:null});
+ assert.deepEqual(difference(100,0,true),{percent:null,direction:1,better:false});
+ assert.deepEqual(difference(100,0),{percent:null,direction:1,better:true});
+ assert.equal(difference(10,undefined),null);assert.equal(difference(Infinity,10),null);assert.equal(difference(10,NaN),null);
  for(const mode of ['offline','online']){
   // Tuesday's boost ends before the stronger set is equipped. Multiplying the
   // strongest gear by an earlier event would overstate this visit's peak.

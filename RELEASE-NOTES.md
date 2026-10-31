@@ -1,3 +1,11 @@
+# v1.2.5
+
+- Compare total time, maximum laying, maximum shipping and future Soul Egg cost against the specified N plan with percentages. Faster time, higher capacity and lower cost are green; the opposite is red. Keep N as the baseline when selecting another plan and handle missing or zero baselines explicitly.
+- Move Save Plan, Export Walkthrough and Check Farm Progress into the Compare Plans header. Remove Use Earliest Finish and the redundant green summary card. Keep purchase-check recovery and search diagnostics under Plan details, including for older single-plan saves.
+- Export the selected proposed remaining plan from its comparison header; Save Plan continues to preserve the full session and pending proposal.
+
+- Install through Update App → Update & Restart. Existing saved comparisons show the new layout without another search; older single-plan saves retain their actions and timeline.
+
 # v1.2.4
 
 - Compare exactly N+1, N, N−1 shifts in that order, with N selected by default. N is the entered comparison count; Automatic Planning searches no higher than N+1 (at most 30).

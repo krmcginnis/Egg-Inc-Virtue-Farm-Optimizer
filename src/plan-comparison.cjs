@@ -11,4 +11,9 @@ function metrics(raw,plan){
  for(const a of actions)if(a.type==='shift'){const cost=S.shiftCost({soul,shiftCount});soulCost+=cost;soul-=cost;shiftCount++;}
  return {seconds:plan.seconds,end:plan.end,maxLaying:group.maxRates.laying,maxShipping:group.maxRates.shipping,soulCost};
 }
-module.exports={metrics};
+function difference(value,baseline,lowerIsBetter=false){
+ if(!Number.isFinite(value)||!Number.isFinite(baseline)||value<0||baseline<0)return null;
+ const direction=Math.sign(value-baseline);
+ return {percent:baseline===0?(direction===0?0:null):(value-baseline)/baseline*100,direction,better:direction===0?null:(lowerIsBetter?direction<0:direction>0)};
+}
+module.exports={metrics,difference};

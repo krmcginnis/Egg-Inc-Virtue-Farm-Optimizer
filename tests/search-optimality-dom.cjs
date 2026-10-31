@@ -68,7 +68,7 @@ async function exportPlan(){
   assert.deepEqual([...w.document.querySelectorAll('[data-shifts]')].map(n=>n.dataset.shifts),['5','4','3']);
   assert.match(query('[data-shifts="4"]').textContent,/Specified shifts/);
   assert.match(query('[data-shifts="5"]').textContent,/Specified \+ 1 shift/);
-  assert.doesNotMatch(query('#plan-choices').textContent,/recommend|allowance|preference/i);
+  assert.doesNotMatch(query('.plan-choice-selected').textContent,/recommend|allowance|preference/i);
   query('[data-shifts="3"]').click();
   const selectedSaved=await exportPlan();await load(selectedSaved);
   assert.equal(w.VirtueApp.getResult().switches,3);assert.equal(w.VirtueApp.getResult().recommendedSwitches,undefined);
@@ -78,8 +78,8 @@ async function exportPlan(){
   const comparison={...fixture,result:{...fixture.result,shiftPlans:[{switches:fixture.result.switches,plan:fixture.result},{switches:alternate.switches,plan:alternate}],selectedSwitches:fixture.result.switches,recommendedSwitches:fixture.result.switches,shiftComparisonVersion:1}};
   await load(comparison);
   assert.equal($('result-content').firstElementChild.id,'plan-choices','selected plan and alternatives precede the timeline');
-  assert.ok($('plan-choices').nextElementSibling.classList.contains('result-summary'));
-  assert.equal(query('#result-content>.result-summary')?.nextElementSibling.id,'plan-progress','current progress follows the selected plan summary');
+  assert.equal(query('.result-summary'),null,'the redundant summary card is removed');
+  assert.equal($('plan-choices').nextElementSibling.id,'plan-progress','current progress follows Compare Plans');
   assert.ok(query('[data-shifts="'+alternate.switches+'"]'));assert.equal(w.VirtueApp.getResult().switches,fixture.result.switches);
   const savedAlternative=await exportPlan();await load(savedAlternative);
   assert.equal(w.VirtueApp.getResult().selectedSwitches,fixture.result.switches,'selection survives saving with the new layout');
