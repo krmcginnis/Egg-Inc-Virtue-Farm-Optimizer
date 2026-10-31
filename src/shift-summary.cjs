@@ -1,6 +1,6 @@
 'use strict';
 const S=require('./simulator.cjs'),Artifacts=require('./artifact-optimizer.cjs');
-const G=require('./quick-guide.cjs'),Ships=require('./ships.cjs');
+const G=require('./quick-guide.cjs'),Fuel=require('./fuel-display.cjs');
 const E=require('./opening-search.cjs');
 const Rates=require('./shift-rates.cjs');
 const Decisions=require('./purchase-decisions.cjs');
@@ -10,11 +10,11 @@ function ranges(values){
 function summarize(raw,result){
  const effective=result.solverVersion>=2?{...raw,plan:{...raw.plan,solverVersion:2}}:raw;
  const {s,c}=S.prepare(effective,{artifactReplay:true,artifactSets:S.recordedArtifactSets(result.actions),oneStartingSilo:result.initialSiloRule==='one'||result.actions.some(a=>a.initialSiloRule==='one')}),actions=result.actions,counters=Array(5).fill(0),groups=[];
- let g,remainingSoul=s.soul,previousSwitchCount=s.shiftCount;function begin(egg,index,time,phase){if(!new RegExp('^'+codes[egg]+'[1-9][0-9]*$').test(phase||''))phase=null;g={egg,name:S.NAME[egg],phase:phase||codes[egg]+(++counters[egg]),start:time,end:time,firstIndex:index,lastIndex:index-1,soulCost:0,hasSwitch:false,onlineSeconds:0,offlineSeconds:0,interactionSeconds:0,offlineBreaks:0,fuelSeconds:0,...(c.sleep?{sleepSeconds:0,siloEmptySeconds:0}:{}),activities:[]};if(phase)counters[egg]=Math.max(counters[egg]+1,Number(phase.slice(1)));groups.push(g);}
+ let g,remainingSoul=s.soul,previousSwitchCount=s.shiftCount;function begin(egg,index,time,phase){if(!new RegExp('^'+codes[egg]+'[1-9][0-9]*$').test(phase||''))phase=null;g={egg,name:S.NAME[egg],phase:phase||codes[egg]+(++counters[egg]),start:time,end:time,firstIndex:index,lastIndex:index-1,soulCost:0,hasSwitch:false,onlineSeconds:0,offlineSeconds:0,interactionSeconds:0,offlineBreaks:0,fuelSeconds:0,displayFuelSeconds:0,...(c.sleep?{sleepSeconds:0,siloEmptySeconds:0}:{}),activities:[]};if(phase)counters[egg]=Math.max(counters[egg]+1,Number(phase.slice(1)));groups.push(g);}
  const firstShift=actions.findIndex(a=>a.type==='shift'),openingActions=actions.slice(0,firstShift<0?actions.length:firstShift);
  if(actions[0]?.type!=='shift'||actions[0].t>result.start)begin(s.egg,0,result.start,openingActions.find(a=>a.phase)?.phase);
  else counters[s.egg]=1; // A zero-duration starting visit still counts as visit 1.
- for(let i=0;i<actions.length;i++){const a=actions[i];if(a.type==='shift'){if(g)g.end=a.t;begin(a.egg,i,a.t,a.phase);g.hasSwitch=true;g.soulCost=Number.isFinite(a.soulCost)?a.soulCost:remainingSoul-(remainingSoul-S.shiftCost({soul:remainingSoul,shiftCount:previousSwitchCount}));remainingSoul-=g.soulCost;previousSwitchCount++;}g.lastIndex=i;if(a.type==='wait'){const dt=a.end-a.t;g.end=a.end;const interaction=/^(Purchase interaction time|Switch overhead)/.test(a.reason||'');if(interaction)g.interactionSeconds+=dt;else if(a.earningsMode==='offline'){g.offlineSeconds+=dt;g.offlineBreaks++;}else {g.onlineSeconds+=dt-(a.forcedOfflineSeconds||0);g.offlineSeconds+=a.forcedOfflineSeconds||0;}if(c.sleep){g.sleepSeconds+=a.sleepSeconds||0;g.siloEmptySeconds+=a.siloEmptySeconds||0;}}else if(a.type==='fuel'){g.fuelSeconds+=a.end-a.t;if(c.sleep){g.sleepSeconds+=require('./sleep-schedule.cjs').seconds(c.sleep,a.t,a.end);g.siloEmptySeconds+=a.siloEmptySeconds||0;}g.end=Math.max(g.end,a.end);}else if(a.type==='ship-run'){for(const key of ['onlineSeconds','offlineSeconds','interactionSeconds','offlineBreaks','fuelSeconds'])g[key]+=a[key]||0;if(c.sleep){g.sleepSeconds+=a.sleepSeconds||0;g.siloEmptySeconds+=a.siloEmptySeconds||0;}g.end=Math.max(g.end,a.end);}else g.end=Math.max(g.end,a.t);}
+ for(let i=0;i<actions.length;i++){const a=actions[i];if(a.type==='shift'){if(g)g.end=a.t;begin(a.egg,i,a.t,a.phase);g.hasSwitch=true;g.soulCost=Number.isFinite(a.soulCost)?a.soulCost:remainingSoul-(remainingSoul-S.shiftCost({soul:remainingSoul,shiftCount:previousSwitchCount}));remainingSoul-=g.soulCost;previousSwitchCount++;}g.lastIndex=i;if(a.type==='wait'){const dt=a.end-a.t;g.end=a.end;const interaction=/^(Purchase interaction time|Switch overhead)/.test(a.reason||'');if(interaction)g.interactionSeconds+=dt;else if(a.earningsMode==='offline'){g.offlineSeconds+=dt;g.offlineBreaks++;}else {g.onlineSeconds+=dt-(a.forcedOfflineSeconds||0);g.offlineSeconds+=a.forcedOfflineSeconds||0;}if(c.sleep){g.sleepSeconds+=a.sleepSeconds||0;g.siloEmptySeconds+=a.siloEmptySeconds||0;}}else if(a.type==='fuel'){g.fuelSeconds+=a.end-a.t;if(!Fuel.hidden(a,c.ships.capacity))g.displayFuelSeconds+=a.end-a.t;if(c.sleep){g.sleepSeconds+=require('./sleep-schedule.cjs').seconds(c.sleep,a.t,a.end);g.siloEmptySeconds+=a.siloEmptySeconds||0;}g.end=Math.max(g.end,a.end);}else if(a.type==='ship-run'){for(const key of ['onlineSeconds','offlineSeconds','interactionSeconds','offlineBreaks','fuelSeconds'])g[key]+=a[key]||0;g.displayFuelSeconds+=a.fuelSeconds||0;if(c.sleep){g.sleepSeconds+=a.sleepSeconds||0;g.siloEmptySeconds+=a.siloEmptySeconds||0;}g.end=Math.max(g.end,a.end);}else g.end=Math.max(g.end,a.t);}
  if(groups.length)groups.at(-1).end=result.end;
  const decisions=Decisions.build(s,c,actions);
  let levels=s.r.slice(),eggs=s.eggs.slice(),silos=s.silos;
@@ -27,8 +27,7 @@ function summarize(raw,result){
    case 'silo':silos++;break;
    case 'set':sets.push(a);break;
    case 'wait':eggs[a.egg]+=a.eggsGained||0;break;
-   case 'fuel-dump':shift.activities.push({kind:'fuel',label:'Set Tank Limits; Discard Excess',value:a.removed.map((n,i)=>n?Ships.format(n)+' '+S.NAME[i]:'').filter(Boolean).join(' · ')});break;
-   case 'fuel':shift.activities.push({kind:'fuel',label:(a.visit>1?'Refill ':'Store ')+S.NAME[a.egg]+' Fuel',value:Ships.format(a.amount)});break;
+   case 'fuel-dump':case 'fuel':{const item=Fuel.activity(a,c.ships.capacity);if(item)shift.activities.push(item);break;}
    case 'ship-visit':shift.activities.push({kind:'ship',label:'No Ships Planned for H'+a.visit});break;
    case 'ship-run':eggs[a.egg]+=a.eggsGained||0;for(const m of a.batches)shift.activities.push({kind:'ship',label:'Launch '+m.label,value:'× '+m.count});break;
   }}
@@ -39,7 +38,7 @@ function summarize(raw,result){
   if(cars.size){const lengths=[...new Set([...cars.values()].map(v=>v.to))];shift.activities.push({kind:'physical',label:'Hyperloop Cars',value:lengths.length===1?'→ '+lengths[0]+' per train ('+cars.size+' trains)':'+'+[...cars.values()].reduce((n,v)=>n+v.to-v.from,0)+' across '+cars.size+' trains'});}
   if(silos!==siloStart)shift.activities.push({kind:'physical',label:'Silos',value:siloStart+' → '+silos});
   for(const action of sets)shift.activities.push(...Artifacts.activities(action));
-  shift.quickGuide=G.build(actions.slice(shift.firstIndex,shift.lastIndex+1),{start:shift.start,end:shift.end,silos:siloStart});
+  shift.quickGuide=G.build(actions.slice(shift.firstIndex,shift.lastIndex+1),{start:shift.start,end:shift.end,silos:siloStart,fuelCapacity:c.ships.capacity});
   shift.purchaseDecisions=decisions.filter(p=>p.index>=shift.firstIndex&&p.index<=shift.lastIndex);
   shift.researchDecisions=[...research].sort((a,b)=>a[0]-b[0]).map(([i,level])=>({i,label:S.D.research[i].name,value:level.from+' → '+level.to,explanation:Decisions.range(shift.purchaseDecisions,i,level.from,level.to)}));
   for(const activity of shift.activities)if(activity.kind==='research')activity.explanation=shift.researchDecisions.find(p=>p.label===activity.label)?.explanation;
@@ -50,7 +49,7 @@ function summarize(raw,result){
   if(!shift.activities.length)shift.activities.push({kind:'collection',label:shift.teGained?'Collect Truth Eggs':'Wait / switch'});
  }
  Rates.attach(groups,actions,s,c);
- const shifts=groups.filter(g=>g.lastIndex>=g.firstIndex||g.seconds>0),totals={onlineSeconds:0,offlineSeconds:0,interactionSeconds:0,offlineBreaks:0,fuelSeconds:0,soulCost:0,...(c.sleep?{sleepSeconds:0,siloEmptySeconds:0}:{})};for(const shift of shifts)for(const key of Object.keys(totals))totals[key]+=shift[key];
+ const shifts=groups.filter(g=>g.lastIndex>=g.firstIndex||g.seconds>0),totals={onlineSeconds:0,offlineSeconds:0,interactionSeconds:0,offlineBreaks:0,fuelSeconds:0,displayFuelSeconds:0,soulCost:0,...(c.sleep?{sleepSeconds:0,siloEmptySeconds:0}:{})};for(const shift of shifts)for(const key of Object.keys(totals))totals[key]+=shift[key];
  return {shifts,totals};
 }
 function openingViolations(raw,result){return summarize(raw,result).shifts.filter(s=>s.phase==='C1'||s.phase==='K1').filter(s=>s.seconds>E.maximum(raw.plan?.[s.phase==='C1'?'c1MaxMinutes':'k1MaxMinutes']??60)*60+1e-5);}

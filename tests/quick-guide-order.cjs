@@ -18,7 +18,8 @@ assert.equal(steps[3].break.reason,'Collect Truth Eggs');assert.equal(steps[3].a
 assert.deepEqual(actions,before);
 const leading=G.build(actions.slice(2,5),{start:101,end:161});assert.equal(leading.length,1);assert.equal(leading[0].activities.length,2);assert.equal(leading[0].break.start,101);
 const consecutive=G.build([{type:'wait',t:0,end:60,reason:'Sleep',sleepSeconds:60,earningsMode:'offline'},{type:'wait',t:60,end:120,reason:'Fund research',earningsMode:'offline'},{type:'research',i:0,from:0,to:1,t:120}],{start:0,end:120});assert.equal(consecutive.length,2);assert.equal(consecutive[0].break.end,60);assert.equal(consecutive[1].break.start,60);assert.equal(consecutive[1].activities.length,1);
-const fuel=G.build([{type:'wait',t:0,end:60,reason:'Wait',earningsMode:'offline'},{type:'fuel',t:60,end:100,egg:0,amount:100}],{start:0,end:100});assert.equal(fuel.length,1);assert.equal(fuel[0].break.mode,'offline');assert.equal(fuel[0].afterBreak.mode,'fuel');assert.equal(fuel[0].end,100);
+const fuel=G.build([{type:'wait',t:0,end:60,reason:'Wait',earningsMode:'offline'},{type:'fuel',t:60,end:100,egg:0,amount:100e12}],{start:0,end:100});assert.equal(fuel.length,1);assert.equal(fuel[0].break.mode,'offline');assert.equal(fuel[0].afterBreak.mode,'fuel');assert.equal(fuel[0].end,100);
 assert.equal(G.build([{type:'wait',t:0,end:60,reason:'Collect eggs',earningsMode:'offline'}],{start:0,end:60})[0].break.seconds,60);
 assert.ok(!G.visibleWait({type:'wait',t:0,end:3,reason:'Purchase interaction time',earningsMode:'online'}));
 console.log('PASS funding breaks precede their batches; leading, trailing, consecutive, fuel and interaction waits keep exact ordering and immutable actions.');
+require('./fuel-rounding.cjs').run();

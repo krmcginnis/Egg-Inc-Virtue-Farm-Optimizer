@@ -1,6 +1,7 @@
 'use strict';
 const S=require('./simulator.cjs');
 const Guide=require('./quick-guide.cjs');
+const Fuel=require('./fuel-display.cjs');
 const manualTypes=new Set(['fuel','fuel-dump','ship-run','ship-visit','wait']);
 const interaction=a=>a.type==='wait'&&/^(Purchase interaction time|Switch overhead)/.test(a.reason||'');
 const calendarWaits=new Set(['Wait for the Friday research sale','Wait for double earnings','Wait for the weekly event boundary','Preserve cash for the Friday research sale','Preserve the proposed research sale','Compare research purchases during the next sale','Compare departure at a weekly event boundary']);
@@ -24,10 +25,10 @@ function compare(raw,result,current,{confirmed=[],launched={},now=Date.now()/100
  for(const [index,a] of result.actions.entries()){
   if(a.type==='shift'){stage++;visits.push({egg:a.egg,stage});}
   if(a.type==='silo')goal.silos++;
-  rows.push({index,stage,action:a,siloTarget:goal.silos});
+  rows.push({index,stage,action:a,siloTarget:goal.silos,displayHidden:Fuel.hidden(a,base.c.ships.capacity)});
  }
  const offset=s.shiftCount-base.s.shiftCount,visit=visits[offset],te=S.teByEgg(s,live.c),totalTE=te.reduce((n,x)=>n+x,0);
- const report={status:'matched',stage:offset,egg:s.egg,time,totalTE,target:result.target,rows:[],warnings,confirmedPurchases:0,purchaseCount:0,next:null,targetReached:totalTE>=result.target&&(raw.plan.floors||[]).every((n,i)=>te[i]>=n)};
+ const report={status:'matched',stage:offset,egg:s.egg,time,totalTE,target:result.target,fuelCapacity:base.c.ships.capacity,rows:[],warnings,confirmedPurchases:0,purchaseCount:0,next:null,targetReached:totalTE>=result.target&&(raw.plan.floors||[]).every((n,i)=>te[i]>=n)};
  if(live.c.claimed.some((n,i)=>n!==base.c.claimed[i])){
   report.status=live.c.claimedTotal>=result.target&&(raw.plan.floors||[]).every((n,i)=>live.c.claimed[i]>=n)?'claimed-target':'mismatch';warnings.push('Claimed Truth Eggs changed. This snapshot belongs to a different ascension; the saved visit sequence cannot be matched.');
  }else if(!visit||visit.egg!==s.egg){report.status='mismatch';warnings.push('The current Virtue and lifetime shift count do not match this plan. Check that this is the same account and ascension.');}
@@ -68,7 +69,7 @@ function compare(raw,result,current,{confirmed=[],launched={},now=Date.now()/100
   }
   if(a.type==='set'&&matchedEquip&&row.stage===offset&&row.index<matchedEquip.index)row.status='superseded';
   if(a.type==='wait'&&report.targetReached&&/^(Collect .*Truth Egg|Deliver enough eggs)/.test(a.reason||''))row.status='target-met';
-  row.canConfirm=manualTypes.has(a.type)&&!interaction(a)&&(row.stage===offset||a.type==='ship-run'&&row.stage<offset);
+  row.canConfirm=manualTypes.has(a.type)&&!interaction(a)&&!row.displayHidden&&(row.stage===offset||a.type==='ship-run'&&row.stage<offset);
   if(a.type==='research'&&!done)row.remainingFrom=s.r[a.i];
   if(a.type==='car'&&!done)row.remainingFromCars=s.v[a.slot].cars;
   report.rows.push(row);
@@ -77,9 +78,9 @@ function compare(raw,result,current,{confirmed=[],launched={},now=Date.now()/100
  const missed=report.rows.filter(r=>r.stage<offset&&['research','hab','vehicle','car','silo'].includes(r.action.type)&&r.status!=='present');
  const baselineMissing=base.s.r.some((n,i)=>s.r[i]<n)||base.s.h.some((n,i)=>n!==null&&(s.h[i]===null||s.h[i]<n))||base.s.v.some((v,i)=>v.id!==null&&(s.v[i].id===null||s.v[i].id<v.id||v.id===11&&s.v[i].id===11&&s.v[i].cars<v.cars))||s.silos<startingSilos;
  if((missed.length||baselineMissing)&&report.status!=='claimed-target'){report.status='mismatch';warnings.push('Earlier required upgrades are missing from this snapshot. Review the farm and remaining route before continuing.');}
- if(report.rows.some(row=>row.stage<offset&&['fuel','fuel-dump','ship-run','ship-visit'].includes(row.action.type)&&row.status!=='confirmed'))warnings.push('Earlier fuel transfers or launch batches have not been confirmed. Reaching this visit does not prove they were completed; review the original walkthrough.');
+ if(report.rows.some(row=>row.stage<offset&&!row.displayHidden&&['fuel','fuel-dump','ship-run','ship-visit'].includes(row.action.type)&&row.status!=='confirmed'))warnings.push('Earlier fuel transfers or launch batches have not been confirmed. Reaching this visit does not prove they were completed; review the original walkthrough.');
  if(report.status==='matched'){
-  const active=report.rows.filter(row=>row.stage===offset&&row.action.type!=='shift'&&row.status!=='interaction');
+  const active=report.rows.filter(row=>row.stage===offset&&!row.displayHidden&&row.action.type!=='shift'&&row.status!=='interaction');
   // Calendar and wake-time conditions can be checked from the backup clock.
   // The PC clock alone does not advance progress, and elapsed resource waits
   // still need observed purchases, delivered eggs, or manual confirmation.
@@ -104,7 +105,7 @@ function compare(raw,result,current,{confirmed=[],launched={},now=Date.now()/100
 }
 function nextGroup(report,current){
  if(report.status!=='matched'||!report.next||report.next.action.type==='shift')return null;
- const remaining=report.rows.filter(row=>row.stage===report.stage&&row.index>=report.next.index&&!['present','confirmed','superseded','target-met','elapsed'].includes(row.status));
+ const remaining=report.rows.filter(row=>row.stage===report.stage&&!row.displayHidden&&row.index>=report.next.index&&!['present','confirmed','superseded','target-met','elapsed'].includes(row.status));
  const actions=remaining.map(row=>{
   const a=row.action;
   if(a.type==='research')return {...a,from:row.remainingFrom??a.from};
@@ -113,6 +114,6 @@ function nextGroup(report,current){
   return a;
  });
  if(!actions.length)return null;
- return Guide.build(actions,{start:actions[0].t,end:Math.max(...actions.map(a=>a.end??a.t)),silos:current.farm.silos??1})[0]||null;
+ return Guide.build(actions,{start:actions[0].t,end:Math.max(...actions.map(a=>a.end??a.t)),silos:current.farm.silos??1,fuelCapacity:report.fuelCapacity})[0]||null;
 }
 module.exports={compare,key,snapshot,nextGroup};

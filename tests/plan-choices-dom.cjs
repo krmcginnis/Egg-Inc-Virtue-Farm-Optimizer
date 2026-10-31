@@ -39,7 +39,7 @@ async function run(){
   w.eval(fs.readFileSync(root+'/worker-source.js','utf8'));w.eval(fs.readFileSync(root+'/app.js','utf8'));const app=w.VirtueApp,doc=fixture();
   await load(doc);assert.ok(app.getResult(),$('#notice').textContent);
   assert.equal($('#result-content').firstElementChild.id,'plan-choices');
-  assert.equal($('.result-summary'),null);assert.equal($('.plan-choice-earliest'),null);
+  assert.equal($('.result-summary'),null);assert.equal($('.plan-choice-earliest'),null);assert.equal($('.plan-details,.search-details,.purchase-check,#verify-purchases,.plan-choice-policy,.plan-comparison-scope'),null);
   assert.ok($('#plan-choices .plan-comparison-header #save-plan'));assert.ok($('#plan-choices .plan-comparison-header .plan-jump'));
   assert.match($('#plan-choices .plan-actions').textContent,/Save PlanExport WalkthroughCheck Farm Progress/);
   assert.deepEqual([...w.document.querySelectorAll('[data-shifts]')].map(n=>n.dataset.shifts),['7','6','5']);
@@ -56,9 +56,10 @@ async function run(){
   }
   const deltas=()=>[...w.document.querySelectorAll('.plan-metric-delta')].map(n=>({text:n.textContent,tone:n.className,percent:n.dataset.percent}));
   const delta=(metric,shifts)=>$(`[data-metric="${metric}"][data-plan-shifts="${shifts}"] .plan-metric-delta`);
-  assert.match(delta('seconds',7).textContent,/<0.01% faster vs N/);assert.ok(delta('seconds',7).classList.contains('better'));
+  assert.equal(delta('seconds',7).textContent,'-0.0095%');assert.ok(delta('seconds',7).classList.contains('better'));
   assert.ok(delta('seconds',5).classList.contains('worse'));assert.ok(delta('soul',7).classList.contains('worse'));assert.ok(delta('soul',5).classList.contains('better'));
-  assert.ok(delta('laying',7).classList.contains('neutral'));assert.match(delta('shipping',6).textContent,/N baseline/);
+  assert.ok(delta('laying',7).classList.contains('neutral'));assert.equal(delta('shipping',6),null);
+  assert.equal(deltas().length,8);assert.ok(deltas().every(d=>/^(?:[+-]\d+(?:\.\d+)?|0)%$/.test(d.text)),'deltas contain signed percentages only');
   const comparisons=deltas();
   $('[data-shifts="7"]').click();assert.equal(app.getResult().selectedSwitches,7);assert.equal(w.document.activeElement.dataset.shifts,'7');assert.deepEqual(deltas(),comparisons,'changing selection never changes the N baseline');
   $('[data-shifts="5"]').click();assert.match($('.plan-choice-tradeoff').textContent,/later.*2 fewer shifts/);
@@ -87,13 +88,13 @@ async function run(){
   assert.ok($('#remaining-plan-choices .plan-comparison-header #save-plan'));assert.match($('#remaining-plan-choices .plan-actions button.secondary').title,/proposed remaining plan/);
   $('#remaining-plan-choices [data-shifts="7"]').click();assert.equal(app.getResult().selectedSwitches,6,'preview retains original timeline');
   const preview=await save();await load(preview);assert.match($('#remaining-plan-choices .plan-choice-selected').textContent,/7 remaining shifts/);
-  $('#use-remaining-plan').click();assert.equal(app.getResult().selectedSwitches,7,$('#notice').textContent);assert.equal($('#remaining-plan-choices'),null);assert.ok($('#verify-purchases').hidden);
+  $('#use-remaining-plan').click();assert.equal(app.getResult().selectedSwitches,7,$('#notice').textContent);assert.equal($('#remaining-plan-choices'),null);assert.equal($('#verify-purchases'),null);
   const applied=await save();assert.ok(applied.result.shiftPlans.every(e=>e.plan.verification.complete));assert.equal(C.verified(applied.config,applied.result).selectedSwitches,7);await load(applied);assert.equal(app.getResult().selectedSwitches,7);
   // Missing exact counts are explicit, never replaced by a different count.
-  const missing=fixture();missing.result=Plans.create(missing.result.shiftPlans.filter(e=>e.switches!==6),6);await load(missing);assert.equal(app.getResult().selectedSwitches,7);assert.match($('[data-plan-role="specified"] .plan-choice-availability').textContent,/No complete plan found/);assert.ok(deltas().every(d=>d.text==='N unavailable'&&d.tone.includes('neutral')));
+  const missing=fixture();missing.result=Plans.create(missing.result.shiftPlans.filter(e=>e.switches!==6),6);await load(missing);assert.equal(app.getResult().selectedSwitches,7);assert.match($('[data-plan-role="specified"] .plan-choice-availability').textContent,/No complete plan found/);assert.deepEqual(deltas(),[],'missing N omits undefined percentages');
   const single=fixture();single.result=Plans.create([single.result.shiftPlans.find(e=>e.switches===6)],6);await load(single);assert.equal(app.getResult().selectedSwitches,6);assert.equal($('.plan-choice-earliest'),null);
   const tied=fixture();tied.result=resultFor(tied.config,[[5,1000],[6,1000],[7,1000]]);await load(tied);assert.equal(app.getResult().selectedSwitches,6);assert.doesNotMatch($('#plan-choices').textContent,/NaN|Infinity|null/);
-  const zero=fixture();zero.config.plan.maxShifts=0;delete zero.config.runShifts;zero.result=resultFor(zero.config,[[0,1000],[1,1100]]);await load(zero);assert.equal(app.getResult().selectedSwitches,0);assert.match($('[data-plan-role="fewer"]').textContent,/Not applicable when zero shifts/);assert.match(delta('soul',1).textContent,/higher · N is zero/);assert.ok(delta('soul',1).classList.contains('worse'));assert.doesNotMatch($('#plan-choices').textContent,/NaN|Infinity/);
+  const zero=fixture();zero.config.plan.maxShifts=0;delete zero.config.runShifts;zero.result=resultFor(zero.config,[[0,1000],[1,1100]]);await load(zero);assert.equal(app.getResult().selectedSwitches,0);assert.match($('[data-plan-role="fewer"]').textContent,/Not applicable when zero shifts/);assert.equal(delta('soul',1),null,'zero baseline with a nonzero cost has no finite percentage');assert.doesNotMatch($('#plan-choices').textContent,/NaN|Infinity/);
   const old=fixture();old.result=old.result.shiftPlans[1].plan;await load(old);assert.ok($('#plan-choices #save-plan'),'a single legacy plan retains the relocated actions');assert.equal($('.result-summary'),null);assert.ok((await save()).result);
   // Older selected timelines and checked progress are retained on loading.
   const manual=fixture(),four=resultFor(manual.config,[[4,12000000]]).shiftPlans[0];delete manual.config.plan.shiftComparisonVersion;
@@ -101,7 +102,7 @@ async function run(){
   manual.progress={snapshot:structuredClone(manual.config),confirmed:[],launched:{},planKey:P.key(manual.result)};await load(manual);
   assert.equal(app.getResult().selectedSwitches,4,$('#notice').textContent);assert.equal($('[data-shifts="4"]'),null);assert.match($('.plan-choice-legacy').textContent,/older shift-count/);
   const legacySaved=await save();assert.deepEqual(legacySaved.progress,manual.progress);await load(legacySaved);assert.equal(app.getResult().selectedSwitches,4);$('[data-shifts="6"]').click();assert.equal(app.getResult().selectedSwitches,6);
-  assert.deepEqual(errors,[]);console.log('PASS compiled adjacent plan comparison: N+1/N/N-1 order, fixed N percentage baseline, better/worse colors for all four metrics, zero/missing baselines, relocated actions including saving during search, replayed rates/costs, manual/save/load/preview/application, automatic checks, legacy progress and 24-hour dates.');
+  assert.deepEqual(errors,[]);console.log('PASS compiled adjacent plan comparison: N+1/N/N-1 order, signed percentages without N labels or footer/details, fixed N baseline, better/worse colors for all four metrics, zero/missing baselines, relocated actions including saving during search, replayed rates/costs, manual/save/load/preview/application, automatic checks, legacy progress and 24-hour dates.');
  }finally{w.close();}
 }
 module.exports={run,fixture,resultFor};if(require.main===module)run().catch(e=>{console.error(String(e.stack).split('\n').filter(line=>line.length<500).join('\n'));process.exitCode=1;});

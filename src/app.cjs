@@ -1,8 +1,8 @@
 const {EvaluatedSearch}=require('./evaluated-search.cjs');
-const SearchQuality=require('./search-quality.cjs');
 const PlanVerification=require('./plan-verification.cjs');
 "use strict";
 const Ships = require("./ships.cjs");
+const FuelDisplay = require("./fuel-display.cjs");
 const titleCase = require("./ui-text.cjs"), DEFAULT_ROUTE = require("./default-route.cjs");
 const upgradeStandardSequence = require("./sequence-upgrade.cjs"), Route = require("./switch-sequence.cjs");
 const Model = require("./assumption-notices.cjs");
@@ -130,7 +130,8 @@ function exactDuration(n) {
   return [d ? d + "d" : "", h ? h + "h" : "", m ? m + "m" : "", sec ? sec + "s" : ""].filter(Boolean).join(" ") || "0s";
 }
 function waitTotals(t) {
-  return "Online waiting " + exactDuration(t.onlineSeconds) + " \xB7 Offline " + exactDuration(t.offlineSeconds) + " (" + t.offlineBreaks + " breaks)" + (t.interactionSeconds ? " \xB7 Interactions " + exactDuration(t.interactionSeconds) : "") + (t.fuelSeconds ? " \xB7 Fueling " + exactDuration(t.fuelSeconds) : "") + (t.sleepSeconds ? " \xB7 Sleep included " + exactDuration(t.sleepSeconds) : "") + (t.siloEmptySeconds ? " \xB7 Silos empty during sleep " + exactDuration(t.siloEmptySeconds) : "");
+  const fuelSeconds=t.displayFuelSeconds??t.fuelSeconds;
+  return "Online waiting " + exactDuration(t.onlineSeconds) + " \xB7 Offline " + exactDuration(t.offlineSeconds) + " (" + t.offlineBreaks + " breaks)" + (t.interactionSeconds ? " \xB7 Interactions " + exactDuration(t.interactionSeconds) : "") + (fuelSeconds ? " \xB7 Fueling " + exactDuration(fuelSeconds) : "") + (t.sleepSeconds ? " \xB7 Sleep included " + exactDuration(t.sleepSeconds) : "") + (t.siloEmptySeconds ? " \xB7 Silos empty during sleep " + exactDuration(t.siloEmptySeconds) : "");
 }
 function dateLocal(t) {
   return DateTime.localInput(t);
@@ -329,19 +330,6 @@ function markInputsChanged() {
   }
 }
 function updatePlanActions(searching = !!worker) {
-  const verification = resultConfig && PlanVerification.checkpoint(resultConfig, result?.verification);
-  const verify = $("verify-purchases"), reason = $("purchase-check-availability");
-  if (verify) {
-    const unavailable = searching ? "Finish the current search or use Stop & Keep Best before starting another check."
-      : importingBackup ? "Wait for the account backup to finish loading."
-      : planProgress ? "To update the schedule after playing, use Reoptimize Remaining Plan in Plan Progress."
-      : dirty ? "Your inputs changed. Find a new plan before checking its purchase order."
-      : result?.solverVersion !== 2 ? "Find a new plan to use the purchase check."
-      : verification?.complete ? "The selected purchase groups have been fully checked. Other routes and departure times may still improve this plan." : "";
-    verify.disabled = !!unavailable;
-    verify.title = unavailable || "Run for up to five minutes. Stop & Keep Best pauses the check; Save Plan keeps its progress.";
-    reason.textContent = unavailable || "Up to 5 minutes per run. Stop & Keep Best pauses the check; Save Plan keeps its progress.";
-  }
   const next = $("next-ascension"), nextReason = $("next-ascension-availability");
   if (next) {
     const unavailable = searching ? "Finish or stop the current search first."
@@ -1092,10 +1080,11 @@ function save() {
   if (refresh()) show("Farm configuration saved.");
   else show("Farm saved. Planning still needs attention: " + $("notice").textContent, true);
 }
-function condensedActions(actions) {
+function condensedActions(actions,fuelCapacity=resultConfig?.farm?.fuelTank?.capacity??2e9) {
   const out = [];
   let batch = /* @__PURE__ */ new Map(), t;
   for (const a of actions) {
+    if(FuelDisplay.hidden(a,fuelCapacity))continue;
     if (a.type === "wait" && a.earningsMode === "online" && a.end - a.t < 10) continue;
     if (a.type !== "research" || a.t !== t) {
       batch = /* @__PURE__ */ new Map();
@@ -1133,9 +1122,8 @@ function actionLabel(a) {
     case "shift":
       return "Switch to " + S.NAME[a.egg];
     case "fuel-dump":
-      return "Set Tank Limits and Discard Excess Fuel";
     case "fuel":
-      return "Store " + num(a.amount) + " " + S.NAME[a.egg] + " fuel";
+      {const item=FuelDisplay.activity(a,resultConfig?.farm?.fuelTank?.capacity??2e9);return item?item.label+" "+item.value:"";}
     case "ship-visit":
       return "H" + a.visit + " \xB7 No Ships Planned";
     case "ship-run":
@@ -1244,26 +1232,19 @@ function renderPlanChoices(plan,zone,{remaining=false,preview=false,onSelect,raw
       const text=value===null||value===undefined?"—":key==='shifts'?String(value):key==='seconds'?duration(value):key==='end'?timestamp(value,zone):num(value);
       const cell=el("td",text);cell.dataset.metric=key;if(option.switches!==null)cell.dataset.planShifts=option.switches;if(value!==null&&value!==undefined)cell.dataset.value=value;
       if(["laying","shipping","soul"].includes(key)&&value!==undefined)cell.title=NumberFormat.decimal(value);
-      if(["seconds","laying","shipping","soul"].includes(key)&&m){
-        const change=PlanComparison.difference(value,baseline[key],key==='seconds'||key==='soul');
-        let description="N unavailable",tone="neutral";
-        if(change){
-          tone=change.better===null?"neutral":change.better?"better":"worse";
-          const direction=change.direction===0?"":key==='seconds'?(change.direction<0?"faster":"slower"):(change.direction>0?"higher":"lower");
-          if(option.role==='specified')description="0% · N baseline";
-          else if(change.percent===null)description=direction+" · N is zero";
-          else {const percent=Math.abs(change.percent);description=(percent===0?"0":percent<.01?"<0.01":percent.toFixed(2))+"%"+(direction?" "+direction:"")+" vs N";}
+      if(option.role!=='specified'&&["seconds","laying","shipping","soul"].includes(key)&&m){
+        const change=PlanComparison.difference(value,baseline[key],key==='seconds'||key==='soul'),description=PlanComparison.signedPercent(change?.percent);
+        if(description!==null){
+          const tone=change.better===null?"neutral":change.better?"better":"worse",delta=el("span",description,"plan-metric-delta "+tone);
+          delta.dataset.percent=change.percent;cell.append(delta);
         }
-        const delta=el("span",description,"plan-metric-delta "+tone);
-        if(change?.percent!==null&&change?.percent!==undefined)delta.dataset.percent=change.percent;
-        cell.append(delta);
       }
       cell.classList.toggle("plan-comparison-selected",option.active);row.append(cell);
     }
     body.append(row);
   }
   head.append(header);table.append(caption,head,body);
-  wrapper.append(table);choices.append(wrapper,el("p","Select a plan to "+(preview?"apply after review.":"view its timeline and exports.")+" Percentages compare with the specified shifts (N), regardless of selection. Green means faster, higher capacity or lower cost; red means the opposite. Each available plan is checked automatically for purchase order.","hint plan-choice-policy"),el("p","Rates are each plan’s peak modeled capacity, before fuel diversion and silo downtime; peaks may occur at different times. Soul Egg cost covers future shifts from this starting farm. Search compares the specified count, one more and one fewer, with at most one extra shift (capped at 30). Results are the fastest found within the search budget.","hint plan-comparison-scope"));
+  wrapper.append(table);choices.append(wrapper);
   return choices;
 }
 function renderRemainingComparison(host) {
@@ -1362,7 +1343,7 @@ function renderPlanProgress(host, summary) {
   if(report.status==='matched'){
     const details=el("details",undefined,"progress-checklist");details.append(el("summary","Current Visit Checklist"));
     const groups=new Map();
-    for(const row of report.rows.filter(r=>r.stage===report.stage&&r.action.type!=='shift'&&r.status!=='interaction'&&r.status!=='superseded')){
+    for(const row of report.rows.filter(r=>r.stage===report.stage&&!r.displayHidden&&r.action.type!=='shift'&&r.status!=='interaction'&&r.status!=='superseded')){
       const a=row.action,k=['research','hab','vehicle','car','silo'].includes(a.type)?a.type+":"+(a.i??a.slot??'silos'):"step:"+row.index;
       groups.set(k,row);
     }
@@ -1386,7 +1367,6 @@ function renderPlanProgress(host, summary) {
 }
 function renderResult() {
   const r = result, zone = resultConfig.plan.eventTimezone, host = $("result-content"), summary = U.summarize(resultConfig, r);
-  const checkWasOpen = host.querySelector(".purchase-check")?.open,detailsWasOpen=host.querySelector(".plan-details")?.open;
   if (!worker) {
     $("run-summary").textContent = planProgress ? "Progress Check · " + (continuationContext ? "Remaining Plan" : "Original Plan") : duration(r.seconds) + " to target \xB7 " + r.switches + " switches";
     $("run-detail").textContent = planProgress ? "The saved timeline remains visible below." : "Validated plan \xB7 " + r.pendingTE + " pending TE";
@@ -1429,22 +1409,6 @@ function renderResult() {
   const json = el("button", "Save Plan");
   json.id = "save-plan";
   json.onclick = () => saveBlob(N.plan(resultConfig, r.seconds, r.selectedResearchSales, r.selectedSwitches), JSON.stringify({ version: 1, config: resultConfig, result: r, ...(planProgress ? {progress:planProgress} : {}),...(continuationContext ? {continuation:continuationContext} : {}),...(remainingProposal ? {remainingProposal} : {}) }, null, 2));
-  const verification=PlanVerification.checkpoint(resultConfig,r.verification);
-  const verify=el("button",verification?.complete?"Purchase check complete":verification?"Continue purchase check":"Check purchase order","secondary");
-  verify.id="verify-purchases";
-  verify.hidden=!!verification?.complete;
-  verify.setAttribute("aria-describedby","purchase-check-scope purchase-check-availability");
-  verify.onclick=()=>optimize({kind:"verification"});
-  const check=el("details",undefined,"purchase-check");
-  check.open=checkWasOpen ?? (!!verification && !verification.complete);
-  check.append(el("summary",verification?.complete?"Purchase Order Check · Complete":"Purchase Order Check"));
-  const scope=el("p","After search, each final plan is checked automatically for a faster purchase order within groups of up to five purchases. The check compares subsets and legal orders. Other routes and departure times remain outside this check.","hint");scope.id="purchase-check-scope";
-  const availability=el("p",undefined,"hint");availability.id="purchase-check-availability";
-  check.append(scope);
-  if(r.purchaseEvaluation){const plans=r.shiftPlans?ShiftPlans.shortlist(r.shiftPlans,undefined,r.specifiedSwitches).map(e=>e.plan):[r],done=plans.filter(p=>PlanVerification.checkpoint(resultConfig,p.verification)?.complete).length;check.append(el("p",done+" / "+plans.length+" final plans fully checked. Purchase checks run automatically after search. "+(done===plans.length?"":"The best valid plans and completed check progress are retained."),"hint automatic-purchase-checks"));}
-  if(r.automaticPurchaseCheck?.error&&!verification?.complete)check.append(el("p","Automatic check could not finish: "+r.automaticPurchaseCheck.error,"hint"));
-  if(verification)check.append(el("p",verification.completedBlocks+" / "+verification.totalBlocks+" declared purchase blocks checked · "+verification.examined.toLocaleString()+" exact purchase states examined. "+(verification.complete?"The declared blocks are exhausted for this plan. ":"Save the plan to retain progress, then continue the check. ")+"Routes and departure times remain outside this exhaustive check.","hint purchase-verification"));
-  check.append(availability,verify);
   const expand = el("button", "Expand all", "secondary");
   expand.id = "expand-timeline";
   expand.onclick = () => {
@@ -1485,17 +1449,6 @@ function renderResult() {
   progressLink.onclick=event=>{event.preventDefault();const target=$(planProgress?"plan-progress-next":"plan-progress-heading")||$("plan-progress-heading");target.scrollIntoView({block:"start"});target.focus({preventScroll:true});};
   tools.append(json, txt, progressLink);
   choices.querySelector(".plan-comparison-header").append(tools);
-  const diagnostics = el("details", void 0, "search-details");
-  diagnostics.append(el("summary", "Search Details"), el("p", r.method + " \xB7 " + r.explored.toLocaleString() + " states examined \xB7 " + r.termination + ".", "hint"));
-  if(r.solverVersion===2)diagnostics.append(el("p",SearchQuality.describe(SearchQuality.measure(resultConfig,r),exactDuration),"hint optimality-bound"));
-  if (r.solverVersion === 2) diagnostics.append(el("p", "Research allowed through " + timestamp(r.researchDeadline, zone) + "; " + r.actualResearchSales + " sales actually used. Visit durations are automatic.", "hint"));
-  if (r.openingSearch) diagnostics.append(el("p", "Compared " + r.openingSearch.combinationsCompared + " of " + r.openingSearch.totalCombinations + " C1/K1 opening combinations at " + (r.openingSearch.stepMinutes || 30) + "-minute intervals" + (r.openingSearch.complete ? " (complete)." : " (stopped early)."), "hint"));
-  if (r.waitingRoutesCompared > 1) diagnostics.append(el("p", "Compared individual purchase waits and offline batches across " + r.waitingRoutesCompared + " staged routes.", "hint"));
-  const c1 = summary.shifts.find((s) => s.phase === "C1"), k1 = summary.shifts.find((s) => s.phase === "K1");
-  if (c1 && k1 && r.openingTimeLimits) diagnostics.append(el("p", "Opening duration: C1 " + exactDuration(c1.seconds) + " (limit " + (resultConfig.plan.c1MaxMinutes ?? 60) + " min) \xB7 K1 " + exactDuration(k1.seconds) + " (limit " + (resultConfig.plan.k1MaxMinutes ?? 60) + " min).", "hint"));
-  if (r.baselineSeconds) diagnostics.append(el("p", "No-upgrade comparison: " + duration(r.baselineSeconds) + " \u2192 " + duration(r.seconds) + ".", "hint"));
-  diagnostics.append(el("p", "Purchase paths and departure times are compared along the selected route. Identical-input saved plans can seed a search; progress checks retain the original timeline.", "hint"), el("p", "Online waits under 10 seconds are hidden; their time remains included.", "hint"));
-  const details=el("details",undefined,"plan-details");details.open=detailsWasOpen??check.open;details.append(el("summary",remainingProposal?"Saved plan details":"Plan details"),check,diagnostics);choices.append(details);
   const stale = el("div", stalePlanText(), "notice stale-plan");
   stale.id = "plan-stale";
   stale.hidden = !dirty;
@@ -1639,7 +1592,7 @@ function renderResult() {
     // Assign events once in chronological order. Collapsed details need no
     // action DOM or date formatting until opened; expansion preserves order.
     const records = [];
-    for (const a of condensedActions(r.actions.slice(shift.firstIndex, shift.lastIndex + 1))) {
+    for (const a of condensedActions(r.actions.slice(shift.firstIndex, shift.lastIndex + 1),initial.c.ships.capacity)) {
       const leading = [], during = [];
       while (ei < events.length && events[ei].t <= a.t) leading.push(events[ei++]);
       if (a.type === "wait") while (ei < events.length && events[ei].t <= a.end) during.push(events[ei++]);
@@ -1666,7 +1619,7 @@ function renderResult() {
       } else if (a.type === "ship-visit") {
         detail.append(el("p", "Continue with the listed activities; no ship launches on this visit."));
       } else if (a.type === "fuel-dump") {
-        detail.append(el("p", "Discard " + a.removed.map((v, i) => v ? num(v) + " " + S.NAME[i] : "").filter(Boolean).join(" \xB7 ")));
+        detail.append(el("p", "Discard " + FuelDisplay.activity(a,initial.c.ships.capacity).value));
       } else if (a.type === "fuel") {
         detail.append(el("p", "100% egg diversion for " + exactDuration(a.end - a.t) + " \xB7 no gems or TE delivery during filling"));
         detail.append(el("p", "Fuel ready " + timestamp(a.end, zone, true), "delta"));

@@ -16,4 +16,10 @@ function difference(value,baseline,lowerIsBetter=false){
  const direction=Math.sign(value-baseline);
  return {percent:baseline===0?(direction===0?0:null):(value-baseline)/baseline*100,direction,better:direction===0?null:(lowerIsBetter?direction<0:direction>0)};
 }
-module.exports={metrics,difference};
+function signedPercent(percent){
+ if(!Number.isFinite(percent))return null;
+ if(percent===0)return '0%';
+ const magnitude=Math.abs(percent),number=magnitude<.01?magnitude.toLocaleString('en-US',{useGrouping:false,maximumSignificantDigits:2}):magnitude.toFixed(2);
+ return (percent>0?'+':'-')+number+'%';
+}
+module.exports={metrics,difference,signedPercent};

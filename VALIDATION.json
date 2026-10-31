@@ -59,25 +59,30 @@
     "Check completion depends on the shared budget, cancellation and worker availability; partial status is retained.",
     "Exact requested counts may remain unavailable within the search budget; missing options are displayed explicitly."
   ],
-  "date": "2026-10-31T00:12:48.136317+00:00",
-  "version": "1.2.5",
-  "currentAudit": "AUDIT-v1.2.5.md",
-  "status": "accepted-public-release",
-  "published": true,
-  "nativeWindowsTested": true,
+  "comparePlanActions": [
+    "Save Plan",
+    "Export Walkthrough",
+    "Check Farm Progress"
+  ],
+  "date": "2026-10-31T03:24:02.431882+00:00",
+  "version": "1.2.6",
+  "currentAudit": "AUDIT-v1.2.6.md",
+  "status": "prepublication-reviewed",
+  "published": false,
+  "nativeWindowsTested": false,
   "visualBrowserTested": true,
   "generatedDomTested": true,
   "buildPassed": true,
-  "scope": "N-baseline percentage comparisons and consolidated Compare Plans actions; no game-model or search changes.",
+  "scope": "Signed-only comparison percentages, removed footer/Plan Details, and shared nearest-1T fuel presentation with hidden zero adjustments.",
   "gameModelChanged": false,
   "globalOptimalityProven": false,
   "previousRelease": {
-    "version": "1.2.4",
-    "sourceCommit": "ba808b6c14e2c0657ae7db13250abf001ff37ba4",
-    "runId": 41143788202,
+    "version": "1.2.5",
+    "sourceCommit": "0cf7d791060ff50d0c633de12d6eb531c0a4cc1f",
+    "runId": 41148537384,
     "accepted": true
   },
-  "compiledWorkerSha256": "9a45ea34b24319e80aa8f331b089458d61dcefbd7c7b4e798d77d64bbe7c4280",
+  "compiledWorkerSha256": "181a6656979409d13b03de35ecf6c510feddca1013ca1eda52f739e8cf8308cf",
   "localSuitesPassed": [
     "tests/release-state.cjs",
     "tests/prepare-publish.cjs",
@@ -124,207 +129,209 @@
     {
       "suite": "tests/release-state.cjs",
       "passed": true,
-      "seconds": 0.075
+      "seconds": 0.112
     },
     {
       "suite": "tests/prepare-publish.cjs",
       "passed": true,
-      "seconds": 0.216
+      "seconds": 0.349
     },
     {
       "suite": "tests/subscription-import.cjs",
       "passed": true,
-      "seconds": 0.191
+      "seconds": 0.329
     },
     {
       "suite": "tests/research-sale-plans.cjs",
       "passed": true,
-      "seconds": 0.888
+      "seconds": 1.566
     },
     {
       "suite": "tests/route-solver.cjs",
       "passed": true,
-      "seconds": 11.143
+      "seconds": 14.027
     },
     {
       "suite": "tests/automatic-routes.cjs",
       "passed": true,
-      "seconds": 1.073
+      "seconds": 1.483
     },
     {
       "suite": "tests/shift-plans.cjs",
       "passed": true,
-      "seconds": 0.29
+      "seconds": 0.414
     },
     {
       "suite": "tests/search-efficiency.cjs",
       "passed": true,
-      "seconds": 0.357
+      "seconds": 0.493
     },
     {
       "suite": "tests/search-quality.cjs",
       "passed": true,
-      "seconds": 10.666
+      "seconds": 18.383
     },
     {
       "suite": "tests/investment-search.cjs",
       "passed": true,
-      "seconds": 0.474
+      "seconds": 0.665
     },
     {
       "suite": "tests/research-breakpoints.cjs",
       "passed": true,
-      "seconds": 1.769
+      "seconds": 1.832
     },
     {
       "suite": "tests/timezones.cjs",
       "passed": true,
-      "seconds": 0.154
+      "seconds": 0.323
     },
     {
       "suite": "tests/shift-rates.cjs",
       "passed": true,
-      "seconds": 0.219
+      "seconds": 0.289
     },
     {
       "suite": "tests/sleep-schedule.cjs",
       "passed": true,
-      "seconds": 1.009
+      "seconds": 1.398
     },
     {
       "suite": "tests/silo-comfort.cjs",
       "passed": true,
-      "seconds": 0.395
+      "seconds": 0.533
     },
     {
       "suite": "tests/sleep-search-quality.cjs",
       "passed": true,
-      "seconds": 4.746
+      "seconds": 5.484
     },
     {
       "suite": "tests/earnings-incumbents.cjs",
       "passed": true,
-      "seconds": 1.044
+      "seconds": 1.323
     },
     {
       "suite": "tests/earnings-first-research.cjs",
       "passed": true,
-      "seconds": 1.155
+      "seconds": 1.327
     },
     {
       "suite": "tests/purchase-economics.cjs",
       "passed": true,
-      "seconds": 0.317
+      "seconds": 0.412
     },
     {
       "suite": "tests/search-refinements.cjs",
       "passed": true,
-      "seconds": 3.007
+      "seconds": 3.673
     },
     {
       "suite": "tests/plan-progress.cjs",
       "passed": true,
-      "seconds": 0.151
+      "seconds": 0.241
     },
     {
       "suite": "tests/run-shifts.cjs",
       "passed": true,
-      "seconds": 0.07
+      "seconds": 0.099
     },
     {
       "suite": "tests/research-cleanup.cjs",
       "passed": true,
-      "seconds": 0.265
+      "seconds": 0.341
     },
     {
       "suite": "tests/research-investments.cjs",
       "passed": true,
-      "seconds": 1.869
+      "seconds": 3.022
     },
     {
       "suite": "tests/date-time.cjs",
       "passed": true,
-      "seconds": 0.096
+      "seconds": 0.118
     },
     {
       "suite": "tests/plan-continuation.cjs",
       "passed": true,
-      "seconds": 1.422
+      "seconds": 2.116
     },
     {
       "suite": "tests/purchase-decisions.cjs",
       "passed": true,
-      "seconds": 0.11
+      "seconds": 0.218
     },
     {
       "suite": "tests/quick-guide-order.cjs",
       "passed": true,
-      "seconds": 0.095
+      "seconds": 0.572
     },
     {
       "suite": "tests/release-pipeline.cjs",
       "passed": true,
-      "seconds": 0.142
+      "seconds": 0.241
     },
     {
       "suite": "tests/cooperative-refinement.cjs",
       "passed": true,
-      "seconds": 0.348
+      "seconds": 0.576
     },
     {
       "suite": "tests/deep-search-dom.cjs",
       "passed": true,
-      "seconds": 3.481
+      "seconds": 4.671
     },
     {
       "suite": "tests/run-shifts-dom.cjs",
       "passed": true,
-      "seconds": 6.926
+      "seconds": 8.231
     },
     {
       "suite": "tests/time-display-dom.cjs",
       "passed": true,
-      "seconds": 1.797
+      "seconds": 3.637
     },
     {
       "suite": "tests/plan-choices-dom.cjs",
       "passed": true,
-      "seconds": 6.065
+      "seconds": 7.007
     },
     {
       "suite": "tests/search-pool.cjs",
       "passed": true,
-      "seconds": 3.038
+      "seconds": 5.362
     },
     {
       "suite": "tests/evaluated-search.cjs",
       "passed": true,
-      "seconds": 0.818
+      "seconds": 1.638
     },
     {
       "suite": "tests/search-optimality.cjs",
       "passed": true,
-      "seconds": 0.52
+      "seconds": 1.01
     },
     {
       "suite": "tests/search-optimality-dom.cjs",
       "passed": true,
-      "seconds": 7.764
+      "seconds": 7.229
     },
     {
       "suite": "tests/solver-worker.cjs",
       "passed": true,
-      "seconds": 24.429
+      "seconds": 47.852
     },
     {
       "suite": "tests/release-browser.cjs",
       "passed": true,
-      "seconds": 4.019
+      "seconds": 6.543
     }
   ],
-  "localFingerprint": "93e71aa6286e4b306a7b747d143cf63527bfcc64226732219883947e8006cf56",
+  "localFingerprint": "c0492545a4d5297e756df1a0518225d9037ad8ff66e0b96c5fe68aa568070afa",
   "comparisonPercentages": {
     "baseline": "Specified shifts (N), independent of selection",
+    "baselineLabels": false,
+    "display": "Signed percentage only; plus for increases, minus for decreases, neutral zero for ties",
     "metrics": [
       "totalSeconds",
       "peakLayingPerHour",
@@ -338,96 +345,30 @@
       "lower Soul Egg cost"
     ],
     "red": "Opposite changes",
-    "equal": "Neutral",
-    "missingBaseline": "N unavailable",
-    "zeroBaseline": "Explicit zero label; no division by zero"
+    "missingOrUndefinedBaseline": "Omit comparison",
+    "tinyNonzeroDifferences": "Retain numeric nonzero precision"
   },
-  "comparePlanActions": [
-    "Save Plan",
-    "Export Walkthrough",
-    "Check Farm Progress"
-  ],
+  "planDetailsVisible": false,
+  "comparisonFooterVisible": false,
+  "fuelPresentation": {
+    "roundingUnit": 1000000000000,
+    "rule": "Nearest 1T for tanks of at least 1T; omit adjustments rounding to zero",
+    "smallTanks": "Preserve sub-trillion instructions",
+    "surfaces": [
+      "shift summaries",
+      "Quick Guide",
+      "Full Breakdown",
+      "progress",
+      "PDF walkthrough"
+    ],
+    "zeroAdjustmentsHideCollectionBreaksAndConfirmations": true,
+    "exactRecordedFuelAndTimePreserved": true,
+    "reportedExampleCovered": true
+  },
   "pendingPublicationGates": [
     "42 required Windows checks on exact candidate",
-    "Native updater and feed",
-    "Anonymous public assets, CRC and all runtime digests",
+    "Native updater and public feed",
+    "Anonymous public asset CRC and all runtime digests",
     "Real Chrome against public ZIP"
-  ],
-  "windowsRelease": {
-    "runId": 41148537384,
-    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/41148537384",
-    "sourceCommit": "0cf7d791060ff50d0c633de12d6eb531c0a4cc1f",
-    "requiredSuitesPassed": 42,
-    "groups": [
-      {
-        "group": "model",
-        "suitesPassed": 29,
-        "seconds": 91.49199999999999,
-        "fingerprint": "16bd8b7e9e2dbfe0fe8a83de89f86aa90505d46e7fc48c11fc8c6b46b030e85c"
-      },
-      {
-        "group": "ui",
-        "suitesPassed": 11,
-        "seconds": 91.93599999999999,
-        "fingerprint": "16bd8b7e9e2dbfe0fe8a83de89f86aa90505d46e7fc48c11fc8c6b46b030e85c"
-      },
-      {
-        "group": "native",
-        "suitesPassed": 2,
-        "seconds": 79.487,
-        "fingerprint": "16bd8b7e9e2dbfe0fe8a83de89f86aa90505d46e7fc48c11fc8c6b46b030e85c"
-      }
-    ],
-    "nativeUpdaterAndLauncherPassed": true,
-    "publicFeedAndRuntimeHashesPassed": true
-  },
-  "independentPublicVerification": {
-    "version": "1.2.5",
-    "archiveSha256": "811aab85fa1516b7f58f6cd6376bb7188faa264c4e1a5713635342c179c30aa6",
-    "archiveEntries": 169,
-    "runtimeFileHashes": 167,
-    "closedManifest": true,
-    "crcPassed": true,
-    "appSha256": "e5168ce5895dad3e6c176e670c7f2690e84867281e9a2d5a71541b4fbcd1316c",
-    "workerSha256": "9a45ea34b24319e80aa8f331b089458d61dcefbd7c7b4e798d77d64bbe7c4280",
-    "appRoot": "D:\\a\\Egg-Inc-Virtue-Farm-Optimizer\\Egg-Inc-Virtue-Farm-Optimizer\\tmp\\public-app\\Egg-Inc-Virtue-Farm-Optimizer",
-    "sourceCommit": "0cf7d791060ff50d0c633de12d6eb531c0a4cc1f",
-    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.2.5",
-    "releaseId": 429607701,
-    "anonymous": true,
-    "assets": [
-      {
-        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
-        "id": 693840869,
-        "size": 8652584,
-        "sha256": "811aab85fa1516b7f58f6cd6376bb7188faa264c4e1a5713635342c179c30aa6"
-      },
-      {
-        "name": "update-manifest.json",
-        "id": 693840870,
-        "size": 239,
-        "sha256": "bd78f38322e7efa7105d03c49b44f989b472045e343ef7b7713f401cf6c1009c"
-      }
-    ]
-  },
-  "automatedBrowserVerification": {
-    "schema": 1,
-    "passed": true,
-    "sourceCommit": "0cf7d791060ff50d0c633de12d6eb531c0a4cc1f",
-    "appSha256": "e5168ce5895dad3e6c176e670c7f2690e84867281e9a2d5a71541b4fbcd1316c",
-    "workerSha256": "9a45ea34b24319e80aa8f331b089458d61dcefbd7c7b4e798d77d64bbe7c4280",
-    "browser": "156.0.8078.80",
-    "widths": [
-      1440,
-      1000,
-      500
-    ],
-    "liveCheckWorkers": 3,
-    "planOrder": [
-      13,
-      12,
-      11
-    ],
-    "defaultSelected": 12
-  }
+  ]
 }

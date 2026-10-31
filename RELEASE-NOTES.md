@@ -1,3 +1,11 @@
+# v1.2.6
+
+- Round fuel store/discard instructions to the nearest 1T for trillion-scale tanks. Omit adjustments that round to zero from summaries, Quick Guide, Full Breakdown, progress and exported walkthroughs, including their tiny collection breaks. Preserve exact recorded fuel and timing, and retain sub-trillion instructions for smaller tanks.
+- Simplify comparison differences to signed percentages only, such as +1.09% or -18.49%, with the existing favorable/adverse colors. Leave the specified N column without comparison labels; omit undefined percentages and keep tiny nonzero differences numeric.
+- Remove the explanatory text below the comparison table and the entire Plan Details panel. Automatic purchase checks and their saved per-plan checkpoints remain in place.
+
+- Install through Update App → Update & Restart. Existing saved plans use the new display rules without another search.
+
 # v1.2.5
 
 - Compare total time, maximum laying, maximum shipping and future Soul Egg cost against the specified N plan with percentages. Faster time, higher capacity and lower cost are green; the opposite is red. Keep N as the baseline when selecting another plan and handle missing or zero baselines explicitly.

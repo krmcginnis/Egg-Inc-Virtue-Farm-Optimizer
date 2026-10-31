@@ -91,14 +91,17 @@ Soul Egg costs apply the sequential shift formula to the starting balance and
 lifetime shift count; research and physical upgrades spend gems instead.
 Time, laying, shipping and Soul Egg cost show percentage differences against N,
 even after selecting another column. Faster time, higher capacity and lower cost
-are green; the opposite is red, with direction labels alongside the colors.
-Equal values and the N baseline are neutral. If N is missing, percentages are
-unavailable; a zero N value is labeled explicitly instead of dividing by zero.
+are green; the opposite is red. Alternatives show only signed percentages, with
++ for increases, - for decreases and a neutral 0% for ties. N has no comparison
+labels. Undefined percentages (missing N or a zero baseline with a nonzero value)
+are omitted.
 Save Plan, Export Walkthrough and Check Farm Progress are in the Compare Plans
-header. Purchase-check recovery and search diagnostics are under Plan details.
+header. The explanatory footer and Plan Details panel are removed.
 Choose a plan header to change the timeline and exports, or review a remaining-plan
 selection before applying it. Saved legacy timelines and checked progress are
 preserved. New searches/reoptimization produce the new three-count comparison.
+
+Fuel instructions for trillion-scale tanks round store/discard amounts to the nearest 1T. Adjustments that round to zero do not create guide rows, collection breaks or progress confirmations. Shift summaries and walkthroughs use the same display rules. Smaller-than-1T tanks retain sub-trillion instructions. Recorded fuel, elapsed time, paid replay and reoptimization inputs keep their exact values.
 
 After finding the fastest plans, the solver compares extra paid silo purchases
 on existing Resilience visits. It prefers up to eight silos (two with a standard
@@ -156,10 +159,9 @@ time for refinement across eight candidate roots, with up to 120 slices per
 worker. Stop & Keep Best retains verified candidates. More workers and deeper
 search do not guarantee a faster plan or a globally optimal result.
 
-Loading an older plan preserves its saved timeline and search diagnostics; it
+Loading an older plan preserves its saved timeline and search metadata; it
 does not start a search. Find Best Plan and Reoptimize Remaining Plan use the
-installed application's current Deep profile. Check Purchase Order checks only
-its declared purchase groups and does not run a full route search.
+installed application's current Deep profile.
 
 After the search merges its results, the final choices automatically run the
 purchase-order check. Up to two check workers share five additional minutes;
@@ -168,8 +170,8 @@ subsets and legal orders within groups of up to five purchases, keep only paid,
 replayed improvements, and retain progress if stopped. All three available final
 plans are checked, with up to two check workers at a time.
 Each choice shows whether its purchase check finished. Save Plan retains the
-status and checkpoint for each plan. The summary's manual check is a fallback
-for older plans or unfinished checks; completed checks need no separate action.
+status and checkpoint for each plan. Purchase checks run automatically after
+search or reoptimization; there is no separate manual check in the comparison.
 This scoped check does not prove global optimality across routes and departures.
 
 Reoptimizing a checked farm also retimes compatible saved shift-count alternatives

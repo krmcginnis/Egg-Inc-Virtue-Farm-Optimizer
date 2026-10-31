@@ -2,7 +2,8 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
 const S=require('../src/simulator.cjs'),U=require('../src/shift-summary.cjs'),blank=require('../src/blank-farm.cjs'),Strategy=require('../src/planning-strategy.cjs'),gems=require('../src/gems-text.cjs'),Q=require('../src/walkthrough-pdf.cjs');
 (async()=>{
- const {difference}=require('../src/plan-comparison.cjs');
+ const {difference,signedPercent}=require('../src/plan-comparison.cjs');
+ for(const [value,expected] of [[1.09,'+1.09%'],[-18.49,'-18.49%'],[0,'0%'],[-0,'0%'],[.0094945,'+0.0095%'],[-.0000031,'-0.0000031%'],[null,null],[undefined,null],[Infinity,null]])assert.equal(signedPercent(value),expected);
  for(const lowerIsBetter of [false,true])for(const [value,percent,direction] of [[80,-20,-1],[100,0,0],[120,20,1]])assert.deepEqual(difference(value,100,lowerIsBetter),{percent,direction,better:direction===0?null:lowerIsBetter?direction<0:direction>0});
  assert.deepEqual(difference(0,0,true),{percent:0,direction:0,better:null});
  assert.deepEqual(difference(100,0,true),{percent:null,direction:1,better:false});
