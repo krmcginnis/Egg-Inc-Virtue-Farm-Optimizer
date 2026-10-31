@@ -65,8 +65,8 @@ async function exportPlan(){
   await load({version:1,config:preference.raw,result:fastestResult});
   assert.equal(w.VirtueApp.getResult().switches,4);
   assert.deepEqual([...w.document.querySelectorAll('[data-shifts]')].map(n=>n.dataset.shifts),['5','4','3']);
-  assert.match(query('[data-shifts="4"]').textContent,/Specified shifts/);
-  assert.match(query('[data-shifts="5"]').textContent,/Specified \+ 1 shift/);
+  assert.match(query('[data-shifts="4"]').getAttribute('aria-label'),/Specified shifts/);
+  assert.match(query('[data-shifts="5"]').getAttribute('aria-label'),/Specified \+ 1 shift/);
   assert.doesNotMatch(query('.plan-choice-selected').textContent,/recommend|allowance|preference/i);
   query('[data-shifts="3"]').click();
   const selectedSaved=await exportPlan();await load(selectedSaved);

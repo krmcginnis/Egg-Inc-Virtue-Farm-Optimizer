@@ -39,7 +39,7 @@ async function run(){
   w.eval(fs.readFileSync(root+'/worker-source.js','utf8'));w.eval(fs.readFileSync(root+'/app.js','utf8'));const app=w.VirtueApp,doc=fixture();
   await load(doc);assert.ok(app.getResult(),$('#notice').textContent);
   assert.equal($('#result-content').firstElementChild.id,'plan-choices');
-  assert.equal($('.result-summary'),null);assert.equal($('.plan-choice-earliest'),null);assert.equal($('.plan-details,.search-details,.purchase-check,#verify-purchases,.plan-choice-policy,.plan-comparison-scope'),null);
+  assert.equal($('.result-summary'),null);assert.equal($('.plan-choice-earliest'),null);assert.equal($('.plan-choice-description'),null);assert.equal($('.plan-details,.search-details,.purchase-check,#verify-purchases,.plan-choice-policy,.plan-comparison-scope'),null);
   assert.ok($('#plan-choices .plan-comparison-header #save-plan'));assert.ok($('#plan-choices .plan-comparison-header .plan-jump'));
   assert.match($('#plan-choices .plan-actions').textContent,/Save PlanExport WalkthroughCheck Farm Progress/);
   assert.deepEqual([...w.document.querySelectorAll('[data-shifts]')].map(n=>n.dataset.shifts),['7','6','5']);
@@ -56,10 +56,10 @@ async function run(){
   }
   const deltas=()=>[...w.document.querySelectorAll('.plan-metric-delta')].map(n=>({text:n.textContent,tone:n.className,percent:n.dataset.percent}));
   const delta=(metric,shifts)=>$(`[data-metric="${metric}"][data-plan-shifts="${shifts}"] .plan-metric-delta`);
-  assert.equal(delta('seconds',7).textContent,'-0.0095%');assert.ok(delta('seconds',7).classList.contains('better'));
+  assert.equal(delta('seconds',7).textContent,'0.0%');assert.ok(delta('seconds',7).classList.contains('neutral'));
   assert.ok(delta('seconds',5).classList.contains('worse'));assert.ok(delta('soul',7).classList.contains('worse'));assert.ok(delta('soul',5).classList.contains('better'));
   assert.ok(delta('laying',7).classList.contains('neutral'));assert.equal(delta('shipping',6),null);
-  assert.equal(deltas().length,8);assert.ok(deltas().every(d=>/^(?:[+-]\d+(?:\.\d+)?|0)%$/.test(d.text)),'deltas contain signed percentages only');
+  assert.equal(deltas().length,8);assert.ok(deltas().every(d=>/^(?:[+-]\d+\.\d|0\.0)%$/.test(d.text)),'deltas use one decimal, with neutral rounded zero');
   const comparisons=deltas();
   $('[data-shifts="7"]').click();assert.equal(app.getResult().selectedSwitches,7);assert.equal(w.document.activeElement.dataset.shifts,'7');assert.deepEqual(deltas(),comparisons,'changing selection never changes the N baseline');
   $('[data-shifts="5"]').click();assert.match($('.plan-choice-tradeoff').textContent,/later.*2 fewer shifts/);
@@ -83,7 +83,7 @@ async function run(){
   for(const worker of workers.slice(0,4))worker.onmessage({data:{type:'continuation',continuation:structuredClone(proposal)}});
   assert.equal(workers.length,6);assert.match($('#search-status-heading').textContent,/Checking Final Plan Purchases/);
   for(let i=4;i<workers.length;i++){const worker=workers[i],posted=worker.messages[0].verification,checked=await require('../src/plan-verification.cjs').search(posted.config,posted.result,{maxMs:1000});worker.onmessage({data:{type:'verification',result:checked}});}
-  assert.equal(workers.length,7,'three final plans use two check workers at a time');assert.equal(w.document.querySelectorAll('#remaining-plan-choices .plan-choice-check').length,3);
+  assert.equal(workers.length,7,'three final plans use two check workers at a time');assert.equal(w.document.querySelectorAll('#remaining-plan-choices .plan-choice-check').length,0);
   assert.equal($('#plan-choices'),null);assert.match($('#remaining-plan-choices .plan-choice-selected').textContent,/Selected to apply: 6 remaining shifts/);assert.equal(JSON.stringify(app.getResult()),original);
   assert.ok($('#remaining-plan-choices .plan-comparison-header #save-plan'));assert.match($('#remaining-plan-choices .plan-actions button.secondary').title,/proposed remaining plan/);
   $('#remaining-plan-choices [data-shifts="7"]').click();assert.equal(app.getResult().selectedSwitches,6,'preview retains original timeline');

@@ -1210,17 +1210,16 @@ function renderPlanChoices(plan,zone,{remaining=false,preview=false,onSelect,raw
     const name=el("th");name.scope="col";name.dataset.planRole=option.role;name.classList.toggle("plan-comparison-selected",option.active);
     const entry=option.entry;
     if(!entry){
-      name.append(el("strong",option.switches===null?"Not applicable":shiftLabel(option.switches),"plan-column-title"),el("span",labels[option.role],"plan-choice-description"));
+      name.append(el("strong",option.switches===null?"Not applicable":shiftLabel(option.switches),"plan-column-title"));
       name.append(el("span",option.switches===null?"Not applicable when zero shifts are specified.":option.switches>ShiftLimits.SEARCH_LIMIT?"Outside the supported 30-shift limit.":"No complete plan found within the search budget.","plan-choice-availability"));
     }else{
       const button=el("button",undefined,"secondary plan-choice-option");
       button.type="button";button.dataset.shifts=entry.switches;button.setAttribute("aria-pressed",String(option.active));button.disabled=!!worker||!!importingBackup;
-      button.append(el("strong",shiftLabel(entry.switches),"plan-column-title"),el("span",labels[option.role],"plan-choice-description"));
+      button.append(el("strong",shiftLabel(entry.switches),"plan-column-title"));
       if(option.active)button.append(el("span","Selected","plan-choice-active"));
       button.setAttribute("aria-label",labels[option.role]+" · "+shiftLabel(entry.switches));button.onclick=()=>onSelect(entry.switches);name.append(button);
       const checked=PlanVerification.checkpoint(raw,entry.plan.verification),automatic=entry.plan.automaticPurchaseCheck;
-      if(checked?.complete)name.append(el("span","Purchase order checked","plan-choice-check"));
-      else if(automatic)name.append(el("span",automatic.status==='error'?"Purchase check unavailable":automatic.status==='not-started'?"Purchase check not run":"Purchase check paused","plan-choice-check"));
+      if(!checked?.complete&&automatic)name.append(el("span",automatic.status==='error'?"Purchase check unavailable":automatic.status==='not-started'?"Purchase check not run":"Purchase check paused","plan-choice-check"));
     }
     header.append(name);
   }
@@ -1235,7 +1234,7 @@ function renderPlanChoices(plan,zone,{remaining=false,preview=false,onSelect,raw
       if(option.role!=='specified'&&["seconds","laying","shipping","soul"].includes(key)&&m){
         const change=PlanComparison.difference(value,baseline[key],key==='seconds'||key==='soul'),description=PlanComparison.signedPercent(change?.percent);
         if(description!==null){
-          const tone=change.better===null?"neutral":change.better?"better":"worse",delta=el("span",description,"plan-metric-delta "+tone);
+          const tone=description==='0.0%'?"neutral":change.better?"better":"worse",delta=el("span",description,"plan-metric-delta "+tone);
           delta.dataset.percent=change.percent;cell.append(delta);
         }
       }

@@ -91,8 +91,9 @@ Soul Egg costs apply the sequential shift formula to the starting balance and
 lifetime shift count; research and physical upgrades spend gems instead.
 Time, laying, shipping and Soul Egg cost show percentage differences against N,
 even after selecting another column. Faster time, higher capacity and lower cost
-are green; the opposite is red. Alternatives show only signed percentages, with
-+ for increases, - for decreases and a neutral 0% for ties. N has no comparison
+are green; the opposite is red. Alternatives show signed percentages to one
+decimal place, with + for increases, - for decreases and neutral 0.0% when
+the difference rounds to zero. N has no comparison
 labels. Undefined percentages (missing N or a zero baseline with a nonzero value)
 are omitted.
 Save Plan, Export Walkthrough and Check Farm Progress are in the Compare Plans
@@ -169,7 +170,8 @@ a single-worker fallback shares that time between the plans. The checks compare
 subsets and legal orders within groups of up to five purchases, keep only paid,
 replayed improvements, and retain progress if stopped. All three available final
 plans are checked, with up to two check workers at a time.
-Each choice shows whether its purchase check finished. Save Plan retains the
+Completed purchase checks add no label below the plan headers. Incomplete or
+failed checks retain their status message. Save Plan retains the
 status and checkpoint for each plan. Purchase checks run automatically after
 search or reoptimization; there is no separate manual check in the comparison.
 This scoped check does not prove global optimality across routes and departures.

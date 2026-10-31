@@ -1,3 +1,10 @@
+# v1.2.8
+
+- Show plan percentage differences to one decimal place, with neutral 0.0% for differences rounding to zero. Keep N without comparison labels and preserve the favorable/adverse colors for displayed changes.
+- Remove the Specified shifts / +1 / −1 subtitles and completed Purchase order checked labels. Keep the selected badge, automatic checks and saved checkpoints; incomplete-check status remains available.
+
+- Install through Update App → Update & Restart. Saved plan comparisons use the updated formatting without another search.
+
 # v1.2.7
 
 - Round fuel store/discard instructions to the nearest 1T for trillion-scale tanks. Omit adjustments that round to zero from summaries, Quick Guide, Full Breakdown, progress and exported walkthroughs, including their tiny collection breaks. Preserve exact recorded fuel and timing, and retain sub-trillion instructions for smaller tanks.

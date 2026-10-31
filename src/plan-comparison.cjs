@@ -18,8 +18,7 @@ function difference(value,baseline,lowerIsBetter=false){
 }
 function signedPercent(percent){
  if(!Number.isFinite(percent))return null;
- if(percent===0)return '0%';
- const magnitude=Math.abs(percent),number=magnitude<.01?magnitude.toLocaleString('en-US',{useGrouping:false,maximumSignificantDigits:2}):magnitude.toFixed(2);
- return (percent>0?'+':'-')+number+'%';
+ const number=Math.abs(percent).toFixed(1);
+ return (Number(number)===0?'':percent>0?'+':'-')+number+'%';
 }
 module.exports={metrics,difference,signedPercent};
