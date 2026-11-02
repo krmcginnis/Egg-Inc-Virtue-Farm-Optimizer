@@ -26,7 +26,23 @@ module.exports=function importMissions(backup,backupTime,now,warnings){
   flights.push({slot:flights.length+1,returnAt,ship,duration:durationType,identifier:m.identifier||undefined,imported:true});
  }
  if(flights.length>3)throw Error('The backup contains more than three active Virtue ships. Sync the game and retry.');
- if(fueling)warnings.push('A Virtue mission is being fueled or prepared. Finish or cancel it before following the planned launches; it is not added to your entered ship schedule.');
+ if(fueling&&!prepared(backup))warnings.push('A Virtue mission is being fueled. Finish fueling it and refresh the account to carry its paid fuel into the remaining plan.');
  if(flights.length)warnings.push(flights.length+' existing Virtue ship'+(flights.length===1?'':'s')+' imported. Returned ships are collected when a planned launch needs their slot.');
  return flights;
 };
+function prepared(backup){
+ const pending=fuelingMission(backup);return pending?.status==='PREPARE_TO_LAUNCH'?pending:null;
+}
+function fuelingMission(backup){
+ const db=backup.artifactsDb||{},nested=db.virtueAfxDb?.fuelingMission;
+ const records=[...(nested?[{...nested,type:nested.type??1}]:[]),...(db.fuelingMission?[db.fuelingMission]:[]),...(db.missionInfos||[])];
+ const reset=backup.virtue?.resets??0;
+ const ready=records.filter(m=>(m.type===1||m.type==='VIRTUE')&&[0,5,'FUELING','PREPARE_TO_LAUNCH'].includes(m.status??0)&&(m.resetIndex??0)===reset);
+ if(!ready.length)return null;
+ const m=ready[0],ship=typeof m.ship==='string'?m.ship:Ships.DATA.ships[Number(m.ship??0)]?.id,duration=typeof m.durationType==='string'?m.durationType:['SHORT','LONG','EPIC','TUTORIAL'][Number(m.durationType??0)];
+ Ships.mission(ship,duration);
+ if(ready.some(x=>x.identifier&&m.identifier&&x.identifier!==m.identifier))throw Error('The backup contains multiple ready Virtue ships. Sync the game and retry.');
+ return {ship,duration,identifier:m.identifier||undefined,status:m.status===5||m.status==='PREPARE_TO_LAUNCH'?'PREPARE_TO_LAUNCH':'FUELING'};
+}
+module.exports.prepared=prepared;
+module.exports.fueling=fuelingMission;

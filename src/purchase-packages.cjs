@@ -2,7 +2,7 @@
 const S=require('./simulator.cjs'),L=require('./optimizer-legacy.cjs');
 const W=require('./waiting-objective.cjs');
 const productive=/egg_value|egg_laying_rate|hab_capacity|shipping_capacity|fleet_size/;
-function key(s){return JSON.stringify([s.t,s.cash,s.r,s.h,s.v,s.silos,s.set,s.eggs,s.fuel,s.shipFlights,W.offlineBreaks(s)]);}
+function key(s){return JSON.stringify([s.t,s.cash,s.r,s.h,s.v,s.silos,s.set,s.eggs,s.fuel,s.shipFlights,s.preparedShip,W.offlineBreaks(s)]);}
 function choices(s,c,limit){
  const before=S.stats(s,c),groups=new Map();
  for(const a of L.candidates(s,c)){

@@ -1,3 +1,12 @@
+# v1.2.9
+
+- Count launched Virtue missions automatically from active and archived account records, scoped to the current reset and plan start. Include returned missions, deduplicate records, and keep fueled or ready ships unlaunched. Remove the launch-count confirmation button; optional overrides apply immediately.
+- Import a fully fueled ship waiting on the pad. Resume it when a real mission slot is free, without buying the ship or loading its paid fuel again. Apply the credit once, preserve it through save/load, and report fuel shortages with actionable progress guidance. Refresh from account to include a queued ship omitted from older farm exports.
+- Show ship pictures and expandable launch/return schedules in shift summaries, Quick Guide and Full Breakdown. Show the beginning and departure artifact/stone setups for every shift.
+- Use the current fleet's delivery setup during Humility ship waits, then equip the later fleet's setup at departure. Compare this timing on retained saved routes as well as fresh search seeds, and keep only fully paid, replayed improvements.
+
+- Install through Update App → Update & Restart. Refresh from account, then reoptimize to use automatic launch counts, the queued ship and updated gear timing. Existing saved timelines remain available.
+
 # v1.2.8
 
 - Show plan percentage differences to one decimal place, with neutral 0.0% for differences rounding to zero. Keep N without comparison labels and preserve the favorable/adverse colors for displayed changes.

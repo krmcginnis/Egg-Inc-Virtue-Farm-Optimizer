@@ -117,7 +117,7 @@ function estimate(s,c){
  thresholds.sort((a,b)=>a-b);if(thresholds.length<missing)return Infinity;
  return s.t-c.start+(mandatory+thresholds.slice(0,Math.max(0,missing)).reduce((a,b)=>a+b,0))/Math.max(1e-300,r.delivery);
 }
-function stateKey(s){return JSON.stringify([s.stage,s.r,s.h,s.v,s.set,s.silos,s.shipsDone,s.shipRuns,s.shipRunStage,s.shipFlights]);}
+function stateKey(s){return JSON.stringify([s.stage,s.r,s.h,s.v,s.set,s.silos,s.shipsDone,s.shipRuns,s.shipRunStage,s.shipFlights,s.preparedShip]);}
 function dominates(a,b,c){
  // Compare at the same calendar instant so sale-aligned cash/progress is
  // not discarded merely because another state was reached earlier.
@@ -180,10 +180,16 @@ function seedRouteUncached(initial,c,minutes,checkpoint,cache){
    }
   }
   else if(n.egg===2){
+   // During a long launch visit, balance stones for the paid fleet that is
+   // producing now. Equip the later fleet's set only when departing H.
+   const deliverySet=state=>S.artifactChoices(state,c).reduce((a,b)=>S.stats({...state,set:b},c).delivery>S.stats({...state,set:a},c).delivery?b:a,state.set);
+   if(Ships.pending(n,c)){
+    const current=deliverySet(n);if(current!==n.set)n=S.buy(n,{...c,deferShips:true},S.artifactAction(current,c));
+    n=Ships.launch(n,c);
+   }
    const projected=S.clone(n);if(!timing.currentGear&&future(n,c,4))for(const v of projected.v)if(v.id===11)v.cars=S.stats(n,c).trainLength;
-   const set=S.artifactChoices(projected,c).reduce((a,b)=>S.stats({...projected,set:b},c).delivery>S.stats({...projected,set:a},c).delivery?b:a,n.set);
-   if(set!==n.set)n=S.buy(n,{...c,deferShips:true},S.artifactAction(set,c));
-   if(Ships.pending(n,c))n=Ships.launch(n,c);
+   const set=deliverySet(projected);
+   if(!complete(n,c)&&set!==n.set)n=S.buy(n,{...c,deferShips:true},S.artifactAction(set,c));
   }
   const actions=[];for(let p=n.path;p&&p!==base;p=p.prev)actions.push(p.action);let path=base;for(const action of actions.reverse())path={prev:path,action:{...action,phase:label}};n={...n,path,phase:label};
   // Compare delivery now with paying for later gear/physical upgrades. A

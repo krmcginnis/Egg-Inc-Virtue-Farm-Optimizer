@@ -10,6 +10,8 @@ function rateFor(capacity){return OUTPUTS[TANKS.indexOf(capacity)]??300e6;}
 const MAP=Object.fromEntries(DATA.ships.map(s=>[s.id,s]));
 function mission(id,duration,ftl=0){const ship=MAP[id],m=ship?.missions.find(x=>x.id===duration);if(!m)throw Error('Select a valid ship and mission length.');return {...m,ship:id,label:m.name+' '+ship.name,cost:ship.gemCost,seconds:m.seconds*(ship.ftl?1-.01*ftl:1),fuel:EGGS.map(e=>m.fuel[e]||0)};}
 function needed(missions){const out=Array(5).fill(0);for(const m of missions)for(let i=0;i<5;i++)out[i]+=m.count*m.fuel[i];return out;}
+function preparedMatch(prepared,m){return !!prepared&&prepared.ship===m.ship&&prepared.duration===(m.id||m.duration);}
+function unpaidFuel(missions,prepared){const fuel=needed(missions);if(missions.some(m=>m.count>0&&preparedMatch(prepared,m))){const loaded=mission(prepared.ship,prepared.duration).fuel;return fuel.map((n,i)=>Math.max(0,n-loaded[i]));}return fuel;}
 function maximum(m,capacity,stored,reserved=Array(5).fill(0)){
  const per=m.fuel.reduce((a,b,i)=>a+(i===2?0:b),0);if(!per)return null;
  let lo=0,hi=Math.floor(capacity/per)+1;
@@ -17,40 +19,43 @@ function maximum(m,capacity,stored,reserved=Array(5).fill(0)){
  if(!fits(0))return 0;
  while(lo+1<hi){const mid=Math.floor((lo+hi)/2);if(fits(mid))lo=mid;else hi=mid;}return lo;
 }
+function maximumPrepared(m,capacity,stored,reserved,prepared){const n=maximum(m,capacity,stored,reserved);return n===null?null:n+(preparedMatch(prepared,m)?1:0);}
 function prepare(f,p,number){
  const tank=f.fuelTank||{},capacity=number(tank.capacity??2e9,'Fuel tank capacity',0,500e12),output=number(tank.outputPerMinute??rateFor(capacity),'Tank output per minute',1),stored=EGGS.map(e=>number(tank.amounts?.[e]??0,e+' tank fuel'));
  if(stored.reduce((a,b)=>a+b,0)>capacity+Math.max(1,capacity)*1e-12)throw Error('Stored fuel exceeds the fuel tank capacity.');
  const raw=p.ships||{},mode=raw.mode||'legacy',ftl=number(mode==='legacy'?(raw.ftlLevel??f.epic?.afx_mission_time??0):(f.epic?.afx_mission_time??0),'FTL Drive Upgrades',0,60,true),slots=number(raw.slots??3,'Available mission slots',1,3,true);
+ const prepared=f.preparedShip?{...f.preparedShip}:null;
+ if(prepared){if(prepared.status!=='PREPARE_TO_LAUNCH')throw Error('A prepared ship must be fully fueled and ready to launch.');mission(prepared.ship,prepared.duration,ftl);}
  if(!['legacy','efficient-two-visits','custom-first-visit','custom-two-visits','none'].includes(mode))throw Error('Select a valid ship setup.');
- if(mode==='efficient-two-visits'){if(capacity<499e12)throw Error('The efficient fleet setup requires a 500T fuel tank. Select another setup if your tank is smaller.');const hen={...mission('HENERPRISE','EPIC',ftl),count:7},corvette=mission('CORELLIHEN_CORVETTE','SHORT',ftl);return {mode,enabled:true,visits:2,capacity,outputPerSecond:output/60,stored,missions:[hen],corvette,targets:RECIPE.slice(),fuel:needed([hen]),count:7,slots:3,ftl};}
+ if(mode==='efficient-two-visits'){if(capacity<499e12)throw Error('The efficient fleet setup requires a 500T fuel tank. Select another setup if your tank is smaller.');const hen={...mission('HENERPRISE','EPIC',ftl),count:7},corvette=mission('CORELLIHEN_CORVETTE','SHORT',ftl),credit=preparedMatch(prepared,hen)?hen.fuel:Array(5).fill(0);return {mode,enabled:true,visits:2,capacity,outputPerSecond:output/60,stored,missions:[hen],corvette,targets:RECIPE.map((n,i)=>Math.max(0,n-credit[i])),unpreparedTargets:RECIPE.slice(),fuel:needed([hen]),count:7,slots:3,ftl,prepared};}
  if(mode==='custom-two-visits'){
   if(!Array.isArray(raw.visits)||raw.visits.length!==2)throw Error('Enter ship plans for H1 and H2.');
-  let stock=stored.slice();const runs=raw.visits.map((visit,index)=>{
+  let stock=stored.slice(),available=prepared;const runs=raw.visits.map((visit,index)=>{
    if(!Array.isArray(visit.missions??[])||(visit.missions?.length||0)>8)throw Error('Use at most eight mission groups per Humility visit.');
    const missions=(visit.missions||[]).filter(x=>x.ship).map(x=>({...mission(x.ship,x.duration||'EPIC',ftl),count:x.count===null||x.count===''?null:number(x.count??3,'H'+(index+1)+' launch count',1,1000000,true)}));
    const automatic=missions.filter(m=>m.count===null);if(automatic.length>1)throw Error('Only one mission group per Humility visit can use Tank Maximum.');
-   const reserved=needed(missions.filter(m=>m.count!==null));
-   if(automatic.length){const m=automatic[0],n=maximum(m,capacity,stock,reserved);if(n===null)throw Error('Humility-only missions need a launch count.');if(!n)throw Error('H'+(index+1)+': the tank cannot support another mission of this type.');m.count=n;}
-   const fuel=needed(missions),targets=fuel.map((x,i)=>i===2?0:x),count=missions.reduce((n,m)=>n+m.count,0);
+   const reserved=unpaidFuel(missions.filter(m=>m.count!==null),available);
+   if(automatic.length){const m=automatic[0],n=maximumPrepared(m,capacity,stock,reserved,missions.some(x=>x.count!==null&&preparedMatch(available,x))?null:available);if(n===null)throw Error('Humility-only missions need a launch count.');if(!n)throw Error('H'+(index+1)+': the tank cannot support another mission of this type.');m.count=n;}
+   const fuel=needed(missions),unpaid=unpaidFuel(missions,available),targets=unpaid.map((x,i)=>i===2?0:x),count=missions.reduce((n,m)=>n+m.count,0);if(missions.some(m=>preparedMatch(available,m)))available=null;
    if(count>1000000)throw Error('Use at most one million launches per Humility visit.');
    if(targets.reduce((a,b)=>a+b,0)>capacity+Math.max(1,capacity)*1e-12)throw Error('H'+(index+1)+' planned ships need more tank space than is available. Lower launch counts.');
-   const before=stock.slice();stock=stock.map((v,i)=>i===2?v:Math.max(0,v-fuel[i]));
+   const before=stock.slice();stock=stock.map((v,i)=>i===2?v:Math.max(0,v-unpaid[i]));
    return {mode,enabled:count>0,visit:index+1,capacity,outputPerSecond:output/60,stored:before,stockAfter:stock.slice(),missions,targets,fuel,count,slots,ftl,respectFlights:true};
   });
   const visits=runs[1].count?2:runs[0].count?1:0,count=runs.reduce((n,r)=>n+r.count,0);
-  return {mode,enabled:count>0,visits,runs,capacity,outputPerSecond:output/60,stored,missions:runs.flatMap(r=>r.missions),targets:runs[0].targets,fuel:runs[0].fuel.map((n,i)=>n+runs[1].fuel[i]),count,slots,ftl};
+  return {mode,enabled:count>0,visits,runs,capacity,outputPerSecond:output/60,stored,missions:runs.flatMap(r=>r.missions),targets:runs[0].targets,fuel:runs[0].fuel.map((n,i)=>n+runs[1].fuel[i]),count,slots,ftl,prepared};
  }
- if(mode==='none')return {mode,enabled:false,visits:0,capacity,outputPerSecond:output/60,stored,missions:[],targets:Array(5).fill(0),fuel:Array(5).fill(0),count:0,slots,ftl};
+ if(mode==='none')return {mode,enabled:false,visits:0,capacity,outputPerSecond:output/60,stored,missions:[],targets:Array(5).fill(0),fuel:Array(5).fill(0),count:0,slots,ftl,prepared};
  if(!Array.isArray(raw.missions??[]))throw Error('Ship missions must be a list.');
  if((raw.missions?.length||0)>8)throw Error('Use at most eight ship mission groups.');
  const missions=(raw.missions||[]).filter(x=>x.ship).map(x=>({...mission(x.ship,x.duration||'EPIC',ftl),count:x.count===null||x.count===''?null:number(x.count??3,'Ship launch count',1,1000000,true)}));
  const automatic=missions.filter(m=>m.count===null);if(automatic.length>1)throw Error('Only one mission group can use Tank Maximum; enter counts for the other groups.');
- const reserved=needed(missions.filter(m=>m.count!==null));
- if(automatic.length){const m=automatic[0],n=maximum(m,capacity,stored,reserved);if(n===null)throw Error('Humility-only missions need a launch count; their fuel is produced on Humility.');if(!n)throw Error('The fuel tank cannot support another mission of this type.');m.count=n;}
- const fuel=needed(missions),targets=fuel.map((x,i)=>i===2?0:x);
+ const reserved=unpaidFuel(missions.filter(m=>m.count!==null),prepared);
+ if(automatic.length){const m=automatic[0],n=maximumPrepared(m,capacity,stored,reserved,missions.some(x=>x.count!==null&&preparedMatch(prepared,x))?null:prepared);if(n===null)throw Error('Humility-only missions need a launch count; their fuel is produced on Humility.');if(!n)throw Error('The fuel tank cannot support another mission of this type.');m.count=n;}
+ const fuel=needed(missions),targets=unpaidFuel(missions,prepared).map((x,i)=>i===2?0:x);
  if(stored.reduce((sum,x,i)=>sum+Math.max(x,targets[i]),0)>capacity+Math.max(1,capacity)*1e-12)throw Error('Planned ships need more tank space than is available. Lower launch counts or adjust stored fuel.');
  const count=missions.reduce((a,m)=>a+m.count,0);if(count>1000000)throw Error('Use at most one million launches per run.');
- return {mode,visits:count>0?1:0,enabled:count>0,capacity,outputPerSecond:output/60,stored,missions,targets,fuel,count,slots,ftl};
+ return {mode,visits:count>0?1:0,enabled:count>0,capacity,outputPerSecond:output/60,stored,missions,targets,fuel,count,slots,ftl,prepared,respectFlights:!!prepared};
 }
 function store(start,c,amount,log=true){
  const S=require('./simulator.cjs');start=S.interactionReady(start,c,0,log);if(!(amount>0)||!Number.isFinite(amount)||start.egg===2)throw Error('Fuel storage requires a positive amount on a non-Humility farm.');
@@ -63,7 +68,7 @@ function store(start,c,amount,log=true){
  // Full egg diversion: tank filling generates neither delivered TE nor gems.
  if(log)n=S.record(n,{type:'fuel',t:start.t,end:n.t,egg:n.egg,amount,rate,cost:0,bank:n.cash,eggsGained:0,cashGained:0,phase:start.phase||start.path?.action.phase,visit:(start.shipRuns||0)+1,...(c.sleep?{siloEmptySeconds:seconds-Sleep.productiveSeconds(c.sleep,start.t,n.t,S.stats(start,c).siloHours*3600)}:{})});return n;
 }
-function runFor(s,c){return c.ships.mode==='custom-two-visits'?(c.ships.runs[s.shipRuns||0]||{count:0,missions:[],targets:Array(5).fill(0),fuel:Array(5).fill(0)}):c.ships;}
+function runFor(s,c){if(c.ships.mode==='efficient-two-visits'&&!s.preparedShip&&c.ships.unpreparedTargets)return {...c.ships,targets:c.ships.unpreparedTargets};return c.ships.mode==='custom-two-visits'?(c.ships.runs[s.shipRuns||0]||{count:0,missions:[],targets:Array(5).fill(0),fuel:Array(5).fill(0)}):c.ships;}
 function collectionTargets(s,c){const run=runFor(s,c);return run.collectionTargets||run.targets;}
 function configureRoute(c){
  if(c.autoSequence||c.ships.mode!=='custom-two-visits'||c.ships.visits!==2)return;
@@ -109,7 +114,7 @@ function legacyLaunch(start,c,log=true){
  if(!plan?.enabled||start.shipsDone)return start;if(start.egg!==2)throw Error('Ships can launch only on Humility.');
  for(let i=0;i<5;i++)if(i!==2&&start.fuel[i]+Math.max(1,plan.targets[i])*1e-12<plan.targets[i])throw Error('Collect '+EGGS[i]+' fuel before the first Humility visit.');
  if((Math.ceil(plan.count/plan.slots)-1)*Math.min(...plan.missions.map(m=>m.seconds))>c.end-start.t)throw Error('Planned ship returns exceed the planning limit. Reduce launches or increase the planning days.');
- let n=S.clone(start),onlineSeconds=0,offlineSeconds=0,offlineBreaks=0,fuelSeconds=0,transferSeconds=0,returnWaitSeconds=0,fundingSeconds=0,interactionSeconds=0,firstLaunch=null;
+ let n=S.clone(start),onlineSeconds=0,offlineSeconds=0,offlineBreaks=0,fuelSeconds=0,transferSeconds=0,returnWaitSeconds=0,fundingSeconds=0,interactionSeconds=0,firstLaunch=null,totalCost=0;const chargedFuel=Array(5).fill(0);
  const launchOrder=c.shipLaunchOrder??'entered';if(!['entered','optimized'].includes(launchOrder))throw Error('Unrecognized ship launch order.');
  const schedule={...plan,launchOrder},slots=Array(plan.slots).fill(start.t),missions=reservedJobs(schedule);
  const physicalSlots=plan.respectFlights&&(start.shipFlights||[]).length>plan.slots?[...start.shipFlights].sort((a,b)=>a.returnAt-b.returnAt||a.slot-b.slot).slice(0,plan.slots).map(f=>f.slot):Array.from({length:plan.slots},(_,i)=>i+1);
@@ -127,15 +132,19 @@ function legacyLaunch(start,c,log=true){
  for(let index=0;index<plan.count;index++){
   // New plans finish mission rows in input order. Historical replay retains
   // the old optimized schedule, including its reserved final slots.
-  const m=nextMission(missions,schedule,index);
+  // A fueled ship occupies the fueling pad until sent. Launch it first, wait
+  // for a real free flight slot, and consume its already-paid recipe once.
+  const prepared=missions.find(m=>m.remaining>0&&preparedMatch(n.preparedShip,m)),m=prepared||nextMission(missions,schedule,index);
+  if(n.preparedShip&&!prepared)throw Error('The ready-to-launch '+mission(n.preparedShip.ship,n.preparedShip.duration).label+' must be included in the next Humility launch batch before another ship can be fueled.');
   const slot=slots.indexOf(Math.min(...slots)),physicalSlot=physicalSlots[slot];const release=Math.max(n.t,slots[slot]);returnWaitSeconds+=release-n.t;wait(release,'Wait for an earlier ship to return');
   if(plan.respectFlights?!!inFlight[physicalSlot-1]:index>=plan.slots)interact('collect',c.actionsSeconds);
-  const fundingStart=n.t,ready=S.afford(n,{...c,sleepReplay:false},{type:'ship-cost',ship:m.ship,duration:m.id});if(!ready)throw Error('Cannot afford planned ships within the planning limit.');
+  const fundingStart=n.t,ready=prepared?n:S.afford(n,{...c,sleepReplay:false},{type:'ship-cost',ship:m.ship,duration:m.id});if(!ready)throw Error('Cannot afford planned ships within the planning limit.');
   if(ready.t>n.t){if(c.sleep){for(let path=ready.path;path&&path!==n.path;path=path.prev){const a=path.action;if(a.type!=='wait')continue;const dt=a.end-a.t;waits.push({start:a.t,end:a.end,seconds:dt,mode:a.earningsMode,reason:a.reason,sleepSeconds:a.sleepSeconds||0,forcedOfflineSeconds:a.forcedOfflineSeconds||0});if(a.earningsMode==='offline'){offlineSeconds+=dt;offlineBreaks++;}else {onlineSeconds+=dt;forcedOfflineSeconds+=a.forcedOfflineSeconds||0;}}}else{const a=ready.path.action,dt=ready.t-n.t;waits.push({start:n.t,end:ready.t,seconds:dt,mode:a.earningsMode,reason:'Earn gems for the next ship'});if(a.earningsMode==='offline'){offlineSeconds+=dt;offlineBreaks++;}else onlineSeconds+=dt;}}
-  n={...ready,path:n.path,depth:n.depth};fundingSeconds+=n.t-fundingStart;interact('fuel-start');n.cash=Math.max(0,n.cash-m.cost);
+  n={...ready,path:n.path,depth:n.depth};fundingSeconds+=n.t-fundingStart;if(!prepared){interact('fuel-start');n.cash=Math.max(0,n.cash-m.cost);totalCost+=m.cost;}
+  const fuel=prepared?Array(5).fill(0):m.fuel;
   // The farm and tank fuel in parallel. Stored Humility flows first; the
   // tank then supplies the other eggs while any remaining Humility is produced.
-  const rate=S.stats(n,c).laying,tankRate=plan.outputPerSecond,humility=m.fuel[2];
+  const rate=S.stats(n,c).laying,tankRate=plan.outputPerSecond,humility=fuel[2];
  let first=Math.min(n.fuel[2]/tankRate,humility/(tankRate+rate)),unfilled=humility-first*(tankRate+rate);
  if(c.sleep){let time=n.t,tank=n.fuel[2],needed=humility;const coverage=S.stats(n,c).siloHours*3600;
   while(tank>0&&needed>Math.max(1,humility)*1e-12){const end=Math.min(Sleep.productionBoundary(c.sleep,time,coverage),time+tank/tankRate),combined=tankRate+(Sleep.producing(c.sleep,time,coverage)?rate:0),dt=Math.min(end-time,needed/combined);if(!(dt>0))break;needed-=combined*dt;tank=Math.max(0,tank-tankRate*dt);time+=dt;}
@@ -145,29 +154,29 @@ function legacyLaunch(start,c,log=true){
  const remainingHumility=unfilled<=Math.max(1,humility)*1e-12?0:unfilled;
  const farmTime=remainingHumility?(c.sleep?S.productionEnd({...n,t:n.t+first},c,remainingHumility/rate)-(n.t+first):remainingHumility/rate):0;
   if(!Number.isFinite(farmTime))throw Error('The Humility farm cannot produce ship fuel.');
-  const dt=first+farmTime,foreign=m.fuel.reduce((sum,x,i)=>sum+(i===2?0:x),0),transfer=foreign/tankRate;
+  const dt=first+farmTime,foreign=fuel.reduce((sum,x,i)=>sum+(i===2?0:x),0),transfer=foreign/tankRate;
   if(n.t+dt>c.end)throw Error('Ship fueling exceeds the planning limit.');n.t+=dt;fuelSeconds+=dt;
-  for(let i=0;i<5;i++)if(i!==2){if(n.fuel[i]+Math.max(1,m.fuel[i])*1e-12<m.fuel[i])throw Error('Not enough stored ship fuel.');n.fuel[i]=Math.max(0,n.fuel[i]-m.fuel[i]);}
+  for(let i=0;i<5;i++){chargedFuel[i]+=fuel[i];if(i!==2){if(n.fuel[i]+Math.max(1,fuel[i])*1e-12<fuel[i])throw Error('Not enough stored ship fuel.');n.fuel[i]=Math.max(0,n.fuel[i]-fuel[i]);}}
   wait(n.t+Math.max(0,transfer-farmTime),'Finish transferring stored eggs into the ship',true);transferSeconds+=first+transfer;
   interact('launch',c.actionsSeconds);
-  const t=n.t,returnAt=t+m.seconds;slots[slot]=returnAt;m.remaining--;if(firstLaunch===null)firstLaunch=t;
+  const t=n.t,returnAt=t+m.seconds;slots[slot]=returnAt;m.remaining--;if(prepared)n.preparedShip=null;if(firstLaunch===null)firstLaunch=t;
   const group=launchOrder==='entered'?{groupIndex:m.groupIndex}:{},key=m.ship+':'+m.id+(launchOrder==='entered'?':'+m.groupIndex:'');let batch=batches.find(x=>x.key===key);if(!batch){batch={key,...group,label:m.label,ship:m.ship,duration:m.id,count:0,firstLaunch:t,lastLaunch:t,missionSeconds:m.seconds};batches.push(batch);}batch.count++;batch.lastLaunch=t;
-  launches.push({...group,label:m.label,ship:m.ship,duration:m.id,slot:physicalSlot,t,returnAt});inFlight[physicalSlot-1]={slot:physicalSlot,ship:m.ship,duration:m.id,launch:t,returnAt};
+  launches.push({...group,label:m.label,ship:m.ship,duration:m.id,slot:physicalSlot,t,returnAt,...(prepared?{alreadyFueled:true}:{})});inFlight[physicalSlot-1]={slot:physicalSlot,ship:m.ship,duration:m.id,launch:t,returnAt};
  }
  n.shipsDone=true;n.shipFlights=inFlight.filter(x=>x&&x.returnAt>n.t);
- const action={type:'ship-run',launchOrder,phase:'H1',t:start.t,end:n.t,egg:2,count:plan.count,batches,launches,waits,slots:plan.slots,firstLaunch,lastLaunch:n.t,finalReturns:n.shipFlights,fuel:plan.fuel.slice(),fuelSeconds,transferSeconds,returnWaitSeconds,fundingSeconds,onlineSeconds:onlineSeconds-interactionSeconds-forcedOfflineSeconds,offlineSeconds:offlineSeconds+forcedOfflineSeconds,offlineBreaks,interactionSeconds,cost:plan.missions.reduce((a,m)=>a+m.cost*m.count,0),bank:n.cash,eggsGained:n.eggs[2]-start.eggs[2],cashGained:n.cash-start.cash,...(c.sleep?{interactions,sleepSeconds:Sleep.seconds(c.sleep,start.t,n.t),siloEmptySeconds:n.t-start.t-Sleep.productiveSeconds(c.sleep,start.t,n.t,S.stats(start,c).siloHours*3600)}:{})};
+ const action={type:'ship-run',launchOrder,phase:'H1',t:start.t,end:n.t,egg:2,count:plan.count,batches,launches,waits,slots:plan.slots,firstLaunch,lastLaunch:n.t,finalReturns:n.shipFlights,fuel:chargedFuel,fuelSeconds,transferSeconds,returnWaitSeconds,fundingSeconds,onlineSeconds:onlineSeconds-interactionSeconds-forcedOfflineSeconds,offlineSeconds:offlineSeconds+forcedOfflineSeconds,offlineBreaks,interactionSeconds,cost:totalCost,bank:n.cash,eggsGained:n.eggs[2]-start.eggs[2],cashGained:n.cash-start.cash,...(c.sleep?{interactions,sleepSeconds:Sleep.seconds(c.sleep,start.t,n.t),siloEmptySeconds:n.t-start.t-Sleep.productiveSeconds(c.sleep,start.t,n.t,S.stats(start,c).siloHours*3600)}:{})};
  return log?S.record(n,action):n;
 }
 function summary(actions){const runs=actions.filter(a=>a.type==='ship-run');if(!runs.length)return null;return {...runs[0],count:runs.reduce((a,r)=>a+r.count,0),runs,fueling:actions.filter(a=>a.type==='fuel').map(a=>({egg:a.egg,amount:a.amount,seconds:a.end-a.t,t:a.t,end:a.end,visit:a.visit})),departure:runs.at(-1).end};}
 const format=require('./number-format.cjs').format;
-module.exports={runFor,collectionTargets,configureRoute,plannedVisits,anticipatedDelivery,ready,pending,trim,RECIPE,format,rateFor,OUTPUTS,DATA,EGGS,TANKS,MAP,mission,needed,maximum,prepare,store,beforeShift,launch,summary};
+module.exports={runFor,collectionTargets,configureRoute,plannedVisits,anticipatedDelivery,ready,pending,trim,RECIPE,format,rateFor,OUTPUTS,DATA,EGGS,TANKS,MAP,mission,needed,unpaidFuel,maximum,prepare,store,beforeShift,launch,summary};
 
 function launch(start,c,log=true){
  if(!pending(start,c))return start;
  start=require('./simulator.cjs').interactionReady(start,c,0,log);
  if(c.ships.mode==='custom-two-visits')return customLaunch(start,c,log);
  if(c.ships.mode!=='efficient-two-visits')return legacyLaunch(start,c,log);
- const S=require('./simulator.cjs'),plan=c.ships;
+ const S=require('./simulator.cjs'),plan=runFor(start,c);
  if(start.egg!==2)throw Error('Ships can launch only on Humility.');
  start=trim(start,c,log);
  for(let i=0;i<5;i++)if(start.fuel[i]+Math.max(1,plan.targets[i])*1e-12<plan.targets[i])throw Error('Collect '+EGGS[i]+' fuel before Humility visit '+((start.shipRuns||0)+1)+'.');

@@ -27,4 +27,5 @@ function update(select) {
   button.replaceChildren(...(item ? [image(item)] : []), name);
   button.title = name.textContent; button.setAttribute("aria-label", "Choose Ship: "+name.textContent);
 }
-module.exports = {decorate,update};
+function caption(ship,text){const group=document.createElement('span'),name=document.createElement('span');group.className='ship-caption';name.textContent=text;const item=Ships.DATA.ships.find(s=>s.id===ship);if(item)group.append(image(item));group.append(name);return group;}
+module.exports = {decorate,update,caption};

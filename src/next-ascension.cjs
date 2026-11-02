@@ -7,7 +7,7 @@ module.exports=function nextAscension(config,result){
  const verified=O.replay(config,result.actions,false,{enforceOpeningCaps:result.openingTimeLimits===true,oneStartingSilo:result.initialSiloRule==='one'?true:undefined}),s=verified.s,claimed=S.teByEgg(s,verified.c),total=claimed.reduce((a,b)=>a+b,0);
  if(total>=490)throw Error('All 490 Truth Eggs are already available.');
  const next=structuredClone(config);next.label='Next ascension — immediate start';
- next.farm={...next.farm,virtue:'curiosity',cash:0,claimed,delivered:s.eggs.slice(),soulEggs:s.soul,shiftCount:s.shiftCount,research:{},habs:[0,null,null,null],vehicles:Array.from({length:17},(_,i)=>({id:i===0?0:null,cars:1})),silos:1,shipFlights:s.shipFlights.filter(f=>f.returnAt>s.t),fuelTank:{...(next.farm.fuelTank||{}),capacity:verified.c.ships.capacity,outputPerMinute:verified.c.ships.outputPerSecond*60,amounts:Object.fromEntries(S.EGGS.map((egg,i)=>[egg,s.fuel[i]]))}};
+ next.farm={...next.farm,virtue:'curiosity',cash:0,claimed,delivered:s.eggs.slice(),soulEggs:s.soul,shiftCount:s.shiftCount,research:{},habs:[0,null,null,null],vehicles:Array.from({length:17},(_,i)=>({id:i===0?0:null,cars:1})),silos:1,preparedShip:s.preparedShip||null,shipFlights:s.shipFlights.filter(f=>f.returnAt>s.t),fuelTank:{...(next.farm.fuelTank||{}),capacity:verified.c.ships.capacity,outputPerMinute:verified.c.ships.outputPerSecond*60,amounts:Object.fromEntries(S.EGGS.map((egg,i)=>[egg,s.fuel[i]]))}};
  if(result.actions.some(a=>a.type==='set'&&a.loadout)){next.farm.loadouts={...next.farm.loadouts,current:structuredClone(verified.c.loadouts[s.set])};next.farm.activeSet='current';}
  if(!config.farm.fuelTank&&!verified.c.ships.enabled)delete next.farm.fuelTank;
  const strategy=Strategy.selected(config.plan);

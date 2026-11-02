@@ -102,7 +102,7 @@ function run(initial,c,saleCount,goalsFor,checkpoint=()=>{},cache={}){
  // Exact, complete states only: differing cash, event time, delivered eggs or
  // offline-break count cannot share a continuation. Every stored prefix was
  // generated under a pair of budgets within the user's ceilings.
- const suffixKey=JSON.stringify([c.autoSequence,c.sequence,saleCount,n.t,n.cash,n.soul,n.shiftCount,n.lost,n.stage,n.egg,n.r,n.h,n.v,n.eggs,n.set,n.silos,n.fuel,n.shipsDone,n.shipRuns,n.shipRunStage,n.shipFlights,W.offlineBreaks(n)]);
+ const suffixKey=JSON.stringify([c.autoSequence,c.sequence,saleCount,n.t,n.cash,n.soul,n.shiftCount,n.lost,n.stage,n.egg,n.r,n.h,n.v,n.eggs,n.set,n.silos,n.fuel,n.shipsDone,n.shipRuns,n.shipRunStage,n.shipFlights,n.preparedShip,W.offlineBreaks(n)]);
  if(suffixes?.has(suffixKey)){cache.reusedSuffix=true;checkpoint('Reusing equivalent opening',n);return suffixes.get(suffixKey);}
  const ends=c.calendar.filter((e,i)=>e.t>c.start&&e.sale===1&&i>0&&c.calendar[i-1].sale===.3).map(e=>e.t),buildEnd=Math.min(c.end,Math.max(n.t,ends[saleCount-1]||c.end));
  n=step(n,c,'C3',0,(s,ctx)=>R.runC3(s,ctx,buildEnd),buildEnd-n.t,buildEnd);checkpoint('C3',n);

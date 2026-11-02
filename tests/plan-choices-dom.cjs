@@ -102,6 +102,20 @@ async function run(){
   manual.progress={snapshot:structuredClone(manual.config),confirmed:[],launched:{},planKey:P.key(manual.result)};await load(manual);
   assert.equal(app.getResult().selectedSwitches,4,$('#notice').textContent);assert.equal($('[data-shifts="4"]'),null);assert.match($('.plan-choice-legacy').textContent,/older shift-count/);
   const legacySaved=await save();assert.deepEqual(legacySaved.progress,manual.progress);await load(legacySaved);assert.equal(app.getResult().selectedSwitches,4);$('[data-shifts="6"]').click();assert.equal(app.getResult().selectedSwitches,6);
+  const shortage=require('./plan-continuation.cjs').partialHenerprises(3);await load({version:1,config:shortage.config,result:shortage.result,progress:shortage.progress});
+  assert.ok($('#plan-progress-launches').open);assert.match($('.launch-fuel-warning').textContent,/4 Extended Henerprise.*75\.000T stored \/ 100\.000T needed.*Already Launched/);assert.match($('.launch-batch-remaining').textContent,/4 Extended Henerprise remaining/);
+  assert.equal($('#reoptimize-remaining').disabled,false,'a fuel review warns without blocking automatic route comparisons');
+  const firstWorker=workers.length;$('#reoptimize-remaining').click();
+  for(const worker of workers.slice(firstWorker))worker.onmessage({data:{type:'error',error:C.prepare(shortage).launchFuelReview.message+' No complete remaining plan was found within the search budget.'}});
+  assert.match($('#planning-guidance-detail').textContent,/including missions that have returned/);assert.doesNotMatch($('#planning-guidance-detail').textContent,/fixed planning horizon/);
+  $('#plan-progress-launches').open=false;$('#planning-guidance-actions button').click();assert.ok($('#plan-progress-launches').open);assert.equal(w.document.activeElement.id,'plan-progress-launches');
+  $('[data-launch-input]').value='4';$('[data-launch-input]').dispatchEvent(new w.Event('change',{bubbles:true}));assert.equal($('.launch-fuel-warning'),null);assert.match($('.launch-batch-remaining').textContent,/3 Extended Henerprise remaining/);assert.equal($('#reoptimize-remaining').disabled,false);
+  const ready=require('./plan-continuation.cjs').preparedHenerprise();await load({version:1,config:ready.config,result:ready.result,progress:ready.progress});
+  assert.match($('.launch-history-count').textContent,/3 recorded launches.*3 in flight/);assert.equal($('[data-launch-input]').value,'3');assert.equal($('.progress-launches button'),null,'automatic counts need no confirmation button');assert.equal($('#reoptimize-remaining').disabled,false);assert.equal($('.launch-fuel-warning'),null);assert.deepEqual((await save()).progress.launched,{});
+  const preparedReady=C.prepare(ready),readyPlan=C.baseline(preparedReady);await load({version:1,config:preparedReady.config,result:readyPlan});
+  assert.match($('#prepared-ship-status').textContent,/fully fueled and waiting to launch/);assert.ok($('.shift-launch-summary [data-ship-icon="HENERPRISE"]'));
+  const schedule=$('.shift-launch-summary .ship-launch-schedule');schedule.open=true;schedule.dispatchEvent(new w.Event('toggle'));assert.equal(schedule.querySelectorAll('tbody tr').length,4);assert.match(schedule.querySelector('tbody tr').textContent,/Already fueled/);assert.doesNotMatch(schedule.textContent,/\b(?:AM|PM)\b/);
+  assert.equal(w.document.querySelectorAll('.shift-loadouts [data-loadout-position="start"]').length,w.document.querySelectorAll('.shift-summary').length);assert.equal(w.document.querySelectorAll('.shift-loadouts [data-loadout-position="end"]').length,w.document.querySelectorAll('.shift-summary').length);
   assert.deepEqual(errors,[]);console.log('PASS compiled adjacent plan comparison: N+1/N/N-1 order, signed percentages without N labels or footer/details, fixed N baseline, better/worse colors for all four metrics, zero/missing baselines, relocated actions including saving during search, replayed rates/costs, manual/save/load/preview/application, automatic checks, legacy progress and 24-hour dates.');
  }finally{w.close();}
 }

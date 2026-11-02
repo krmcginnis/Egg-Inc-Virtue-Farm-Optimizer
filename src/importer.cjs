@@ -1,7 +1,8 @@
 'use strict';
 const DEFAULT_ROUTE=require('./default-route.cjs'),Ships=require('./ships.cjs'),importMissions=require('./import-missions.cjs'),blankFarm=require('./blank-farm.cjs');
 const S=require('./simulator.cjs'),importColleggtibles=require('./import-colleggtibles.cjs');const D=S.D;
-const ACCOUNT_KEYS=['soulEggs','shiftCount','proPermit','claimed','delivered','epic','fuelTank','shipFlights','colleggtibles','colleggtibleTiers','colleggtibleOverrides'];
+const MissionHistory=require('./mission-history.cjs');
+const ACCOUNT_KEYS=['soulEggs','shiftCount','proPermit','claimed','delivered','epic','fuelTank','shipFlights','preparedShip','colleggtibles','colleggtibleTiers','colleggtibleOverrides'];
 function camel(value){if(Array.isArray(value))return value.map(camel);if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).map(([k,v])=>[k.replace(/_([a-z])/g,(_,l)=>l.toUpperCase()),camel(v)]));return value;}
 function specItem(spec,stone=false){if(!spec)return null;const name=typeof spec.name==='string'?enumName(spec.name):spec.name;const level=typeof spec.level==='string'?['INFERIOR','LESSER','NORMAL','GREATER','SUPERIOR'].indexOf(spec.level):spec.level||0;const rarity=typeof spec.rarity==='string'?['COMMON','RARE','EPIC','LEGENDARY'].indexOf(spec.rarity):spec.rarity||0;return (stone?D.stones:D.artifacts).find(x=>x.afxId===name&&x.afxLevel===level&&(stone||x.rarity===rarity))?.id||null;}
 function enumName(name){const schema=require('./proto-schema.json');return schema.nested.ei.nested.ArtifactSpec.nested.Name.values[name];}
@@ -40,15 +41,17 @@ function importBackup(input,existing,now=Date.now()/1000,{scope='farm'}={}){
    if(old.length>loadouts[key].length)warnings.push(key+' artifact set reduced to fit the imported permit.');
   }catch{warnings.push('The previous '+key+' artifact set is incompatible and was replaced with the imported equipped set.');}
  }
- const backupTime=Number(b.settings?.lastBackupTime||b.approxTime||farm.lastStepTime||0),shipFlights=importMissions(b,Number(b.approxTime||backupTime),now,warnings);
+ const backupTime=Number(b.settings?.lastBackupTime||b.approxTime||farm.lastStepTime||0),shipFlights=importMissions(b,Number(b.approxTime||backupTime),now,warnings),preparedShip=importMissions.prepared(b);
  const retained=fresh?{}:Object.fromEntries(['videoDoubler','earningsMode','earningsScale','researchCostScale'].filter(k=>existing.farm?.[k]!==undefined).map(k=>[k,existing.farm[k]]));
  const cfg={
   version:1,label:'Imported Egg Inc. Virtue farm',
-  farm:{fuelTank,shipFlights,virtue:S.EGGS[eggId-50],claimed,delivered,research,epic,habs,vehicles,silos:Math.max(1,Number(farm.silosOwned||1)),cash,soulEggs:Number(b.game?.soulEggsD||b.game?.soulEggs||0),shiftCount:Number(b.virtue.shiftCount||0),proPermit:pro,videoDoubler:true,earningsMode:'offline',...retained,colleggtibles:colleggtibles.bonuses,colleggtibleTiers:colleggtibles.tiers,colleggtibleOverrides:colleggtibles.overrides,loadouts,activeSet:'current'},
+  farm:{fuelTank,shipFlights,preparedShip,virtue:S.EGGS[eggId-50],claimed,delivered,research,epic,habs,vehicles,silos:Math.max(1,Number(farm.silosOwned||1)),cash,soulEggs:Number(b.game?.soulEggsD||b.game?.soulEggs||0),shiftCount:Number(b.virtue.shiftCount||0),proPermit:pro,videoDoubler:true,earningsMode:'offline',...retained,colleggtibles:colleggtibles.bonuses,colleggtibleTiers:colleggtibles.tiers,colleggtibleOverrides:colleggtibles.overrides,loadouts,activeSet:'current'},
   plan:{...structuredClone(existing?.plan||{}),start:now,target:!fresh&&existing?.plan?.target!==undefined?existing.plan.target:Math.min(490,claimed.reduce((a,b)=>a+b,0)+10),eventTimezone:existing?.plan?.eventTimezone||'America/Los_Angeles',maxDays:existing?.plan?.maxDays??90,maxSwitches:existing?.plan?.maxSwitches??12,sequence:structuredClone(existing?.plan?.sequence??DEFAULT_ROUTE),initialPhysicalPurchases:false,ships:{mode:'custom-two-visits',slots:existing?.plan?.ships?.slots??3,visits:Ships.plannedVisits(existing?.plan?.ships)}},
   importInfo:{timestamp:backupTime,warnings,inventory,ultraProActive,flightSource:b.artifactsDb?'backup':'unavailable',colleggtibleSource:colleggtibles.source,colleggtibleMatches:colleggtibles.matched,colleggtibleMappedContracts:colleggtibles.mapped,colleggtibleUnresolved:colleggtibles.unresolved,scope:accountOnly?'account':'farm',currentVirtueFarmFound:!!activeFarm,source:'Egg Inc. player backup'}
  };
  if(Number.isSafeInteger(b.virtue.resets)&&b.virtue.resets>=0)cfg.importInfo.virtueResetIndex=b.virtue.resets;
+ cfg.importInfo.virtueMissionHistory=MissionHistory.read(b,backupTime);
+ cfg.importInfo.fuelingShip=importMissions.fueling(b);
  if(accountOnly){
   const base=structuredClone(existing||blankFarm(now));
   cfg.farm={...base.farm,...Object.fromEntries(ACCOUNT_KEYS.map(key=>[key,cfg.farm[key]]))};

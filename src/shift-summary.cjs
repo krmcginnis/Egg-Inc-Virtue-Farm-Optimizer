@@ -49,6 +49,16 @@ function summarize(raw,result){
   if(!shift.activities.length)shift.activities.push({kind:'collection',label:shift.teGained?'Collect Truth Eggs':'Wait / switch'});
  }
  Rates.attach(groups,actions,s,c);
+ let carried=structuredClone(c.loadouts[s.set]||[]);
+ for(const shift of groups){
+  let current=carried,beginning=null;
+  for(const a of actions.slice(shift.firstIndex,shift.lastIndex+1)){
+   if(a.type==='set')current=structuredClone(a.loadout||c.loadouts[a.set]||[]);
+   if(beginning===null&&(a.type==='ship-run'||a.type==='fuel'||a.type==='wait'&&!/^(Purchase interaction time|Switch overhead)/.test(a.reason||'')&&a.end>a.t))beginning=current;
+  }
+  shift.startLoadout=structuredClone(beginning||current);shift.endLoadout=structuredClone(current);carried=current;
+  shift.launchRuns=actions.slice(shift.firstIndex,shift.lastIndex+1).filter(a=>a.type==='ship-run');
+ }
  const shifts=groups.filter(g=>g.lastIndex>=g.firstIndex||g.seconds>0),totals={onlineSeconds:0,offlineSeconds:0,interactionSeconds:0,offlineBreaks:0,fuelSeconds:0,displayFuelSeconds:0,soulCost:0,...(c.sleep?{sleepSeconds:0,siloEmptySeconds:0}:{})};for(const shift of shifts)for(const key of Object.keys(totals))totals[key]+=shift[key];
  return {shifts,totals};
 }

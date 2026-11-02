@@ -64,7 +64,7 @@ function rateGain(s,c,a){const before=stats(s,c);let n;try{n=S.mutate(s,c,a);}ca
  }
  const research=a.type==='set'&&S.researchNeeded(s)?(after.earning/Math.max(1e-300,before.earning))*(before.researchMult/after.researchMult)-1:0;
  return {deliver,earn,research,future,after};}
-function key(s){return s.stage+'|'+s.egg+'|'+s.openingMask+'|'+s.openingFirst+'|'+s.set+'|'+s.r.join(',')+'|'+s.h.join(',')+'|'+s.v.map(v=>v.id+':'+v.cars).join(',')+'|'+s.silos+'|'+s.shipsDone+'|'+s.shipRuns+'|'+s.shipRunStage+'|'+JSON.stringify(s.shipFlights||[])+'|'+(s.fuel||[]).join(',');}
+function key(s){return s.stage+'|'+s.egg+'|'+s.openingMask+'|'+s.openingFirst+'|'+s.set+'|'+s.r.join(',')+'|'+s.h.join(',')+'|'+s.v.map(v=>v.id+':'+v.cars).join(',')+'|'+s.silos+'|'+s.shipsDone+'|'+s.shipRuns+'|'+s.shipRunStage+'|'+JSON.stringify(s.shipFlights||[])+'|'+JSON.stringify(s.preparedShip||null)+'|'+(s.fuel||[]).join(',');}
 function dominates(a,b,c){const scale=1e-10;return S.visitDeadline(a,c)>=S.visitDeadline(b,c)-1e-6&&W.offlineBreaks(a)<=W.offlineBreaks(b)&&a.t<=b.t+1e-6&&a.cash>=b.cash-Math.max(1,b.cash)*scale&&a.soul>=b.soul-Math.max(1,b.soul)*scale&&a.eggs.every((x,i)=>x>=b.eggs[i]-Math.max(1,b.eggs[i])*scale)&&(a.fuel||[]).every((x,i)=>x>=(b.fuel?.[i]||0)-Math.max(1,b.fuel?.[i]||0)*scale);}
 function rank(s,c){const te=teByEgg(s,c),r=stats(s,c);let missing=Math.max(0,c.target-te.reduce((a,b)=>a+b,0));let estimates=[];const available=new Set(remainingEggs(s,c));
  for(const e of available){for(let n=te[e]+1;n<=98;n++){const base=n===te[e]+1?s.eggs[e]:D.te[n-2];estimates.push(Math.max(0,D.te[n-1]-base)/Math.max(1e-300,r.delivery));}}

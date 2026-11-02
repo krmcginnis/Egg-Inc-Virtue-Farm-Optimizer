@@ -37,11 +37,26 @@ function restoreArtifactSet(action,c){
 // Other saved alternatives are search seeds. The selected plan, checked farm
 // and progress remain authoritative; retain compatibility with saved proposals.
 function sourceKey(request){return JSON.stringify([request.config,request.result.start,request.result.end,request.result.target,request.result.actions,request.progress]);}
+function currentLaunchFuelReview(config,report,runs){
+ if(report.egg!==2)return null;
+ const run=runs.find(run=>run.stage===report.stage&&run.remaining>0);if(!run)return null;
+ // Review the current visit only. Fuel for a later H can still be collected
+ // along the remaining route. Neither fuel nor active flights prove how many
+ // missions have already returned, so never change reviewed counts here.
+ const missions=run.missions.map(m=>({...Ships.mission(m.ship,m.duration),count:m.count})),required=Ships.unpaidFuel(missions,config.farm.preparedShip);
+ const fuel=required.flatMap((needed,egg)=>{
+  const stored=config.farm.fuelTank?.amounts?.[S.EGGS[egg]]??0;
+  return egg!==2&&needed>stored+Math.max(1,needed)*1e-12?[{egg,stored,required:needed,shortfall:needed-stored}]:[];
+ });
+ if(!fuel.length)return null;
+ const batches=missions.map(m=>m.count+' '+m.label).join(', '),amounts=fuel.map(f=>S.NAME[f.egg]+': '+Ships.format(f.stored)+' stored / '+Ships.format(f.required)+' needed').join('; ');
+ return {visit:run.label,fuel,message:'The reviewed '+run.label+' counts leave '+batches+' to launch, but the current tank cannot fuel them. '+amounts+'. Review Already Launched: include missions that have returned as well as flights still active. Refresh from account to include any fueled ship waiting on the pad. If the counts and ready ship are up to date, additional fuel stops are needed before these launches.'};
+}
 function prepare(request,{now=Date.now()/1000,budget=null}={}){
  const {config:original,result,progress}=request;
  if(!progress?.snapshot)throw Error('Check this plan with a current farm snapshot before reoptimizing.');
  const matched=progress.planKey===P.key(result),confirmed=matched&&Array.isArray(progress.confirmed)?progress.confirmed:[],launched=matched?(progress.launched||{}):{};
- const report=P.compare(original,result,progress.snapshot,{confirmed,launched,now});
+ const report=P.compare(original,result,progress.snapshot,{confirmed,launched,launchOverrides:matched?progress.launchOverrides||[]:[],now});
  if(report.status!=='matched')throw Error('The snapshot does not match this plan. Check a current farm from the same ascension before reoptimizing.');
  const start=S.number(request.start??now,'Remaining plan start',1);
  if(start<now-300)throw Error('The remaining search must start at the current PC time. Check the farm again before reoptimizing.');
@@ -57,10 +72,10 @@ function prepare(request,{now=Date.now()/1000,budget=null}={}){
  for(const row of report.rows.filter(row=>row.action.type==='ship-run')){
   const a=row.action;
   if(!Array.isArray(a.batches)||a.batches.length>8||a.batches.reduce((n,b)=>n+b.count,0)!==a.count)throw Error('The saved launch batches need review before continuing.');
-  let counts=confirmed.includes(row.index)?a.batches.map(b=>b.count):launched[row.index];
+  let counts=row.launchCounts??(confirmed.includes(row.index)?a.batches.map(b=>b.count):launched[row.index]);
   if(counts!==undefined&&(!Array.isArray(counts)||counts.length!==a.batches.length||counts.some((n,i)=>!Number.isInteger(n)||n<0||n>a.batches[i].count)))throw Error('Already-launched counts must be whole numbers between zero and the planned batch count.');
-  if(row.stage<=report.stage&&counts===undefined)throw Error('Confirm already-launched counts for '+(a.phase||'Humility visit '+(a.visit||runs.length+1))+' before reoptimizing. Include active flights and earlier launches.');
-  if(row.stage>report.stage&&counts?.some(n=>n>0))throw Error('A later Humility visit cannot already have launched ships. Check the visit and launch counts.');
+  if(row.stage<=report.stage&&counts===undefined)throw Error('Load a current account backup to count already-launched ships for '+(a.phase||'Humility visit '+(a.visit||runs.length+1))+', or enter the launch totals. Include active flights and earlier launches.');
+  if(row.stage>report.stage&&counts?.some(n=>n>0)&&!row.launchesCounted)throw Error('A later Humility visit cannot already have launched ships. Check the visit and launch counts.');
   counts=counts||a.batches.map(()=>0);
   const missions=a.batches.map((b,i)=>({ship:b.ship,duration:b.duration,count:b.count-counts[i]})).filter(m=>m.count>0);
   runs.push({index:row.index,stage:row.stage,label:a.phase||'H'+(a.visit||runs.length+1),missions,launched:counts.reduce((n,x)=>n+x,0),remaining:missions.reduce((n,m)=>n+m.count,0)});
@@ -88,8 +103,9 @@ function prepare(request,{now=Date.now()/1000,budget=null}={}){
  delete config.draftInputs;
  // Keep the exact target, floors, sleep/display zone and account/farm values.
  // No completed purchase, past income, fuel transfer or launch is simulated again.
- S.prepare(config);
- return {config,report,route,runs,consolidatedLaunchVisits,remainingLaunches:remaining.reduce((n,r)=>n+r.remaining,0),totalShiftBudget,consumedShifts,remainingShiftBudget,sourceKey:sourceKey(request),originalEnd:result.end,snapshotTime:report.time};
+ const launchFuelReview=currentLaunchFuelReview(config,report,runs);
+ try{S.prepare(config);}catch(e){if(launchFuelReview&&/before H1|Starting on Humility requires/i.test(e.message))throw Error(launchFuelReview.message);throw e;}
+ return {config,report,route,runs,launchFuelReview,consolidatedLaunchVisits,remainingLaunches:remaining.reduce((n,r)=>n+r.remaining,0),totalShiftBudget,consumedShifts,remainingShiftBudget,sourceKey:sourceKey(request),originalEnd:result.end,snapshotTime:report.time};
 }
 function verified(config,result){
  return ShiftPlans.replay(config,result,(raw,plan)=>{
@@ -103,15 +119,21 @@ function packageState(config,state,c,route){
  actions=actions.map((a,i)=>i?a:{...a,initialSiloRule:'one',routeSearch:{version:2,sequence:route,researchSales:3}});
  return verified(config,{version:1,solverVersion:2,initialSiloRule:'one',openingTimeLimits:false,target:c.target,start:c.start,end:state.t,seconds:state.t-c.start,switches:state.stage,actions,route,researchSales:3,researchDeadline:c.researchDeadline,method:'Original remaining route, paid and retimed from the checked farm',termination:'Original route continuation',explored:0,frontier:[]});
 }
-function baseline(prepared,{checkpoint=()=>{}}={}){
+function baseline(prepared,{checkpoint=()=>{},balanceShipGear=false}={}){
  const {config,route,report,runs}=prepared;
  if(runs.some(run=>run.stage<report.stage&&run.remaining>0))throw Error('An earlier visit has unlaunched ships; completing them requires a different remaining route.');
- const {s,c}=R.prepare(config,route,3);let n=s;
+ const {s,c}=R.prepare(config,route,3);let n=s,departureGear=null;
  const context={...c,shipReplay:true,sleepReplay:false,deferShips:true};
  if(n.egg===2&&c.ships.mode==='custom-two-visits'&&c.ships.enabled&&c.ships.runs[0].count===0)n=Ships.launch(n,context);
- for(const row of report.rows.filter(row=>row.stage>=report.stage)){
+ const remainingRows=report.rows.filter(row=>row.stage>=report.stage);
+ const equipCurrent=()=>{const set=S.artifactChoices(n,c).reduce((a,b)=>S.stats({...n,set:b},c).delivery>S.stats({...n,set:a},c).delivery?b:a,n.set);if(set!==n.set)n=S.buy(n,context,S.artifactAction(set,c));};
+ for(const [position,row] of remainingRows.entries()){
   checkpoint();if(S.reached(n,c))break;
   const a=row.action;
+  if(balanceShipGear&&a.type==='set'&&n.egg===2){
+   const next=remainingRows.slice(position+1).find(row=>row.action.type!=='wait');
+   if(next?.action.type==='ship-run'&&runs.find(run=>run.index===next.index)?.remaining){restoreArtifactSet(a,c);departureGear=a;equipCurrent();continue;}
+  }
   if(a.type==='shift'&&row.stage===report.stage)continue; // Arrival is already reflected in the snapshot.
   if(a.type==='wait'){
    // Funding, interaction and sleep waits are recomputed by real purchases.
@@ -132,7 +154,12 @@ function baseline(prepared,{checkpoint=()=>{}}={}){
   }else if(a.type==='fuel-dump'){
    if(c.ships.enabled&&!n.shipsDone)n=Ships.trim(n,context);
   }else if(a.type==='ship-run'){
-   if(runs.find(run=>run.index===row.index)?.remaining)n=Ships.launch(n,context);
+   if(runs.find(run=>run.index===row.index)?.remaining){
+    const departing=departureGear||S.artifactAction(n.set,c);
+    if(balanceShipGear)equipCurrent();n=Ships.launch(n,context);
+    if(balanceShipGear&&!S.reached(n,c)&&n.set!==departing.set)n=S.buy(n,context,departing);
+    departureGear=null;
+   }
   }else if(a.type==='ship-visit')continue;
   else if(paid.has(a.type)||a.type==='shift'){
    if(a.type==='set'&&a.set===n.set)continue;
@@ -148,13 +175,14 @@ function launchRows(result){let stage=0;return result.actions.flatMap((action,in
 function batchKey(action){return JSON.stringify(action.batches?.map(b=>[b.ship,b.duration,b.count]));}
 function alternativeProgress(request,plan,stage){
  const source=launchRows(request.result).filter(r=>r.stage<=stage),target=launchRows(plan).filter(r=>r.stage<=stage),progress=request.progress;
+ const observed=P.compare(request.config,request.result,progress.snapshot,{confirmed:progress.confirmed,launched:progress.launched,launchOverrides:progress.launchOverrides});
  const launched={};
  for(let i=0;i<Math.max(source.length,target.length);i++){
   const a=source[i],b=target[i];
   // Past launch reviews are meaningful only for the same visited H and
   // ordered mission batches. Never borrow counts from a future/different H.
   if(!a||!b||a.stage!==b.stage||batchKey(a.action)!==batchKey(b.action))throw Error('Saved alternative has incompatible reviewed launch batches.');
-  const counts=progress.confirmed?.includes(a.index)?a.action.batches.map(x=>x.count):progress.launched?.[a.index];
+  const counts=observed.rows[a.index].launchCounts;
   if(!Array.isArray(counts))throw Error('Saved alternative needs an independent launch review.');
   launched[b.index]=counts.slice();
  }
@@ -183,10 +211,17 @@ async function search(request,options={},progress=()=>{},cancelled=()=>false){
  const prepared=prepare(request),deadline=Math.min(options.absoluteDeadline??Infinity,Date.now()+Math.min(5000,Math.max(100,Number(options.maxMs??90000)*.1)));
  progress({phase:'route-search',stage:'Original Route',explored:0,bestSeconds:null});
  let originalRoute=null,baselineError='';
- try{originalRoute=baseline(prepared,{checkpoint:()=>{if(cancelled()||Date.now()>deadline)throw Error('Original route comparison interrupted.');}});}catch(e){baselineError=e.message;}
+ const checkpoint=()=>{if(cancelled()||Date.now()>deadline)throw Error('Original route comparison interrupted.');};
+ try{originalRoute=baseline(prepared,{checkpoint});}catch(e){baselineError=e.message;}
+ if(originalRoute&&originalRoute.actions.some(a=>a.type==='ship-run'))try{const balanced=baseline(prepared,{checkpoint,balanceShipGear:true});if(balanced.end<originalRoute.end-.01)originalRoute=balanced;}catch{}
  let retained=[];
  if(!options.disableSavedAlternatives)try{retained=alternatives(request,prepared,{checkpoint:()=>{if(cancelled()||Date.now()>deadline)throw Error('Saved alternative comparison interrupted.');}});}catch{}
- const result=await O.solve(prepared.config,{...options,incumbent:originalRoute?{config:prepared.config,result:originalRoute}:undefined,incumbents:retained.map(x=>({config:prepared.config,result:x.plan}))},progress,cancelled);
+ let result;
+ try{result=await O.solve(prepared.config,{...options,incumbent:originalRoute?{config:prepared.config,result:originalRoute}:undefined,incumbents:retained.map(x=>({config:prepared.config,result:x.plan}))},progress,cancelled);}
+ catch(e){
+  if(prepared.launchFuelReview&&/No complete remaining plan|No feasible plan|fuel/i.test(e.message))throw Error(prepared.launchFuelReview.message+' No complete remaining plan was found within the search budget.');
+  throw e;
+ }
  const checked=verified(prepared.config,result);
  const fastest=checked.shiftPlans?ShiftPlans.fastest(checked.shiftPlans).plan:checked;
  if(originalRoute&&(checked.specifiedSwitches===undefined||Math.abs(originalRoute.switches-checked.specifiedSwitches)<=1)&&fastest.end>originalRoute.end+.01)throw Error('The remaining search discarded its validated original-route candidate.');

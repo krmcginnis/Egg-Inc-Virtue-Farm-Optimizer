@@ -2,6 +2,7 @@
 const S=require('./simulator.cjs');
 const Guide=require('./quick-guide.cjs');
 const Fuel=require('./fuel-display.cjs');
+const MissionHistory=require('./mission-history.cjs');
 const manualTypes=new Set(['fuel','fuel-dump','ship-run','ship-visit','wait']);
 const interaction=a=>a.type==='wait'&&/^(Purchase interaction time|Switch overhead)/.test(a.reason||'');
 const calendarWaits=new Set(['Wait for the Friday research sale','Wait for double earnings','Wait for the weekly event boundary','Preserve cash for the Friday research sale','Preserve the proposed research sale','Compare research purchases during the next sale','Compare departure at a weekly event boundary']);
@@ -14,7 +15,7 @@ function snapshot(raw){
  return S.prepare({...raw,plan:{start:1,maxDays:1,target:claimed.reduce((n,x)=>n+Number(x),0),solverVersion:2,strategy:'auto',autoSequence:true,maxShifts:0,ships:{mode:'none'}}},{artifactReplay:true});
 }
 function gear(slots){return JSON.stringify((slots||[]).filter(x=>x.artifactId).map(x=>[x.artifactId,(x.stones||[]).filter(Boolean).sort()]).sort((a,b)=>JSON.stringify(a).localeCompare(JSON.stringify(b))));}
-function compare(raw,result,current,{confirmed=[],launched={},now=Date.now()/1000}={}){
+function compare(raw,result,current,{confirmed=[],launched={},launchOverrides=[],now=Date.now()/1000}={}){
  const base=snapshot(raw),live=snapshot(current),s=live.s;
  const time=Number(current.importInfo?.timestamp)||null;
  if(time&&(!Number.isFinite(time)||!Number.isFinite(new Date(time*1000).getTime())))throw Error('The snapshot timestamp is invalid. Use a current farm backup.');
@@ -44,6 +45,7 @@ function compare(raw,result,current,{confirmed=[],launched={},now=Date.now()/100
  if(s.eggs.some((n,i)=>n+Math.max(1,base.s.eggs[i])*1e-12<base.s.eggs[i])){report.status='mismatch';warnings.push('Lifetime delivered eggs are below the saved starting values. Check the account and ascension.');}
  if(!time)warnings.push('No snapshot timestamp was supplied. Visit and purchase checks use the entered farm values; calendar timing cannot be checked.');
  const supplied=new Set((Array.isArray(confirmed)?confirmed:[]).filter(i=>Number.isInteger(i)&&i>=0&&i<rows.length));
+ const counted=report.status==='matched'?MissionHistory.counts(raw,result,current,rows):null;report.launchSummary=counted?.summary||null;
  const equips=rows.filter(row=>row.stage===offset&&row.action.type==='set');
  const matchedEquip=equips.filter(row=>gear(row.action.loadout||base.c.loadouts[row.action.set])===gear(live.c.loadouts[s.set])).at(-1);
  for(const row of rows){
@@ -61,10 +63,12 @@ function compare(raw,result,current,{confirmed=[],launched={},now=Date.now()/100
   row.status=done?'present':interaction(a)?'interaction':row.stage<offset?'earlier':row.stage>offset?'later':'pending';
   if(manualTypes.has(a.type)&&!interaction(a)&&supplied.has(row.index))row.status='confirmed';
   if(a.type==='ship-run'){
-   const counts=launched?.[row.index],valid=Array.isArray(counts)&&counts.length===a.batches?.length&&counts.every((n,i)=>Number.isInteger(n)&&n>=0&&n<=a.batches[i].count);
+   const automatic=counted?.launched[row.index],counts=automatic&&!launchOverrides.includes(row.index)?automatic:launched?.[row.index],valid=Array.isArray(counts)&&counts.length===a.batches?.length&&counts.every((n,i)=>Number.isInteger(n)&&n>=0&&n<=a.batches[i].count);
+   row.launchCounts=valid?counts:supplied.has(row.index)?(a.batches||[]).map(b=>b.count):null;row.launchesCounted=!!automatic&&!launchOverrides.includes(row.index);
    row.launchesReviewed=valid||supplied.has(row.index);
-   row.remainingLaunches=supplied.has(row.index)?0:a.count-(valid?counts.reduce((n,x)=>n+x,0):0);
-   row.remainingBatches=(a.batches||[]).map((b,i)=>({...b,count:supplied.has(row.index)?0:b.count-(valid?counts[i]:0)})).filter(b=>b.count>0);
+   row.remainingLaunches=supplied.has(row.index)&&!row.launchesCounted?0:row.launchCounts?a.count-row.launchCounts.reduce((n,x)=>n+x,0):a.count;
+   row.remainingBatches=(a.batches||[]).map((b,i)=>({...b,count:supplied.has(row.index)&&!row.launchesCounted?0:b.count-(row.launchCounts?.[i]||0)})).filter(b=>b.count>0);
+   if(row.launchesCounted&&row.remainingLaunches>0)row.status=row.stage<offset?'earlier':row.stage>offset?'later':'pending';
    if(valid&&row.remainingLaunches===0)row.status='confirmed';
   }
   if(a.type==='set'&&matchedEquip&&row.stage===offset&&row.index<matchedEquip.index)row.status='superseded';

@@ -12,6 +12,7 @@ const ShiftLimits = require("./shift-limits.cjs"), PlanComparison = require("./p
 const Progress = require("./plan-progress.cjs");
 const Continuation = require("./plan-continuation.cjs");
 const RunShifts = require("./run-shifts.cjs");
+const MissionHistory = require("./mission-history.cjs");
 const gemsText = require("./gems-text.cjs");
 const nextAscension = require("./next-ascension.cjs"), U = require("./shift-summary.cjs"), Q = require("./walkthrough-pdf.cjs"), N = require("./export-names.cjs"), V = require("./pdf-preview.cjs"), G = require("./guide-layout.cjs");
 const S = require("./simulator.cjs"), O = require("./optimizer.cjs"), I = require("./importer.cjs"), A = require("./api.cjs"), C = require("./colleggtibles.cjs");
@@ -220,6 +221,9 @@ function showPlanningGuidance(message, fromSearch = false, inputsChanged = false
   if (workerFailure) {
     detail = "Try the search again. If the worker keeps failing, reopen the app using the Windows launcher. Your inputs are retained.";
     targets = [];
+  } else if (/Already Launched/i.test(message)) {
+    detail = "Review the total launched in each visited Humility batch, including missions that have returned. Active flights are only part of that total. The progress panel shows any fuel shortage for the reviewed counts.";
+    targets = [["plan-progress-launches", "Review Already Launched"]];
   } else if (/Soul Eggs|next switch costs/i.test(message)) {
     detail = "Check your Soul Eggs and previous switches. Switch costs use both values.";
     targets = [["soulEggs", "Review Soul Eggs"], ["shiftCount", "Review Previous Switches"]];
@@ -306,6 +310,7 @@ function reviewField(id) {
     if (loadout.dataset.loadoutPanel === "delivery") loadout.hidden = false;
   }
   if (node?.closest(".research-tier") && $("research-filter").value) { $("research-filter").value = ""; filterResearch(); }
+  if (node?.tagName === "DETAILS") node.open = true;
   for (let parent = node?.parentElement; parent; parent = parent.parentElement) if (parent.tagName === "DETAILS") parent.open = true;
   if (node) {
     revealFleetField(node);
@@ -619,8 +624,9 @@ function restoredProgress(saved, raw, plan) {
   try {
     const confirmed = saved.planKey === Progress.key(plan) && Array.isArray(saved.confirmed) ? saved.confirmed : [];
     const launched = saved.planKey === Progress.key(plan) ? saved.launched || {} : {};
-    Progress.compare(raw, plan, saved.snapshot, {confirmed,launched});
-    return {snapshot:structuredClone(saved.snapshot),confirmed,launched,planKey:Progress.key(plan)};
+    const launchOverrides=saved.planKey===Progress.key(plan)&&Array.isArray(saved.launchOverrides)?saved.launchOverrides:[];
+    Progress.compare(raw, plan, saved.snapshot, {confirmed,launched,launchOverrides});
+    return {snapshot:structuredClone(saved.snapshot),confirmed,launched,...(launchOverrides.length?{launchOverrides}:{}),planKey:Progress.key(plan)};
   } catch { return null; }
 }
 function applyFarmImport(next, {trackOnly = false} = {}) {
@@ -885,6 +891,8 @@ function renderExistingFlights() {
     return el("li", (duration ? duration + " " : "") + ship + " · " + (Number.isFinite(f.returnAt) ? (f.returnAt <= start ? "ready to collect at plan start" : "returns " + timestamp(f.returnAt, zone, true)) : "return time unavailable"));
   }));
   $("flight-status").textContent = flights.length ? flights.length + " existing Virtue flight" + (flights.length === 1 ? "" : "s") + " accounted for." : source === "backup" ? "No active Virtue flights in the imported backup." : source === "unavailable" ? "Flight records were not included in this backup." : "No flight records loaded. Three mission slots are assumed available.";
+  const history=MissionHistory.summarize(config),prepared=config.farm.preparedShip;$("virtue-launch-count").textContent=history?"Recorded Virtue launches: "+history.total+" · "+history.active+" in flight · "+history.returned+" returned or collected.":"";
+  const fueling=prepared||config.importInfo?.fuelingShip;$("prepared-ship-status").replaceChildren();if(fueling)$("prepared-ship-status").append(ShipIcons.caption(fueling.ship,Ships.mission(fueling.ship,fueling.duration).label+(prepared?" is fully fueled and waiting to launch. Its loaded fuel and purchase cost are already paid.":" is being fueled. It has not launched yet.")));
 }
 function syncDefaultTarget() {
   if (config.plan.targetMode !== Defaults.targetMode) return;
@@ -1156,27 +1164,37 @@ function breakCard(pause, zone, sleep) {
 function renderLaunchProgress(card, report, confirmed, reviewedCounts) {
   const rows=report.rows.filter(row=>row.action.type==='ship-run'&&row.stage<=report.stage);
   if(!rows.length)return;
-  const details=el("details",undefined,"progress-launches");details.append(el("summary","Already Launched"),el("p","Enter launches already made in each visited Humility batch, including active flights and missions that have returned. A backup cannot confirm the whole launch history. Confirm zero if the batch has not started.","hint"));
+  const details=el("details",undefined,"progress-launches");details.id="plan-progress-launches";details.tabIndex=-1;details.append(el("summary","Ships Launched"));
+  if(report.launchSummary){const h=report.launchSummary;details.append(el("p",h.total+" recorded launches since this plan began · "+h.active+" in flight · "+h.returned+" returned or collected.","launch-history-count"));for(const g of h.groups)details.append(el("p",g.count+" "+g.label,"hint"));if(h.incomplete)details.append(el("p","Some older mission records were not supplied. Counts use the available history; edit a total below if needed.","hint"));}
+  details.append(el("p","Launch counts update automatically from account mission records, including returned ships. A fueled ship waiting on the pad is still unlaunched. Optional edits apply immediately; no confirmation is needed.","hint"));
   for(const row of rows){
     const a=row.action,group=el("div",undefined,"launch-progress-group"),title=el("h3",a.phase||"H"+(a.visit||1));
     group.dataset.launchIndex=row.index;
-    const counts=confirmed.includes(row.index)?a.batches.map(b=>b.count):reviewedCounts[row.index];
-    group.append(title,el("p",row.launchesReviewed?"Counts confirmed · "+row.remainingLaunches+" launch"+(row.remainingLaunches===1?"":"es")+" remaining":"Launch counts need confirmation before reoptimizing.","hint"));
+    const counts=row.launchCounts;
+    group.append(title,el("p",row.launchesReviewed?(row.launchesCounted?"Counted from account · ":"Entered total · ")+row.remainingLaunches+" launch"+(row.remainingLaunches===1?"":"es")+" remaining":"Refresh from account to count launches, or enter the totals below.","hint"));
     const inputs=[];
     for(const [i,batch] of a.batches.entries()){
       const label=el("label",batch.label+" · "+batch.count+" planned"),input=el("input");input.type="number";input.min=0;input.max=batch.count;input.step=1;input.value=counts?.[i]??0;input.disabled=!!worker||!!importingBackup;input.dataset.launchInput="";input.setAttribute("aria-label",(a.phase||"H"+(a.visit||1))+" "+batch.label+" already launched");label.append(input);group.append(label);inputs.push(input);
+      if(counts)group.append(el("p",(batch.count-counts[i])+" "+batch.label+" remaining","hint launch-batch-remaining"));
     }
-    const save=el("button","Confirm Launch Counts","secondary");save.type="button";save.disabled=!!worker||!!importingBackup;
-    save.onclick=()=>{
+    const update=()=>{
       try{
         const launched=inputs.map((input,i)=>{if(input.value.trim()==="")throw Error("Enter an already-launched count, including zero for an unstarted batch.");return S.number(input.value,"Already-launched count",0,a.batches[i].count,true);});
-        planProgress={...planProgress,planKey:Progress.key(result),confirmed:confirmed.filter(i=>i!==row.index),launched:{...reviewedCounts,[row.index]:launched}};
-        remainingProposal=null;renderResult();$("plan-progress").querySelector(".progress-launches").open=true;$("plan-progress").querySelector(`[data-launch-index="${row.index}"] button`)?.focus({preventScroll:true});show("Launch counts confirmed. The remaining search will use the current tank fuel and flights.");
+        planProgress={...planProgress,planKey:Progress.key(result),confirmed:confirmed.filter(i=>i!==row.index),launched:{...reviewedCounts,[row.index]:launched},launchOverrides:[...new Set([...(planProgress.launchOverrides||[]),row.index])]};
+        remainingProposal=null;renderResult();$("plan-progress").querySelector(".progress-launches").open=true;show("Launch total updated. Refreshing from account will use its latest mission records.");
       }catch(e){show(e.message,true);}
     };
-    group.append(save);details.append(group);
+    for(const input of inputs)input.onchange=update;details.append(group);
   }
   card.append(details);
+}
+function launchSchedule(run,zone){
+  const schedule=el("details",undefined,"ship-launch-schedule");schedule.append(el("summary","Launch Schedule · "+(run.launches?.length||run.count)+" Ships"));
+  const fill=()=>{if(schedule.dataset.loaded)return;schedule.dataset.loaded="true";const wrap=el("div",undefined,"launch-schedule-scroll"),table=el("table",undefined,"launch-schedule-table"),head=el("thead"),titles=el("tr"),body=el("tbody");
+    for(const name of ["Ship","Launch","Slot","Returns"]){const th=el("th",name);th.scope="col";titles.append(th);}head.append(titles);
+    for(const [i,launch]of (run.launches||[]).entries()){const row=el("tr"),ship=el("td");ship.append(ShipIcons.caption(launch.ship,(i+1)+". "+launch.label));if(launch.alreadyFueled)ship.append(el("small","Already fueled · waiting for a flight slot"));row.append(ship,el("td",timestamp(launch.t,zone,true)),el("td",String(launch.slot)),el("td",timestamp(launch.returnAt,zone,true)));body.append(row);}
+    table.append(head,body);wrap.append(table);schedule.append(wrap);
+  };schedule.addEventListener("toggle",()=>{if(schedule.open)fill();});return schedule;
 }
 function renderPlanChoices(plan,zone,{remaining=false,preview=false,onSelect,raw=resultConfig}={}) {
   const choices=el("section",undefined,"card plan-choices");choices.id=preview?"remaining-plan-choices":"plan-choices";
@@ -1302,11 +1320,11 @@ function renderPlanProgress(host, summary) {
   const sync=el("button","Refresh From Account","secondary");sync.id="check-plan-account";sync.disabled=!!worker||!!importingBackup;
   sync.onclick=()=>{if(!eidForSync()){ $("eid").focus();show("Enter your Egg Inc. ID in the sidebar and press Enter to check this plan against your current farm.");return;}loadEidData();};
   controls.append(load,sync);card.append(heading,controls,file);
-  card.append(el("p","Check a current Virtue farm against this plan. Research, permanent upgrades, and ended calendar or sleep waits are checked from the snapshot. Confirm other waits, fuel transfers, and completed launch batches yourself. The saved schedule stays visible.","hint"));
+  card.append(el("p","Check a current Virtue farm against this plan. Purchases, ended calendar or sleep waits, and recorded ship launches are checked from the snapshot. Other waits and tank transfers can be marked done. The saved schedule stays visible.","hint"));
   if(!planProgress){card.append(el("p","Load a current farm file or refresh your account to see your current visit and next step.","hint"));host.append(card);return;}
   const confirmed=planProgress.planKey===Progress.key(result)?planProgress.confirmed:[];
   const launched=planProgress.planKey===Progress.key(result)?planProgress.launched||{}:{};
-  let report;try{report=Progress.compare(resultConfig,result,planProgress.snapshot,{confirmed,launched});}catch(e){card.append(el("p","This comparison needs a new farm snapshot: "+e.message,"notice error"));host.append(card);return;}
+  let report;try{report=Progress.compare(resultConfig,result,planProgress.snapshot,{confirmed,launched,launchOverrides:planProgress.launchOverrides||[]});}catch(e){card.append(el("p","This comparison needs a new farm snapshot: "+e.message,"notice error"));host.append(card);return;}
   card.dataset.status=report.status;
   card.append(el("p",report.time?"Snapshot: "+timestamp(report.time,resultConfig.plan.eventTimezone):"Snapshot time not supplied.","hint"));
   const status=el("p",undefined,"progress-status");status.id="plan-progress-status";status.setAttribute("role","status");
@@ -1351,13 +1369,14 @@ function renderPlanProgress(host, summary) {
       const a=row.action,description=a.type==='research'?D.research[a.i].name+" · current "+(planProgress.snapshot.farm.research[D.research[a.i].id]||0)+" / visit target "+a.to:a.type==='silo'?"Silos · visit target "+row.siloTarget:label(row);
       const item=el("li"),text=el("span",description),state=el("span",row.status==='present'?"Present in snapshot":row.status==='confirmed'?"Confirmed by you":row.status==='target-met'?"TE target available":row.status==='elapsed'?"Wait ended by snapshot time":"Still to check","progress-state");
       item.dataset.progressIndex=row.index;item.append(text,state);
-      if(row.canConfirm){const button=el("button",row.status==='confirmed'?"Undo Confirmation":"Mark Done","secondary");button.type="button";button.disabled=!!worker||!!importingBackup;button.onclick=()=>{const ids=new Set(confirmed),counts={...launched};if(row.status==='confirmed'){ids.delete(row.index);delete counts[row.index];}else ids.add(row.index);planProgress={...planProgress,planKey:Progress.key(result),confirmed:[...ids],launched:counts};remainingProposal=null;renderResult();const checklist=$("plan-progress").querySelector(".progress-checklist");if(checklist)checklist.open=true;$("plan-progress").querySelector(`[data-progress-index="${row.index}"] button`)?.focus({preventScroll:true});};item.append(button);}
+      if(row.canConfirm&&a.type!=='ship-run'){const button=el("button",row.status==='confirmed'?"Undo Confirmation":"Mark Done","secondary");button.type="button";button.disabled=!!worker||!!importingBackup;button.onclick=()=>{const ids=new Set(confirmed),counts={...launched};if(row.status==='confirmed'){ids.delete(row.index);delete counts[row.index];}else ids.add(row.index);planProgress={...planProgress,planKey:Progress.key(result),confirmed:[...ids],launched:counts};remainingProposal=null;renderResult();const checklist=$("plan-progress").querySelector(".progress-checklist");if(checklist)checklist.open=true;$("plan-progress").querySelector(`[data-progress-index="${row.index}"] button`)?.focus({preventScroll:true});};item.append(button);}
       list.append(item);
     }
     details.append(list);card.append(details);
     renderLaunchProgress(card,report,confirmed,launched);
     const reopt=el("button","Reoptimize Remaining Plan");reopt.id="reoptimize-remaining";reopt.disabled=!!worker||!!importingBackup;
     let prepared;try{prepared=Continuation.prepare(continuationRequest());}catch(e){reopt.disabled=true;card.append(el("p",e.message,"hint"));}
+    if(prepared?.launchFuelReview){const launches=card.querySelector(".progress-launches");launches.open=true;launches.append(el("p",prepared.launchFuelReview.message,"launch-fuel-warning"));}
     if(prepared)card.append(el("p","Search from the current PC time using the checked farm values · compare "+prepared.remainingShiftBudget+" further shift"+(prepared.remainingShiftBudget===1?"":"s")+" · "+prepared.remainingLaunches+" launch"+(prepared.remainingLaunches===1?"":"es")+" remaining. Automatic Planning also compares one additional shift. No earnings or fuel are assumed since the snapshot.","hint"));
     if(prepared?.consolidatedLaunchVisits)card.append(el("p","Unlaunched ships from an earlier Humility visit are included in the remaining launch visit. All outstanding missions and their fuel costs are retained.","hint"));
     reopt.onclick=()=>optimize(continuationRequest());card.append(reopt);
@@ -1500,8 +1519,9 @@ function renderResult() {
       chips.append(chip);
     }
     header.append(chips);
-    for (const action of equipActions) appendGear(header,action);
-    if (shift.phase === "H2" && !equipActions.length) appendGear(header,null,true);
+    const loadouts=el("div",undefined,"shift-loadouts");
+    for(const [position,label,slots]of [["start","Beginning of shift",shift.startLoadout],["end","Before leaving shift",shift.endLoadout]]){const panel=el("div",undefined,"shift-loadout");panel.dataset.loadoutPosition=position;panel.append(el("h4",label),LoadoutCard.strip(slots||[],label,initial.c.pro?4:2));loadouts.append(panel);}
+    header.append(loadouts);
     header.append(el("div", waitTotals(shift), "shift-waits"));
     const peakRates = () => {
       const rates = el("dl", undefined, "shift-max-rates");
@@ -1515,6 +1535,7 @@ function renderResult() {
     };
     header.append(peakRates());
     group.append(header);
+    if(shift.launchRuns?.length){const launches=el("section",undefined,"shift-launch-summary");launches.append(el("h3","Launch schedule"));for(const run of shift.launchRuns){for(const m of run.batches){const batch=el("div",undefined,"ship-batch-card");batch.append(ShipIcons.caption(m.ship,m.count+" × "+m.label),el("p","First launch "+timestamp(m.firstLaunch,zone,true)+" · Last launch "+timestamp(m.lastLaunch,zone,true)));launches.append(batch);}launches.append(launchSchedule(run,zone));}group.append(launches);}
     if (shift.researchDecisions.length) {
       const why = el("details", undefined, "purchase-decisions"), list = el("ul");
       why.append(el("summary", "Why These Purchases?"), el("p", "Effects at purchase time, using the planned farm and gear. A purchase can raise earnings, unlock research, and prepare later capacity.", "hint"));
@@ -1559,11 +1580,9 @@ function renderResult() {
       if (step.shipRun) {
         const run = step.shipRun, details = el("div", void 0, "ship-run-details");
         details.append(el("p", "Stay on Humility for " + exactDuration(run.end - run.t) + " to fund, fuel, and launch these missions."));
-        for (const m of run.batches) details.append(el("p", m.count + " \xD7 " + m.label + " \xB7 First " + timestamp(m.firstLaunch, zone) + " \xB7 Final " + timestamp(m.lastLaunch, zone)));
+        for (const m of run.batches){const batch=el("div",undefined,"ship-batch-card");batch.append(ShipIcons.caption(m.ship,m.count+" × "+m.label),el("p","First "+timestamp(m.firstLaunch,zone)+" · Final "+timestamp(m.lastLaunch,zone)));details.append(batch);}
         if (run.launches?.length) {
-          const schedule = el("details", void 0, "ship-launch-schedule");
-          schedule.append(el("summary", "Launch Schedule \xB7 " + run.launches.length + " Ships"));
-          for (const [i, launch] of run.launches.entries()) schedule.append(el("p", i + 1 + ". " + launch.label + " \xB7 Slot " + launch.slot + " \xB7 " + timestamp(launch.t, zone, true)));
+          const schedule = launchSchedule(run,zone);
           for (const pause of run.waits || []) if (pause.mode === "offline" || pause.seconds >= 10) schedule.append(el("p", (pause.sleepSeconds > 0 || /^Sleep hours/.test(pause.reason) ? "Wait including sleep " : pause.mode === "offline" ? "Offline " : "Online ") + exactDuration(pause.seconds) + " \xB7 " + pause.reason + (Sleep.sleeping(initial.c.sleep,pause.end) ? " \xB7 Wait Ends " : " \xB7 Resume ") + timestamp(pause.end, zone, true)));
           details.append(schedule);
         }
@@ -1624,7 +1643,8 @@ function renderResult() {
         detail.append(el("p", "Fuel ready " + timestamp(a.end, zone, true), "delta"));
       } else if (a.type === "ship-run") {
         detail.append(el("p", "Stay for " + exactDuration(a.end - a.t) + " \xB7 " + waitTotals(a) + " \xB7 Gems spent " + num(a.cost)));
-        for (const m of a.batches) detail.append(el("p", m.count + " \xD7 " + m.label + " \xB7 First " + timestamp(m.firstLaunch, zone) + " \xB7 Final " + timestamp(m.lastLaunch, zone)));
+        for (const m of a.batches){const batch=el("p");batch.append(ShipIcons.caption(m.ship,m.count+" × "+m.label+" · First "+timestamp(m.firstLaunch,zone)+" · Final "+timestamp(m.lastLaunch,zone)));detail.append(batch);}
+        detail.append(launchSchedule(a,zone));
         detail.append(el("p", "Earlier return waits " + exactDuration(a.returnWaitSeconds) + " \xB7 Funding waits " + exactDuration(a.fundingSeconds) + " \xB7 Tank transfer " + exactDuration(a.transferSeconds), "delta"));
         detail.append(el("p", "Final launches complete " + timestamp(a.end, zone, true) + ". Continue the listed plan; no wait for final returns.", "delta"));
       } else if (a.grouped) {
