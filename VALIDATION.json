@@ -79,25 +79,25 @@
     "exactRecordedFuelAndTimePreserved": true,
     "reportedExampleCovered": true
   },
-  "date": "2026-11-03T00:02:45.765357+00:00",
-  "version": "1.2.9",
-  "currentAudit": "AUDIT-v1.2.9.md",
-  "status": "accepted-public-release",
-  "published": true,
-  "nativeWindowsTested": true,
+  "date": "2026-11-02",
+  "version": "1.2.10",
+  "currentAudit": "AUDIT-v1.2.10.md",
+  "status": "local-validation-complete",
+  "published": false,
+  "nativeWindowsTested": false,
   "visualBrowserTested": true,
   "generatedDomTested": true,
   "buildPassed": true,
-  "scope": "Automatic Virtue launch counting, prepared-ship fuel and cost accounting, launch schedules with artwork, beginning/departure loadouts and current-fleet Humility gear timing.",
+  "scope": "Actual queued-ship loaded fuel and current-pad scope, partial fueling overlap, Humility-only loadouts and backend-only launch accounting.",
   "gameModelChanged": true,
   "globalOptimalityProven": false,
   "previousRelease": {
-    "version": "1.2.8",
-    "sourceCommit": "1deea0d05dc20fb0d946f6249629eb10bd4edfd3",
-    "runId": 41167742874,
+    "version": "1.2.9",
+    "sourceCommit": "f1ae549ce0a28f65d294a4fd1a22ff1253513cd5",
+    "runId": 41549274713,
     "accepted": true
   },
-  "compiledWorkerSha256": "2c0e62b24aca9b4659a01558df05614460834841219e8437346880b8b241340f",
+  "compiledWorkerSha256": "6fdafe2c619479fec6207df75502a4e5e907211a5841ba4e97d692c3644266a8",
   "localValidation": {
     "mode": "Reuse all 40 completed development checks; fresh release preflight verifies version and package",
     "suitesPassed": [
@@ -148,11 +148,7 @@
       500
     ],
     "privateFarmParallelWorkers": 4,
-    "sharedCandidateRejections": 0,
-    "readyShipAndGearVisualReview": [
-      1440,
-      1000
-    ]
+    "queuedShipCase": "Fueling with full loaded recipe and default pending metadata"
   },
   "comparisonPercentages": {
     "baseline": "Specified shifts (N), independent of selection",
@@ -196,21 +192,31 @@
     "excludeFuelingAndReadyShips": true,
     "filterByResetAndPlanStart": true,
     "deduplicateMissionIdentities": true,
-    "optionalImmediateOverrides": true,
-    "missingHistoryIndicated": true
+    "optionalImmediateOverrides": false,
+    "missingHistoryIndicated": true,
+    "historicalUiVisible": false,
+    "countControlsVisible": false,
+    "legacySavedProgressRetained": true
   },
   "preparedShip": {
     "fullyFueledSupported": true,
     "waitForFreeSlot": true,
     "purchaseAndFuelCreditedOnce": true,
-    "partiallyFueled": "Identified; finish fueling and refresh to resume the paid recipe",
-    "olderFarmExports": "Refresh from account"
+    "partiallyFueled": "Resume using actual loaded amounts; remaining fueling overlaps existing flight waits",
+    "olderFarmExports": "Refresh from account",
+    "partiallyFueledSupported": true,
+    "readyStatusRequired": false,
+    "currentVirtuePadSuppliesScope": true,
+    "emptyPlaceholdersIgnored": true
   },
   "shiftPresentation": {
     "shipArtwork": true,
     "launchSlotAndReturnSchedule": true,
-    "beginningAndDepartureArtifactsAndStones": true,
-    "lazyLargeScheduleRows": true
+    "beginningAndDepartureArtifactsAndStones": "Humility summaries only",
+    "lazyLargeScheduleRows": true,
+    "initialEarningsSetup": "Once before a new plan timeline when starting away from Humility",
+    "historicalLaunchCountsVisible": false,
+    "upcomingShipArtworkAndSchedulesPreserved": true
   },
   "humilityGearTiming": {
     "currentFleetDuringLaunches": true,
@@ -218,83 +224,5 @@
     "compareRetainedSavedRoute": true,
     "fullyPaidReplay": true,
     "privateFarmTimeSavedSeconds": 6311.882
-  },
-  "windowsRelease": {
-    "runId": 41549274713,
-    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/41549274713",
-    "sourceCommit": "f1ae549ce0a28f65d294a4fd1a22ff1253513cd5",
-    "requiredSuitesPassed": 42,
-    "groups": [
-      {
-        "group": "model",
-        "suitesPassed": 29,
-        "seconds": 98.24299999999997,
-        "fingerprint": "05779b7f43d3de873e490ba6826efe3df1f3521eaa717ee59bc6bf2110dbebde"
-      },
-      {
-        "group": "ui",
-        "suitesPassed": 11,
-        "seconds": 110.881,
-        "fingerprint": "05779b7f43d3de873e490ba6826efe3df1f3521eaa717ee59bc6bf2110dbebde"
-      },
-      {
-        "group": "native",
-        "suitesPassed": 2,
-        "seconds": 81.343,
-        "fingerprint": "05779b7f43d3de873e490ba6826efe3df1f3521eaa717ee59bc6bf2110dbebde"
-      }
-    ],
-    "nativeUpdaterAndLauncherPassed": true,
-    "publicFeedAndRuntimeHashesPassed": true
-  },
-  "independentPublicVerification": {
-    "version": "1.2.9",
-    "archiveSha256": "819f0bf90579f416892a4e0697b6cd21797e18c334069477166a285d25317962",
-    "archiveEntries": 169,
-    "runtimeFileHashes": 167,
-    "closedManifest": true,
-    "crcPassed": true,
-    "appSha256": "77dea85fad43e6d17085f47f1059e921c74ae62b0aba5109372208f68a59dec2",
-    "workerSha256": "2c0e62b24aca9b4659a01558df05614460834841219e8437346880b8b241340f",
-    "appRoot": "D:\\a\\Egg-Inc-Virtue-Farm-Optimizer\\Egg-Inc-Virtue-Farm-Optimizer\\tmp\\public-app\\Egg-Inc-Virtue-Farm-Optimizer",
-    "sourceCommit": "f1ae549ce0a28f65d294a4fd1a22ff1253513cd5",
-    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.2.9",
-    "releaseId": 432099792,
-    "anonymous": true,
-    "assets": [
-      {
-        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
-        "id": 703619169,
-        "size": 8659068,
-        "sha256": "819f0bf90579f416892a4e0697b6cd21797e18c334069477166a285d25317962"
-      },
-      {
-        "name": "update-manifest.json",
-        "id": 703619170,
-        "size": 239,
-        "sha256": "0fd02decb81d7db5e30416f2d29ad414ab6bc5baab3aadb1661af2f96e53365e"
-      }
-    ]
-  },
-  "automatedBrowserVerification": {
-    "schema": 1,
-    "passed": true,
-    "sourceCommit": "f1ae549ce0a28f65d294a4fd1a22ff1253513cd5",
-    "appSha256": "77dea85fad43e6d17085f47f1059e921c74ae62b0aba5109372208f68a59dec2",
-    "workerSha256": "2c0e62b24aca9b4659a01558df05614460834841219e8437346880b8b241340f",
-    "browser": "156.0.8078.80",
-    "widths": [
-      1440,
-      1000,
-      500
-    ],
-    "liveCheckWorkers": 3,
-    "planOrder": [
-      13,
-      12,
-      11
-    ],
-    "defaultSelected": 12,
-    "fuelRoundingPassed": true
   }
 }

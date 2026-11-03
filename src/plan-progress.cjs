@@ -82,7 +82,7 @@ function compare(raw,result,current,{confirmed=[],launched={},launchOverrides=[]
  const missed=report.rows.filter(r=>r.stage<offset&&['research','hab','vehicle','car','silo'].includes(r.action.type)&&r.status!=='present');
  const baselineMissing=base.s.r.some((n,i)=>s.r[i]<n)||base.s.h.some((n,i)=>n!==null&&(s.h[i]===null||s.h[i]<n))||base.s.v.some((v,i)=>v.id!==null&&(s.v[i].id===null||s.v[i].id<v.id||v.id===11&&s.v[i].id===11&&s.v[i].cars<v.cars))||s.silos<startingSilos;
  if((missed.length||baselineMissing)&&report.status!=='claimed-target'){report.status='mismatch';warnings.push('Earlier required upgrades are missing from this snapshot. Review the farm and remaining route before continuing.');}
- if(report.rows.some(row=>row.stage<offset&&!row.displayHidden&&['fuel','fuel-dump','ship-run','ship-visit'].includes(row.action.type)&&row.status!=='confirmed'))warnings.push('Earlier fuel transfers or launch batches have not been confirmed. Reaching this visit does not prove they were completed; review the original walkthrough.');
+ if(report.rows.some(row=>row.stage<offset&&!row.displayHidden&&['fuel','fuel-dump'].includes(row.action.type)&&row.status!=='confirmed'))warnings.push('Earlier fuel transfers have not been marked done. Reoptimization uses the current tank values from the snapshot.');
  if(report.status==='matched'){
   const active=report.rows.filter(row=>row.stage===offset&&!row.displayHidden&&row.action.type!=='shift'&&row.status!=='interaction');
   // Calendar and wake-time conditions can be checked from the backup clock.

@@ -50,7 +50,7 @@ function currentLaunchFuelReview(config,report,runs){
  });
  if(!fuel.length)return null;
  const batches=missions.map(m=>m.count+' '+m.label).join(', '),amounts=fuel.map(f=>S.NAME[f.egg]+': '+Ships.format(f.stored)+' stored / '+Ships.format(f.required)+' needed').join('; ');
- return {visit:run.label,fuel,message:'The reviewed '+run.label+' counts leave '+batches+' to launch, but the current tank cannot fuel them. '+amounts+'. Review Already Launched: include missions that have returned as well as flights still active. Refresh from account to include any fueled ship waiting on the pad. If the counts and ready ship are up to date, additional fuel stops are needed before these launches.'};
+ return {visit:run.label,fuel,batches,message:'The current snapshot is short of ship fuel after accounting for loaded ship fuel. '+amounts+'. Refresh from account to include the latest queued ship. If the snapshot is up to date, additional fuel stops are needed.'};
 }
 function prepare(request,{now=Date.now()/1000,budget=null}={}){
  const {config:original,result,progress}=request;
@@ -74,7 +74,7 @@ function prepare(request,{now=Date.now()/1000,budget=null}={}){
   if(!Array.isArray(a.batches)||a.batches.length>8||a.batches.reduce((n,b)=>n+b.count,0)!==a.count)throw Error('The saved launch batches need review before continuing.');
   let counts=row.launchCounts??(confirmed.includes(row.index)?a.batches.map(b=>b.count):launched[row.index]);
   if(counts!==undefined&&(!Array.isArray(counts)||counts.length!==a.batches.length||counts.some((n,i)=>!Number.isInteger(n)||n<0||n>a.batches[i].count)))throw Error('Already-launched counts must be whole numbers between zero and the planned batch count.');
-  if(row.stage<=report.stage&&counts===undefined)throw Error('Load a current account backup to count already-launched ships for '+(a.phase||'Humility visit '+(a.visit||runs.length+1))+', or enter the launch totals. Include active flights and earlier launches.');
+  if(row.stage<=report.stage&&counts===undefined)throw Error('Refresh from account before reoptimizing so the current mission records and queued ship fuel can be included.');
   if(row.stage>report.stage&&counts?.some(n=>n>0)&&!row.launchesCounted)throw Error('A later Humility visit cannot already have launched ships. Check the visit and launch counts.');
   counts=counts||a.batches.map(()=>0);
   const missions=a.batches.map((b,i)=>({ship:b.ship,duration:b.duration,count:b.count-counts[i]})).filter(m=>m.count>0);

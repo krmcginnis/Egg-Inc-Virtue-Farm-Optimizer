@@ -560,12 +560,6 @@ aside .update-app{margin-top:auto}
 .progress-state{color:var(--muted)}.progress-checklist button{padding:7px 10px}
 .plan-progress[data-status="mismatch"] .progress-status{color:#f1ce8b}
 @media print{.plan-progress{display:none}}
-.progress-launches{margin:14px 0}
-.launch-progress-group{border-top:1px solid var(--line);padding:10px 0}
-.launch-progress-group h3{margin:0 0 8px}
-.launch-progress-group label{display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:14px;margin:8px 0;font-size:12px}
-.launch-progress-group input{width:120px;flex:0 0 120px}
-.launch-fuel-warning{padding:12px;border:1px solid #947b47;border-radius:8px;background:#302b22;color:#ead7ac}
 .shift-loadouts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin:14px 0}
 .shift-loadout{min-width:0}.shift-loadout h4{margin:0 0 8px;font-size:13px}
 .ship-caption{display:inline-flex;align-items:center;gap:10px;vertical-align:middle}.ship-caption span:last-child{min-width:0}
@@ -592,3 +586,5 @@ aside .update-app{margin-top:auto}
 #plan-progress-heading:focus-visible,#plan-progress-next:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 @media(max-width:700px){.research-sale-options{grid-template-columns:minmax(0,1fr)}}
 @media print{.plan-actions,.next-ascension-section,#expand-timeline{display:none}}
+
+.initial-earning-setup{margin:14px 0}

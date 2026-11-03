@@ -1,17 +1,15 @@
 'use strict';
 const Ships=require('./ships.cjs');
+const Records=require('./mission-records.cjs');
 const STATUS={EXPLORING:10,RETURNED:15,ANALYZING:16,FUELING:0,PREPARE_TO_LAUNCH:5};
 // Virtue and home missions are separate. Slots are interchangeable, so assign
 // stable slot numbers to the active Virtue flights rather than guessing IDs.
 module.exports=function importMissions(backup,backupTime,now,warnings){
- const db=backup.artifactsDb||{},seen=new Set(),flights=[];
- const nested=db.virtueAfxDb?.fuelingMission;
- const missions=[...(db.missionInfos||[]),...(db.fuelingMission?[db.fuelingMission]:[]),...(nested?[{...nested,type:nested.type??1}]:[])];
- let fueling=false;
+ const records=Records.read(backup),seen=new Set(),flights=[];
+ const missions=[...records.active,...records.pending];
  for(const m of missions){
-  if(m.type!==1&&m.type!=='VIRTUE')continue;
+  if(m.type!==1&&m.type!=='VIRTUE'||(m.resetIndex??0)!==records.reset)continue;
   const status=typeof m.status==='string'?STATUS[m.status]:m.status??0;
-  if(status===0||status===5)fueling=true;
   if(![10,15,16].includes(status))continue;
   if(m.identifier&&seen.has(m.identifier))continue;
   if(m.identifier)seen.add(m.identifier);
@@ -26,23 +24,24 @@ module.exports=function importMissions(backup,backupTime,now,warnings){
   flights.push({slot:flights.length+1,returnAt,ship,duration:durationType,identifier:m.identifier||undefined,imported:true});
  }
  if(flights.length>3)throw Error('The backup contains more than three active Virtue ships. Sync the game and retry.');
- if(fueling&&!prepared(backup))warnings.push('A Virtue mission is being fueled. Finish fueling it and refresh the account to carry its paid fuel into the remaining plan.');
- if(flights.length)warnings.push(flights.length+' existing Virtue ship'+(flights.length===1?'':'s')+' imported. Returned ships are collected when a planned launch needs their slot.');
  return flights;
 };
 function prepared(backup){
- const pending=fuelingMission(backup);return pending?.status==='PREPARE_TO_LAUNCH'?pending:null;
+ return fuelingMission(backup);
 }
 function fuelingMission(backup){
- const db=backup.artifactsDb||{},nested=db.virtueAfxDb?.fuelingMission;
- const records=[...(nested?[{...nested,type:nested.type??1}]:[]),...(db.fuelingMission?[db.fuelingMission]:[]),...(db.missionInfos||[])];
- const reset=backup.virtue?.resets??0;
- const ready=records.filter(m=>(m.type===1||m.type==='VIRTUE')&&[0,5,'FUELING','PREPARE_TO_LAUNCH'].includes(m.status??0)&&(m.resetIndex??0)===reset);
+ const source=Records.read(backup),records=[...source.pending,...source.active],reset=source.reset;
+ const ready=records.filter(m=>(m.ship!==undefined||m.identifier||(m.fuel||[]).length)&&(m.type===1||m.type==='VIRTUE')&&[0,5,'FUELING','PREPARE_TO_LAUNCH'].includes(m.status??0)&&(m.resetIndex??0)===reset);
  if(!ready.length)return null;
  const m=ready[0],ship=typeof m.ship==='string'?m.ship:Ships.DATA.ships[Number(m.ship??0)]?.id,duration=typeof m.durationType==='string'?m.durationType:['SHORT','LONG','EPIC','TUTORIAL'][Number(m.durationType??0)];
- Ships.mission(ship,duration);
+ const recipe=Ships.mission(ship,duration).fuel,loaded=Array(5).fill(0),hasFuel=Array.isArray(m.fuel)&&m.fuel.length>0;
+ for(const fuel of m.fuel||[]){const egg=typeof fuel.egg==='string'?Ships.EGGS.indexOf(fuel.egg.toLowerCase()):Number(fuel.egg)-50;if(egg<0||egg>4)continue;const amount=Number(fuel.amount??0);if(!Number.isFinite(amount)||amount<0)throw Error('The queued ship has an invalid loaded fuel amount. Sync the game and retry.');loaded[egg]=Math.max(loaded[egg],Math.min(recipe[egg],amount));}
+ const reportedReady=m.status===5||m.status==='PREPARE_TO_LAUNCH';
+ if(!hasFuel&&reportedReady)recipe.forEach((amount,i)=>loaded[i]=amount);
+ const complete=recipe.every((needed,i)=>loaded[i]+Math.max(1,needed)*1e-12>=needed);
+ if(complete)recipe.forEach((amount,i)=>loaded[i]=amount);
  if(ready.some(x=>x.identifier&&m.identifier&&x.identifier!==m.identifier))throw Error('The backup contains multiple ready Virtue ships. Sync the game and retry.');
- return {ship,duration,identifier:m.identifier||undefined,status:m.status===5||m.status==='PREPARE_TO_LAUNCH'?'PREPARE_TO_LAUNCH':'FUELING'};
+ return {ship,duration,identifier:m.identifier||undefined,status:complete?'PREPARE_TO_LAUNCH':'FUELING',reportedStatus:m.status??0,loadedFuel:loaded};
 }
 module.exports.prepared=prepared;
 module.exports.fueling=fuelingMission;

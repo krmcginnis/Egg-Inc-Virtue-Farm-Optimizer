@@ -1,3 +1,12 @@
+# v1.2.10
+
+- Credit the fuel actually loaded into the queued Virtue ship, including fully fueled ships still marked Fueling. Use the current Virtue fueling pad's scope when unlaunched mission metadata contains missing/default type or reset fields. Keep explicit reset checks for global and archived records.
+- Resume partially fueled ships with their paid purchase and loaded fuel credited once. Load the remaining fuel while existing ships are still flying, and launch only after a real flight slot is free. Empty pad placeholders do not create ships.
+- Show beginning/departure artifact and stone setups only on Humility summaries. Show the initial earning setup once before a new plan's timeline, rather than repeating loadouts on other Virtues.
+- Remove the Ships Launched panel, count controls, historical count messages and queued-ship status text. Keep mission accounting automatic in the backend and preserve upcoming launch schedules and ship pictures.
+
+- Install through Update App → Update & Restart, then refresh from account and reoptimize. Existing saved timelines and progress remain available; refresh is needed to import the queued ship's loaded fuel.
+
 # v1.2.9
 
 - Count launched Virtue missions automatically from active and archived account records, scoped to the current reset and plan start. Include returned missions, deduplicate records, and keep fueled or ready ships unlaunched. Remove the launch-count confirmation button; optional overrides apply immediately.

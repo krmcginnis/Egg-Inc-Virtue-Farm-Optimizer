@@ -1,12 +1,14 @@
 'use strict';
 const Ships=require('./ships.cjs');
+const Records=require('./mission-records.cjs');
 const statuses={EXPLORING:10,RETURNED:15,ANALYZING:16,COMPLETE:20,ARCHIVED:25,ABORTED:30};
 const key=m=>m.ship+':'+m.duration;
 function read(backup,time){
  const db=backup.artifactsDb,reset=backup.virtue?.resets??0;
  if(!db||!Number.isSafeInteger(reset)||reset<0)return null;
  const records=new Map();let omitted=0;
- for(const m of [...(db.missionArchive||[]),...(db.missionInfos||[])]){
+ const source=Records.read(backup);
+ for(const m of [...source.archive,...source.active]){
   if(m.type!==1&&m.type!=='VIRTUE'||(m.resetIndex??0)!==reset)continue;
   const status=typeof m.status==='string'?statuses[m.status]:m.status;
   if(![10,15,16,20,25,30].includes(status))continue; // Fueling/ready is not sent.
