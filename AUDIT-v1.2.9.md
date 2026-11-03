@@ -1,5 +1,14 @@
 # Egg Inc. Virtue Farm Optimizer v1.2.9 — Release Audit
 
+## Automated publication acceptance
+
+All 42 required checks passed across three parallel Windows groups
+for source `f1ae549ce0a28f65d294a4fd1a22ff1253513cd5`. [Workflow evidence](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/41549274713).
+The exact tested package passed native updater/feed verification, anonymous public
+asset/CRC/runtime-digest checks, and real-browser checks against the downloaded ZIP.
+The run artifact `release-validation` contains suite timings and complete acceptance
+evidence. The immutable release assets retain the prepublication audit.
+
 ## Release review — November 2, 2026 (Pacific Time)
 
 Virtue launches are counted from active and archived mission records, using mission
