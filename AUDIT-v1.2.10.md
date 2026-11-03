@@ -1,5 +1,14 @@
 # Egg Inc. Virtue Farm Optimizer v1.2.10 — Release Audit
 
+## Automated publication acceptance
+
+All 42 required checks passed across three parallel Windows groups
+for source `c79f58071009bd84bfd53640f5c6dfbe0b44f398`. [Workflow evidence](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/41554357774).
+The exact tested package passed native updater/feed verification, anonymous public
+asset/CRC/runtime-digest checks, and real-browser checks against the downloaded ZIP.
+The run artifact `release-validation` contains suite timings and complete acceptance
+evidence. The immutable release assets retain the prepublication audit.
+
 ## Release review — November 2, 2026 (Pacific Time)
 
 Queued-ship credit now uses the actual per-egg loaded amounts rather than relying
