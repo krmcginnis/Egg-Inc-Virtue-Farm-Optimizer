@@ -79,12 +79,12 @@
     "exactRecordedFuelAndTimePreserved": true,
     "reportedExampleCovered": true
   },
-  "date": "2026-11-10T02:08:09.560Z",
+  "date": "2026-11-10T02:13:29.284478+00:00",
   "version": "1.2.12",
   "currentAudit": "AUDIT-v1.2.12.md",
-  "status": "pending-publication",
-  "published": false,
-  "nativeWindowsTested": false,
+  "status": "accepted-public-release",
+  "published": true,
+  "nativeWindowsTested": true,
   "visualBrowserTested": true,
   "generatedDomTested": true,
   "buildPassed": true,
@@ -126,11 +126,6 @@
   "planColumnSubtitlesVisible": false,
   "completedPurchaseCheckLabelsVisible": false,
   "incompletePurchaseCheckStatusVisible": true,
-  "pendingPublicationGates": [
-    "All 42 required checks on the release candidate",
-    "Native updater and anonymous public downloads",
-    "Public ZIP browser acceptance"
-  ],
   "virtueShipProgress": {
     "automatic": true,
     "manualConfirmation": false,
@@ -173,5 +168,84 @@
     "compareRetainedSavedRoute": true,
     "fullyPaidReplay": true,
     "privateFarmTimeSavedSeconds": 6311.882
+  },
+  "compiledWorkerSha256": "efb1da4924768006fe358310cbfbe3247f24f1f4e11bb7fbc1aa3a2437ef7957",
+  "windowsRelease": {
+    "runId": 42740801961,
+    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/42740801961",
+    "sourceCommit": "bb55c862f29a30bcc39afde6e2cd0a87437d783c",
+    "requiredSuitesPassed": 42,
+    "groups": [
+      {
+        "group": "model",
+        "suitesPassed": 29,
+        "seconds": 89.01099999999997,
+        "fingerprint": "b3cb527316fb9e8354b584af05090620246dff76ffbe001443b45001d2b0554f"
+      },
+      {
+        "group": "ui",
+        "suitesPassed": 11,
+        "seconds": 83.616,
+        "fingerprint": "b3cb527316fb9e8354b584af05090620246dff76ffbe001443b45001d2b0554f"
+      },
+      {
+        "group": "native",
+        "suitesPassed": 2,
+        "seconds": 62.655,
+        "fingerprint": "b3cb527316fb9e8354b584af05090620246dff76ffbe001443b45001d2b0554f"
+      }
+    ],
+    "nativeUpdaterAndLauncherPassed": true,
+    "publicFeedAndRuntimeHashesPassed": true
+  },
+  "independentPublicVerification": {
+    "version": "1.2.12",
+    "archiveSha256": "c8deb9d6f9634d6229446eb0d7cbeab8144749f5f3d7512fc1d0c1cd21e9254d",
+    "archiveEntries": 170,
+    "runtimeFileHashes": 168,
+    "closedManifest": true,
+    "crcPassed": true,
+    "appSha256": "f1aec4949258c218a688290a547d652fa9d64d0ea84137d4c1b83485fd98ad04",
+    "workerSha256": "efb1da4924768006fe358310cbfbe3247f24f1f4e11bb7fbc1aa3a2437ef7957",
+    "appRoot": "D:\\a\\Egg-Inc-Virtue-Farm-Optimizer\\Egg-Inc-Virtue-Farm-Optimizer\\tmp\\public-app\\Egg-Inc-Virtue-Farm-Optimizer",
+    "sourceCommit": "bb55c862f29a30bcc39afde6e2cd0a87437d783c",
+    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.2.12",
+    "releaseId": 439867090,
+    "anonymous": true,
+    "assets": [
+      {
+        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
+        "id": 729771731,
+        "size": 9341516,
+        "sha256": "c8deb9d6f9634d6229446eb0d7cbeab8144749f5f3d7512fc1d0c1cd21e9254d"
+      },
+      {
+        "name": "update-manifest.json",
+        "id": 729771730,
+        "size": 240,
+        "sha256": "a527eb42ce5660acbb3ce731b0cf00fb99fdd5cd2d2be789af963930c0d4736c"
+      }
+    ]
+  },
+  "automatedBrowserVerification": {
+    "schema": 1,
+    "passed": true,
+    "sourceCommit": "bb55c862f29a30bcc39afde6e2cd0a87437d783c",
+    "appSha256": "f1aec4949258c218a688290a547d652fa9d64d0ea84137d4c1b83485fd98ad04",
+    "workerSha256": "efb1da4924768006fe358310cbfbe3247f24f1f4e11bb7fbc1aa3a2437ef7957",
+    "browser": "156.0.8078.80",
+    "widths": [
+      1440,
+      1000,
+      500
+    ],
+    "liveCheckWorkers": 3,
+    "planOrder": [
+      13,
+      12,
+      11
+    ],
+    "defaultSelected": 12,
+    "fuelRoundingPassed": true
   }
 }

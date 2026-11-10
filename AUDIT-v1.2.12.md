@@ -1,5 +1,14 @@
 # Egg Inc. Virtue Farm Optimizer v1.2.12 — Release Audit
 
+## Automated publication acceptance
+
+All 42 required checks passed across three parallel Windows groups
+for source `bb55c862f29a30bcc39afde6e2cd0a87437d783c`. [Workflow evidence](https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/42740801961).
+The exact tested package passed native updater/feed verification, anonymous public
+asset/CRC/runtime-digest checks, and real-browser checks against the downloaded ZIP.
+The run artifact `release-validation` contains suite timings and complete acceptance
+evidence. The immutable release assets retain the prepublication audit.
+
 ## Copper Egg colleggtible
 
 The game catalog adds Copper with habitat cost multipliers of 0.95, 0.90,
