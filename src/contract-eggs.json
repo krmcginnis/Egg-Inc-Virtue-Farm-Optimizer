@@ -445,6 +445,14 @@
     "memory-care-2026": null,
     "ai-cooldown-2026": "waterballoon",
     "light-aircraft-2026": "carbon-fiber",
-    "hell-week-2026": "gatoregg"
+    "hell-week-2026": "gatoregg",
+    "copper-new-2026": "copper"
+  },
+  "supplementalSources": {
+    "copper-new-2026": {
+      "source": "Wasmegg periodicals/data/contracts.json",
+      "sourceCommit": "f6e94e42c85d839c0e55a8867362a1c468d96d85",
+      "sourceSHA256": "25dcde91f2db62c1dc7adc8c5f4646755f575dbb11e47c711e7adc5839e2bab8"
+    }
   }
 }

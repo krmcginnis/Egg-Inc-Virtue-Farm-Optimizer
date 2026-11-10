@@ -161,6 +161,16 @@
       "wikiFile": null,
       "sha256": "7a32544a9ec0d5b47c851796eba7d56f6e5335019ae673514d33b89f7fede6a3",
       "bytes": 327882
+    },
+    "copper": {
+      "path": "assets/eggs/copper.png",
+      "source": "Auxbrain game catalog",
+      "sourceUrl": "https://www.auxbrain.com/dlc/eggs/copper_ce_icon_2747046595d5b4dfcf7ecae8ce9aca2d.png",
+      "wikiFile": null,
+      "sha256": "0d6d336456c2efc6b6a2e074b06f8fcc1cb47df90b97f52ede0ebcf4bd35eb7e",
+      "bytes": 686288,
+      "retrieved": "2026-11-09",
+      "dataSource": "https://raw.githubusercontent.com/wasmegg-carpet/egg/f6e94e42c85d839c0e55a8867362a1c468d96d85/periodicals/data/customeggs.json"
     }
   }
 }

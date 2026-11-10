@@ -22,7 +22,7 @@ const root = path.resolve(__dirname, "..");
     assert.equal(await page.locator("#wasmegg-sequence-description").count(), 0);
     assert.equal(await page.locator("#col-details").getAttribute("open"), null);
     assert.match(await page.locator("#epic-summary").innerText(), /0 \/ 22/);
-    assert.match(await page.locator("#col-summary").innerText(), /0 \/ 13 bonuses active/);
+    assert.ok((await page.locator("#col-summary").innerText()).startsWith(`0 / ${S.D.customEggs.length} bonuses active`));
     // Native disclosure is keyboard-operable and does not unlock imported inputs.
     await page.locator("#epic-details>summary").focus(); await page.keyboard.press("Enter");
     assert.ok(await page.locator("#epic-hold_to_hatch").isVisible()); assert.ok(await page.locator("#epic-hold_to_hatch").isDisabled());

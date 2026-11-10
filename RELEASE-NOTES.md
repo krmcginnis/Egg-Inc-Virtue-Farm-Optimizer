@@ -1,3 +1,8 @@
+# v1.2.11
+
+- Add the Copper Egg colleggtible with its official artwork. Its four tiers reduce habitat costs by 5%, 10%, 15%, and 20%.
+- Import Copper progress automatically from active and archived Copper contracts. Install through Update App → Update & Restart, then refresh from account to load your Copper tier.
+
 # v1.2.10
 
 - Credit the fuel actually loaded into the queued Virtue ship, including fully fueled ships still marked Fueling. Use the current Virtue fueling pad's scope when unlaunched mission metadata contains missing/default type or reset fields. Keep explicit reset checks for global and archived records.

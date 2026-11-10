@@ -5,7 +5,7 @@ These are the original egg images, bundled locally for offline display.
 Wiki index: https://egg-inc.fandom.com/wiki/Eggs
 
 Seven Virtue and mystical egg images were retrieved from the Egg Inc. Wiki image host.
-All thirteen Colleggtible images use official Auxbrain asset URLs from the game catalog.
+All fourteen Colleggtible images use official Auxbrain asset URLs from the game catalog.
 The app is an unofficial fan planning tool.
 
 Image sources (retrieved 2026-10-05):
@@ -69,3 +69,6 @@ https://www.auxbrain.com/dlc/eggs/waterballoon_ce_icon_846583dfd9c66744881bac89f
 
 wood — Auxbrain game catalog
 https://www.auxbrain.com/dlc/eggs/wood_ce_icon_98f08e266fcdc24337c82b1f4547027d.png
+
+copper — Auxbrain game catalog (retrieved 2026-11-09)
+https://www.auxbrain.com/dlc/eggs/copper_ce_icon_2747046595d5b4dfcf7ecae8ce9aca2d.png
