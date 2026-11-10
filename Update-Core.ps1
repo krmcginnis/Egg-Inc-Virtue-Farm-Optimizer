@@ -56,9 +56,17 @@ function Save-UpdateDownload([string]$Url, [string]$Path, [long]$Limit) {
 function Assert-UpdateDigest($Asset, [string]$Path) {
     if ($Asset.digest -and ([string]$Asset.digest -notmatch '^sha256:[a-fA-F0-9]{64}$' -or (Get-UpdateHash $Path) -ne ([string]$Asset.digest).Substring(7).ToLowerInvariant())) { throw 'GitHub release checksum verification failed.' }
 }
-function Get-UpdateRelease([string]$Repository, [string]$CurrentVersion, [string]$TemporaryDirectory) {
+function Get-UpdateRelease([string]$Repository, [string]$CurrentVersion, [string]$TemporaryDirectory, [string]$ReleaseMetadataToken) {
     $repo = Get-UpdateRepository $Repository
-    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/latest" -Headers @{'User-Agent'='Egg-Inc-Virtue-Farm-Optimizer-Updater/1';'Accept'='application/vnd.github+json';'X-GitHub-Api-Version'='2026-03-10'} -TimeoutSec 20
+    $headers = @{'User-Agent'='Egg-Inc-Virtue-Farm-Optimizer-Updater/1';'Accept'='application/vnd.github+json';'X-GitHub-Api-Version'='2026-03-10'}
+    # The release workflow can authenticate metadata reads to avoid shared
+    # runner limits. The installed app and all asset downloads are anonymous.
+    $request = @{Uri="https://api.github.com/repos/$repo/releases/latest"; Headers=$headers; TimeoutSec=20}
+    if ($ReleaseMetadataToken) {
+        $headers['Authorization'] = 'Bearer ' + $ReleaseMetadataToken
+        $request['MaximumRedirection'] = 0
+    }
+    $release = Invoke-RestMethod @request
     if ($release.draft -or $release.prerelease) { throw 'Only published stable releases are supported.' }
     $version = (Get-UpdateVersion $release.tag_name).ToString()
     if ((Get-UpdateVersion $version) -le (Get-UpdateVersion $CurrentVersion)) { return @{configured=$true;available=$false;currentVersion=$CurrentVersion;version=$version;repository=$repo} }

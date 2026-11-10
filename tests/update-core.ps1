@@ -61,10 +61,18 @@ $script:apiReply = @{
         @{name='Egg-Inc-Virtue-Farm-Optimizer.zip';state='uploaded';size=$release.size;browser_download_url=('https://github.com/example/app/releases/download/v' + $release.version + '/Egg-Inc-Virtue-Farm-Optimizer.zip')})
 }
 $script:releaseMetadata = @{schema=1;app='egg-inc-virtue-farm-optimizer';version=$release.version;archive='Egg-Inc-Virtue-Farm-Optimizer.zip';size=$release.size;sha256=$release.sha256}
-function Invoke-RestMethod { param($Uri,$Headers,$TimeoutSec); Assert ($Uri -eq 'https://api.github.com/repos/example/app/releases/latest') 'Unexpected GitHub API request'; return $script:apiReply }
+function Invoke-RestMethod {
+    param($Uri,$Headers,$TimeoutSec,$MaximumRedirection)
+    Assert ($Uri -eq 'https://api.github.com/repos/example/app/releases/latest') 'Unexpected GitHub API request'
+    $script:apiHeaders = $Headers; $script:apiRedirects = $MaximumRedirection
+    return $script:apiReply
+}
 function Save-UpdateDownload { param($Url,$Path,$Limit); Write-UpdateJson $Path $script:releaseMetadata }
 $checked = Get-UpdateRelease 'example/app' $currentVersion $Fixture
 Assert ($checked.available -and $checked.version -eq $release.version) 'Valid latest release was not recognized'
+Assert (-not $script:apiHeaders.ContainsKey('Authorization')) 'The installed updater must request metadata anonymously'
+$checked = Get-UpdateRelease 'example/app' $currentVersion $Fixture -ReleaseMetadataToken 'test-token'
+Assert ($checked.available -and $script:apiHeaders.Authorization -ceq 'Bearer test-token' -and $script:apiRedirects -eq 0) 'CI metadata credentials must be scoped to the API request'
 $current = Get-UpdateRelease 'example/app' $release.version $Fixture
 Assert (-not $current.available) 'Current app proposed a redundant update'
 $script:apiReply.prerelease=$true

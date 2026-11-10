@@ -1,4 +1,4 @@
-# v1.2.11
+# v1.2.12
 
 - Add the Copper Egg colleggtible with its official artwork. Its four tiers reduce habitat costs by 5%, 10%, 15%, and 20%.
 - Import Copper progress automatically from active and archived Copper contracts. Install through Update App → Update & Restart, then refresh from account to load your Copper tier.

@@ -79,76 +79,26 @@
     "exactRecordedFuelAndTimePreserved": true,
     "reportedExampleCovered": true
   },
-  "date": "2026-11-03T00:43:04.571982+00:00",
-  "version": "1.2.10",
-  "currentAudit": "AUDIT-v1.2.10.md",
-  "status": "accepted-public-release",
-  "published": true,
-  "nativeWindowsTested": true,
+  "date": "2026-11-10T02:08:09.560Z",
+  "version": "1.2.12",
+  "currentAudit": "AUDIT-v1.2.12.md",
+  "status": "pending-publication",
+  "published": false,
+  "nativeWindowsTested": false,
   "visualBrowserTested": true,
   "generatedDomTested": true,
   "buildPassed": true,
-  "scope": "Actual queued-ship loaded fuel and current-pad scope, partial fueling overlap, Humility-only loadouts and backend-only launch accounting.",
+  "scope": "Copper Egg artwork, tier data and contract import; paid comparison of habitat-first and vehicle-first openings; resilient release metadata verification.",
   "gameModelChanged": true,
   "globalOptimalityProven": false,
   "previousRelease": {
-    "version": "1.2.9",
-    "sourceCommit": "f1ae549ce0a28f65d294a4fd1a22ff1253513cd5",
-    "runId": 41549274713,
+    "version": "1.2.10",
+    "sourceCommit": "c79f58071009bd84bfd53640f5c6dfbe0b44f398",
+    "runId": 41554357774,
     "accepted": true
   },
-  "compiledWorkerSha256": "6fdafe2c619479fec6207df75502a4e5e907211a5841ba4e97d692c3644266a8",
   "localValidation": {
-    "mode": "Reuse all 40 completed development checks; fresh release preflight verifies version and package",
-    "suitesPassed": [
-      "tests/release-state.cjs",
-      "tests/prepare-publish.cjs",
-      "tests/subscription-import.cjs",
-      "tests/research-sale-plans.cjs",
-      "tests/route-solver.cjs",
-      "tests/automatic-routes.cjs",
-      "tests/shift-plans.cjs",
-      "tests/search-efficiency.cjs",
-      "tests/search-quality.cjs",
-      "tests/investment-search.cjs",
-      "tests/research-breakpoints.cjs",
-      "tests/timezones.cjs",
-      "tests/shift-rates.cjs",
-      "tests/sleep-schedule.cjs",
-      "tests/silo-comfort.cjs",
-      "tests/sleep-search-quality.cjs",
-      "tests/earnings-incumbents.cjs",
-      "tests/earnings-first-research.cjs",
-      "tests/purchase-economics.cjs",
-      "tests/search-refinements.cjs",
-      "tests/plan-progress.cjs",
-      "tests/run-shifts.cjs",
-      "tests/research-cleanup.cjs",
-      "tests/research-investments.cjs",
-      "tests/date-time.cjs",
-      "tests/plan-continuation.cjs",
-      "tests/purchase-decisions.cjs",
-      "tests/quick-guide-order.cjs",
-      "tests/release-pipeline.cjs",
-      "tests/cooperative-refinement.cjs",
-      "tests/deep-search-dom.cjs",
-      "tests/run-shifts-dom.cjs",
-      "tests/time-display-dom.cjs",
-      "tests/plan-choices-dom.cjs",
-      "tests/search-pool.cjs",
-      "tests/evaluated-search.cjs",
-      "tests/search-optimality.cjs",
-      "tests/search-optimality-dom.cjs",
-      "tests/solver-worker.cjs",
-      "tests/release-browser.cjs"
-    ],
-    "browserWidths": [
-      1440,
-      1000,
-      500
-    ],
-    "privateFarmParallelWorkers": 4,
-    "queuedShipCase": "Fueling with full loaded recipe and default pending metadata"
+    "mode": "Targeted Copper import, route replay, browser and release preflight checks; full validation runs in CI."
   },
   "comparisonPercentages": {
     "baseline": "Specified shifts (N), independent of selection",
@@ -177,10 +127,9 @@
   "completedPurchaseCheckLabelsVisible": false,
   "incompletePurchaseCheckStatusVisible": true,
   "pendingPublicationGates": [
-    "42 required Windows checks on exact candidate",
-    "Native updater and public feed",
-    "Anonymous public assets, CRC and all runtime digests",
-    "Real Chrome against public ZIP"
+    "All 42 required checks on the release candidate",
+    "Native updater and anonymous public downloads",
+    "Public ZIP browser acceptance"
   ],
   "virtueShipProgress": {
     "automatic": true,
@@ -224,83 +173,5 @@
     "compareRetainedSavedRoute": true,
     "fullyPaidReplay": true,
     "privateFarmTimeSavedSeconds": 6311.882
-  },
-  "windowsRelease": {
-    "runId": 41554357774,
-    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/actions/runs/41554357774",
-    "sourceCommit": "c79f58071009bd84bfd53640f5c6dfbe0b44f398",
-    "requiredSuitesPassed": 42,
-    "groups": [
-      {
-        "group": "model",
-        "suitesPassed": 29,
-        "seconds": 88.193,
-        "fingerprint": "8ae41a9d58881a5977c1a90cbd09b99a0c1ddf6159ec6a1a8dbc1f5f2384834d"
-      },
-      {
-        "group": "ui",
-        "suitesPassed": 11,
-        "seconds": 97.42599999999999,
-        "fingerprint": "8ae41a9d58881a5977c1a90cbd09b99a0c1ddf6159ec6a1a8dbc1f5f2384834d"
-      },
-      {
-        "group": "native",
-        "suitesPassed": 2,
-        "seconds": 81.647,
-        "fingerprint": "8ae41a9d58881a5977c1a90cbd09b99a0c1ddf6159ec6a1a8dbc1f5f2384834d"
-      }
-    ],
-    "nativeUpdaterAndLauncherPassed": true,
-    "publicFeedAndRuntimeHashesPassed": true
-  },
-  "independentPublicVerification": {
-    "version": "1.2.10",
-    "archiveSha256": "9e71113bf5f9e442c4ca0b696c0e03adf20cf6bb263df0e64aa8c27238de1fd6",
-    "archiveEntries": 169,
-    "runtimeFileHashes": 167,
-    "closedManifest": true,
-    "crcPassed": true,
-    "appSha256": "2937a6cf6851b6435e03790806df90bf993c939f234e742a9a2e829cc6183aba",
-    "workerSha256": "6fdafe2c619479fec6207df75502a4e5e907211a5841ba4e97d692c3644266a8",
-    "appRoot": "D:\\a\\Egg-Inc-Virtue-Farm-Optimizer\\Egg-Inc-Virtue-Farm-Optimizer\\tmp\\public-app\\Egg-Inc-Virtue-Farm-Optimizer",
-    "sourceCommit": "c79f58071009bd84bfd53640f5c6dfbe0b44f398",
-    "url": "https://github.com/krmcginnis/Egg-Inc-Virtue-Farm-Optimizer/releases/tag/v1.2.10",
-    "releaseId": 432124596,
-    "anonymous": true,
-    "assets": [
-      {
-        "name": "Egg-Inc-Virtue-Farm-Optimizer.zip",
-        "id": 703718409,
-        "size": 8658693,
-        "sha256": "9e71113bf5f9e442c4ca0b696c0e03adf20cf6bb263df0e64aa8c27238de1fd6"
-      },
-      {
-        "name": "update-manifest.json",
-        "id": 703718407,
-        "size": 240,
-        "sha256": "352b5120099ddd523dff34ba0f9435aba17b476476e2f5b1d61f3291a4164afb"
-      }
-    ]
-  },
-  "automatedBrowserVerification": {
-    "schema": 1,
-    "passed": true,
-    "sourceCommit": "c79f58071009bd84bfd53640f5c6dfbe0b44f398",
-    "appSha256": "2937a6cf6851b6435e03790806df90bf993c939f234e742a9a2e829cc6183aba",
-    "workerSha256": "6fdafe2c619479fec6207df75502a4e5e907211a5841ba4e97d692c3644266a8",
-    "browser": "156.0.8078.80",
-    "widths": [
-      1440,
-      1000,
-      500
-    ],
-    "liveCheckWorkers": 3,
-    "planOrder": [
-      13,
-      12,
-      11
-    ],
-    "defaultSelected": 12,
-    "fuelRoundingPassed": true
   }
 }

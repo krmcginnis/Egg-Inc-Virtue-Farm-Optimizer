@@ -179,6 +179,8 @@ jobs:
       - name: Exercise public verification without publishing
         if: needs.prepare.outputs.publish != 'true'
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           python scripts/release-verify.py --current-public
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

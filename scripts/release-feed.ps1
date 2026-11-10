@@ -8,7 +8,7 @@ try {
   $lastFailure = $null
   for ($attempt = 1; $attempt -le 5; $attempt++) {
     try {
-      $release = Get-UpdateRelease $env:RELEASE_REPOSITORY '0.0.0' $validation
+      $release = Get-UpdateRelease $env:RELEASE_REPOSITORY '0.0.0' $validation -ReleaseMetadataToken $env:GH_TOKEN
       if (-not $release.available -or $release.version -cne $version) { throw 'The published release was not found by the updater at the expected version.' }
       $archive = Join-Path $validation 'published.zip'
       Save-UpdateDownload $release.url $archive $release.size

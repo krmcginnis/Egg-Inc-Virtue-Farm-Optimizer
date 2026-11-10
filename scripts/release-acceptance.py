@@ -36,6 +36,7 @@ def record(root, evidence, run_id, repository):
     url = 'https://github.com/' + repository + '/actions/runs/' + str(run_id)
     validation.update({'date': datetime.datetime.now(datetime.timezone.utc).isoformat(), 'status': 'accepted-public-release', 'published': True, 'nativeWindowsTested': True, 'buildPassed': True, 'generatedDomTested': True, 'visualBrowserTested': True, 'compiledWorkerSha256': evidence['candidate']['workerSha256'], 'windowsRelease': {'runId': int(run_id), 'url': url, 'sourceCommit': evidence['sourceCommit'], 'requiredSuitesPassed': evidence['requiredSuitesPassed'], 'groups': evidence['groups'], 'nativeUpdaterAndLauncherPassed': True, 'publicFeedAndRuntimeHashesPassed': True}, 'independentPublicVerification': evidence['publicVerification'], 'automatedBrowserVerification': evidence['browserVerification']})
     validation['limitations'] = [s for s in validation.get('limitations', []) if not s.startswith('Native Windows')]
+    validation.pop('pendingPublicationGates', None)
     (root / 'VALIDATION.json').write_text(json.dumps(validation, indent=2) + '\n')
     audit = root / ('AUDIT-v' + version + '.md')
     old = audit.read_text()

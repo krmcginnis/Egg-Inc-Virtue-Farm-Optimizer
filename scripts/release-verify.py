@@ -54,9 +54,7 @@ def verify_archive(archive, manifest, repository, extract=None):
             z.extractall(extract)
             result['appRoot'] = str((extract / FOLDER).resolve())
         return result
-def get(url, limit=25_000_000):
-    # Deliberately anonymous: exercise the same public assets available to users.
-    request = urllib.request.Request(url, headers={'User-Agent': 'virtue-release-verification', 'Accept': 'application/vnd.github+json'})
+def read(request, limit):
     for attempt in range(3):
         try:
             with urllib.request.urlopen(request, timeout=30) as response:
@@ -67,16 +65,27 @@ def get(url, limit=25_000_000):
             if attempt == 2:
                 raise
             time.sleep(2 ** attempt)
+def get(url, limit=25_000_000):
+    # Deliberately anonymous: exercise the same public assets available to users.
+    return read(urllib.request.Request(url, headers={'User-Agent': 'virtue-release-verification'}), limit)
+def metadata(repository, path):
+    request = urllib.request.Request('https://api.github.com/repos/' + repository + path, headers={'User-Agent': 'virtue-release-verification', 'Accept': 'application/vnd.github+json'})
+    token = os.environ.get('GH_TOKEN') if os.environ.get('GITHUB_ACTIONS') == 'true' else None
+    if token:
+        request.add_unredirected_header('Authorization', 'Bearer ' + token)
+    return json.loads(read(request, 2_000_000))
 def verify_public(repository, expected_version=None, expected_commit=None, output=None, extract=None):
     assert re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repository)
-    base = 'https://api.github.com/repos/' + repository
-    release = json.loads(get(base + '/releases/latest?verify=' + str(time.time_ns())))
+    base = 'https://github.com/' + repository + '/releases/'
+    release = metadata(repository, '/releases/latest?verify=' + str(time.time_ns()))
     assert not release['draft'] and not release['prerelease']
     version = release['tag_name'].removeprefix('v')
+    assert re.fullmatch(r'\d+\.\d+\.\d+', version)
     assert expected_version is None or version == expected_version, 'Wrong public version'
-    ref = json.loads(get(base + '/git/ref/tags/v' + version))['object']
+    ref = metadata(repository, '/git/ref/tags/v' + version)['object']
     if ref['type'] == 'tag':
-        ref = json.loads(get(base + '/git/tags/' + ref['sha']))['object']
+        assert re.fullmatch(r'[a-f0-9]{40}', ref['sha'])
+        ref = metadata(repository, '/git/tags/' + ref['sha'])['object']
     assert ref['type'] == 'commit' and (expected_commit is None or ref['sha'] == expected_commit), 'Wrong public source commit'
     assets = {a['name']: a for a in release['assets']}
     assert len(release['assets']) == 2 and set(assets) == {FOLDER + '.zip', 'update-manifest.json'}
@@ -84,7 +93,8 @@ def verify_public(repository, expected_version=None, expected_commit=None, outpu
     output.mkdir(parents=True, exist_ok=True)
     records = []
     for name, asset in assets.items():
-        data = get(asset['browser_download_url'] + '?verify=' + str(time.time_ns()))
+        assert asset['browser_download_url'] == base + 'download/v' + version + '/' + name
+        data = get(base + 'latest/download/' + name + '?verify=' + str(time.time_ns()))
         assert len(data) == asset['size'] and asset['digest'] == 'sha256:' + sha(data), 'GitHub asset digest mismatch'
         (output / name).write_bytes(data)
         records.append({'name': name, 'id': asset['id'], 'size': len(data), 'sha256': sha(data)})
@@ -107,6 +117,8 @@ def main():
     if args.candidate:
         manifest = json.loads((ROOT / 'tmp/release/update-manifest.json').read_text())
         result = verify_archive(ROOT / 'tmp/release' / manifest['archive'], manifest, repository, args.extract)
+        review = json.loads((ROOT / 'VALIDATION.json').read_text(encoding='utf-8'))
+        assert review['version'] == result['version'] and review['currentAudit'] == 'AUDIT-v' + result['version'] + '.md', 'Validation metadata must match the candidate version and audit'
         result['sourceCommit'] = os.environ.get('GITHUB_SHA') or subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()
         output = args.output or ROOT / 'tmp/release-candidate.json'
     else:

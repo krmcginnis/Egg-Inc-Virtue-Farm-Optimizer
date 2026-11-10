@@ -1,4 +1,4 @@
-# Egg Inc. Virtue Farm Optimizer v1.2.11 — Release Audit
+# Egg Inc. Virtue Farm Optimizer v1.2.12 — Release Audit
 
 ## Copper Egg colleggtible
 
@@ -29,3 +29,5 @@ habitat-first candidate finished about 35 seconds sooner in that case.
 Release preflight verifies the version labels, archive CRC and runtime manifest.
 Publication is gated on all 42 required checks on the exact candidate, followed
 by updater verification, public asset integrity and real-browser acceptance.
+The release runner authenticates GitHub API metadata requests to avoid shared
+rate limits. Both update assets are still downloaded anonymously and verified.

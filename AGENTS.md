@@ -21,8 +21,8 @@ workflow changes require `node tests/release-state.cjs`,
 `node tests/prepare-publish.cjs`, and `node tests/release-pipeline.cjs`.
 
 For an app release, increase the stable `package.json` version and the root
-package-lock versions, update RELEASE-NOTES.md and the current audit, and run
-`npm run build` so the title/sidebar match. Keep only the current audit in the
+package-lock versions, update RELEASE-NOTES.md, VALIDATION.json and the current
+audit, and run `npm run build` so the title/sidebar match. Keep only the current audit in the
 source/release. Review `git diff` and `git diff --cached --stat` before publishing.
 
 Pushing a version increase to main builds/packages once, runs the model, UI/worker
